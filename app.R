@@ -13,7 +13,7 @@ features <- c("RPS26","RNASE1","PRSS21","CES1","PPP1R27","RND3","LAMP5","SAMHD1"
 
 #Define user interface
 ui <- fluidPage(
-  titlePanel(tags$h1(HTML("<center>scRNA-seq Visualization With Shiny</center>"))),
+  titlePanel(title = HTML("<center>scRNA-seq Visualization With Shiny</center>"), windowTitle="AML Shiny App"),
   
   #Sidebar layout: consists of a side panel and a main panel
   sidebarLayout(
@@ -30,11 +30,28 @@ ui <- fluidPage(
       #Specify if violin plot is desired
       checkboxInput(inputId = "make_vln",label = "Add violin plot", value=FALSE),
       
-      #Menu for choosing metadata to group by
-      selectInput(inputId = "group_by", label = "Choose metadata to group plot by:", choices=c("Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "clusters"),
+      #Options specific to UMAP: panel will display if UMAP is checked
+      conditionalPanel(condition = "input.make_umap==true",
+                       tags$h4("UMAP-Specific Options"),
+                       #Choose metadata to group UMAP by
+                       selectInput(inputId = "umap_group_by", label = "Metadata to group by:", choices=c("Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Library Prep Chemistry"="chemistry","Run"="run"), selected = "clusters"),
+                       #Choose metadata to split UMAP by
+                       selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none")),
       
-      #Menu for choosing metadata to split by
-      selectInput(inputId = "split_by", label = "Choose metadata to split plot by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none"),
+      #Options specific to feature plot
+      conditionalPanel(condition = "input.make_feature==true",
+                       tags$h4("Feature Plot Specific Options"),
+                       #Feature plots do not have a group.by argument
+                       #Choose metadata to split feature plot by
+                       selectInput(inputId = "feature_split_by", label = "Metadata to split by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none")),
+    
+      #Options specific to violin plot
+      conditionalPanel(condition = "input.make_vln==true",
+                       tags$h4("Violin Plot Specific Options"),
+                       #Choose metadata to group violin ploy by
+                       selectInput(inputId = "vln_group_by", label = "Metadata to group by:", choices=c("Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Library Prep Chemistry"="chemistry","Run"="run"), selected = "clusters"),
+                       #Choose metadata to split violin plot by
+                       selectInput(inputId = "vln_split_by", label = "Metadata to split by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none")),
       
       #Feature checkboxes for UMAP plot
       checkboxGroupInput(inputId = "features",label = "Choose feature(s) to display on plot:",choices = features),
@@ -67,16 +84,16 @@ server <- function(input,output){
   #Create UMAP plot
   output$umap <- renderPlot({
     #Produce a single UMAP plot if no features to split by are specified
-    if (input$split_by=="none"){
+    if (input$umap_split_by=="none"){
       DimPlot(sobj, 
-              group.by = input$group_by, 
+              group.by = input$umap_group_by, 
               label = TRUE, 
               reduction = "umap")
       #Otherwise, produce a UMAP split by the specified variable
     } else {
       DimPlot(sobj, 
-              group.by = input$group_by, 
-              split.by = input$split_by, 
+              group.by = input$umap_group_by, 
+              split.by = input$umap_split_by, 
               label = TRUE, 
               reduction = "umap")
     }
@@ -90,13 +107,13 @@ server <- function(input,output){
     #To avoid errors, only render plot if features are selected.
     if (!is.null(input$features)){
       #Split plot by variable if it is specified
-      if (input$split_by=="none"){
+      if (input$feature_split_by=="none"){
         FeaturePlot(sobj, 
                     features=input$features)
       } else {
         FeaturePlot(sobj, 
                     features=input$features,
-                    split.by = input$split_by)
+                    split.by = input$feature_split_by)
       }
     }
   })
@@ -105,10 +122,18 @@ server <- function(input,output){
   #Create Violin plot
   output$vln <- renderPlot({
     if (!is.null(input$features)){
-      VlnPlot(sobj, 
-              features = input$features,
-              group.by = input$group_by,
-              split.by = input$split_by)
+      #Split plot by variable if it is specified
+      if (input$feature_split_by=="none"){
+        VlnPlot(sobj, 
+                features = input$features,
+                group.by = input$vln_group_by)
+      } else {
+        VlnPlot(sobj, 
+                features = input$features,
+                group.by = input$vln_group_by,
+                split.by = input$vln_split_by)
+      }
+      
     }
     
   })
