@@ -18,7 +18,7 @@ ui <- fluidPage(
   #Sidebar layout: consists of a side panel and a main panel
   sidebarLayout(
     
-    #Sidebar panel for user input
+    ### Sidebar panel for user input ###
     sidebarPanel(
       #Menu for choosing plot options
       #Specify is UMAP Plot is desired
@@ -30,6 +30,10 @@ ui <- fluidPage(
       #Specify if violin plot is desired
       checkboxInput(inputId = "make_vln",label = "Add violin plot", value=FALSE),
       
+      #Specify if dot plot is desired
+      checkboxInput(inputId = "make_dot",label = "Add dot plot", value=FALSE),
+      
+      ### Plot Specific Options ###
       #Options specific to UMAP: panel will display if UMAP is checked
       conditionalPanel(condition = "input.make_umap==true",
                        tags$h4("UMAP-Specific Options"),
@@ -48,16 +52,27 @@ ui <- fluidPage(
       #Options specific to violin plot
       conditionalPanel(condition = "input.make_vln==true",
                        tags$h4("Violin Plot Specific Options"),
-                       #Choose metadata to group violin ploy by
+                       #Choose metadata to group violin plot by
                        selectInput(inputId = "vln_group_by", label = "Metadata to group by:", choices=c("Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Library Prep Chemistry"="chemistry","Run"="run"), selected = "clusters"),
                        #Choose metadata to split violin plot by
                        selectInput(inputId = "vln_split_by", label = "Metadata to split by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none")),
       
-      #Feature checkboxes for UMAP plot
-      checkboxGroupInput(inputId = "features",label = "Choose feature(s) to display on plot:",choices = features),
+      #Options specific to dot plot
+      conditionalPanel(condition = "input.make_dot==true",
+                       tags$h4("Dot Plot Specific Options"),
+                       #Choose metadata to group dot plot by
+                       selectInput(inputId = "dot_group_by", label = "Metadata to group by:", choices=c("Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Library Prep Chemistry"="chemistry","Run"="run"), selected = "clusters"),
+                       #Choose metadata to split dot plot by
+                       selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none"),
+                       
+                       #Choose features for dot plot
+                       checkboxGroupInput(inputId = "dot_features",label = "Choose feature(s) to display (applies only to dot plot):",choices = features, selected = features, inline = FALSE)),
+
+      #Feature checkboxes for feature and violin plots
+      checkboxGroupInput(inputId = "features",label = "Choose feature(s) to display (applies to feature and violin plots):",choices = features),
     ),
     
-    #Main panel for displaying plot output
+    ###Main panel for displaying plot output###
     mainPanel(
       #Panels for plots: display if checkboxes corresponding to each type are checked
       #UMAP plot panel
@@ -72,9 +87,10 @@ ui <- fluidPage(
       conditionalPanel(condition = "input.make_vln==true",
                        plotOutput(outputId = "vln")),
       
-      #If a violin plot is selected and no features are selected, direct the user to choose features for the plot
-      conditionalPanel(condition = "input.plot_type=='vln' & input.features.length==0", tags$h4("Please select features to view on the violin plot.")),
-      )  
+      #Dot plot panel
+      conditionalPanel(condition = "input.make_dot==true",
+                       plotOutput(outputId = "dot"))
+      )
   )
 )  
 
@@ -138,6 +154,23 @@ server <- function(input,output){
     
   })
   
+  #Create dot plot
+  output$dot <- renderPlot({
+    if (!is.null(input$dot_features)){
+      #Split plot by variable if it is specified
+      if (input$feature_split_by=="none"){
+        DotPlot(sobj, 
+                features = input$dot_features,
+                group.by = input$dot_group_by) + RotatedAxis()
+      } else {
+        DotPlot(sobj, 
+                features = input$dot_features,
+                group.by = input$dot_group_by,
+                split.by = input$dot_split_by) + RotatedAxis()
+      }
+      
+    }
+  })
 }
 
 # Run the application 
