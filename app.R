@@ -11,6 +11,9 @@ sobj <- readRDS("./Seurat_Objects/uhg_seurat_intro.Rds")
 #Selectable features: for now I will include the top 15 genes differentially expressed in resistant patients vs. controls (will hard code this because calculating the features takes about 3 minutes on my computer)
 features <- c("RPS26","RNASE1","PRSS21","CES1","PPP1R27","RND3","LAMP5","SAMHD1","ADGRG6","XIST","KCNE5","LY86","FCER2","BANK1")
 
+#Specify metadata variables to group and split by in drop down menus
+meta_choices <- c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run")
+
 #Define user interface
 ui <- fluidPage(
   titlePanel(title = HTML("<center>scRNA-seq Visualization With Shiny</center>"), windowTitle="AML Shiny App"),
@@ -38,32 +41,32 @@ ui <- fluidPage(
       conditionalPanel(condition = "input.make_umap==true",
                        tags$h4("UMAP-Specific Options"),
                        #Choose metadata to group UMAP by
-                       selectInput(inputId = "umap_group_by", label = "Metadata to group by:", choices=c("Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Library Prep Chemistry"="chemistry","Run"="run"), selected = "clusters"),
+                       selectInput(inputId = "umap_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
                        #Choose metadata to split UMAP by
-                       selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none")),
+                       selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")),
       
       #Options specific to feature plot
       conditionalPanel(condition = "input.make_feature==true",
                        tags$h4("Feature Plot Specific Options"),
                        #Feature plots do not have a group.by argument
                        #Choose metadata to split feature plot by
-                       selectInput(inputId = "feature_split_by", label = "Metadata to split by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none")),
+                       selectInput(inputId = "feature_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")),
     
       #Options specific to violin plot
       conditionalPanel(condition = "input.make_vln==true",
                        tags$h4("Violin Plot Specific Options"),
                        #Choose metadata to group violin plot by
-                       selectInput(inputId = "vln_group_by", label = "Metadata to group by:", choices=c("Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Library Prep Chemistry"="chemistry","Run"="run"), selected = "clusters"),
+                       selectInput(inputId = "vln_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
                        #Choose metadata to split violin plot by
-                       selectInput(inputId = "vln_split_by", label = "Metadata to split by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none")),
+                       selectInput(inputId = "vln_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")),
       
       #Options specific to dot plot
       conditionalPanel(condition = "input.make_dot==true",
                        tags$h4("Dot Plot Specific Options"),
                        #Choose metadata to group dot plot by
-                       selectInput(inputId = "dot_group_by", label = "Metadata to group by:", choices=c("Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Library Prep Chemistry"="chemistry","Run"="run"), selected = "clusters"),
+                       selectInput(inputId = "dot_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
                        #Choose metadata to split dot plot by
-                       selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run"), selected = "none"),
+                       selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
                        
                        #Choose features for dot plot
                        checkboxGroupInput(inputId = "dot_features",label = "Choose feature(s) to display (applies only to dot plot):",choices = features, selected = features, inline = FALSE)),
@@ -139,7 +142,7 @@ server <- function(input,output){
   output$vln <- renderPlot({
     if (!is.null(input$features)){
       #Split plot by variable if it is specified
-      if (input$feature_split_by=="none"){
+      if (input$vln_split_by=="none"){
         VlnPlot(sobj, 
                 features = input$features,
                 group.by = input$vln_group_by)
@@ -158,7 +161,7 @@ server <- function(input,output){
   output$dot <- renderPlot({
     if (!is.null(input$dot_features)){
       #Split plot by variable if it is specified
-      if (input$feature_split_by=="none"){
+      if (input$dot_split_by=="none"){
         DotPlot(sobj, 
                 features = input$dot_features,
                 group.by = input$dot_group_by) + RotatedAxis()
