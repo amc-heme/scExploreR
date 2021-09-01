@@ -47,7 +47,7 @@ plots_tab <- function(){
         ### Plot Specific Options ###
         #Options specific to UMAP: panel will display if UMAP is checked
         conditionalPanel(condition = "input.make_umap==true",
-                         tags$h4("UMAP-Specific Options"),
+                         tags$h4("UMAP Specific Options"),
                          #Choose metadata to group UMAP by
                          selectInput(inputId = "umap_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
                          #Choose metadata to split UMAP by
@@ -112,7 +112,7 @@ tables_tab <- function(){
     #As with the plots tab, create a sidebar layout with options to select on the left and the table in the center
     sidebarLayout(
       sidebarPanel(
-        selectInput(inputId = "table_group_by", label = "Select Variable to view gene expression data by", choices = c("Response"="response","Patient ID"= "htb", "Clusters"="clusters")),
+        selectInput(inputId = "table_group_by", label = "Select Variable to view gene expression data by", choices = c("Response"="response","Patient ID"= "htb")),
         #If response is chosen, show selection to display resistant vs. sensitive or sensitive vs. resistant
         conditionalPanel(condition = "input.table_group_by=='response'",
                          selectInput(inputId = "response_ident_1", 
@@ -123,16 +123,30 @@ tables_tab <- function(){
         #If patient id is chosen, show selection input for patient id to compare relative to the others (ident.1 argument in FindMarkers())
         conditionalPanel(condition = "input.table_group_by=='htb'",
                          selectInput(inputId = "htb_ident_1",
-                                     choices = unique(uhg@meta.data[["htb"]]),
+                                     choices = unique(sobj@meta.data[["htb"]]),
                                      label ="Choose patient ID to view differential expression data for:"),
+                         
+                         #Additional text below group by choice panel
                          "(Differential Expression results will be for the selected patient ID relaitve to all other patients)"),
         
         #If clusters is chosen as the group.by variable, show selection input for cluster id to compare to the others (ident.1 argument in FindMarkers())
         conditionalPanel(condition="input.table_group_by=='clusters'",
                          selectInput(inputId = "cluster_ident_1",
-                                     choices = levels(unique(uhg@meta.data[["clusters"]])),#calling levels() makes choices show in numerical order
+                                     choices = levels(unique(sobj@meta.data[["clusters"]])),#calling levels() makes choices show in numerical order
                                      label="Choose cluster ID to view differential expression data for:"),
-                         "(Differential Expression results will be for the selected cluster ID relaitve to all other patients)")
+                         
+                         #Additional text below group by choice panel
+                         "(Differential Expression results will be for the selected cluster ID relaitve to all other patients)"),
+        
+        tags$br(),
+        #Ask user to specify whether gene expression or ADT data is desired
+        selectInput(inputId = "table_assay",
+                    choices = c("RNA","ADT"),
+                    selected = "RNA",
+                    label = "Choose assay to view"),
+        
+        #Additional text below assay choice panel
+        "(RNA for diffential gene expression or ADT for surface protein expresssion)"
       ),
       
       #Panel with Table
@@ -159,14 +173,14 @@ server <- function(input,output){
       DimPlot(sobj, 
               group.by = input$umap_group_by, 
               label = TRUE, 
-              reduction = "umap")
+              reduction = "umap_harmony")
       #Otherwise, produce a UMAP split by the specified variable
     } else {
       DimPlot(sobj, 
               group.by = input$umap_group_by, 
               split.by = input$umap_split_by, 
               label = TRUE, 
-              reduction = "umap")
+              reduction = "umap_harmony")
     }
     
     
@@ -231,20 +245,34 @@ server <- function(input,output){
   #Create table with differential expression data
   output$de_table <- renderDataTable({
     #Determine which file to load based on user selections
-    #First layer of conditionals: choice of group.by variable
-    if (input$table_group_by=="response"){
-      #If response is chosen, display either resistant vs. sensitive or sensitive vs. resistant based on user selection
-      if (input$response_ident_1=="Resistant"){filename <- "./Feature_Tables/uhg_resistant_vs_sensitive.tsv.gz"} 
-      else {filename <- "./Feature_Tables/uhg_sensitive_vs_resistant.tsv.gz"}
+    #First layer of conditionals: choice of assay
+    if (input$table_assay=="RNA"){
+      #Second layer of conditionals: choice of group.by variable
+      if (input$table_group_by=="response"){
+        #If response is chosen, display either resistant vs. sensitive or sensitive vs. resistant based on user selection
+        if (input$response_ident_1=="Resistant"){filename <- "./Feature_Tables/uhg_resistant_vs_sensitive.tsv.gz"} 
+        else {filename <- "./Feature_Tables/uhg_sensitive_vs_resistant.tsv.gz"}
+      }
+      else if (input$table_group_by=="htb"){
+        #If patient id (htb) is chosen, display the table corresponding to the patient id desired for comparison
+        #file name format: "<htb>_vs_all.tsv.gz"
+        filename <- paste0("./Feature_Tables/",input$htb_ident_1,"_vs_all.tsv.gz")
+      }
+      }
+    
+    #Conditionals for ADT assay
+    else if (input$table_assay=="ADT"){
+      if (input$table_group_by=="response"){
+        #If response is chosen, display either resistant vs. sensitive or sensitive vs. resistant based on user selection
+        if (input$response_ident_1=="Resistant"){filename <- "./Feature_Tables/uhg_resistant_vs_sensitive_adt.tsv.gz"} 
+        else {filename <- "./Feature_Tables/uhg_sensitive_vs_resistant_adt.tsv.gz"}
+      }
+      else if (input$table_group_by=="htb"){
+        #If patient id (htb) is chosen, display the table corresponding to the patient id desired for comparison
+        #file name format: "<htb>_vs_all.tsv.gz"
+        filename <- paste0("./Feature_Tables/",input$htb_ident_1,"_vs_all_adt.tsv.gz")}
     }
-    else if (input$table_group_by=="htb"){
-      #If patient id (htb) is chosen, display the table corresponding to the patient id desired for comparison
-      #file name format: "<htb>_vs_all.tsv.gz"
-      filename <- paste0("./Feature_Tables/",input$htb_ident_1,"_vs_all.tsv.gz")
-    }
-    else if (input$table_group_by=="clusters"){
-      data.frame("Not yet supported")
-    }
+
     
     #Load file and display table
     read_tsv(filename)
