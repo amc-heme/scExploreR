@@ -58,15 +58,25 @@ plots_tab <- function(){
                          tags$h4("Feature Plot Specific Options"),
                          #Feature plots do not have a group.by argument
                          #Choose metadata to split feature plot by
-                         selectInput(inputId = "feature_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")),
+                         selectInput(inputId = "feature_split_by", 
+                                     label = "Metadata to split by:", 
+                                     choices=meta_choices, 
+                                     selected = "none")),
         
         #Options specific to violin plot
         conditionalPanel(condition = "input.make_vln==true",
                          tags$h4("Violin Plot Specific Options"),
                          #Choose metadata to group violin plot by
-                         selectInput(inputId = "vln_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
+                         selectInput(inputId = "vln_group_by", 
+                                     label = "Metadata to group by:", 
+                                     choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group.by 
+                                     selected = "clusters"),
+                         
                          #Choose metadata to split violin plot by
-                         selectInput(inputId = "vln_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")),
+                         selectInput(inputId = "vln_split_by", 
+                                     label = "Metadata to split by:", 
+                                     choices=meta_choices, 
+                                     selected = "none")),
         
         #Options specific to dot plot
         conditionalPanel(condition = "input.make_dot==true",
@@ -79,7 +89,15 @@ plots_tab <- function(){
                          #Choose features for dot plot
                          checkboxGroupInput(inputId = "dot_features",label = "Choose feature(s) to display (applies only to dot plot):",choices = features, selected = features, inline = FALSE)),
         
-        #Feature checkboxes for feature and violin plots
+        #Text entry for features: applies to feature and violin plots. Add an action button to the right of the text input to submit input
+        conditionalPanel(condition="input.make_feature==true | input.make_vln==true",
+                         #Display the text entry and button inline, with the label placed above both inputs
+                         tags$p(tags$strong("Enter feature to display on feature and violin plots:")),
+                         div(style="display: inline-block; vertical-align: top; width: 175px;", textInput(inputId = "text_feature", label=NULL)),
+                         div(style="display: inline-block; vertical-align: top;", actionButton(inputId = "feature_submit", label="Add Feature"))
+                         ),
+        
+        #Feature checkboxes for feature and violin plots (deprecated)
         checkboxGroupInput(inputId = "features",label = "Choose feature(s) to display (applies to feature and violin plots):",choices = features),
       ),
       
@@ -174,6 +192,7 @@ server <- function(input,output){
               group.by = input$umap_group_by, 
               label = TRUE, 
               reduction = "umap_harmony")
+      
       #Otherwise, produce a UMAP split by the specified variable
     } else {
       DimPlot(sobj, 
@@ -208,7 +227,6 @@ server <- function(input,output){
   output$vln <- renderPlot({
     if (!is.null(input$features)){
       #Split plot by variable if it is specified
-      #TODO: fix error resulting from an unspecified group.by variable
       if (input$vln_split_by=="none"){
         VlnPlot(sobj, 
                 features = input$features,
