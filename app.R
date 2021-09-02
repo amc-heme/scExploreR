@@ -92,10 +92,15 @@ plots_tab <- function(){
         #Text entry for features: applies to feature and violin plots. Add an action button to the right of the text input to submit input
         conditionalPanel(condition="input.make_feature==true | input.make_vln==true",
                          #Display the text entry and button inline, with the label placed above both inputs
-                         tags$p(tags$strong("Enter feature to display on feature and violin plots:")),
-                         div(style="display: inline-block; vertical-align: top; width: 175px;", textInput(inputId = "text_feature", label=NULL)),
-                         div(style="display: inline-block; vertical-align: top;", actionButton(inputId = "feature_submit", label="Add Feature"))
+                         tags$p(tags$strong("Enter feature to display on feature and violin plots, and click update to submit:")),
+                         div(style="vertical-align: top; margin-bottom: 0px;",
+                             span(style="width: 175px; display: inline-block; vertical-align: top;",
+                                  textInput(inputId = "text_feature", label=NULL, value="")),
+                             span(style="display: inline-block; vertical-align: top;",
+                                  actionButton(inputId = "feature_submit", label="Update")))
                          ),
+        #Error message: displayed if an invalid message is entered
+        div(style="margin-top: 0px;",uiOutput(outputId = "feature_error")),
         
         #Feature checkboxes for feature and violin plots (deprecated)
         checkboxGroupInput(inputId = "features",label = "Choose feature(s) to display (applies to feature and violin plots):",choices = features),
@@ -109,8 +114,13 @@ plots_tab <- function(){
                          plotOutput(outputId = "umap")),
         
         #Panel for feature plot
+        #Will be a message or a plot, depending on whether features have been entered
         conditionalPanel(condition = "input.make_feature==true",
-                         plotOutput(outputId = "feature")),
+                         uiOutput(outputId = "feature_slot")),
+        
+        #TODO: delete old panel once current panel is functional
+        #conditionalPanel(condition = "input.make_feature==true",
+        #                 plotOutput(outputId = "feature")),
         
         #Violin plot panel
         conditionalPanel(condition = "input.make_vln==true",
@@ -175,7 +185,7 @@ tables_tab <- function(){
 
 ### Define user interface: code for navigation panel and references to tabs
 ui <- navbarPage("scRNA-seq Visualization With Shiny",
-                 windowTitle="AML Shiny App",
+                 windowTitle="AML scExplorer",
                  tabPanel("Plots",
                           plots_tab()),
                  tabPanel("DE Tables",
@@ -206,22 +216,71 @@ server <- function(input,output){
     
   })
   
-  #Render Feature plot 
-  output$feature <- renderPlot({
-    #To avoid errors, only render plot if features are selected.
-    if (!is.null(input$features)){
-      #Split plot by variable if it is specified
+  #Feature and Violin Plots: choose whether to render a plot or a message based on user inputs
+  #For now, this will be implemented just for the feature plots.
+  #Update the following code when either the feature plot is selected or the 'add_feature' button is clicked.
+  
+  #Generate UI each time the feature submit button is clicked, the "make feature plot" check box is checked, or the split.by setting is updated. 
+  feature_slot_UI <- eventReactive(c(input$make_feature, input$feature_submit, input$feature_split_by),{
+    #Condition 1: no features have been entered yet
+    if (input$text_feature==""){
+      #If this is the case, generate a message instructing the user to enter features.
+      tags$h4("Please enter a feature to view plot.")
+    }
+    
+    #Condition 2: a feature is entered, but it is invalid
+    #In this case, display nothing in the plots window. Instead, display an error beneath the text entry (see separate eventReactive() call below)
+    else if ((!input$text_feature=="") & (!(input$text_feature %in% rownames(sobj)))){NULL}
+    
+    #Condition 3: a valid feature is entered
+    else if (input$text_feature %in% rownames(sobj)){
+      #Generate a plot. Only the UI for the plot is shown here; content is in next eventReactive call.
+      plotOutput(outputId = "feature_slot_plot")
+    }
+  })
+  
+  #Generate UI for the invalid feature entry error, which will display only in the case of an invalid input.
+  #Since this will go beneath the text entry instead of in the plot window, this must be separate from the UI above.
+  feature_error_UI <- eventReactive(c(input$make_feature, input$feature_submit, input$feature_split_by), {
+    #Condition 1: no features have been entered yet
+    #Display nothing in this case
+    if (input$text_feature==""){NULL}
+    #Condition 2: a feature is entered, but it is invalid
+    else if ((!input$text_feature=="") & (!(input$text_feature %in% rownames(sobj)))){
+      #Inform the user that the feature entered is not valid.
+      tags$div("Invalid feature entry. Please try again.",style="color: #880000; font-weight: bold; margin-bottom: 20px; margin-top: 0px;")
+    }
+    #Condition 3: a valid feature is entered
+    #Display nothing in this case
+    else if (input$text_feature %in% rownames(sobj)){NULL}
+    })
+  
+  #Generate content for plot (but only if a valid feature is entered)
+  feature_plot_content <- eventReactive(c(input$make_feature, input$feature_submit, input$feature_split_by),{
+    if (input$text_feature %in% rownames(sobj)){
+      #If no split.by variable is specified, create a feature plot without the split.by argument
       if (input$feature_split_by=="none"){
+        FeaturePlot(sobj,
+                    features=input$text_feature)
+      }
+      #Otherwise, split by the user-specified variable
+      else {
         FeaturePlot(sobj, 
-                    features=input$features)
-      } else {
-        FeaturePlot(sobj, 
-                    features=input$features,
+                    features=input$text_feature,
                     split.by = input$feature_split_by)
       }
     }
   })
   
+  #Render the UI and plot objects created above
+  #Plot UI
+  output$feature_slot <- renderUI({feature_slot_UI()})
+  
+  #Error Message
+  output$feature_error <- renderUI({feature_error_UI()})
+  
+  #Plot Content
+  output$feature_slot_plot <- renderPlot({feature_plot_content()})
   
   #Create Violin plot
   output$vln <- renderPlot({
@@ -290,7 +349,6 @@ server <- function(input,output){
         #file name format: "<htb>_vs_all.tsv.gz"
         filename <- paste0("./Feature_Tables/",input$htb_ident_1,"_vs_all_adt.tsv.gz")}
     }
-
     
     #Load file and display table
     read_tsv(filename)
