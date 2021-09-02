@@ -11,17 +11,38 @@ library(dplyr)
 #https://drive.google.com/file/d/1S7iGNzfmLX5g00zEgVX_Z98c6Xm0Bifb/view
 sobj <- readRDS("./Seurat_Objects/uhg_seurat_intro.Rds")
 
-#Selectable features: for now I will include the top 15 genes differentially expressed in resistant patients vs. controls (will hard code this because calculating the features takes about 3 minutes on my computer)
+#Features for dot plot checkboxes: for now I will include the top 15 genes differentially expressed in resistant patients vs. controls. 
 features <- c("RPS26","RNASE1","PRSS21","CES1","PPP1R27","RND3","LAMP5","SAMHD1","ADGRG6","XIST","KCNE5","LY86","FCER2","BANK1")
 
 #Specify metadata variables to group and split by in drop down menus
-meta_choices <- c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","HTB"="htb","Capture Number"="capture_num","Run"="run")
+meta_choices <- c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Run"="run")
+
+### Table of Contents
+# 1. User Interface Functions
+#   1.1. Plots
+#     1.1.1. Sidebar Panel
+#       1.1.1.1. Desired Plots
+#       1.1.1.2. UMAP Options
+#       1.1.1.3. Feature Plot Options
+#       1.1.1.4. Violin Plot Options    
+#       1.1.1.5. Dot Plot Options
+#       1.1.1.6. Feature Text Entry
+#       1.1.1.7. Checkboxes for dot plot features (will be deleted soon)
+#     1.1.2. Main Panel
+#       1.1.2.1. UMAP Plot
+#       1.1.2.2. Feature Plot
+#       1.1.2.3. Violin Plot
+#       1.1.2.4. Dot Plot
+#   1.2. Differential Expression Tables
+#     1.2.1. Sidebar Panel
+#       1.2.1.1. Metadata Column for Tables
+#       1.2.1.2. Ident.1 Choice
+#       1.2.1.3. Assay Choice
+#     1.2.2. Main Panel (table output)
+# 2. Server Function
 
 ### 1. User Interface Functions ###
 #The user interface is a series of pages; each page is stored in a function for improved readability of code.
-# Table of Contents (Tabs)
-# 1.1. Plots
-# 1.2. Differential Expression Tables
 
 ### 1.1. Plots Tab ###
 plots_tab <- function(){
@@ -29,23 +50,20 @@ plots_tab <- function(){
     #Sidebar layout: consists of a side panel and a main panel
     sidebarLayout(
       
-      ### Sidebar panel for user input ###
+      ### 1.1.1. Sidebar panel for user input ###
       sidebarPanel(
-        #Menu for choosing plot options
+        ### 1.1.1.1 Checkboxes for choosing desired plot
         #Specify is UMAP Plot is desired
         checkboxInput(inputId = "make_umap",label = "Add UMAP plot", value = TRUE),
-        
         #Specify if feature plot is desired
         checkboxInput(inputId = "make_feature",label = "Add feature plot",value=FALSE),
-        
         #Specify if violin plot is desired
         checkboxInput(inputId = "make_vln",label = "Add violin plot", value=FALSE),
-        
         #Specify if dot plot is desired
         checkboxInput(inputId = "make_dot",label = "Add dot plot", value=FALSE),
         
         ### Plot Specific Options ###
-        #Options specific to UMAP: panel will display if UMAP is checked
+        #1.1.1.2. Options specific to UMAP: panel will display if UMAP is checked
         conditionalPanel(condition = "input.make_umap==true",
                          tags$h4("UMAP Specific Options"),
                          #Choose metadata to group UMAP by
@@ -53,7 +71,7 @@ plots_tab <- function(){
                          #Choose metadata to split UMAP by
                          selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")),
         
-        #Options specific to feature plot
+        #1.1.1.3. Options specific to feature plot
         conditionalPanel(condition = "input.make_feature==true",
                          tags$h4("Feature Plot Specific Options"),
                          #Feature plots do not have a group.by argument
@@ -63,7 +81,7 @@ plots_tab <- function(){
                                      choices=meta_choices, 
                                      selected = "none")),
         
-        #Options specific to violin plot
+        #1.1.1.4. Options specific to violin plot
         conditionalPanel(condition = "input.make_vln==true",
                          tags$h4("Violin Plot Specific Options"),
                          #Choose metadata to group violin plot by
@@ -78,55 +96,54 @@ plots_tab <- function(){
                                      choices=meta_choices, 
                                      selected = "none")),
         
-        #Options specific to dot plot
+        #1.1.1.5. Options specific to dot plot
         conditionalPanel(condition = "input.make_dot==true",
                          tags$h4("Dot Plot Specific Options"),
                          #Choose metadata to group dot plot by
                          selectInput(inputId = "dot_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
                          #Choose metadata to split dot plot by
-                         selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
-                         
-                         #Choose features for dot plot
-                         checkboxGroupInput(inputId = "dot_features",label = "Choose feature(s) to display (applies only to dot plot):",choices = features, selected = features, inline = FALSE)),
+                         selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")),
         
-        #Text entry for features: applies to feature and violin plots. Add an action button to the right of the text input to submit input
+        #1.1.1.6. Text entry for features: applies to feature and violin plots. Add an action button to the right of the text input to submit input
         conditionalPanel(condition="input.make_feature==true | input.make_vln==true",
                          #Display the text entry and button inline, with the label placed above both inputs
+                         #Label
                          tags$p(tags$strong("Enter feature to display on feature and violin plots, and click update to submit:")),
+                         #Inline text entry and update button
                          div(style="vertical-align: top; margin-bottom: 0px;",
-                             span(style="width: 175px; display: inline-block; vertical-align: top;",
+                             span(style="width: 175px; height: 40px; display: inline-block; vertical-align: top;",
                                   textInput(inputId = "text_feature", label=NULL, value="")),
                              span(style="display: inline-block; vertical-align: top;",
                                   actionButton(inputId = "feature_submit", label="Update")))
                          ),
-        #Error message: displayed if an invalid message is entered
-        div(style="margin-top: 0px;",uiOutput(outputId = "feature_error")),
+        #1.1.1.7. Error message: displayed if an invalid message is entered
+        div(style="margin-top: 0px; margin-bottom: 10px;",uiOutput(outputId = "feature_error")),
         
-        #Feature checkboxes for feature and violin plots (deprecated)
-        checkboxGroupInput(inputId = "features",label = "Choose feature(s) to display (applies to feature and violin plots):",choices = features),
+        #Feature selections for dot plot (will be removed after multi-text entry is implemented)
+        conditionalPanel(condition = "input.make_dot==true",
+                         #Choose features for dot plot
+                         checkboxGroupInput(inputId = "dot_features",label = "Choose feature(s) to display (applies only to dot plot):",choices = features, selected = features, inline = FALSE))
+        
       ),
       
-      ###Main panel for displaying plot output###
+      ###1.1.2. Main panel for displaying plot output###
       mainPanel(
         #Panels for plots: display if checkboxes corresponding to each type are checked
-        #UMAP plot panel
+        #1.1.2.1. UMAP plot panel
         conditionalPanel(condition = "input.make_umap==true",
                          plotOutput(outputId = "umap")),
         
-        #Panel for feature plot
+        #1.1.2.2. Panel for feature plot
         #Will be a message or a plot, depending on whether features have been entered
         conditionalPanel(condition = "input.make_feature==true",
                          uiOutput(outputId = "feature_slot")),
         
-        #TODO: delete old panel once current panel is functional
-        #conditionalPanel(condition = "input.make_feature==true",
-        #                 plotOutput(outputId = "feature")),
+        #1.1.2.3. Panel for violin plot
+        #UI displayed will vary based on the entry into the feature text box
+        conditionalPanel(condition="input.make_vln==true",
+                         uiOutput(outputId = "vln_slot")),
         
-        #Violin plot panel
-        conditionalPanel(condition = "input.make_vln==true",
-                         plotOutput(outputId = "vln")),
-        
-        #Dot plot panel
+        #1.1.2.4. Dot plot panel
         conditionalPanel(condition = "input.make_dot==true",
                          plotOutput(outputId = "dot"))
       )
@@ -139,16 +156,22 @@ tables_tab <- function(){
   fluidPage(
     #As with the plots tab, create a sidebar layout with options to select on the left and the table in the center
     sidebarLayout(
+      
+      ###1.2.1. Options Sidebar
       sidebarPanel(
+        
+        #1.2.1.1. Metadata to group by
         selectInput(inputId = "table_group_by", label = "Select Variable to view gene expression data by", choices = c("Response"="response","Patient ID"= "htb")),
-        #If response is chosen, show selection to display resistant vs. sensitive or sensitive vs. resistant
+        
+        #1.2.1.2. Ident.1 selections: choose which metadata variable to display differential expression for based on metadata selection
+        #1.2.1.2.1. If response is chosen, show selection to display resistant vs. sensitive or sensitive vs. resistant
         conditionalPanel(condition = "input.table_group_by=='response'",
                          selectInput(inputId = "response_ident_1", 
                                      choices = c("Resistant","Sensitive") ,
                                      label="Choose response classification to view differential expression data for:"),
                          "(Differential Expression results will be for the selected response classification relative to the other.)"),
         
-        #If patient id is chosen, show selection input for patient id to compare relative to the others (ident.1 argument in FindMarkers())
+        #1.2.1.2.2. If patient id is chosen, show selection input for patient id to compare relative to the others (ident.1 argument in FindMarkers())
         conditionalPanel(condition = "input.table_group_by=='htb'",
                          selectInput(inputId = "htb_ident_1",
                                      choices = unique(sobj@meta.data[["htb"]]),
@@ -157,17 +180,18 @@ tables_tab <- function(){
                          #Additional text below group by choice panel
                          "(Differential Expression results will be for the selected patient ID relaitve to all other patients)"),
         
-        #If clusters is chosen as the group.by variable, show selection input for cluster id to compare to the others (ident.1 argument in FindMarkers())
+        #1.2.1.2.3. If clusters is chosen as the group.by variable, show selection input for cluster id to compare to the others (ident.1 argument in FindMarkers())
         conditionalPanel(condition="input.table_group_by=='clusters'",
                          selectInput(inputId = "cluster_ident_1",
-                                     choices = levels(unique(sobj@meta.data[["clusters"]])),#calling levels() makes choices show in numerical order
+                                     choices = levels(unique(sobj@meta.data[["clusters"]])),#called levels() to make choices show in numerical order
                                      label="Choose cluster ID to view differential expression data for:"),
                          
                          #Additional text below group by choice panel
                          "(Differential Expression results will be for the selected cluster ID relaitve to all other patients)"),
         
         tags$br(),
-        #Ask user to specify whether gene expression or ADT data is desired
+        
+        #1.2.1.3. Ask user to specify whether gene expression or ADT data is desired
         selectInput(inputId = "table_assay",
                     choices = c("RNA","ADT"),
                     selected = "RNA",
@@ -177,15 +201,15 @@ tables_tab <- function(){
         "(RNA for diffential gene expression or ADT for surface protein expresssion)"
       ),
       
-      #Panel with Table
+      ###1.2.2. Main Panel with Table
       mainPanel(dataTableOutput(outputId = "de_table"))
     )
   )
 }
 
 ### Define user interface: code for navigation panel and references to tabs
-ui <- navbarPage("scRNA-seq Visualization With Shiny",
-                 windowTitle="AML scExplorer",
+ui <- navbarPage("Shiny scExplorer",
+                 windowTitle="Shiny scExplorer",
                  tabPanel("Plots",
                           plots_tab()),
                  tabPanel("DE Tables",
@@ -217,15 +241,14 @@ server <- function(input,output){
   })
   
   #Feature and Violin Plots: choose whether to render a plot or a message based on user inputs
-  #For now, this will be implemented just for the feature plots.
-  #Update the following code when either the feature plot is selected or the 'add_feature' button is clicked.
   
+  #Feature Plot
   #Generate UI each time the feature submit button is clicked, the "make feature plot" check box is checked, or the split.by setting is updated. 
   feature_slot_UI <- eventReactive(c(input$make_feature, input$feature_submit, input$feature_split_by),{
     #Condition 1: no features have been entered yet
     if (input$text_feature==""){
       #If this is the case, generate a message instructing the user to enter features.
-      tags$h4("Please enter a feature to view plot.")
+      tags$h3("Please enter a feature to view plot.", style="margin-bottom: 10em;")
     }
     
     #Condition 2: a feature is entered, but it is invalid
@@ -240,15 +263,16 @@ server <- function(input,output){
   })
   
   #Generate UI for the invalid feature entry error, which will display only in the case of an invalid input.
-  #Since this will go beneath the text entry instead of in the plot window, this must be separate from the UI above.
-  feature_error_UI <- eventReactive(c(input$make_feature, input$feature_submit, input$feature_split_by), {
+  #Since this will go beneath the text entry instead of in the plot window, this must be separate from the UI above. 
+  #This error message will be the same for both the feature and violin plots, since they use the same feature entry. It only needs to be coded once for both.
+  feature_error_UI <- eventReactive(c(input$make_feature, input$feature_submit, input$feature_split_by, input$make_vln, input$vln_split_by), {
     #Condition 1: no features have been entered yet
     #Display nothing in this case
     if (input$text_feature==""){NULL}
     #Condition 2: a feature is entered, but it is invalid
     else if ((!input$text_feature=="") & (!(input$text_feature %in% rownames(sobj)))){
       #Inform the user that the feature entered is not valid.
-      tags$div("Invalid feature entry. Please try again.",style="color: #880000; font-weight: bold; margin-bottom: 20px; margin-top: 0px;")
+      tags$div("Invalid feature entry. Please try again.",style="color: #880000; font-weight: bold; margin-bottom: 10px; margin-top: 0px;")
     }
     #Condition 3: a valid feature is entered
     #Display nothing in this case
@@ -282,24 +306,49 @@ server <- function(input,output){
   #Plot Content
   output$feature_slot_plot <- renderPlot({feature_plot_content()})
   
-  #Create Violin plot
-  output$vln <- renderPlot({
-    if (!is.null(input$features)){
-      #Split plot by variable if it is specified
+  #Violin plot
+  #Code for conditional UI
+  vln_slot_UI <- eventReactive(c(input$make_vln, input$feature_submit, input$vln_split_by, input$vln_group_by),{
+    #Condition 1: no features have been entered yet
+    if (input$text_feature==""){
+      #If this is the case, generate a message instructing the user to enter features.
+      tags$h3("Please enter a feature to view violin plot.")
+    }
+    
+    #Condition 2: a feature is entered, but it is invalid
+    #In this case, display nothing in the plots window. Instead, display an error beneath the text entry (see separate eventReactive() call below)
+    else if ((!input$text_feature=="") & (!(input$text_feature %in% rownames(sobj)))){NULL}    
+    
+    #Condition 3: a valid feature is entered
+    else if (input$text_feature %in% rownames(sobj)){
+      #Generate a plot. Only the UI for the plot is shown here; content is in next eventReactive call.
+      plotOutput(outputId = "vln_slot_plot")
+    }    
+    
+  })
+  
+  #Code for content
+  vln_plot_content <- eventReactive(c(input$make_vln, input$feature_submit, input$vln_split_by, input$vln_group_by), {
+    #Code will only run if a valid feature is entered
+    if (input$text_feature %in% rownames(sobj)){
       if (input$vln_split_by=="none"){
         VlnPlot(sobj, 
-                features = input$features,
+                features = input$text_feature,
                 group.by = input$vln_group_by)
       } else {
         VlnPlot(sobj, 
-                features = input$features,
+                features = input$text_feature,
                 group.by = input$vln_group_by,
                 split.by = input$vln_split_by)
       }
-      
     }
-    
   })
+  
+  #Render conditional UI for violin plot
+  output$vln_slot <- renderUI({vln_slot_UI()})
+  
+  #Render content for violin plot
+  output$vln_slot_plot <- renderPlot({vln_plot_content()})
   
   #Create dot plot
   output$dot <- renderPlot({
@@ -351,7 +400,7 @@ server <- function(input,output){
     }
     
     #Load file and display table
-    read_tsv(filename)
+    read_tsv(filename, show_col_types = FALSE) #show_col_types is set to FALSE to quiet a message printed to the console every time a table is loaded.
     
   }, escape = FALSE)
 
