@@ -65,16 +65,37 @@ plots_tab <- function(){
         #Specify if dot plot is desired
         checkboxInput(inputId = "make_dot",label = "Add dot plot", value=FALSE),
         
+        ### 1.1.1.2. Feature Text Entry. Applies to feature, violin, and dot plots unless the user specifies the use of different features for each plot (currently only possible for dot plots) 
+        conditionalPanel(condition="input.make_feature==true | input.make_vln==true | input.make_dot==true",
+                         #Label
+                         tags$p(tags$strong("Enter features to display on plots:")),
+                         #Inline text entry and update button
+                         div(style="vertical-align: top; margin-bottom: 0px;",
+                             selectizeInput(inputId = "text_features", 
+                                            multiple = TRUE, 
+                                            label=NULL,
+                                            choices = NULL,
+                                            selected = NULL,
+                                            #Add remove button to inputs
+                                            options = list(
+                                              'plugins' = list('remove_button'),
+                                              'create'=FALSE)) #Do not allow user to input features not in the list of options
+                         ),
+                         #Error message: displayed if inalid features are entered (currently unused)
+                         div(style="margin-top: 0px; margin-bottom: 10px;",uiOutput(outputId = "feature_error"))
+        ),#End 1.1.1.2.
+        
         ### Plot Specific Options ###
-        #1.1.1.2. Options specific to UMAP: panel will display if UMAP is checked
+        #1.1.1.3. Options specific to UMAP: panel will display if UMAP is checked
         conditionalPanel(condition = "input.make_umap==true",
                          tags$h4("UMAP Specific Options"),
                          #Choose metadata to group UMAP by
                          selectInput(inputId = "umap_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
                          #Choose metadata to split UMAP by
-                         selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")),
+                         selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")
+                         ),#End 1.1.1.3.
         
-        #1.1.1.3. Options specific to feature plot
+        #1.1.1.4. Options specific to feature plot
         conditionalPanel(condition = "input.make_feature==true",
                          tags$h4("Feature Plot Specific Options"),
                          #Feature plots do not have a group.by argument
@@ -82,9 +103,10 @@ plots_tab <- function(){
                          selectInput(inputId = "feature_split_by", 
                                      label = "Metadata to split by:", 
                                      choices=meta_choices, 
-                                     selected = "none")),
+                                     selected = "none")
+                         ),#End 1.1.1.4
         
-        #1.1.1.4. Options specific to violin plot
+        #1.1.1.5. Options specific to violin plot
         conditionalPanel(condition = "input.make_vln==true",
                          tags$h4("Violin Plot Specific Options"),
                          #Choose metadata to group violin plot by
@@ -97,39 +119,38 @@ plots_tab <- function(){
                          selectInput(inputId = "vln_split_by", 
                                      label = "Metadata to split by:", 
                                      choices=meta_choices, 
-                                     selected = "none")),
+                                     selected = "none")
+                         ), #End 1.1.1.5.
         
-        #1.1.1.5. Options specific to dot plot
+        #1.1.1.6. Options specific to dot plot
         conditionalPanel(condition = "input.make_dot==true",
                          tags$h4("Dot Plot Specific Options"),
+                         
                          #Choose metadata to group dot plot by
                          selectInput(inputId = "dot_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
+                         
                          #Choose metadata to split dot plot by
-                         selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")),
-        
-        #1.1.1.6. Text entry for features: applies to feature and violin plots. Add an action button to the right of the text input to submit input
-        conditionalPanel(condition="input.make_feature==true | input.make_vln==true",
-                         #Display the text entry and button inline, with the label placed above both inputs
-                         #Label
-                         tags$p(tags$strong("Enter features to display on feature and violin plots, and click update to submit:")),
-                         #Inline text entry and update button
-                         div(style="vertical-align: top; margin-bottom: 0px;",
-                             selectizeInput(inputId = "text_features", 
-                                            multiple = TRUE, 
-                                            label=NULL,
-                                            choices = NULL,
-                                            selected = NULL)
-                             )
-                         ),
-        #1.1.1.7. Error message: displayed if an invalid message is entered
-        div(style="margin-top: 0px; margin-bottom: 10px;",uiOutput(outputId = "feature_error")),
-        
-        #Feature selections for dot plot (will be removed after multi-text entry is implemented)
-        conditionalPanel(condition = "input.make_dot==true",
-                         #Choose features for dot plot
-                         checkboxGroupInput(inputId = "dot_features",label = "Choose feature(s) to display (applies only to dot plot):",choices = features, selected = features, inline = FALSE))
-        
-      ),
+                         selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
+                         
+                         #Choosing different features
+                         checkboxInput(inputId = "diff_features_dot",label="Use separate features for dot plot", value=FALSE),
+                         
+                         #If the checkbox above is selected, display a selectize input for feature selection
+                         conditionalPanel(condition="input.diff_features_dot==true",
+                                          #Label
+                                          tags$p(tags$strong("Enter features to display on dot plot:")),
+                                          #Selectize entry
+                                          div(style="vertical-align: top; margin-bottom: 0px;",
+                                              selectizeInput(inputId = "dot_features",
+                                                             multiple=TRUE,
+                                                             label=NULL,
+                                                             choices = NULL,
+                                                             selected = NULL,
+                                                             #Add remove button to inputs
+                                                             options = list('plugins' = list('remove_button'),'create'=FALSE)))
+                                          )
+                         ) #End 1.1.1.6 
+      ), #End 1.1.1.
       
       ###1.1.2. Main panel for displaying plot output###
       mainPanel(
@@ -150,11 +171,11 @@ plots_tab <- function(){
         
         #1.1.2.4. Dot plot panel
         conditionalPanel(condition = "input.make_dot==true",
-                         plotOutput(outputId = "dot"))
-      )
-    )
-  )  
-}
+                         uiOutput(outputId = "dot_slot"))
+      ) #End 1.1.2
+    ) #End sidebarLayout() 
+  ) #End fluidPage() 
+}#End 1.1.
 
 ### 1.2 Tables Tab ###
 tables_tab <- function(){
@@ -260,7 +281,6 @@ server <- function(input,output,session){
 
     #Condition B: Features are selected
     else {
-      print("Feature UI Else")
       #Generate a plot. Only the UI for the plot is shown here; content is in next eventReactive call.
       plotOutput(outputId = "feature_slot_plot")
     }
@@ -295,7 +315,7 @@ server <- function(input,output,session){
   vln_slot_UI <- eventReactive(c(input$make_vln, input$vln_split_by, input$vln_group_by, input$text_features),{
     #Condition A: no features have been entered yet
     if (length(input$text_features)==0){
-      #If this is the case, generate a message instructing the user to enter features.
+      #Generate a message instructing the user to enter features.
       tags$h3("Please enter a feature to view violin plot.", style="margin-bottom: 10em;")
     }
     
@@ -332,29 +352,94 @@ server <- function(input,output,session){
   output$vln_slot_plot <- renderPlot({vln_plot_content()})
   
   #2.5. Dot plot
-  #2.5.1. Generate UI for dot plot
+  #2.5.1. Feature choices
+  #First observeEvent() function
+  #The function below responds to each feature entered while the "use separate features for dot plot" checkbox is not checked. It is designed to load the selected options in the background before the user checks the box, making them immediately available when the box is checked 
+  observeEvent(input$text_features,
+               {if (input$diff_features_dot==FALSE){
+                 updateSelectizeInput(session,
+                                      inputId = "dot_features",
+                                      choices = valid_features,
+                                      selected = input$text_features,
+                                      server = TRUE)
+               }
+               })
   
-  #2.5.2. Generate dot plot content
+  #Second observeEvent() function
+  #When the user checks the box to specify different features, sync the selected options for the dot plot with the generic text entry.
+  #Prevents an error that arises when the user enters features in the generic entry while the box is checked, unchecks the box, then checks it again (in this case, features do not reset to be equal to the ones the user entered in the generic entry)
+  observeEvent(input$diff_features_dot,
+                {if (!setequal(input$text_features, input$dot_features)){
+                    updateSelectizeInput(session,
+                                         inputId = "dot_features",
+                                         choices = valid_features,
+                                         selected = input$text_features,
+                                         server=TRUE)}
+                  })
   
-  #2.5.3. Render dot plot UI and content
-  #UI
-  #Content
-  output$dot <- renderPlot({
-    if (!is.null(input$dot_features)){
-      #Split plot by variable if it is specified
-      if (input$dot_split_by=="none"){
-        DotPlot(sobj, 
-                features = input$dot_features,
-                group.by = input$dot_group_by) + RotatedAxis()
-      } else {
-        DotPlot(sobj, 
-                features = input$dot_features,
-                group.by = input$dot_group_by,
-                split.by = input$dot_split_by) + RotatedAxis()
+  #2.5.2. Generate UI for dot plot
+  #Use reactive instead of eventReactive since the update button is no longer in use
+  dot_slot_UI <- reactive({
+    #Condition A: no features are entered, and use of generic features is selected
+    if ((input$diff_features_dot==FALSE)&(length(input$text_features)==0)){
+      #If this is the case, generate a message instructing the user to enter features.
+      tags$h3("Please enter a feature to view dot plot.", style="margin-bottom: 10em;")
+    }
+    
+    #Condition B: Use of dot-specific features is selected, but no features have been entered into the corresponding text box
+    else if ((input$diff_features_dot==TRUE)&(length(input$dot_features)==0)){
+      tags$h3('Please specify dot-plot specific features to view plot. To use the same features as for other plots, please uncheck "use separate features for dot plot".', style="margin-bottom: 10em;")
+    }
+    
+    #Condition C: One or more generic features entered if separate features checkbox is unchecked, 
+    #Or one or more dot-plot specific features entered if separate features checkbox is checked
+    else if (((input$diff_features_dot==FALSE)&(length(input$text_features)>=1))|((input$diff_features_dot==TRUE)&(length(input$dot_features)>=1))){
+      plotOutput(outputId = "dot_slot_plot")
+    }
+    })
+  
+  #2.5.3. Generate dot plot content
+  dot_plot_content <- reactive({
+    #Only renders if condition C in 2.5.2 is met
+    if (((input$diff_features_dot==FALSE)&(length(input$text_features)>=1))|((input$diff_features_dot==TRUE)&(length(input$dot_features)>=1))){
+      #If user specifies the use of different features, use the dot plot-specific features instead of the generic text entry features
+      if (input$diff_features_dot==TRUE){
+        #Check if split.by is specified
+        if (input$dot_split_by=="none"){
+          DotPlot(sobj, 
+                  features = input$dot_features,
+                  group.by = input$dot_group_by) + RotatedAxis()
+        }
+        else {
+          DotPlot(sobj, 
+                  features = input$dot_features,
+                  group.by = input$dot_group_by,
+                  split.by = input$dot_split_by) + RotatedAxis()
+        }
       }
-      
+      else {
+        #Check if split.by is specified
+        if (input$dot_split_by=="none"){
+          DotPlot(sobj, 
+                  features = input$text_features,
+                  group.by = input$dot_group_by) + RotatedAxis()
+        }
+        else{
+          DotPlot(sobj, 
+                  features = input$text_features,
+                  group.by = input$dot_group_by,
+                  split.by = input$dot_split_by) + RotatedAxis()
+        }
+      }
     }
   })
+  
+  #2.5.4. Render dot plot UI and content
+  #UI
+  output$dot_slot <- renderUI({dot_slot_UI()})
+  
+  #Content
+  output$dot_slot_plot <- renderPlot({dot_plot_content()})
   
   #2.6. Create table with differential expression data
   output$de_table <- renderDataTable({
