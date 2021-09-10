@@ -5,14 +5,12 @@ library(Seurat)
 library(ggplot2)
 library(tidyverse)
 library(dplyr)
+library(shinyWidgets)
 
 #Load Seurat object 
 #Currently using the sample AML dataset
 #https://drive.google.com/file/d/1S7iGNzfmLX5g00zEgVX_Z98c6Xm0Bifb/view
 sobj <- readRDS("./Seurat_Objects/uhg_seurat_intro.Rds")
-
-#Features for dot plot checkboxes: for now I will include the top 15 genes differentially expressed in resistant patients vs. controls. 
-features <- c("RPS26","RNASE1","PRSS21","CES1","PPP1R27","RND3","LAMP5","SAMHD1","ADGRG6","XIST","KCNE5","LY86","FCER2","BANK1")
 
 #Define searchable features (for now this will be the row names in the Seurat object) 
 valid_features <- rownames(sobj)
@@ -20,6 +18,49 @@ valid_features <- rownames(sobj)
 #Specify metadata variables to group and split by in drop down menus
 meta_choices <- c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Run"="run")
 
+### Functions Used 
+
+##Custom inputs
+#Plot_dimension_input: creates a slider and text box intended to input either the width or height of a plot when manual dimensions are desired
+plot_dimension_input <-function(slider_input_id,
+                                box_input_id,
+                                label=NULL,
+                                slider_min=100,
+                                slider_max=1500,
+                                initial_value=350,
+                                style=NULL){
+  div(style=style,
+      #Label (if indicated)
+      #Additional instructions are printed with label
+      if (!is.null(label)){
+        tags$p(tags$strong(label),
+               tags$br(),
+               "(Press enter to update text box value)")
+      },
+      
+      
+      #Slider (takes up 60% of element width)
+      span(style="display: inline-block; vertical-align:top; width: 60%",
+           sliderInput(inputId=slider_input_id,
+                       label=NULL,
+                       min = slider_min,
+                       value= initial_value,
+                       max= slider_max,
+                       ticks=FALSE,
+                       post=" px")
+      ),
+      
+      #Text box
+      span(style="display: inline-block; width: 60px; margin-bottom:0px; margin-left:5px;",
+           searchInput(inputId=box_input_id,
+                     value = initial_value,
+                     label=NULL)),
+      #px suffix after text box
+      span(style="display: inline-block;",
+           "px"))
+}
+
+  
 ### Table of Contents
 # 1. User Interface Functions
 #   1.1. Plots
@@ -92,7 +133,31 @@ plots_tab <- function(){
                          #Choose metadata to group UMAP by
                          selectInput(inputId = "umap_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
                          #Choose metadata to split UMAP by
-                         selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none")
+                         selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
+                         #Allow user to change plot dimensions by checking box
+                         checkboxInput(inputId = "umap_manual_dim",
+                                       label="Manually adjust plot dimensions",
+                                       value=FALSE),
+                         #Panel containing sliders is hidden until the box above is checked
+                         conditionalPanel(condition = "input.umap_manual_dim==true",
+                                          
+                                          #Slider/text box for specifying width
+                                          plot_dimension_input(slider_input_id = "umap_width",
+                                                               box_input_id = "umap_width_text",
+                                                               label = "Use slider or text box to adjust UMAP width", 
+                                                               initial_value = 650, 
+                                                               slider_min = 200,
+                                                               slider_max=1000),
+                                          
+                                          #Slider/text box for height
+                                          plot_dimension_input(slider_input_id = "umap_height",
+                                                               box_input_id = "umap_height_text",
+                                                               label = "Use slider or text box to adjust UMAP height", 
+                                                               initial_value = 400, 
+                                                               slider_min = 200, 
+                                                               slider_max = 1600),
+
+                                          )#End conditional panel
                          ),#End 1.1.1.3.
         
         #1.1.1.4. Options specific to feature plot
@@ -157,7 +222,10 @@ plots_tab <- function(){
         #Panels for plots: display if checkboxes corresponding to each type are checked
         #1.1.2.1. UMAP plot panel
         conditionalPanel(condition = "input.make_umap==true",
-                         plotOutput(outputId = "umap")),
+                         uiOutput(outputId = "umap_slot")),
+        #Debugging: verbatim text output
+        verbatimTextOutput(outputId = "debug_w"),
+        verbatimTextOutput(outputId = "debug_h"),
         
         #1.1.2.2. Panel for feature plot
         #Will be a message or a plot, depending on whether features have been entered
@@ -231,7 +299,7 @@ tables_tab <- function(){
       mainPanel(dataTableOutput(outputId = "de_table"))
     )
   )
-}
+}#End 1.2.
 
 ### Define user interface: code for navigation panel and references to tabs
 ui <- navbarPage("Shiny scExplorer",
@@ -246,8 +314,53 @@ server <- function(input,output,session){
   #2.1. Render feature choices for text feature selection
   updateSelectizeInput(session,inputId = "text_features", choices = valid_features, server = TRUE)
   
-  #2.2. Create UMAP plot
-  output$umap <- renderPlot({
+  #2.2. UMAP plot
+  #2.2.1. Reactive UMAP plot dimensions
+  #Width
+  #Update text box to match slider when the slider is changed
+  observeEvent(input$umap_width,{
+    updateSearchInput(session, inputId = "umap_width_text", value=input$umap_width, trigger=TRUE)
+  })
+  #Update slider based on text entry (search input waits until user presses enter to update)
+  observeEvent(input$umap_width_text,{
+    updateSliderInput(session, inputId = "umap_width", value=input$umap_width_text)
+  })
+  #Store plot width from text input if it is changed by user
+  umap_width <- eventReactive(c(input$umap_width, input$umap_width_text),{
+    input$umap_width
+  })
+  output$debug_w <- renderText({paste0("Width: ", umap_width())}) 
+  
+  #Height
+  #Update text box to match slider when the slider is changed
+  observeEvent(input$umap_height,{
+    updateSearchInput(session, inputId = "umap_height_text", value=input$umap_height, trigger=TRUE)
+  })
+  #Update slider based on text entry (search input waits until user presses enter to update)
+  observeEvent(input$umap_height_text,{
+    updateSliderInput(session, inputId = "umap_height", value=input$umap_height_text)
+  })
+  #Store plot height from text input if it is changed by user
+  umap_height <- eventReactive(c(input$umap_height, input$umap_height_text),{
+    input$umap_height
+  })
+  
+  output$debug_h <- renderText({paste0("Height: ",umap_height())})
+  
+  #2.2.2. Generate UI for UMAP plot: renders a plotOutput() with either automatic or manually specified dimensions based on user specifications
+  umap_UI <- reactive({
+    if (input$umap_manual_dim==FALSE){
+      plotOutput(outputId = "umap_slot_plot")
+    } else {
+      plotOutput(outputId = "umap_slot_plot",
+                 width = umap_width(),
+                 height = umap_height())
+    }
+  })
+  
+  #2.2.3. Define UMAP Plot Content
+  #Plot content is defined separately in a reactive context, to be rendered later with the UI.
+  umap_plot_content <- reactive({
     #Produce a single UMAP plot if no features to split by are specified
     if (input$umap_split_by=="none"){
       DimPlot(sobj, 
@@ -263,9 +376,21 @@ server <- function(input,output,session){
               label = TRUE, 
               reduction = "umap_harmony")
     }
-    
-    
-    
+  })
+  
+  #2.2.4. Render UI
+  output$umap_slot <- renderUI({umap_UI()})
+  
+  #2.2.5. Render UMAP plot, with manual or automatic dimensions as specified
+  #ObserveEvent will respond to the check box and the slider/text box pairs (other variables involved in plot construction are updated separately in the reactive function above)
+  observeEvent(c(input$umap_manual_dim, input$umap_width, input$umap_width_text, input$umap_height,input$umap_height_text),{
+    if (input$umap_manual_dim==FALSE){
+      output$umap_slot_plot <- renderPlot(umap_plot_content())
+    } else {
+      output$umap_slot_plot <- renderPlot(umap_plot_content(), 
+                                width = umap_width(), 
+                                height = umap_height())
+    }
   })
   
   #Feature and Violin Plots: choose whether to render a plot or a message based on user inputs
@@ -304,10 +429,10 @@ server <- function(input,output,session){
   })
   
   #2.3.3. Render the UI and plot objects created above
-  #Plot UI
+  #Render UI
   output$feature_slot <- renderUI({feature_slot_UI()})
   
-  #Plot Content
+  #Render Content
   output$feature_slot_plot <- renderPlot({feature_plot_content()})
   
   #2.4. Violin plot
@@ -356,7 +481,8 @@ server <- function(input,output,session){
   #First observeEvent() function
   #The function below responds to each feature entered while the "use separate features for dot plot" checkbox is not checked. It is designed to load the selected options in the background before the user checks the box, making them immediately available when the box is checked 
   observeEvent(input$text_features,
-               {if (input$diff_features_dot==FALSE){
+               {req(input$text_features) #prevents code from running at startup (waits until something is entered in text_features)
+                 if (input$diff_features_dot==FALSE){
                  updateSelectizeInput(session,
                                       inputId = "dot_features",
                                       choices = valid_features,
