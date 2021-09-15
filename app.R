@@ -12,8 +12,38 @@ library(shinyWidgets)
 #https://drive.google.com/file/d/1S7iGNzfmLX5g00zEgVX_Z98c6Xm0Bifb/view
 sobj <- readRDS("./Seurat_Objects/uhg_seurat_intro.Rds")
 
-#Define searchable features (for now this will be the row names in the Seurat object) 
-valid_features <- rownames(sobj)
+#Define searchable features
+#Gene_expression features
+genes <- rownames(sobj)
+
+###ADT features
+#Fetch ADTs in Seurat object
+adts <- rownames(sobj[["ADT"]])
+#Human-readable ADT values
+adt_human_readable <- paste0(adts," (Surface Protein)") 
+
+#Machine-readable ADT value (format "ADT_<gene_name>")
+adt_machine_readable <-paste0("ADT_",adts) #Capital letters are used for this object
+print(Key(sobj[["ADT"]]))
+print(adt_machine_readable)
+
+#Zip above into a list of key-value pairs (human-readable features as keys, machine-readable features as values)
+adt_list <- split(adt_machine_readable, adt_human_readable)
+print(adt_list)
+###
+
+#Metadata columns (only numeric columns can be plotted)
+meta_cols <- names(sobj@meta.data)
+
+#Select columns that have numeric or integer values
+numeric_cols <- meta_cols[sapply(meta_cols, FUN=function(x){
+  (class(sobj@meta.data[[x]])=="numeric") || (class(sobj@meta.data[[x]])=="integer")
+  })]
+
+#Combine into list
+valid_features <- list(`Genes`=as.list(genes),
+                       `Surface Protein Markers`=adt_list,
+                       `Metadata Features`=as.list(numeric_cols))
 
 #Specify metadata variables to group and split by in drop down menus
 meta_choices <- c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Run"="run")
@@ -101,71 +131,6 @@ manual_dim_UI <- function(plot_type,
     )#End conditional panel
     )#End div
 }
-
-
-
-#Sync dimensions: a server function designed to sync the inputs created in the manual_dim_UI function and return the width and height inputs as reactive values.
-#Inputs should be the reactive input variables for the slider and text box values(ex. input$umap_height_text).
-#(Unused, does not work with server)
-sync_dimensions <- function(width_slider,
-                            width_box,
-                            height_slider,
-                            height_box){
-  #input_id_reactive: given the name of a reactive variable, return the input ID as a string
-  #Used to enter the inputId argument for a reactive input ID
-  input_id_reactive <- function(ID){reactive({
-    #Convert variable name to character
-    input_id<- deparse(substitute(ID))
-    #Remove "input$" from variable name
-    input_id <- sub(pattern="input$",replacement = "", x=input_id, fixed=TRUE)
-    return(input_id)
-  })
-  }
-
-  #Form inputId strings for slider and box
-  #Convert variable name to character
-  width_slider_id <- input_id_reactive(width_slider)
-  width_box_id <- input_id_reactive(width_box)
-  height_slider_id <- input_id_reactive(height_slider)
-  height_box_id <- input_id_reactive(height_box)
-  
-  ##Sync width inputs
-  #Update text box to match slider value when slider is changed
-  observeEvent(width_slider,{
-    updateSearchInput(session, inputId = input$feature_width_text, value=width_slider, trigger=TRUE)
-  })
-  
-  #Update slider when text box value is changed (search input waits until user presses enter to update)
-  observeEvent(width_box,{
-    updateSliderInput(session, inputId = feature_width, value=width_box)
-  })
-  
-  #Store the plot width value specified by the user 
-  plot_width <- eventReactive(c(width_slider, width_box),{
-    #Store the value from the slider (will be the same as the text box value since the syncing operations above run first)
-    width_slider
-  })
-  
-  ##Sync height inputs
-  #Update text box to match slider value when slider is changed
-  observeEvent(height_slider,{
-    updateSearchInput(session, inputId = height_box_id, value=height_slider, trigger=TRUE)
-  })
-  
-  #Update slider when text box value is changed (search input waits until user presses enter to update)
-  observeEvent(height_box,{
-    updateSliderInput(session, inputId = feature_height, value=height_box)
-  })
-  
-  #Store the plot height value specified by the user 
-  plot_height <- eventReactive(c(height_slider, height_box),{
-    height_slider
-  })
-  
-  #Return width and height values
-  return(list(`width`=plot_width(), 
-              `height`=plot_height()))
-}
   
 ### Table of Contents
 # 1. User Interface Functions
@@ -201,7 +166,7 @@ plots_tab <- function(){
     sidebarLayout(
       
       ### 1.1.1. Sidebar panel for user input ###
-      sidebarPanel(style="overflow-y: scroll; max-height: 80vh; position: fixed; ",
+      sidebarPanel(fluid=FALSE,
         ### 1.1.1.1 Checkboxes for choosing desired plot
         #Specify is UMAP Plot is desired
         checkboxInput(inputId = "make_umap",label = "Add UMAP plot", value = TRUE),
@@ -241,7 +206,9 @@ plots_tab <- function(){
                          #Choose metadata to split UMAP by
                          selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
                          #UI for user control of plot dimensions, if desired
-                         manual_dim_UI(plot_type = "umap")
+                         manual_dim_UI(plot_type = "umap"),
+                         #Download button (plot specific)
+                         downloadButton(outputId = "umap_download",label="Download UMAP")
                          ),#End 1.1.1.3.
         
         #1.1.1.4. Options specific to feature plot
@@ -254,7 +221,9 @@ plots_tab <- function(){
                                      choices=meta_choices, 
                                      selected = "none"),
                          #UI for user control of plot dimensions, if desired
-                         manual_dim_UI(plot_type = "feature")
+                         manual_dim_UI(plot_type = "feature"),
+                         #Download button (plot specific)
+                         downloadButton(outputId = "feature_download",label="Download Feature Plot")
                          ),#End 1.1.1.4
         
         #1.1.1.5. Options specific to violin plot
@@ -273,7 +242,9 @@ plots_tab <- function(){
                                      selected = "none"),
                          
                          #UI for user control of plot dimensions, if desired
-                         manual_dim_UI(plot_type = "vln")
+                         manual_dim_UI(plot_type = "vln"),
+                         #Download button (plot specific)
+                         downloadButton(outputId = "vln_download",label="Download Violin Plot")
                          
                          ), #End 1.1.1.5.
         
@@ -305,7 +276,9 @@ plots_tab <- function(){
                                                              options = list('plugins' = list('remove_button'),'create'=FALSE)))
                                           ),
                          #UI for user control of plot dimensions, if desired
-                         manual_dim_UI(plot_type = "dot")
+                         manual_dim_UI(plot_type = "dot"),
+                         #Download button (plot specific)
+                         downloadButton(outputId = "dot_download",label="Download Dot Plot")
                          ) #End 1.1.1.6 
       ), #End 1.1.1.
       
@@ -392,8 +365,67 @@ tables_tab <- function(){
 
 ### Define user interface: code for navigation panel and references to tabs
 ui <- tagList(tags$head(tags$style(HTML("body{
-                                        padding-top: 70px;
-                                        }"))),
+                                        padding-top: 60px;
+                                        } 
+                                        
+                                        div.col-sm-4{
+                                        overflow-y: auto; 
+                                        max-height: 85vh;
+                                        }
+                                        
+                                        /* Stack Overflow Style Scrollbar */ 
+                                        /* (for side panel) */
+                                        div.col-sm-4::-webkit-scrollbar{
+                                        width: 10px;
+                                        height: 10px;
+                                        /* Sets color of scrollbar background and rounds edges */
+                                        background-color: #AAAAAA44;
+                                        border-radius: 5px;
+                                        }
+                                        div.col-sm-4::-webkit-scrollbar-corner{
+                                        background-color: transparent;
+                                        border-color: transparent;
+                                        }
+                                        /* Scrollbar thumb properties (shows current position) */
+                                        div.col-sm-4::-webkit-scrollbar-thumb{
+                                        border-radius: 10px;
+                                        background-color: #888888;
+                                        }
+                                        div.col-sm-4::-webkit-scrollbar-track{
+                                        border-radius: 10px;
+                                        background-color: transparent;
+                                        }
+                                        
+                                        /* Main Window */
+                                        .col-sm-8{
+                                        overflow-y: auto;
+                                        overflow-x: auto;
+                                        max-height: 85vh;
+                                        }
+                                        
+                                        /* Stack Overflow Style Scrollbar for Main Window */
+                                        div.col-sm-8::-webkit-scrollbar{
+                                        width: 10px; 
+                                        height: 10px;
+                                        /* Sets color of scrollbar background and rounds edges */
+                                        background-color: #AAAAAA44;
+                                        border-radius: 5px;
+                                        }
+                                        div.col-sm-8::-webkit-scrollbar-corner{
+                                        background-color: transparent;
+                                        border-color: transparent;
+                                        }
+                                        /* Scrollbar thumb properties (shows current position) */
+                                        div.col-sm-8::-webkit-scrollbar-thumb{
+                                        border-radius: 10px;
+                                        background-color: #888888;
+                                        }
+                                        div.col-sm-8::-webkit-scrollbar-track{
+                                        border-radius: 10px;
+                                        background-color: transparent;
+                                        }
+                                        
+                                        "))),
               navbarPage("Shiny scExplorer",
                          windowTitle="Shiny scExplorer",
                          position="fixed-top",
@@ -482,6 +514,27 @@ server <- function(input,output,session){
                                 height = umap_height())
     }
   })
+  
+  #2.2.6. Download UMAP Plot
+  output$umap_download <- downloadHandler(
+    filename = "UMAP_plot.png",
+    content = function(file){
+      if (input$umap_manual_dim==TRUE){
+        ggsave(file, 
+               plot=umap_plot_content(), 
+               device="png",
+               width=umap_width()*2,
+               height=umap_height()*2,
+               units="px")
+      } else {
+        ggsave(file, 
+               plot=umap_plot_content(), 
+               device="png")
+      }
+    },#End content function
+    contentType = "image/png"
+  ) #End downloadHandler function
+  
   
   #Feature and Violin Plots: choose whether to render a plot or a message based on user inputs
   
@@ -577,6 +630,26 @@ server <- function(input,output,session){
     }
   })
   
+  #2.3.5. Feature Plot Download
+  output$feature_download <- downloadHandler(
+    filename = "Feature_plot.png",
+    content = function(file){
+      if (input$feature_manual_dim==TRUE){
+        ggsave(file, 
+               plot=feature_plot_content(), 
+               device="png",
+               width=feature_width()*2,
+               height=feature_height()*2,
+               units="px")
+      } else {
+        ggsave(file, 
+               plot=feature_plot_content(), 
+               device="png")
+      }
+    },#End content function
+    contentType = "image/png"
+  ) #End downloadHandler function
+  
   #2.4. Violin plot
   #2.4.1 Reactive plot dimensions
   ##Sync width inputs
@@ -665,6 +738,26 @@ server <- function(input,output,session){
       output$vln_slot_plot <- renderPlot({vln_plot_content()})
     }
   })
+  
+  #2.4.5. Violin Plot Download
+  output$vln_download <- downloadHandler(
+    filename = "Violin_plot.png",
+    content = function(file){
+      if (input$vln_manual_dim==TRUE){
+        ggsave(file, 
+               plot=vln_plot_content(), 
+               device="png",
+               width=vln_width()*2,
+               height=vln_height()*2,
+               units="px")
+      } else {
+        ggsave(file, 
+               plot=vln_plot_content(), 
+               device="png")
+      }
+    },#End content function
+    contentType = "image/png"
+  ) #End downloadHandler function
   
   #2.5. Dot plot
   #2.5.1. Reactive plot dimensions
@@ -806,6 +899,26 @@ server <- function(input,output,session){
       output$dot_slot_plot <- renderPlot({dot_plot_content()})
     }
   })
+  
+  #2.5.6. Dot Plot Download
+  output$dot_download <- downloadHandler(
+    filename = "Dot_plot.png",
+    content = function(file){
+      if (input$dot_manual_dim==TRUE){
+        ggsave(file, 
+               plot=dot_plot_content(), 
+               device="png",
+               width=dot_width()*2,
+               height=dot_height()*2,
+               units="px")
+      } else {
+        ggsave(file, 
+               plot=dot_plot_content(), 
+               device="png")
+      }
+    },#End content function
+    contentType = "image/png"
+  ) #End downloadHandler function
   
   #2.6. Create table with differential expression data
   output$de_table <- renderDataTable({
