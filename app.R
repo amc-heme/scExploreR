@@ -1,4 +1,4 @@
-### Load Libraries and Data; Define Variables###
+### Load Libraries and Data; Define Variables ###
 #Initialize libraries
 library(shiny)
 library(Seurat)
@@ -16,7 +16,7 @@ sobj <- readRDS("./Seurat_Objects/uhg_seurat_intro.Rds")
 #Gene_expression features
 genes <- rownames(sobj)
 
-###ADT features
+### ADT features
 #Fetch ADTs in Seurat object
 adts <- rownames(sobj[["ADT"]])
 #Human-readable ADT values
@@ -49,7 +49,8 @@ valid_features <- list(`Genes`=as.list(genes),
 meta_choices <- c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Run"="run")
 
 ### Functions Used 
-#Manual_dim_UI: creates two slider-text box pairs for manual control of theheight and width of a plot.
+### Manual_dim_UI ###
+#Creates two slider-text box pairs for manual control of theheight and width of a plot.
 manual_dim_UI <- function(plot_type,
                                initial_width=650,
                                max_width=1000,
@@ -131,6 +132,29 @@ manual_dim_UI <- function(plot_type,
     )#End conditional panel
     )#End div
 }
+
+### Collapsible panel UI function ###
+#Will create a panel with a header that will toggle between hiding and showing its contents when the user clicks the header. 
+#Must include the files "collapsible_panel.css" and "collapsible_panel.js" in the UI function for this to work properly.
+collapsible_panel <- function(...,label=NULL,active=FALSE){
+  #Use taglist to return button tag for header and div tag for content
+  tagList( 
+    #Header of panel: built with button tag. The label the user enters will be header text 
+    button_html <- tags$button(type="button",
+                               class=if (active==FALSE) "collapsible" else "collapsible active", #collapsible: starts closed; collapsible active: starts open
+                               #Pass the user-provided label to the button text
+                               if (!is.null(label)) as.character(label)),
+    
+    #Pass all content to div tag
+    #If active==TRUE, the style attribute display will be set to "block" to display the content upon loading
+    if (active==TRUE){
+      content_html <- div(...,class="content",style="display:block;")
+    } else {
+      #Otherwise, the default value of none will be used to hide content initially
+      content_html <- div(...,class="content")
+    }
+  )#End taglist
+}
   
 ### Table of Contents
 # 1. User Interface Functions
@@ -200,85 +224,91 @@ plots_tab <- function(){
         ### Plot Specific Options ###
         #1.1.1.3. Options specific to UMAP: panel will display if UMAP is checked
         conditionalPanel(condition = "input.make_umap==true",
-                         tags$h4("UMAP Specific Options"),
-                         #Choose metadata to group UMAP by
-                         selectInput(inputId = "umap_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
-                         #Choose metadata to split UMAP by
-                         selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
-                         #UI for user control of plot dimensions, if desired
-                         manual_dim_UI(plot_type = "umap"),
-                         #Download button (plot specific)
-                         downloadButton(outputId = "umap_download",label="Download UMAP")
+                         collapsible_panel(label="UMAP Specific Options",
+                                           active=TRUE,
+                                           #Choose metadata to group UMAP by
+                                           selectInput(inputId = "umap_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
+                                           #Choose metadata to split UMAP by
+                                           selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
+                                           #UI for user control of plot dimensions, if desired
+                                           manual_dim_UI(plot_type = "umap"),
+                                           #Download button (plot specific)
+                                           downloadButton(outputId = "umap_download",label="Download UMAP")
+                                           )#End collapsible panel
                          ),#End 1.1.1.3.
         
         #1.1.1.4. Options specific to feature plot
         conditionalPanel(condition = "input.make_feature==true",
-                         tags$h4("Feature Plot Specific Options"),
-                         #Feature plots do not have a group.by argument
-                         #Choose metadata to split feature plot by
-                         selectInput(inputId = "feature_split_by", 
-                                     label = "Metadata to split by:", 
-                                     choices=meta_choices, 
-                                     selected = "none"),
-                         #UI for user control of plot dimensions, if desired
-                         manual_dim_UI(plot_type = "feature"),
-                         #Download button (plot specific)
-                         downloadButton(outputId = "feature_download",label="Download Feature Plot")
+                         collapsible_panel(label = "Feature Plot Specific Options",
+                                           active = FALSE,
+                                           #Feature plots do not have a group.by argument
+                                           #Choose metadata to split feature plot by
+                                           selectInput(inputId = "feature_split_by", 
+                                                       label = "Metadata to split by:", 
+                                                       choices=meta_choices, 
+                                                       selected = "none"),
+                                           #UI for user control of plot dimensions, if desired
+                                           manual_dim_UI(plot_type = "feature"),
+                                           #Download button (plot specific)
+                                           downloadButton(outputId = "feature_download",label="Download Feature Plot")
+                                           )#End collapsible_panel
                          ),#End 1.1.1.4
         
         #1.1.1.5. Options specific to violin plot
         conditionalPanel(condition = "input.make_vln==true",
-                         tags$h4("Violin Plot Specific Options"),
-                         #Choose metadata to group violin plot by
-                         selectInput(inputId = "vln_group_by", 
-                                     label = "Metadata to group by:", 
-                                     choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group.by 
-                                     selected = "clusters"),
-                         
-                         #Choose metadata to split violin plot by
-                         selectInput(inputId = "vln_split_by", 
-                                     label = "Metadata to split by:", 
-                                     choices=meta_choices, 
-                                     selected = "none"),
-                         
-                         #UI for user control of plot dimensions, if desired
-                         manual_dim_UI(plot_type = "vln"),
-                         #Download button (plot specific)
-                         downloadButton(outputId = "vln_download",label="Download Violin Plot")
-                         
+                         collapsible_panel(label = "Violin Plot Specific Options",
+                                           active=FALSE,
+                                           #Choose metadata to group violin plot by
+                                           selectInput(inputId = "vln_group_by", 
+                                                       label = "Metadata to group by:", 
+                                                       choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group.by 
+                                                       selected = "clusters"),
+                                           
+                                           #Choose metadata to split violin plot by
+                                           selectInput(inputId = "vln_split_by", 
+                                                       label = "Metadata to split by:", 
+                                                       choices=meta_choices, 
+                                                       selected = "none"),
+                                           
+                                           #UI for user control of plot dimensions, if desired
+                                           manual_dim_UI(plot_type = "vln"),
+                                           #Download button (plot specific)
+                                           downloadButton(outputId = "vln_download",label="Download Violin Plot")
+                                           )#End collapsible panel
                          ), #End 1.1.1.5.
         
         #1.1.1.6. Options specific to dot plot
         conditionalPanel(condition = "input.make_dot==true",
-                         tags$h4("Dot Plot Specific Options"),
-                         
-                         #Choose metadata to group dot plot by
-                         selectInput(inputId = "dot_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
-                         
-                         #Choose metadata to split dot plot by
-                         selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
-                         
-                         #Choosing different features
-                         checkboxInput(inputId = "diff_features_dot",label="Use separate features for dot plot", value=FALSE),
-                         
-                         #If the checkbox above is selected, display a selectize input for feature selection
-                         conditionalPanel(condition="input.diff_features_dot==true",
-                                          #Label
-                                          tags$p(tags$strong("Enter features to display on dot plot:")),
-                                          #Selectize entry
-                                          div(style="vertical-align: top; margin-bottom: 0px;",
-                                              selectizeInput(inputId = "dot_features",
-                                                             multiple=TRUE,
-                                                             label=NULL,
-                                                             choices = NULL,
-                                                             selected = NULL,
-                                                             #Add remove button to inputs
-                                                             options = list('plugins' = list('remove_button'),'create'=FALSE)))
-                                          ),
-                         #UI for user control of plot dimensions, if desired
-                         manual_dim_UI(plot_type = "dot"),
-                         #Download button (plot specific)
-                         downloadButton(outputId = "dot_download",label="Download Dot Plot")
+                         collapsible_panel(label="Dot Plot Specific Options",
+                                           active=FALSE,
+                                           #Choose metadata to group dot plot by
+                                           selectInput(inputId = "dot_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
+                                           
+                                           #Choose metadata to split dot plot by
+                                           selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
+                                           
+                                           #Choosing different features
+                                           checkboxInput(inputId = "diff_features_dot",label="Use separate features for dot plot", value=FALSE),
+                                           
+                                           #If the checkbox above is selected, display a selectize input for feature selection
+                                           conditionalPanel(condition="input.diff_features_dot==true",
+                                                            #Label
+                                                            tags$p(tags$strong("Enter features to display on dot plot:")),
+                                                            #Selectize entry
+                                                            div(style="vertical-align: top; margin-bottom: 0px;",
+                                                                selectizeInput(inputId = "dot_features",
+                                                                               multiple=TRUE,
+                                                                               label=NULL,
+                                                                               choices = NULL,
+                                                                               selected = NULL,
+                                                                               #Add remove button to inputs
+                                                                               options = list('plugins' = list('remove_button'),'create'=FALSE)))
+                                           ),
+                                           #UI for user control of plot dimensions, if desired
+                                           manual_dim_UI(plot_type = "dot"),
+                                           #Download button (plot specific)
+                                           downloadButton(outputId = "dot_download",label="Download Dot Plot")
+                                           ) #End collapsible panel
                          ) #End 1.1.1.6 
       ), #End 1.1.1.
       
@@ -364,7 +394,8 @@ tables_tab <- function(){
 }#End 1.2.
 
 ### Define user interface: code for navigation panel and references to tabs
-ui <- tagList(tags$head(tags$style(HTML("body{
+ui <- tagList(includeCSS("www/collapsible_panel.css"),
+              tags$head(tags$style(HTML("body{
                                         padding-top: 60px;
                                         } 
                                         
@@ -426,13 +457,16 @@ ui <- tagList(tags$head(tags$style(HTML("body{
                                         }
                                         
                                         "))),
+              #CSS and JS for collapsible panel
               navbarPage("Shiny scExplorer",
                          windowTitle="Shiny scExplorer",
                          position="fixed-top",
                          tabPanel("Plots",
                                   plots_tab()),
                          tabPanel("DE Tables",
-                                  tables_tab())))
+                                  tables_tab())),
+              includeScript("www/collapsible_panel.js"),
+)
 
 ### 2. Server function (builds interactive plot to display in UI) ###
 server <- function(input,output,session){

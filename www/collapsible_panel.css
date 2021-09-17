@@ -1,0 +1,78 @@
+:root {
+	--border_rad: 7px;
+	--content_pad: 0.5em;
+	--header_pad: 0.5em;
+	--spacing: 0.5em;
+}
+
+/* Style for header of closed collapsible panel*/
+.collapsible {
+  background-color: #888888;
+  height: 2.8em;
+  color: white; /* Color of text within panel */
+  cursor: pointer;
+  padding: var(--header_pad);
+  width: 100%; /* Potentially problematic, may have to change this */
+  border: none; /* Buttons have a border by default */
+  border-radius: var(--border_rad); /* Round edges of header */
+  text-align: left;
+  outline: none;
+  font-size: 1.17em; /* Uses default size for h3 tag */
+  font-weight: bolder; /* Default font weight for h3 tag*/
+  margin-top: var(--spacing);
+  margin-bottom: var(--spacing);
+  
+}
+
+/* CSS specific to open collapsible panel */
+.active {
+  /* Don't round region of header that contacts the content within*/
+  border-bottom-right-radius: 0px; 
+  border-bottom-left-radius: 0px;
+  /* Remove margin from header when content is shown*/
+  margin-bottom: 0px;
+}
+
+/* Changes color of panel to the specified color when the user opens the tab or places the pointer over it*/
+active:hover,.collapsible:hover {
+  background-color: #555588;
+}
+
+/*.active:hover{
+  background-color: #8888AA;
+}*/ 
+
+/* Symbol which apppears at left hand side of panel header when the tab is closed */
+button.collapsible:before {
+content: '\25B6'; /* Right-pointing arrow*/
+color: white;
+float: left;
+font-weight: bold;
+margin-right: 10px;
+box-sizing: inherit; /*Inherits box sizing from the panel header to ensure symbol is centered within the header and is never larger than the header itself*/
+}
+
+/* Symbol which apppears at left hand side of panel header when the tab is opened */
+button.active:before{
+content: '\25BC'; /* Down arrow*/
+color: white;
+float: left;
+font-weight: bold;
+margin-right: 10px;
+box-sizing: inherit;
+}
+
+.content {
+  padding: 0 18px;
+  display: none;
+  overflow: hidden;
+  padding: var(--content_pad);
+  /* TODO: Change background color to match shiny (may want to do a transparent background or a border instead) */
+  background-color: #e1e1e1;
+  /* */
+  margin-bottom: var(--spacing);
+  /* Round bottom of content for consistency with header */
+  border-bottom-left-radius: var(--border_rad);
+  border-bottom-right-radius: var(--border_rad);
+}
+
