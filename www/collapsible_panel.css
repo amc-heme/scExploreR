@@ -65,14 +65,16 @@ box-sizing: inherit;
 .content {
   padding: 0 18px;
   display: none;
-  overflow: hidden;
+  overflow: visible; /* This keeps dropdown menus from being clipped at the bottom of the content space*/
   padding: var(--content_pad);
   /* TODO: Change background color to match shiny (may want to do a transparent background or a border instead) */
   background-color: #e1e1e1;
-  /* */
   margin-bottom: var(--spacing);
   /* Round bottom of content for consistency with header */
   border-bottom-left-radius: var(--border_rad);
   border-bottom-right-radius: var(--border_rad);
 }
+
+/* New CSS Testing*/
+/* Copy below CSS to separate document when functional */
 

@@ -1,0 +1,26 @@
+/* CSS for styling the help button and its dropdown menu*/
+#help {	
+  z-index: 1100;
+  position: absolute;
+  top: 7px;
+}
+
+#dropdown-menu-help {
+  z-index: 1200;
+  top: 50px;
+  font-size: 1.17em;
+}
+
+/* Fix navbar height at 50 pixels*/
+/* Keeps navbar from expanding over content when help menu is opened*/
+.navbar{
+  /* min-height is set at 50px in Shiny CSS*/
+  max-height: 50px;
+}
+
+/* The class blue_hover was added to the help links to apply the style below upon hovering*/
+/* Alternate selection (convenient way to select child elements of a class): .dropdown-menu>li>a:hover*/
+.dropdown-menu>li>a:hover{
+	background-color: #31B0D5AA;
+	border-radius: 7px;
+}

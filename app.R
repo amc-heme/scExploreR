@@ -6,6 +6,8 @@ library(ggplot2)
 library(tidyverse)
 library(dplyr)
 library(shinyWidgets)
+library(rintrojs)
+library(shinydashboard)
 
 #Load Seurat object 
 #Currently using the sample AML dataset
@@ -24,12 +26,9 @@ adt_human_readable <- paste0(adts," (Surface Protein)")
 
 #Machine-readable ADT value (format "ADT_<gene_name>")
 adt_machine_readable <-paste0("ADT_",adts) #Capital letters are used for this object
-print(Key(sobj[["ADT"]]))
-print(adt_machine_readable)
 
 #Zip above into a list of key-value pairs (human-readable features as keys, machine-readable features as values)
 adt_list <- split(adt_machine_readable, adt_human_readable)
-print(adt_list)
 ###
 
 #Metadata columns (only numeric columns can be plotted)
@@ -46,17 +45,23 @@ valid_features <- list(`Genes`=as.list(genes),
                        `Metadata Features`=as.list(numeric_cols))
 
 #Specify metadata variables to group and split by in drop down menus
-meta_choices <- c("None"="none","Clusters"="clusters","Response"="response","Treatment"="treatment","Patient ID"="htb","Capture Number"="capture_num","Run"="run")
+meta_choices <- c("None"="none",
+                  "Clusters"="clusters",
+                  "Response"="response",
+                  "Treatment"="treatment",
+                  "Patient ID"="htb",
+                  "Capture Number"="capture_num",
+                  "Run"="run")
 
 ### Functions Used 
 ### Manual_dim_UI ###
 #Creates two slider-text box pairs for manual control of theheight and width of a plot.
 manual_dim_UI <- function(plot_type,
-                               initial_width=650,
-                               max_width=1000,
+                               initial_width=700,
+                               max_width=2000,
                                min_width=200,
                                initial_height=400,
-                               max_height=1600,
+                               max_height=2000,
                                min_height=200){
   #Plot_dimension_input: used within manual_dim_UI. Creates a slider and text box intended to input either the width or height of a plot when manual dimensions are desired
   plot_dimension_input <-function(slider_input_id,
@@ -227,7 +232,10 @@ plots_tab <- function(){
                          collapsible_panel(label="UMAP Specific Options",
                                            active=TRUE,
                                            #Choose metadata to group UMAP by
-                                           selectInput(inputId = "umap_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
+                                           selectInput(inputId = "umap_group_by", 
+                                                       label = "Metadata to group by:",
+                                                       choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
+                                                       selected = "clusters"),
                                            #Choose metadata to split UMAP by
                                            selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
                                            #UI for user control of plot dimensions, if desired
@@ -282,7 +290,10 @@ plots_tab <- function(){
                          collapsible_panel(label="Dot Plot Specific Options",
                                            active=FALSE,
                                            #Choose metadata to group dot plot by
-                                           selectInput(inputId = "dot_group_by", label = "Metadata to group by:", choices=meta_choices, selected = "clusters"),
+                                           selectInput(inputId = "dot_group_by", 
+                                                       label = "Metadata to group by:", 
+                                                       choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
+                                                       selected = "clusters"),
                                            
                                            #Choose metadata to split dot plot by
                                            selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
@@ -394,78 +405,50 @@ tables_tab <- function(){
 }#End 1.2.
 
 ### Define user interface: code for navigation panel and references to tabs
-ui <- tagList(includeCSS("www/collapsible_panel.css"),
-              tags$head(tags$style(HTML("body{
-                                        padding-top: 60px;
-                                        } 
-                                        
-                                        div.col-sm-4{
-                                        overflow-y: auto; 
-                                        max-height: 85vh;
-                                        }
-                                        
-                                        /* Stack Overflow Style Scrollbar */ 
-                                        /* (for side panel) */
-                                        div.col-sm-4::-webkit-scrollbar{
-                                        width: 10px;
-                                        height: 10px;
-                                        /* Sets color of scrollbar background and rounds edges */
-                                        background-color: #AAAAAA44;
-                                        border-radius: 5px;
-                                        }
-                                        div.col-sm-4::-webkit-scrollbar-corner{
-                                        background-color: transparent;
-                                        border-color: transparent;
-                                        }
-                                        /* Scrollbar thumb properties (shows current position) */
-                                        div.col-sm-4::-webkit-scrollbar-thumb{
-                                        border-radius: 10px;
-                                        background-color: #888888;
-                                        }
-                                        div.col-sm-4::-webkit-scrollbar-track{
-                                        border-radius: 10px;
-                                        background-color: transparent;
-                                        }
-                                        
-                                        /* Main Window */
-                                        .col-sm-8{
-                                        overflow-y: auto;
-                                        overflow-x: auto;
-                                        max-height: 85vh;
-                                        }
-                                        
-                                        /* Stack Overflow Style Scrollbar for Main Window */
-                                        div.col-sm-8::-webkit-scrollbar{
-                                        width: 10px; 
-                                        height: 10px;
-                                        /* Sets color of scrollbar background and rounds edges */
-                                        background-color: #AAAAAA44;
-                                        border-radius: 5px;
-                                        }
-                                        div.col-sm-8::-webkit-scrollbar-corner{
-                                        background-color: transparent;
-                                        border-color: transparent;
-                                        }
-                                        /* Scrollbar thumb properties (shows current position) */
-                                        div.col-sm-8::-webkit-scrollbar-thumb{
-                                        border-radius: 10px;
-                                        background-color: #888888;
-                                        }
-                                        div.col-sm-8::-webkit-scrollbar-track{
-                                        border-radius: 10px;
-                                        background-color: transparent;
-                                        }
-                                        
-                                        "))),
-              #CSS and JS for collapsible panel
-              navbarPage("Shiny scExplorer",
-                         windowTitle="Shiny scExplorer",
-                         position="fixed-top",
-                         tabPanel("Plots",
-                                  plots_tab()),
-                         tabPanel("DE Tables",
-                                  tables_tab())),
-              includeScript("www/collapsible_panel.js"),
+ui <- tagList(
+  #CSS for Collapsible Panels
+  includeCSS("www/collapsible_panel.css"),
+  #CSS for Custom Scrollbars
+  includeCSS("www/fancy_scroll.css"),
+  #CSS for help button and dropdown menu
+  includeCSS("www/help_button_and_dropdown.css"),
+  tags$head(tags$style(HTML("body{
+                            padding-top: 60px;
+                            }"))),
+  #CSS and JS for collapsible panel
+  navbarPage("Shiny scExplorer",
+             windowTitle="Shiny scExplorer",
+             position="fixed-top",
+             tabPanel("Plots",
+                      plots_tab()),
+             tabPanel("DE Tables",
+                      tables_tab())),
+  #Help button - Creates a Dropdown menu when clicked
+  #Button should appear in the upper right hand corner of the navbar menu
+  #This will be achieved with the button_wizzard.js script
+  dropdownButton(inputId = "help",
+                 status="info",
+                 right=TRUE,
+                 label = "",
+                 size="sm",
+                 icon = icon("question"),
+                 tagList(tags$p("Help and Background",
+                                style="color: #888888; 
+                                margin-bottom: 0px; 
+                                font-size: 1.17em;"
+                                ),
+                         tags$a(href="#",class="blue_hover","Guided Tour"),
+                         tags$a(href="#",class="blue_hover","Interpereting scRNA-seq Plots"),
+                         tags$a("Detailed Walkthrough",
+                                href="Shiny_Vignette.html",
+                                class="blue_hover",
+                                target="_blank", #Opens link in new tab
+                                rel="noopener noreferrer", #Cybersecurity measure for links that open in new tab: prevents tabnapping
+                                )
+                 )#End tagList
+                 ),#End dropdownButton
+  includeScript("www/collapsible_panel.js"),
+  includeScript("www/button_wizzard.js")
 )
 
 ### 2. Server function (builds interactive plot to display in UI) ###
@@ -557,8 +540,9 @@ server <- function(input,output,session){
         ggsave(file, 
                plot=umap_plot_content(), 
                device="png",
-               width=umap_width()*2,
-               height=umap_height()*2,
+               width=umap_width()*5,
+               height=umap_height()*5,
+               dpi=300,
                units="px")
       } else {
         ggsave(file, 
@@ -672,8 +656,9 @@ server <- function(input,output,session){
         ggsave(file, 
                plot=feature_plot_content(), 
                device="png",
-               width=feature_width()*2,
-               height=feature_height()*2,
+               width=umap_width()*5,
+               height=umap_height()*5,
+               dpi=300,
                units="px")
       } else {
         ggsave(file, 
@@ -781,8 +766,9 @@ server <- function(input,output,session){
         ggsave(file, 
                plot=vln_plot_content(), 
                device="png",
-               width=vln_width()*2,
-               height=vln_height()*2,
+               width=umap_width()*5,
+               height=umap_height()*5,
+               dpi=300,
                units="px")
       } else {
         ggsave(file, 
@@ -887,32 +873,15 @@ server <- function(input,output,session){
     if (((input$diff_features_dot==FALSE)&(length(input$text_features)>=1))|((input$diff_features_dot==TRUE)&(length(input$dot_features)>=1))){
       #If user specifies the use of different features, use the dot plot-specific features instead of the generic text entry features
       if (input$diff_features_dot==TRUE){
-        #Check if split.by is specified
-        if (input$dot_split_by=="none"){
-          DotPlot(sobj, 
-                  features = input$dot_features,
-                  group.by = input$dot_group_by) + RotatedAxis()
-        }
-        else {
-          DotPlot(sobj, 
-                  features = input$dot_features,
-                  group.by = input$dot_group_by,
-                  split.by = input$dot_split_by) + RotatedAxis()
-        }
+        DotPlot(sobj,
+                features = input$dot_features,
+                group.by = input$dot_group_by) + RotatedAxis()
       }
       else {
         #Check if split.by is specified
-        if (input$dot_split_by=="none"){
-          DotPlot(sobj, 
-                  features = input$text_features,
-                  group.by = input$dot_group_by) + RotatedAxis()
-        }
-        else{
-          DotPlot(sobj, 
-                  features = input$text_features,
-                  group.by = input$dot_group_by,
-                  split.by = input$dot_split_by) + RotatedAxis()
-        }
+        DotPlot(sobj, 
+                features = input$text_features,
+                group.by = input$dot_group_by) + RotatedAxis()
       }
     }
   })
@@ -942,8 +911,9 @@ server <- function(input,output,session){
         ggsave(file, 
                plot=dot_plot_content(), 
                device="png",
-               width=dot_width()*2,
-               height=dot_height()*2,
+               width=umap_width()*5,
+               height=umap_height()*5,
+               dpi=300,
                units="px")
       } else {
         ggsave(file, 
