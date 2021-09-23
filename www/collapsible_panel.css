@@ -53,7 +53,7 @@ box-sizing: inherit; /*Inherits box sizing from the panel header to ensure symbo
 }
 
 /* Symbol which apppears at left hand side of panel header when the tab is opened */
-button.active:before{
+button.active:before {
 content: '\25BC'; /* Down arrow*/
 color: white;
 float: left;
@@ -77,4 +77,11 @@ box-sizing: inherit;
 
 /* New CSS Testing*/
 /* Copy below CSS to separate document when functional */
-
+.two_column {
+	width: 50%;
+	display: inline-block;
+	/* Add padding to sides of columns */
+	padding: 5px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}

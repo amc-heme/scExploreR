@@ -197,14 +197,38 @@ plots_tab <- function(){
       ### 1.1.1. Sidebar panel for user input ###
       sidebarPanel(fluid=FALSE,
         ### 1.1.1.1 Checkboxes for choosing desired plot
-        #Specify is UMAP Plot is desired
-        checkboxInput(inputId = "make_umap",label = "Add UMAP plot", value = TRUE),
-        #Specify if feature plot is desired
-        checkboxInput(inputId = "make_feature",label = "Add feature plot",value=FALSE),
-        #Specify if violin plot is desired
-        checkboxInput(inputId = "make_vln",label = "Add violin plot", value=FALSE),
-        #Specify if dot plot is desired
-        checkboxInput(inputId = "make_dot",label = "Add dot plot", value=FALSE),
+        # Two-column checkboxes: put inside inline block elements that span half of the sidebar panel
+        div(class="two_column",
+            style="float: left;",
+            #Specify if UMAP Plot is desired
+            materialSwitch(inputId = "make_umap",
+                           label = "UMAP plot", 
+                           value = TRUE,
+                           right = TRUE,
+                           status = "default"),
+            
+            #Specify if feature plot is desired
+            materialSwitch(inputId = "make_feature",
+                           label = "Feature Plot", 
+                           value = FALSE,
+                           right = TRUE,
+                           status = "default")
+            ),#End div
+        
+        div(class="two_column",
+            #Specify if violin plot is desired
+            materialSwitch(inputId = "make_vln",
+                           label = "Violin Plot", 
+                           value = FALSE,
+                           right = TRUE,
+                           status = "default"),
+            #Specify if dot plot is desired
+            materialSwitch(inputId = "make_dot",
+                           label = "Dot Plot", 
+                           value = FALSE,
+                           right = TRUE,
+                           status = "default")
+            ),#End div
         
         ### 1.1.1.2. Feature Text Entry. Applies to feature, violin, and dot plots unless the user specifies the use of different features for each plot (currently only possible for dot plots) 
         conditionalPanel(condition="input.make_feature==true | input.make_vln==true | input.make_dot==true",
@@ -294,10 +318,7 @@ plots_tab <- function(){
                                                        label = "Metadata to group by:", 
                                                        choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
                                                        selected = "clusters"),
-                                           
-                                           #Choose metadata to split dot plot by
-                                           selectInput(inputId = "dot_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
-                                           
+                                              
                                            #Choosing different features
                                            checkboxInput(inputId = "diff_features_dot",label="Use separate features for dot plot", value=FALSE),
                                            
@@ -412,6 +433,8 @@ ui <- tagList(
   includeCSS("www/fancy_scroll.css"),
   #CSS for help button and dropdown menu
   includeCSS("www/help_button_and_dropdown.css"),
+  #Introjs UI: for guided tour
+  introjsUI(),
   tags$head(tags$style(HTML("body{
                             padding-top: 60px;
                             }"))),
@@ -437,14 +460,32 @@ ui <- tagList(
                                 margin-bottom: 0px; 
                                 font-size: 1.17em;"
                                 ),
-                         tags$a(href="#",class="blue_hover","Guided Tour"),
-                         tags$a(href="#",class="blue_hover","Interpereting scRNA-seq Plots"),
-                         tags$a("Detailed Walkthrough",
-                                href="Shiny_Vignette.html",
-                                class="blue_hover",
-                                target="_blank", #Opens link in new tab
-                                rel="noopener noreferrer", #Cybersecurity measure for links that open in new tab: prevents tabnapping
-                                )
+                         #Guided tour link: wrapped in introBox
+                         introBox(data.step=1,
+                                  data.intro='Welcome to the Shiny app.<br><br>Please click the ">" button to continue with the tour, or click "skip" to proceed to the app.',
+                                  data.position = "left",
+                                  #introBox content
+                                  actionLink(inputId = "start_intro",
+                                             class="blue_hover",
+                                             label = "Guided Tour")
+                                  ), #End introBox
+                         introBox(data.step = 2,
+                                  data.intro = 'For more detailed help, select "detailed walkthrough". For more information on interpereting the plots in this app, select "Interpereting scRNA-seq Plots".',
+                                  data.position="left",
+                                  data.hint = "Hint text",
+                                  #introBox content
+                                  tags$a(href="#",
+                                         class="blue_hover",
+                                         "Interpereting scRNA-seq Plots"),
+                                  
+                                  tags$a("Detailed Walkthrough",
+                                         href="Shiny_Vignette.html",
+                                         class="blue_hover",
+                                         target="_blank", #Opens link in new tab
+                                         rel="noopener noreferrer", #Cybersecurity measure for links that open in new tab: prevents tabnapping
+                                         )
+                                  )#End introBox
+             
                  )#End tagList
                  ),#End dropdownButton
   includeScript("www/collapsible_panel.js"),
@@ -453,8 +494,33 @@ ui <- tagList(
 
 ### 2. Server function (builds interactive plot to display in UI) ###
 server <- function(input,output,session){
-  #2.1. Render feature choices for text feature selection
+  #2.1. Initialize Session
+  #2.1.1. Render feature choices for text feature selection
   updateSelectizeInput(session,inputId = "text_features", choices = valid_features, server = TRUE)
+  
+  #Open Help Dropdown and initialize guided tour
+  toggleDropdownButton(inputId="help", session = session)
+  introjs(session,
+          options = list("nextLabel" = ">",
+                         "prevLabel" = "<",
+                         "skipLabel" = "skip",
+                         "overlayOpacity" = -1
+                         ),
+          events = list(onbeforechange = readCallback("switchTabs"))
+          )
+  
+  #Open the intro every time the user clicks the "guided tour" button
+  observeEvent(input$start_intro, {
+    print("Detected link")
+    introjs(session,
+            options = list("nextLabel" = ">",
+                           "prevLabel" = "<",
+                           "skipLabel" = "skip",
+                           "overlayOpacity" = -1
+                           ),
+            events = list(onbeforechange = readCallback("switchTabs"))
+            )
+  })
   
   #2.2. UMAP plot
   #2.2.1. Reactive UMAP plot dimensions
