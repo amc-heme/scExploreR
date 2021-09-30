@@ -1,0 +1,18 @@
+---
+title: "scRNA-Seq Plots Explained"
+output: 
+  bookdown::html_document2: default
+---
+
+# UMAP Plots 
+
+The type of data shown in UMAP plots is similar to what is shown flow cytometry plots: the aim is to represent each cell on a scatterplot with coordinates corresponding to the number of transcripts observed for each gene, but this is done for all genes simultaneously. This will result in the data for each cell having more than 30,000 dimensions, which makes visualization impossible and also complicates analysis due to the sparsity of data, which inherently increases with the number of dimensions (Altman and Krzywinski 2018) and is particularly problematic for single cell RNA-seq due to biological variability between cells and technical challenges with sequencing at cell-level resolution (Hou et al. 2020). Dimensionality reduction algorithms such as UMAP project data with large numbers of dimensions onto lower numbers of dimensions that represent the data more effectively; in the case of UMAP plots the data are shown on just two representative dimensions. 
+
+In general, cells with related expression profiles cluster together on a UMAP. Small distances in a UMAP are biologically useful for determining relatedness between cells, but large (global) distances in a UMAP do not have biological meaning since the UMAP plot is only a representation of the true structure of the data, and the global structure of the data is lost when the algorithm is applied. Since the representation of the global structure depends on the specific algorithm being used (Kobak and Linderman 2021), the spaces between clusters on the UMAP plot can be misleading. Therefore, only the local structure, or the clustering of similar cells together on the plot, should be interpreted as biologically useful information.
+
+
+# Feature Plots
+
+
+
+# Violin Plots

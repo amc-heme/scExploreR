@@ -21,7 +21,6 @@
   font-weight: bolder; /* Default font weight for h3 tag*/
   margin-top: var(--spacing);
   margin-bottom: var(--spacing);
-  
 }
 
 /* CSS specific to open collapsible panel */

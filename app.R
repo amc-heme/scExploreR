@@ -8,6 +8,7 @@ library(dplyr)
 library(shinyWidgets)
 library(rintrojs)
 library(shinydashboard)
+library(shinycssloaders)
 
 #Load Seurat object 
 #Currently using the sample AML dataset
@@ -52,6 +53,11 @@ meta_choices <- c("None"="none",
                   "Patient ID"="htb",
                   "Capture Number"="capture_num",
                   "Run"="run")
+
+#Correlations tab: define valid metadata selections
+clusters <- levels(unique(sobj@meta.data$clusters)) #Displays clusters in numerical order
+patients <- unique(sobj@meta.data$htb)
+responses <- unique(sobj@meta.data$response)
 
 ### Functions Used 
 ### Manual_dim_UI ###
@@ -238,7 +244,7 @@ plots_tab <- function(){
                          div(style="vertical-align: top; margin-bottom: 0px;",
                              selectizeInput(inputId = "text_features", 
                                             multiple = TRUE, 
-                                            label=NULL,
+                                            label = NULL,
                                             choices = NULL,
                                             selected = NULL,
                                             #Add remove button to inputs
@@ -425,6 +431,57 @@ tables_tab <- function(){
   )
 }#End 1.2.
 
+### 1.3 Correlation Tab ###
+corr_tab <- function(){
+  fluidPage(
+    sidebarLayout(
+      #1.3.1. Options Panel
+      sidebarPanel(
+        #1.3.1.1. Restrict correlation table by metadata
+        tags$h3("Correlation Coefficients"),
+        tags$p("Enter one feature to view the top features positively and negatively correlated with the feature in the data. You may optionally restrict the correlation analysis by metadata variables using the dropdown menus below."),
+        #Feature selection: only one feature can be entered
+        selectizeInput(inputId="corr_feature_selection",
+                       label = "Feature Selection",
+                       #Feature choices populated in server, as in the plots tab
+                       choices = NULL,
+                       selected = character(0),
+                       options = list("placeholder"="Enter gene name")),
+        pickerInput(inputId = "cluster_selection",
+                    label = "Restrict by Cluster",
+                    choices = clusters,
+                    selected = clusters,
+                    multiple = TRUE,
+                    options = list(
+                      "selected-text-format" = "count > 5",
+                      "size" = 7,
+                      "actions-box"=TRUE)),
+        pickerInput(inputId = "response_selection",
+                    label = "Restrict by Response",
+                    choices = responses,
+                    selected = responses,
+                    multiple = TRUE),
+        pickerInput(inputId = "htb_selection",
+                    label = "Restrict by Patient",
+                    choices = patients,
+                    #Restrict to five patients due to memory limits and select the first five patients by default
+                    selected = patients[1:5], 
+                    multiple = TRUE,
+                    options = list(
+                      "max-options" = 5,
+                      "selected-text-format" = "count > 3",
+                      "max-options-text" = "Cannot select more than five patients due to memory limitations. The ability to do so will be added in the future."
+                    )),
+        actionButton(inputId = "corr_submit",
+                     label = "Submit")
+        ),#End sidebarPanel (1.3.1)
+      #1.3.2 Main Panel
+      #withSpinner adds a loading spinner while the table is being calculated
+      mainPanel(uiOutput(outputId = "corr_ui"))
+      )#End sidebarLayout
+  )#End fluidPage
+}#End 1.3.
+
 ### Define user interface: code for navigation panel and references to tabs
 ui <- tagList(
   #CSS for Collapsible Panels
@@ -445,49 +502,51 @@ ui <- tagList(
              tabPanel("Plots",
                       plots_tab()),
              tabPanel("DE Tables",
-                      tables_tab())),
+                      tables_tab()),
+             tabPanel("Feature Correlations",
+                      corr_tab())
+             ),#End navbarPage()
   #Help button - Creates a Dropdown menu when clicked
   #Button should appear in the upper right hand corner of the navbar menu
   #This will be achieved with the button_wizzard.js script
-  dropdownButton(inputId = "help",
-                 status="info",
-                 right=TRUE,
-                 label = "",
-                 size="sm",
-                 icon = icon("question"),
-                 tagList(tags$p("Help and Background",
-                                style="color: #888888; 
+  #(Help button is wrapped in two introBoxes)
+  introBox(data.step=1,
+           data.intro='Welcome to the Shiny app.<br><br>Please click the ">" button to continue with the tour, or click "skip" to proceed to the app.',
+           data.position = "left",
+           #Begin introBox2
+           introBox(data.step = 2,
+                    data.intro = 'Click this button to view help. For a more detailed explanation of features, select "detailed walkthrough". For more information on interpereting the plots in this app, select "Interpereting scRNA-seq Plots". Click "Guided tour" to view this tour again.',
+                    data.position="left",
+                    #Begin Help button
+                    dropdownButton(inputId = "help",
+                                   status="info",
+                                   right=TRUE,
+                                   label = "",
+                                   size="sm",
+                                   icon = icon("question"),
+                                   tagList(tags$p("Help and Background",
+                                                  style="color: #888888; 
                                 margin-bottom: 0px; 
                                 font-size: 1.17em;"
-                                ),
-                         #Guided tour link: wrapped in introBox
-                         introBox(data.step=1,
-                                  data.intro='Welcome to the Shiny app.<br><br>Please click the ">" button to continue with the tour, or click "skip" to proceed to the app.',
-                                  data.position = "left",
-                                  #introBox content
-                                  actionLink(inputId = "start_intro",
-                                             class="blue_hover",
-                                             label = "Guided Tour")
-                                  ), #End introBox
-                         introBox(data.step = 2,
-                                  data.intro = 'For more detailed help, select "detailed walkthrough". For more information on interpereting the plots in this app, select "Interpereting scRNA-seq Plots".',
-                                  data.position="left",
-                                  data.hint = "Hint text",
-                                  #introBox content
-                                  tags$a(href="#",
-                                         class="blue_hover",
-                                         "Interpereting scRNA-seq Plots"),
-                                  
-                                  tags$a("Detailed Walkthrough",
-                                         href="Shiny_Vignette.html",
-                                         class="blue_hover",
-                                         target="_blank", #Opens link in new tab
-                                         rel="noopener noreferrer", #Cybersecurity measure for links that open in new tab: prevents tabnapping
-                                         )
-                                  )#End introBox
-             
-                 )#End tagList
-                 ),#End dropdownButton
+                                   ),
+                                   actionLink(inputId = "start_intro",
+                                              class="blue_hover",
+                                              label = "(introjs help boxes)"),
+                                   
+                                   tags$a(href="#",
+                                          class="blue_hover",
+                                          "Interpereting scRNA-seq Plots"),
+                                   
+                                   tags$a("Tutorial Vignette",
+                                          href="Shiny_Vignette.html",
+                                          class="blue_hover",
+                                          target="_blank", #Opens link in new tab
+                                          rel="noopener noreferrer", #Cybersecurity measure for links that open in new tab: prevents tabnapping
+                                   )#End Detailed Walkthrough link
+                                   )#End tagList
+                    )#End Help Button
+                    )#End introBox2
+           ),#End introBox 1
   includeScript("www/collapsible_panel.js"),
   includeScript("www/button_wizzard.js")
 )
@@ -495,19 +554,28 @@ ui <- tagList(
 ### 2. Server function (builds interactive plot to display in UI) ###
 server <- function(input,output,session){
   #2.1. Initialize Session
-  #2.1.1. Render feature choices for text feature selection
-  updateSelectizeInput(session,inputId = "text_features", choices = valid_features, server = TRUE)
+  #2.1.1. Render feature choices for text feature selection (plots tab)
+  updateSelectizeInput(session,
+                       inputId = "text_features", 
+                       choices = valid_features, 
+                       server = TRUE)
+  
+  #2.1.2. Render feature choices for feature selection in the correlations tab
+  updateSelectizeInput(session,
+                       inputId = "corr_feature_selection", 
+                       choices = genes,
+                       selected = character(0),
+                       server = TRUE)
   
   #Open Help Dropdown and initialize guided tour
-  toggleDropdownButton(inputId="help", session = session)
-  introjs(session,
-          options = list("nextLabel" = ">",
-                         "prevLabel" = "<",
-                         "skipLabel" = "skip",
-                         "overlayOpacity" = -1
-                         ),
-          events = list(onbeforechange = readCallback("switchTabs"))
-          )
+#  introjs(session,
+#          options = list("nextLabel" = ">",
+#                         "prevLabel" = "<",
+#                         "skipLabel" = "skip",
+#                         "overlayOpacity" = -1
+#                         ),
+#          events = list("onbeforechange" = readCallback("switchTabs")) ##End list
+#          ) #End introjs
   
   #Open the intro every time the user clicks the "guided tour" button
   observeEvent(input$start_intro, {
@@ -518,7 +586,7 @@ server <- function(input,output,session){
                            "skipLabel" = "skip",
                            "overlayOpacity" = -1
                            ),
-            events = list(onbeforechange = readCallback("switchTabs"))
+            events = list("onbeforechange" = readCallback("switchTabs"))
             )
   })
   
@@ -804,7 +872,7 @@ server <- function(input,output,session){
         VlnPlot(sobj, 
                 features = input$text_features,
                 group.by = input$vln_group_by,
-                split.by = input$vln_split_by)
+                split.by = input$vln_split_by) 
       }
     }
   })
@@ -1026,7 +1094,99 @@ server <- function(input,output,session){
     
   }, escape = FALSE)
 
+  #2.7. Correlations Tab 
+  #2.7.1 Reactive dropdown menu for patient 
+  #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
+  #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized)
+  #Running of code at startup is disabled with "ignoreInit=TRUE"
   
+  observeEvent(c(input$response_selection),ignoreInit = TRUE,{ 
+    
+    #While the code below is running, display an "updating, please wait" placeholder.
+    updatePickerInput(session, 
+                      inputId = "htb_selection",
+                      label = "UPDATING",
+                      choices= character(0), 
+                      selected = character(0),
+                      options= list(
+                        "placeholder"="Updating, please wait"
+                      ))
+    
+    #Subset Seurat object for the selected response type and return vector of patients included in that type
+    valid_patients <- unique(subset(sobj, subset = response %in% input$response_selection)$htb)
+    
+    updatePickerInput(session,
+                      inputId = "htb_selection",
+                      label = "Restrict by Patient",
+                      choices = valid_patients,
+                      selected = if (length(valid_patients)<5) valid_patients else valid_patients[1:5],
+                      options = list(
+                        "max-options" = 7,
+                        "max-options-text" = "Cannot select more than five patients due to memory limitations. The ability to do so will be added in the future.",
+                        "placeholder"="undefined"
+                      ))
+    
+  })
+ 
+  #2.7.2. Correlation table for selected feature and restriction criteria
+  #Table updates only when the "Submit" button is clicked
+  #2.7.2.1. Store table content as reactive value
+  corr_table_content <- eventReactive(input$corr_submit,ignoreInit = TRUE, ignoreNULL = FALSE, {
+    print("Running code for table content")
+    
+    #Form subset based on chosen criteria
+    s_sub <- subset(sobj, 
+                    subset=(clusters %in% input$cluster_selection) & 
+                      (response %in% input$response_selection) & 
+                      (htb %in% input$htb_selection)
+                    )
+    print("Subset computed")
+    
+    #Convert subset data to matrix and transpose so columns are gene names
+    mat <- t(as.matrix(s_sub@assays$RNA@data))
+    
+    #Form correlation matrix
+    cor(mat[,input$corr_feature_selection],mat) |> #Compute correlation between selected feature and others
+      t() |> #Code returns coefficients for each feature in rows (want columns) 
+      enframe("Feature","Correlation_Coefficient") |> #Convert matrix to tibble
+      filter(Feature != input$corr_feature_selection) |> #Filter out selected feature
+      arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
+  })
+  
+  #2.7.2.2. Correlations UI
+  #IgnoreNULL set to false to get UI to render at startup
+  corr_UI <- eventReactive(input$corr_submit, ignoreNULL = FALSE, {
+    print("Correlation UI Function")
+    #UI: if the feature selection menu is empty (default state at initialization), prompt user to enter features
+    if (input$corr_feature_selection == ""){
+      tags$h3("Enter a feature and press submit to view correlated features. You may also specify restriction criteria using the dropdown menus.")
+    }
+    #After a feature is applied and the submit button is pressed, display the table
+    else {
+      withSpinner(
+        dataTableOutput(outputId = "corr_table"),
+        type = 3,
+        color = "#555588",
+        color.background = "#ffffff", #Must equal background color of panel
+        id="corr_table_spinner"
+      )#End withSpinner
+    }
+  })
+  
+  #2.7.2.3. Render Correlation UI and table
+  #UI (ignoreNULL in event listener must be set to false to render at startup)
+  observeEvent(input$corr_submit, ignoreNULL = FALSE, {
+  })
+  
+  output$corr_ui <- renderUI({corr_UI()})
+  
+  #Table
+  observeEvent(input$corr_submit, ignoreInit = TRUE, ignoreNULL = FALSE, {
+    print("Rendering table content")
+    output$corr_table <- renderDataTable({corr_table_content()})
+  })
+  
+  #2.7.3. Feature Plot of feature selected from table
 }
 
 # Run the application 
