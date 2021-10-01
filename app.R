@@ -59,6 +59,9 @@ clusters <- levels(unique(sobj@meta.data$clusters)) #Displays clusters in numeri
 patients <- unique(sobj@meta.data$htb)
 responses <- unique(sobj@meta.data$response)
 
+#Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
+nonzero_threshold <- 0.10
+
 ### Functions Used 
 ### Manual_dim_UI ###
 #Creates two slider-text box pairs for manual control of theheight and width of a plot.
@@ -1142,6 +1145,38 @@ server <- function(input,output,session){
                     )
     print("Subset computed")
     
+    #Determine the proportion of cells with nonzero reads for the selected gene. If it is below the threshold defined at the top of this script, return a warning to the user.
+    n_nonzero <- sum(s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
+    #Total Cells
+    total_cells <- length(Cells(s_sub))
+    #Proportion
+    prop_nonzero <- n_nonzero/total_cells
+    print("Nonzero proportion:",round(prop_nonzero, digits = 2))
+    
+    if (prop_nonzero < nonzero_threshold){
+      #Define notification UI (warning icon plus text)
+      notification_ui <- span(
+        #Warning icon (inline and enlarged)
+        icon("exclamation-triangle", style="display: inline-block; font-size: 1.7em;"),
+        #Notification text with proportion and number of non-zero cells
+        span(paste0("High zero content: the selected feature was detected in ",
+                    #Report percentage (round based on the observed proportion)
+                    round(prop_nonzero*100, digits = if (prop_nonzero<0.001) 4 else 2),
+                    "% of cells within the criteria selected ",
+                    #Report number of cells the feature was observed in
+                    "(",n_nonzero,"/",total_cells," cells ).",
+                    " Correlation results may be inaccurate."),
+             #Font size of notification text 
+             style="font-size: 1.17em;")
+        )
+      
+      showNotification(ui=notification_ui, 
+                       #Duration=NULL will make the message persist until dismissed
+                       duration = NULL,
+                       id = "corr_high_zero_content",
+                       session=session)
+    } 
+    
     #Convert subset data to matrix and transpose so columns are gene names
     mat <- t(as.matrix(s_sub@assays$RNA@data))
     
@@ -1180,10 +1215,12 @@ server <- function(input,output,session){
   
   output$corr_ui <- renderUI({corr_UI()})
   
+  output$corr_table <- renderDataTable({corr_table_content()})
+  
   #Table
   observeEvent(input$corr_submit, ignoreInit = TRUE, ignoreNULL = FALSE, {
     print("Rendering table content")
-    output$corr_table <- renderDataTable({corr_table_content()})
+    
   })
   
   #2.7.3. Feature Plot of feature selected from table

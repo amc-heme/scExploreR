@@ -84,3 +84,7 @@ box-sizing: inherit;
 	padding-top: 0px;
 	padding-bottom: 0px;
 }
+
+.fa-exclamation-triangle {
+	color: #D67E1A;
+}
