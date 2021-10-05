@@ -2,13 +2,20 @@
 #Initialize libraries
 library(shiny)
 library(Seurat)
-library(ggplot2)
-library(tidyverse)
-library(dplyr)
+
+#Shiny add-ons 
 library(shinyWidgets)
 library(rintrojs)
 library(shinydashboard)
+library(waiter)
+
 library(shinycssloaders)
+
+#Tidyverse Packages
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(glue)
 
 #Load Seurat object 
 #Currently using the sample AML dataset
@@ -476,11 +483,24 @@ corr_tab <- function(){
                       "max-options-text" = "Cannot select more than five patients due to memory limitations. The ability to do so will be added in the future."
                     )),
         actionButton(inputId = "corr_submit",
-                     label = "Submit")
+                     label = "Submit"),
+        #Subset Stats Panel
+        uiOutput(outputId = "sub_stats")
         ),#End sidebarPanel (1.3.1)
-      #1.3.2 Main Panel
-      #withSpinner adds a loading spinner while the table is being calculated
-      mainPanel(uiOutput(outputId = "corr_ui"))
+      #1.3.2 Main Pane
+      mainPanel(
+        div(id="corr_main_panel", style="height:100%;", #Div added to contain Waiter spinner
+            uiOutput(outputId = "corr_ui"))
+        
+#Old spinner 
+#        %>% 
+#          withSpinner(
+#            type = 3,
+#            color = "#555588",
+#            color.background = "#ffffff", #Must equal background color of panel
+#            id="corr_table_spinner")
+        
+        )#End MainPanel
       )#End sidebarLayout
   )#End fluidPage
 }#End 1.3.
@@ -495,6 +515,9 @@ ui <- tagList(
   includeCSS("www/help_button_and_dropdown.css"),
   #Introjs UI: for guided tour
   introjsUI(),
+  #Waiter UI: spinners
+  useWaiter(),
+  #CSS Defined in Header
   tags$head(tags$style(HTML("body{
                             padding-top: 60px;
                             }"))),
@@ -557,13 +580,20 @@ ui <- tagList(
 ### 2. Server function (builds interactive plot to display in UI) ###
 server <- function(input,output,session){
   #2.1. Initialize Session
-  #2.1.1. Render feature choices for text feature selection (plots tab)
+  #2.1.1. Initialize Reactive Values
+  rv <- reactiveValues()
+  #For correlations tab: report number of cells in a subset, number of cells where a gene is detected, and the proportion of detected cells
+  rv$n_cells <- 0
+  rv$n_nonzero <- 0
+  rv$prop_nonzero <- 0
+    
+  #2.1.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
                        inputId = "text_features", 
                        choices = valid_features, 
                        server = TRUE)
   
-  #2.1.2. Render feature choices for feature selection in the correlations tab
+  #2.1.3. Render feature choices for feature selection in the correlations tab
   updateSelectizeInput(session,
                        inputId = "corr_feature_selection", 
                        choices = genes,
@@ -1134,58 +1164,91 @@ server <- function(input,output,session){
   #2.7.2. Correlation table for selected feature and restriction criteria
   #Table updates only when the "Submit" button is clicked
   #2.7.2.1. Store table content as reactive value
-  corr_table_content <- eventReactive(input$corr_submit,ignoreInit = TRUE, ignoreNULL = FALSE, {
-    print("Running code for table content")
-    
-    #Form subset based on chosen criteria
-    s_sub <- subset(sobj, 
-                    subset=(clusters %in% input$cluster_selection) & 
-                      (response %in% input$response_selection) & 
-                      (htb %in% input$htb_selection)
-                    )
-    print("Subset computed")
-    
-    #Determine the proportion of cells with nonzero reads for the selected gene. If it is below the threshold defined at the top of this script, return a warning to the user.
-    n_nonzero <- sum(s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
-    #Total Cells
-    total_cells <- length(Cells(s_sub))
-    #Proportion
-    prop_nonzero <- n_nonzero/total_cells
-    print("Nonzero proportion:",round(prop_nonzero, digits = 2))
-    
-    if (prop_nonzero < nonzero_threshold){
-      #Define notification UI (warning icon plus text)
-      notification_ui <- span(
-        #Warning icon (inline and enlarged)
-        icon("exclamation-triangle", style="display: inline-block; font-size: 1.7em;"),
-        #Notification text with proportion and number of non-zero cells
-        span(paste0("High zero content: the selected feature was detected in ",
-                    #Report percentage (round based on the observed proportion)
-                    round(prop_nonzero*100, digits = if (prop_nonzero<0.001) 4 else 2),
-                    "% of cells within the criteria selected ",
-                    #Report number of cells the feature was observed in
-                    "(",n_nonzero,"/",total_cells," cells ).",
-                    " Correlation results may be inaccurate."),
-             #Font size of notification text 
-             style="font-size: 1.17em;")
-        )
+  corr_table_content <- eventReactive(input$corr_submit,ignoreInit = FALSE, ignoreNULL = FALSE, {
+    print("Running correlation table content code")
+    # Only run the correlation table code if a feature has been specified
+    if (input$corr_feature_selection != ""){
+      #Form subset based on chosen criteria
+      s_sub <- subset(sobj, 
+                      subset=(clusters %in% input$cluster_selection) & 
+                        (response %in% input$response_selection) & 
+                        (htb %in% input$htb_selection)
+      )
       
-      showNotification(ui=notification_ui, 
-                       #Duration=NULL will make the message persist until dismissed
-                       duration = NULL,
-                       id = "corr_high_zero_content",
-                       session=session)
-    } 
+      ###Subset Stats
+      #Determine the proportion of cells with nonzero reads for the selected gene. If it is below the threshold defined at the top of this script, return a warning to the user.
+      #Cells in subset
+      rv$n_cells <- length(Cells(s_sub))
+      
+      #Cells with nonzero reads
+      rv$n_nonzero <- sum(s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
+      #Proportion of nonzero reads
+      rv$prop_nonzero <- rv$n_nonzero/rv$n_cells
+      print(paste0("Nonzero proportion: ",format(rv$prop_nonzero, digits = 3, nsmall=2)))
+            
+      if (rv$prop_nonzero < nonzero_threshold){
+        #Define notification UI (warning icon plus text)
+        notification_ui <- span(
+          #Warning icon (inline and enlarged)
+          icon("exclamation-triangle", style="display: inline-block; font-size: 1.7em;"),
+          #Notification text with proportion and number of non-zero cells
+          span(paste0("High zero content: the selected feature was detected in ",
+                      #Report percentage (round based on the observed proportion)
+                      format(rv$prop_nonzero*100, digits=3, nsmall=2, scientific=FALSE),
+                      "% of cells within the selection restriction criteria ",
+                      #Report number of cells the feature was observed in
+                      "(",rv$n_nonzero,"/",rv$n_cells," cells). ",
+                      "Correlation results may be inaccurate."),
+               #Font size of notification text 
+               style="font-size: 1.17em;")
+        )
+        
+        showNotification(ui=notification_ui, 
+                         #Duration=NULL will make the message persist until dismissed
+                         duration = NULL,
+                         id = "corr_high_zero_content",
+                         session=session)
+      } 
+      
+      #Convert subset data to matrix and transpose so columns are gene names
+      mat <- t(as.matrix(s_sub@assays$RNA@data))
+      
+      #Form correlation matrix
+      table <- cor(mat[,input$corr_feature_selection],mat) |> #Compute correlation between selected feature and others
+        t() |> #Code returns coefficients for each feature in rows (want columns) 
+        enframe("Feature","Correlation_Coefficient") |> #Convert matrix to tibble
+        filter(Feature != input$corr_feature_selection) |> #Filter out selected feature
+        arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
+      
+      waiter_hide(id = "corr_main_panel")
+      
+      table
+    }
+  })
+  
+  # 2.7.2.2. Subset stats UI: render when reactive values for subset are changed
+  observeEvent(rv$prop_nonzero, ignoreInit = TRUE,{
+    print("Render UI for statistics")
+    #Render UI
+    output$sub_stats <- renderUI({
+      tagList(
+        tags$strong("Stats for Selected Criteria"),
+        #Number of cells in subset
+        textOutput(outputId = "print_n_cells"),
+        #Number and proportion of nonzero cells
+        textOutput(outputId = "print_nonzero")
+      )
+    })
     
-    #Convert subset data to matrix and transpose so columns are gene names
-    mat <- t(as.matrix(s_sub@assays$RNA@data))
-    
-    #Form correlation matrix
-    cor(mat[,input$corr_feature_selection],mat) |> #Compute correlation between selected feature and others
-      t() |> #Code returns coefficients for each feature in rows (want columns) 
-      enframe("Feature","Correlation_Coefficient") |> #Convert matrix to tibble
-      filter(Feature != input$corr_feature_selection) |> #Filter out selected feature
-      arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
+    #Render text for number of cells and number of nonzero reads
+    output$print_n_cells <- renderText({
+      print("Code for number of cells text")
+      paste0("Number of cells within restriction criteria: ",rv$n_cells)
+    })
+    output$print_nonzero <- renderText({
+      print("Code for nonzero cells text")
+      glue("Cells with at least one read for {input$corr_feature_selection}: {rv$n_nonzero} ({format(rv$prop_nonzero*100, digits=3, nsmall=2, scientific=FALSE)}%)")
+    })
   })
   
   #2.7.2.2. Correlations UI
@@ -1198,32 +1261,38 @@ server <- function(input,output,session){
     }
     #After a feature is applied and the submit button is pressed, display the table
     else {
-      withSpinner(
-        dataTableOutput(outputId = "corr_table"),
-        type = 3,
-        color = "#555588",
-        color.background = "#ffffff", #Must equal background color of panel
-        id="corr_table_spinner"
-      )#End withSpinner
+      #Show loading screen above main panel 
+      waiter_show(
+        id = "corr_main_panel",
+        html = spin_loaders(id=2, color = "#555588"),
+        color = "#FFFFFF",
+        hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+      )
+      
+      tagList(
+        tags$h2(glue("Genes correlated with {input$corr_feature_selection} in Subset")),
+        dataTableOutput(outputId = "corr_table")
+        )#End tagList
     }
   })
   
   #2.7.2.3. Render Correlation UI and table
   #UI (ignoreNULL in event listener must be set to false to render at startup)
   observeEvent(input$corr_submit, ignoreNULL = FALSE, {
+    
   })
   
   output$corr_ui <- renderUI({corr_UI()})
   
-  output$corr_table <- renderDataTable({corr_table_content()})
-  
   #Table
   observeEvent(input$corr_submit, ignoreInit = TRUE, ignoreNULL = FALSE, {
     print("Rendering table content")
-    
+    output$corr_table <- renderDataTable({corr_table_content()})
   })
   
   #2.7.3. Feature Plot of feature selected from table
+  
+
 }
 
 # Run the application 
