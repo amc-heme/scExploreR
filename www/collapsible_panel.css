@@ -85,6 +85,13 @@ box-sizing: inherit;
 	padding-bottom: 0px;
 }
 
+/* Font Awesome Icons */
+/* Warning triangle */
 .fa-exclamation-triangle {
 	color: #D67E1A;
+}
+
+/* Skull and crossbones error */
+.fa-skull-crossbones{
+	color: #000000;
 }

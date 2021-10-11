@@ -8,7 +8,6 @@ library(shinyWidgets)
 library(rintrojs)
 library(shinydashboard)
 library(waiter)
-
 library(shinycssloaders)
 
 #Tidyverse Packages
@@ -16,6 +15,7 @@ library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(glue)
+library(DT)
 
 #Load Seurat object 
 #Currently using the sample AML dataset
@@ -176,6 +176,19 @@ collapsible_panel <- function(...,label=NULL,active=FALSE){
     }
   )#End taglist
 }
+###
+
+### Icon Notification Function
+#Defines the HTML to be printed within a notification box. The function takes the name of a Font Awesome icon and a message as input, and will display the icon and the message inline.
+icon_notification_ui <- function(icon_name,message){
+  span(
+    #Icon (inline and enlarged)
+    icon(icon_name, style="display: inline-block; font-size: 1.7em;"),
+    #Message (inline with icon, font slightly enlarged)
+    span(message,style="font-size: 1.17em;")
+    )
+  }
+###
   
 ### Table of Contents
 # 1. User Interface Functions
@@ -447,49 +460,52 @@ corr_tab <- function(){
     sidebarLayout(
       #1.3.1. Options Panel
       sidebarPanel(
-        #1.3.1.1. Restrict correlation table by metadata
-        tags$h3("Correlation Coefficients"),
-        tags$p("Enter one feature to view the top features positively and negatively correlated with the feature in the data. You may optionally restrict the correlation analysis by metadata variables using the dropdown menus below."),
-        #Feature selection: only one feature can be entered
-        selectizeInput(inputId="corr_feature_selection",
-                       label = "Feature Selection",
-                       #Feature choices populated in server, as in the plots tab
-                       choices = NULL,
-                       selected = character(0),
-                       options = list("placeholder"="Enter gene name")),
-        pickerInput(inputId = "cluster_selection",
-                    label = "Restrict by Cluster",
-                    choices = clusters,
-                    selected = clusters,
-                    multiple = TRUE,
-                    options = list(
-                      "selected-text-format" = "count > 5",
-                      "size" = 7,
-                      "actions-box"=TRUE)),
-        pickerInput(inputId = "response_selection",
-                    label = "Restrict by Response",
-                    choices = responses,
-                    selected = responses,
-                    multiple = TRUE),
-        pickerInput(inputId = "htb_selection",
-                    label = "Restrict by Patient",
-                    choices = patients,
-                    #Restrict to five patients due to memory limits and select the first five patients by default
-                    selected = patients[1:5], 
-                    multiple = TRUE,
-                    options = list(
-                      "max-options" = 5,
-                      "selected-text-format" = "count > 3",
-                      "max-options-text" = "Cannot select more than five patients due to memory limitations. The ability to do so will be added in the future."
-                    )),
-        actionButton(inputId = "corr_submit",
-                     label = "Submit"),
-        #Subset Stats Panel
-        uiOutput(outputId = "sub_stats")
+        #Add a block to display a waiter over when the options are updating
+        div(id="corr_sidebar",
+            #1.3.1.1. Restrict correlation table by metadata
+            tags$h3("Correlation Coefficients"),
+            tags$p("Enter one feature to view the top features positively and negatively correlated with the feature in the data. You may optionally restrict the correlation analysis by metadata variables using the dropdown menus below."),
+            #Feature selection: only one feature can be entered
+            selectizeInput(inputId="corr_feature_selection",
+                           label = "Feature Selection",
+                           #Feature choices populated in server, as in the plots tab
+                           choices = NULL,
+                           selected = character(0),
+                           options = list("placeholder"="Enter gene name")),
+            pickerInput(inputId = "cluster_selection",
+                        label = "Restrict by Cluster",
+                        choices = clusters,
+                        selected = clusters,
+                        multiple = TRUE,
+                        options = list(
+                          "selected-text-format" = "count > 5",
+                          "size" = 10, #Define max options to show at a time to keep menu from being cut off
+                          "actions-box"=TRUE)),
+            pickerInput(inputId = "response_selection",
+                        label = "Restrict by Response",
+                        choices = responses,
+                        selected = responses,
+                        multiple = TRUE),
+            pickerInput(inputId = "htb_selection",
+                        label = "Restrict by Patient",
+                        choices = patients,
+                        #Restrict to five patients due to memory limits and select the first five patients by default
+                        selected = patients[1:5], 
+                        multiple = TRUE,
+                        options = list(
+                          "selected-text-format" = "count > 3",
+                          "size" = 10, 
+                          "actions-box"=TRUE
+                        )),
+            actionButton(inputId = "corr_submit",
+                         label = "Submit")#,
+            #Subset Stats Panel
+            #uiOutput(outputId = "sub_stats")
+            )#End corr-sidebar div
         ),#End sidebarPanel (1.3.1)
       #1.3.2 Main Pane
       mainPanel(
-        div(id="corr_main_panel", style="height:100%;", #Div added to contain Waiter spinner
+        div(id="corr_main_panel", class="spinner-container-main", #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
             uiOutput(outputId = "corr_ui"))
         
 #Old spinner 
@@ -555,20 +571,30 @@ ui <- tagList(
                                 margin-bottom: 0px; 
                                 font-size: 1.17em;"
                                    ),
+                                   #Guided tour
                                    actionLink(inputId = "start_intro",
                                               class="blue_hover",
                                               label = "(introjs help boxes)"),
                                    
+                                   #Interpreting scRNA-seq Plots
                                    tags$a(href="#",
                                           class="blue_hover",
                                           "Interpereting scRNA-seq Plots"),
                                    
+                                   #Tutorial Document
                                    tags$a("Tutorial Vignette",
                                           href="Shiny_Vignette.html",
                                           class="blue_hover",
                                           target="_blank", #Opens link in new tab
-                                          rel="noopener noreferrer", #Cybersecurity measure for links that open in new tab: prevents tabnapping
-                                   )#End Detailed Walkthrough link
+                                          rel="noopener noreferrer" #Cybersecurity measure for links that open in new tab: prevents tabnapping
+                                   ),#End Detailed Walkthrough link
+                                   
+                                   #File issue on github
+                                   tags$a("Report a Bug",
+                                          href="https://github.com/amc-heme/DataExploreShiny/issues",
+                                          class="blue_hover",
+                                          target="_blank", #Opens link in new tab
+                                          rel="noopener noreferrer")
                                    )#End tagList
                     )#End Help Button
                     )#End introBox2
@@ -1128,37 +1154,36 @@ server <- function(input,output,session){
   }, escape = FALSE)
 
   #2.7. Correlations Tab 
+  
   #2.7.1 Reactive dropdown menu for patient 
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
   #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized)
   #Running of code at startup is disabled with "ignoreInit=TRUE"
-  
-  observeEvent(c(input$response_selection),ignoreInit = TRUE,{ 
-    
-    #While the code below is running, display an "updating, please wait" placeholder.
-    updatePickerInput(session, 
-                      inputId = "htb_selection",
-                      label = "UPDATING",
-                      choices= character(0), 
-                      selected = character(0),
-                      options= list(
-                        "placeholder"="Updating, please wait"
-                      ))
+  observeEvent(c(input$response_selection),ignoreInit = TRUE,label="reactive_htb_dropdown",{ 
+    #Show a spinner while the valid patient ID's are calculated
+    waiter_show(
+      id = "corr_sidebar",
+      html = spin_loaders(id=2, color = "#555588"),
+      color = "#B1B1B188",
+      hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+    )
     
     #Subset Seurat object for the selected response type and return vector of patients included in that type
     valid_patients <- unique(subset(sobj, subset = response %in% input$response_selection)$htb)
     
+    #Update picker input with valid patient ID's
     updatePickerInput(session,
                       inputId = "htb_selection",
                       label = "Restrict by Patient",
                       choices = valid_patients,
                       selected = if (length(valid_patients)<5) valid_patients else valid_patients[1:5],
                       options = list(
-                        "max-options" = 7,
-                        "max-options-text" = "Cannot select more than five patients due to memory limitations. The ability to do so will be added in the future.",
-                        "placeholder"="undefined"
+                        "selected-text-format" = "count > 3",
+                        "actions-box"=TRUE
                       ))
     
+    #Hide waiter
+    waiter_hide(id = "corr_sidebar")
   })
  
   #2.7.2. Correlation table for selected feature and restriction criteria
@@ -1166,90 +1191,175 @@ server <- function(input,output,session){
   #2.7.2.1. Store table content as reactive value
   corr_table_content <- eventReactive(input$corr_submit,ignoreInit = FALSE, ignoreNULL = FALSE, {
     print("Running correlation table content code")
+    #Reactive value for identifying a memory error (defined here and reset to FALSE each time the correlation table code is ran)
+    rv$memory_error=FALSE
+    rv$vector_mem_error=FALSE
+    rv$other_error=FALSE
+    
     # Only run the correlation table code if a feature has been specified
     if (input$corr_feature_selection != ""){
-      #Form subset based on chosen criteria
-      s_sub <- subset(sobj, 
-                      subset=(clusters %in% input$cluster_selection) & 
-                        (response %in% input$response_selection) & 
-                        (htb %in% input$htb_selection)
+      #Show loading screen above main panel while table is computed (takes about a minute) 
+      waiter_show(
+        id = "corr_main_panel",
+        html = spin_loaders(id=2, color = "#555588"),
+        color = "#FFFFFF",
+        hide_on_render = FALSE #Gives manual control of showing/hiding spinner
       )
       
-      ###Subset Stats
-      #Determine the proportion of cells with nonzero reads for the selected gene. If it is below the threshold defined at the top of this script, return a warning to the user.
-      #Cells in subset
-      rv$n_cells <- length(Cells(s_sub))
-      
-      #Cells with nonzero reads
-      rv$n_nonzero <- sum(s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
-      #Proportion of nonzero reads
-      rv$prop_nonzero <- rv$n_nonzero/rv$n_cells
-      print(paste0("Nonzero proportion: ",format(rv$prop_nonzero, digits = 3, nsmall=2)))
+      #Error handling: errors are frequent in this script, often due to memory limitations, and they will result in the spinner not disappearing from the main window since waiter_hide() exists at the end this code block. Therefore, the code in this block must be handled with tryCatch() to capture errors.
+      tryCatch(
+        #If an error is caught: attempt to determine type of error by inspecting message text with grepl (not recommended, but I currently don't know any other way to catch this error type)
+        error = function(cnd){
+          print(class(cnd$message))
+          #Error 1: RAM error
+          if (grepl("cannot allocate vector of size",cnd$message)){
+            #This reactive value will instruct the correlation table UI to display differently based on the error
+            rv$memory_error=TRUE
+            #Define notification to be displayed to user upon memory error
+            mem_err_ui <- icon_notification_ui(icon_name = "skull-crossbones",
+                                               message = tagList(
+                                                 "Memory Error: RAM is insufficient for analyzing the specified subset. Please narrow down the subset scope using the restriction criteria to the left, and feel free to ",
+                                                 tags$a("let us know",
+                                                        href="https://github.com/amc-heme/DataExploreShiny/issues",
+                                                        target="_blank", #Opens link in new tab
+                                                        rel="noopener noreferrer"),
+                                                 " ",#Space after link 
+                                                 "if you repeatedly recieve this error.")#End tagList
+                                               )
             
-      if (rv$prop_nonzero < nonzero_threshold){
-        #Define notification UI (warning icon plus text)
-        notification_ui <- span(
-          #Warning icon (inline and enlarged)
-          icon("exclamation-triangle", style="display: inline-block; font-size: 1.7em;"),
-          #Notification text with proportion and number of non-zero cells
-          span(paste0("High zero content: the selected feature was detected in ",
-                      #Report percentage (round based on the observed proportion)
-                      format(rv$prop_nonzero*100, digits=3, nsmall=2, scientific=FALSE),
-                      "% of cells within the selection restriction criteria ",
-                      #Report number of cells the feature was observed in
-                      "(",rv$n_nonzero,"/",rv$n_cells," cells). ",
-                      "Correlation results may be inaccurate."),
-               #Font size of notification text 
-               style="font-size: 1.17em;")
-        )
+            #Display notification
+            showNotification(ui=mem_err_ui, 
+                             #Duration=NULL will make the message persist until dismissed
+                             duration = NULL,
+                             id = "corr_mem_error",
+                             session=session)
+          }
+          #Error 2: vector memory exhausted
+          if (grepl("vector memory exhausted",cnd$message)){
+            rv$vector_mem_error=TRUE
+            
+            #Define Notification UI
+            vector_err_ui <- icon_notification_ui(icon_name = "skull-crossbones",
+                                               message = tagList(
+                                                 "Error: vector memory exhausted. Please ",
+                                                 tags$a("report this issue",
+                                                        href="https://github.com/amc-heme/DataExploreShiny/issues",
+                                                        target="_blank", #Opens link in new tab
+                                                        rel="noopener noreferrer"),
+                                                 " ", #Space after link
+                                                 "with a screenshot of the response criteria selected, and please narrow down the subset criteria for now.")#End tagList
+            )
+            
+            #Display Notification
+            showNotification(ui=vector_err_ui, 
+                             #Duration=NULL will make the message persist until dismissed
+                             duration = NULL,
+                             id = "corr_vector_mem_error",
+                             session=session)
+          }
+          #Notification for any unforseen error type
+          else {
+            rv$other_error=TRUE
+            
+            #Define Notification UI
+            other_err_ui <- icon_notification_ui(icon_name = "skull-crossbones",
+                                                  message = tagList(
+                                                    glue("Error: {cnd$message}. Please "),
+                                                    tags$a("report this issue ",
+                                                           href="https://github.com/amc-heme/DataExploreShiny/issues",
+                                                           target="_blank", #Opens link in new tab
+                                                           rel="noopener noreferrer"),
+                                                    "with a screenshot of the app window.")#End tagList
+            )
+            
+            #Display Notification
+            showNotification(ui=other_err_ui, 
+                             #Duration=NULL will make the message persist until dismissed
+                             duration = NULL,
+                             id = "corr_other_error",
+                             session=session)
+          }
+          
+          #This will eventually be replaced with an error message to display to the user
+          print("An error ocurred while computing correlation table code.")
+          print(cnd$message)
+          table <- NULL #Return nothing if an error occurs
+        },#End error function
+        #Begin tryCatch code
+        {
+          print("Make subset")
+          #Form subset based on chosen criteria
+          s_sub <- subset(sobj, 
+                          subset=(clusters %in% input$cluster_selection) & 
+                            (response %in% input$response_selection) & 
+                            (htb %in% input$htb_selection)
+          )
+          
+          ###Subset Stats
+          print("Subset Stats")
+          #Determine the proportion of cells with nonzero reads for the selected gene. If it is below the threshold defined at the top of this script, return a warning to the user.
+          #Cells in subset
+          rv$n_cells <- length(Cells(s_sub))
+          #Cells with nonzero reads
+          rv$n_nonzero <- sum(s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
+          #Proportion of nonzero reads
+          rv$prop_nonzero <- rv$n_nonzero/rv$n_cells
+          #Store as a percentage (format to show at least two digits after decimal point, and at least three sig figs)
+          rv$percent_nonzero <- format(rv$prop_nonzero*100, digits=3, nsmall=2, scientific=FALSE)
+          print(paste0("Percent nonzero: ",rv$percent_nonzero,"%"))
+          
+          #Rendering Selections and Stats for report
+          output$selected_clusters <- renderText(input$cluster_selection)
+          output$selected_response <- renderText(input$response_selection)
+          output$selected_htb <- renderText(input$htb_selection)
+          output$print_n_cells <- renderText(rv$n_cells)
+          output$print_nonzero <- renderText(glue("{rv$n_nonzero} ({rv$percent_nonzero}%)")) 
+          
         
-        showNotification(ui=notification_ui, 
-                         #Duration=NULL will make the message persist until dismissed
-                         duration = NULL,
-                         id = "corr_high_zero_content",
-                         session=session)
-      } 
+          #Notification if nonzero proportion is too low
+          if (rv$prop_nonzero < nonzero_threshold){
+            #Define notification UI (warning icon plus text)
+            notification_ui <- span(
+              #Warning icon (inline and enlarged)
+              icon("exclamation-triangle", style="display: inline-block; font-size: 1.7em;"),
+              #Notification text with proportion and number of non-zero cells
+              span(glue("Low gene coverage: the selected feature was detected in {rv$percent_nonzero}% of cells within the selection restriction criteria ({rv$n_nonzero}/{rv$n_cells} cells). Correlation results may be inaccurate."),
+                   #Font size of notification text 
+                   style="font-size: 1.17em;")#End span
+            )#End notification_ui span
+            
+            #Display notification UI
+            showNotification(ui=notification_ui, 
+                             #Duration=NULL will make the message persist until dismissed
+                             duration = NULL,
+                             id = "corr_high_zero_content",
+                             session=session)
+          } 
+          ###
+          
+          print("Make Matrix")
+          #Convert subset data to matrix and transpose so columns are gene names
+          mat <- t(as.matrix(s_sub@assays$RNA@data))
+          
+          print("Compute correlations")
+          #Form correlation matrix
+          table <- cor(mat[,input$corr_feature_selection],mat) |> #Compute correlation between selected feature and others
+            t() |> #Code returns coefficients for each feature in rows (want columns) 
+            enframe("Feature","Correlation_Coefficient") |> #Convert matrix to tibble
+            filter(Feature != input$corr_feature_selection) |> #Filter out selected feature
+            arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
+          
+          })#End tryCatch
       
-      #Convert subset data to matrix and transpose so columns are gene names
-      mat <- t(as.matrix(s_sub@assays$RNA@data))
-      
-      #Form correlation matrix
-      table <- cor(mat[,input$corr_feature_selection],mat) |> #Compute correlation between selected feature and others
-        t() |> #Code returns coefficients for each feature in rows (want columns) 
-        enframe("Feature","Correlation_Coefficient") |> #Convert matrix to tibble
-        filter(Feature != input$corr_feature_selection) |> #Filter out selected feature
-        arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
-      
+      print("Hiding Waiter")
+      #Hide loading screen
       waiter_hide(id = "corr_main_panel")
       
+      #Return table for storage in corr_table_content()
       table
     }
   })
   
-  # 2.7.2.2. Subset stats UI: render when reactive values for subset are changed
-  observeEvent(rv$prop_nonzero, ignoreInit = TRUE,{
-    print("Render UI for statistics")
-    #Render UI
-    output$sub_stats <- renderUI({
-      tagList(
-        tags$strong("Stats for Selected Criteria"),
-        #Number of cells in subset
-        textOutput(outputId = "print_n_cells"),
-        #Number and proportion of nonzero cells
-        textOutput(outputId = "print_nonzero")
-      )
-    })
-    
-    #Render text for number of cells and number of nonzero reads
-    output$print_n_cells <- renderText({
-      print("Code for number of cells text")
-      paste0("Number of cells within restriction criteria: ",rv$n_cells)
-    })
-    output$print_nonzero <- renderText({
-      print("Code for nonzero cells text")
-      glue("Cells with at least one read for {input$corr_feature_selection}: {rv$n_nonzero} ({format(rv$prop_nonzero*100, digits=3, nsmall=2, scientific=FALSE)}%)")
-    })
-  })
   
   #2.7.2.2. Correlations UI
   #IgnoreNULL set to false to get UI to render at startup
@@ -1261,7 +1371,7 @@ server <- function(input,output,session){
     }
     #After a feature is applied and the submit button is pressed, display the table
     else {
-      #Show loading screen above main panel 
+      #Display the loading screen (screen will show until the end of the corr_table_content calculation is reached).
       waiter_show(
         id = "corr_main_panel",
         html = spin_loaders(id=2, color = "#555588"),
@@ -1269,26 +1379,42 @@ server <- function(input,output,session){
         hide_on_render = FALSE #Gives manual control of showing/hiding spinner
       )
       
-      tagList(
+      #UI to display 
+      div(
         tags$h2(glue("Genes correlated with {input$corr_feature_selection} in Subset")),
+        #Restriction criteria section
+        tags$h3("Selected Restriction Criteria"),
+        #Make each input criteria appear inline
+        div(div(tags$strong("Clusters: "),textOutput(outputId = "selected_clusters", inline = TRUE)),
+            div(tags$strong("Response criteria: "),textOutput(outputId = "selected_response", inline = TRUE)),
+            div(tags$strong("Patients: "),textOutput(outputId = "selected_htb", inline = TRUE))
+            ),
+        
+        #Statistics section
+        tags$h3("Quality Statistics for Gene and Subset"),
+        div(div("(Subset created based on defined restriction criteria)"),
+            div(tags$strong("Number of cells in subset: "),textOutput(outputId = "print_n_cells", inline = TRUE)),
+            div(tags$strong(glue("Cells with non-zero reads for {input$corr_feature_selection}:")),textOutput(outputId = "print_nonzero", inline = TRUE))
+            ),
+        
+        #Corrrelations table and plots
+        tags$h3("Correlated Genes"),
         dataTableOutput(outputId = "corr_table")
-        )#End tagList
-    }
+        
+        )#End div
+      }
   })
   
   #2.7.2.3. Render Correlation UI and table
-  #UI (ignoreNULL in event listener must be set to false to render at startup)
-  observeEvent(input$corr_submit, ignoreNULL = FALSE, {
-    
-  })
-  
+  #UI
   output$corr_ui <- renderUI({corr_UI()})
   
   #Table
-  observeEvent(input$corr_submit, ignoreInit = TRUE, ignoreNULL = FALSE, {
+  observeEvent(input$corr_submit, ignoreInit = TRUE, ignoreNULL = FALSE, label="render_corr_table", {
     print("Rendering table content")
     output$corr_table <- renderDataTable({corr_table_content()})
   })
+  
   
   #2.7.3. Feature Plot of feature selected from table
   
