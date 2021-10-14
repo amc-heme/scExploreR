@@ -5,9 +5,9 @@
   top: 7px;
 }
 
-/* */
+/* Help dropdown */
 #dropdown-menu-help {
-  z-index: 1200;
+  z-index: 1000000; /* Displays over spinner, which has a z-index of 99,999 */
   top: 50px;
   font-size: 1.17em;
 }
@@ -49,4 +49,3 @@
 	color: #333;
 	text-decoration: none; 
 }
-.blue_hover:focus

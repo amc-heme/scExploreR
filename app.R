@@ -10,6 +10,10 @@ library(shinydashboard)
 library(waiter)
 library(shinycssloaders)
 
+#Reactlog (for debugging)
+library(reactlog)
+options(shiny.reactlog=TRUE)
+
 #Tidyverse Packages
 library(tidyverse)
 library(dplyr)
@@ -467,7 +471,7 @@ corr_tab <- function(){
             tags$p("Enter one feature to view the top features positively and negatively correlated with the feature in the data. You may optionally restrict the correlation analysis by metadata variables using the dropdown menus below."),
             #Feature selection: only one feature can be entered
             selectizeInput(inputId="corr_feature_selection",
-                           label = "Feature Selection",
+                           label = "Gene Selection",
                            #Feature choices populated in server, as in the plots tab
                            choices = NULL,
                            selected = character(0),
@@ -1159,7 +1163,7 @@ server <- function(input,output,session){
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
   #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized)
   #Running of code at startup is disabled with "ignoreInit=TRUE"
-  observeEvent(c(input$response_selection),ignoreInit = TRUE,label="reactive_htb_dropdown",{ 
+  observeEvent(c(input$response_selection),ignoreInit = TRUE,label="Reactive HTB Dropdown",{ 
     #Show a spinner while the valid patient ID's are calculated
     waiter_show(
       id = "corr_sidebar",
@@ -1189,7 +1193,10 @@ server <- function(input,output,session){
   #2.7.2. Correlation table for selected feature and restriction criteria
   #Table updates only when the "Submit" button is clicked
   #2.7.2.1. Store table content as reactive value
-  corr_table_content <- eventReactive(input$corr_submit,ignoreInit = FALSE, ignoreNULL = FALSE, {
+  corr_table_content <- eventReactive(input$corr_submit,
+                                      label="Corelation Table Content",
+                                      ignoreInit = FALSE, 
+                                      ignoreNULL = FALSE, {
     print("Running correlation table content code")
     #Reactive value for identifying a memory error (defined here and reset to FALSE each time the correlation table code is ran)
     rv$memory_error=FALSE
@@ -1307,14 +1314,6 @@ server <- function(input,output,session){
           #Store as a percentage (format to show at least two digits after decimal point, and at least three sig figs)
           rv$percent_nonzero <- format(rv$prop_nonzero*100, digits=3, nsmall=2, scientific=FALSE)
           print(paste0("Percent nonzero: ",rv$percent_nonzero,"%"))
-          
-          #Rendering Selections and Stats for report
-          output$selected_clusters <- renderText(input$cluster_selection)
-          output$selected_response <- renderText(input$response_selection)
-          output$selected_htb <- renderText(input$htb_selection)
-          output$print_n_cells <- renderText(rv$n_cells)
-          output$print_nonzero <- renderText(glue("{rv$n_nonzero} ({rv$percent_nonzero}%)")) 
-          
         
           #Notification if nonzero proportion is too low
           if (rv$prop_nonzero < nonzero_threshold){
@@ -1361,9 +1360,12 @@ server <- function(input,output,session){
   })
   
   
-  #2.7.2.2. Correlations UI
+  #2.7.3. Correlations UI
+  #2.7.3.1 Main UI
   #IgnoreNULL set to false to get UI to render at startup
-  corr_UI <- eventReactive(input$corr_submit, ignoreNULL = FALSE, {
+  corr_ui <- eventReactive(input$corr_submit, 
+                           label = "Correlation Main UI (Define Content)",
+                           ignoreNULL = FALSE, {
     print("Correlation UI Function")
     #UI: if the feature selection menu is empty (default state at initialization), prompt user to enter features
     if (input$corr_feature_selection == ""){
@@ -1397,28 +1399,86 @@ server <- function(input,output,session){
             div(tags$strong(glue("Cells with non-zero reads for {input$corr_feature_selection}:")),textOutput(outputId = "print_nonzero", inline = TRUE))
             ),
         
-        #Corrrelations table and plots
+        #Correlations table and plots
         tags$h3("Correlated Genes"),
-        dataTableOutput(outputId = "corr_table")
+        #Output: table is rendered inline with scatterplot, which is defined in a separate eventReactive function
+        #Scatterplot only appears when the user makes a selection on the table
+        #Add table container
+        div(class="two-column",
+            style="width: 40%; float: left;",
+            #Use a DT data table
+            DTOutput(outputId = "corr_table")
+        ),
         
-        )#End div
+        div(class="two-column",
+            style="width: 60%; float: right;",
+            #UI for scatterplot rendered in separate eventReactive function
+            uiOutput(outputId = "corr_scatter_ui")
+            )
+        )#End UI div
       }
   })
   
-  #2.7.2.3. Render Correlation UI and table
-  #UI
-  output$corr_ui <- renderUI({corr_UI()})
+  #2.7.3.2 Correlations scatterplot UI
+  #Computed separately from main UI since it responds to a different user input (clicking table)
+  corr_scatter_ui <- eventReactive(input$corr_table_rows_selected,
+                                      label="Correlation Scatterplot UI",
+                                      ignoreNULL = FALSE,{
+                                        #Display the graph if rows are selected
+                                        if (length(input$corr_table_rows_selected)>0){
+                                          #Use two-column CSS class for inline display
+                                          plotOutput(outputId = "corr_scatter")     
+                                        }
+                                        })
   
-  #Table
-  observeEvent(input$corr_submit, ignoreInit = TRUE, ignoreNULL = FALSE, label="render_corr_table", {
-    print("Rendering table content")
-    output$corr_table <- renderDataTable({corr_table_content()})
+  #2.7.4. Plot of feature selected from table
+  #Row index of user selection from table is stored in input$corr_table_rows_selected.
+  corr_scatter <- eventReactive(input$corr_table_rows_selected,
+                                label="Correlation Scatterplot Content",{
+    row_idx <- input$corr_table_rows_selected
+    #Take action only if a row is selected (length of selection > 0) 
+    if (row_idx>0){
+      #Record gene name of row selected
+      gene_selected <- as.character(corr_table_content()[row_idx,1])
+      
+      #Make and store scatterplot
+      FeatureScatter(sobj, 
+                     feature1 = input$corr_feature_selection, 
+                     feature2 = gene_selected, 
+                     group.by = "clusters")
+    }
   })
   
+  #2.7.5. Render Correlation UI, table, scatterplot, and statistics
+  #Main UI
+  output$corr_ui <- renderUI({corr_ui()})
   
-  #2.7.3. Feature Plot of feature selected from table
-  
+  output$corr_scatter_ui <- renderUI({corr_scatter_ui()})
 
+  #Table
+  output$corr_table <- renderDT({corr_table_content()},
+                                selection="single",
+                                filter="top",
+                                colnames=c("Gene","Correlation Coefficient"),
+                                rownames=FALSE)
+  
+  #Render correlation scatterplot
+  observeEvent(input$corr_table_rows_selected, 
+               label = "Render Corr Scatter", {
+    output$corr_scatter <- renderPlot({corr_scatter()})
+  })
+
+  #Render Statistics
+  observeEvent(input$corr_submit,
+               label = "Render Statistics",{
+                 #Rendering Selections and Stats for report
+                 output$selected_clusters <- renderText(isolate(input$cluster_selection))
+                 output$selected_response <- renderText(isolate(input$response_selection))
+                 output$selected_htb <- renderText(isolate(input$htb_selection))
+                 output$print_n_cells <- renderText(isolate(rv$n_cells))
+                 output$print_nonzero <- renderText(isolate(glue("{rv$n_nonzero} ({rv$percent_nonzero}%)")))
+               })
+    
 }
 
 # Run the application 
