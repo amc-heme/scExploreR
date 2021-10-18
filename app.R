@@ -415,6 +415,7 @@ tables_tab <- function(){
         selectInput(inputId = "table_group_by", label = "Select Variable to view gene expression data by", choices = c("Response"="response","Patient ID"= "htb")),
         
         #1.2.1.2. Ident.1 selections: choose which metadata variable to display differential expression for based on metadata selection
+        ### TODO: USE SERVER FUNCTION TO UPDATE SECOND DROPDOWN TO AVOID MULTIPLE IDENT1 INPUTS 
         #1.2.1.2.1. If response is chosen, show selection to display resistant vs. sensitive or sensitive vs. resistant
         conditionalPanel(condition = "input.table_group_by=='response'",
                          selectInput(inputId = "response_ident_1", 
@@ -444,16 +445,16 @@ tables_tab <- function(){
         
         #1.2.1.3. Ask user to specify whether gene expression or ADT data is desired
         selectInput(inputId = "table_assay",
-                    choices = c("RNA","ADT"),
-                    selected = "RNA",
+                    choices = c("Gene"="RNA","Surface Protein"="ADT"),
+                    selected = "Gene",
                     label = "Choose assay to view"),
         
         #Additional text below assay choice panel
-        "(RNA for diffential gene expression or ADT for surface protein expresssion)"
+        tags$p("(RNA for diffential gene expression or ADT for surface protein expresssion)"),
       ),
       
       ###1.2.2. Main Panel with Table
-      mainPanel(dataTableOutput(outputId = "de_table"))
+      mainPanel(DTOutput(outputId = "de_table"))
     )
   )
 }#End 1.2.
@@ -653,6 +654,7 @@ server <- function(input,output,session){
             )
   })
   
+  ###Plots Tab
   #2.2. UMAP plot
   #2.2.1. Reactive UMAP plot dimensions
   #Width
@@ -1295,8 +1297,8 @@ server <- function(input,output,session){
         #Begin tryCatch code
         {
           print("Make subset")
-          #Form subset based on chosen criteria
-          s_sub <- subset(sobj, 
+          #Form subset based on chosen criteria (store in reactive value so the subset can be accessed in the scatterplot function)
+          rv$s_sub <- subset(sobj, 
                           subset=(clusters %in% input$cluster_selection) & 
                             (response %in% input$response_selection) & 
                             (htb %in% input$htb_selection)
@@ -1306,9 +1308,9 @@ server <- function(input,output,session){
           print("Subset Stats")
           #Determine the proportion of cells with nonzero reads for the selected gene. If it is below the threshold defined at the top of this script, return a warning to the user.
           #Cells in subset
-          rv$n_cells <- length(Cells(s_sub))
+          rv$n_cells <- length(Cells(rv$s_sub))
           #Cells with nonzero reads
-          rv$n_nonzero <- sum(s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
+          rv$n_nonzero <- sum(rv$s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
           #Proportion of nonzero reads
           rv$prop_nonzero <- rv$n_nonzero/rv$n_cells
           #Store as a percentage (format to show at least two digits after decimal point, and at least three sig figs)
@@ -1338,7 +1340,7 @@ server <- function(input,output,session){
           
           print("Make Matrix")
           #Convert subset data to matrix and transpose so columns are gene names
-          mat <- t(as.matrix(s_sub@assays$RNA@data))
+          mat <- t(as.matrix(rv$s_sub@assays$RNA@data))
           
           print("Compute correlations")
           #Form correlation matrix
@@ -1358,7 +1360,6 @@ server <- function(input,output,session){
       table
     }
   })
-  
   
   #2.7.3. Correlations UI
   #2.7.3.1 Main UI
@@ -1427,7 +1428,7 @@ server <- function(input,output,session){
                                         #Display the graph if rows are selected
                                         if (length(input$corr_table_rows_selected)>0){
                                           #Use two-column CSS class for inline display
-                                          plotOutput(outputId = "corr_scatter")     
+                                          plotOutput(outputId = "corr_scatter",height = "400px")     
                                         }
                                         })
   
@@ -1442,7 +1443,7 @@ server <- function(input,output,session){
       gene_selected <- as.character(corr_table_content()[row_idx,1])
       
       #Make and store scatterplot
-      FeatureScatter(sobj, 
+      FeatureScatter(rv$s_sub, 
                      feature1 = input$corr_feature_selection, 
                      feature2 = gene_selected, 
                      group.by = "clusters")
@@ -1478,6 +1479,7 @@ server <- function(input,output,session){
                  output$print_n_cells <- renderText(isolate(rv$n_cells))
                  output$print_nonzero <- renderText(isolate(glue("{rv$n_nonzero} ({rv$percent_nonzero}%)")))
                })
+
     
 }
 

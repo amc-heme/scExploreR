@@ -1,13 +1,13 @@
 /* CSS for styling the help button and its dropdown menu*/
 #help {	
-  z-index: 1100;
+  z-index: 1200; /* Navbar has a z-index of 1,000 */
   position: absolute;
   top: 7px;
 }
 
 /* Help dropdown */
 #dropdown-menu-help {
-  z-index: 1000000; /* Displays over spinner, which has a z-index of 99,999 */
+  z-index: 1201;
   top: 50px;
   font-size: 1.17em;
 }

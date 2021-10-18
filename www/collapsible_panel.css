@@ -115,3 +115,8 @@ table.dataTable thead th,table.dataTable thead td{
 .fa-skull-crossbones{
 	color: #000000;
 }
+
+/* Waiter (spinner) overlay */
+.waiter-overlay{
+z-index: 999; /* Default is 99,999, which displays over the help menu.*/
+}
