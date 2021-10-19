@@ -120,3 +120,8 @@ table.dataTable thead th,table.dataTable thead td{
 .waiter-overlay{
 z-index: 999; /* Default is 99,999, which displays over the help menu.*/
 }
+
+/* Change cover of hover in DT tables where hover is enabled */ 
+table.hover > tbody > tr:hover{
+  background-color: #B0BEDA66 !important; 
+}

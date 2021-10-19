@@ -38,7 +38,7 @@
 
 /* Loading Spinner Containers for Main Window*/
 .spinner-container-main{
-	min-height: 85vh;
+	height: 85vh;
 }
 	
 /* Stack Overflow Style Scrollbar for Main Window */

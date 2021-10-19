@@ -193,6 +193,45 @@ icon_notification_ui <- function(icon_name,message){
     )
   }
 ###
+
+### Vector to Text
+# Prints the contents of a vector as a string with commas separating each element. 
+# Used to create the formal report giving the subset criteria in the gene correlations tab
+vector_to_text <- function(vector){
+  if (is.null(vector)){
+    "NULL"
+  }
+  #For one entry, report the choice.
+  else if (length(vector)==1){
+    paste(vector)
+  }
+  #For two entries, use 'and' between choices
+  else if (length(vector)==2){
+    paste0(vector[1]," and ",vector[2])
+  }
+  #Multiple entries: iteratively integrate elements in a single string using paste0.
+  else {
+    #For more than 2 entries, must list with commas between each choice, and 'and' in front of the last choice
+    for (i in (1:(length(vector)))){
+      #First element: create string_return string and store the first element in the string. 
+      #Add a comma at the end.
+      if (i==1){
+        string_return <- paste0(vector[i],",")
+      }
+      #For all entries except the last entry, add the ith entry to the text vector with a comma at the end.
+      else if (i!=length(vector)){
+        string_return <- paste0(string_return," ",vector[i],",",collapse = "")
+      }
+      #Last entry: add ', and', then the last entry, then a period. 
+      else{
+        string_return <- paste0(string_return," and ",vector[i],collapse="")
+      }
+    }
+    #When finished iterating through all entries, print the result.
+    string_return
+  }
+}
+###
   
 ### Table of Contents
 # 1. User Interface Functions
@@ -415,7 +454,7 @@ tables_tab <- function(){
         selectInput(inputId = "table_group_by", label = "Select Variable to view gene expression data by", choices = c("Response"="response","Patient ID"= "htb")),
         
         #1.2.1.2. Ident.1 selections: choose which metadata variable to display differential expression for based on metadata selection
-        ### TODO: USE SERVER FUNCTION TO UPDATE SECOND DROPDOWN TO AVOID MULTIPLE IDENT1 INPUTS 
+        ### TODO: USE SERVER FUNCTION TO UPDATE SECOND DROPDOWN TO AVOID NEEDING ONE IDENT_1 INPUT FOR EACH METADATA TYPE 
         #1.2.1.2.1. If response is chosen, show selection to display resistant vs. sensitive or sensitive vs. resistant
         conditionalPanel(condition = "input.table_group_by=='response'",
                          selectInput(inputId = "response_ident_1", 
@@ -447,10 +486,10 @@ tables_tab <- function(){
         selectInput(inputId = "table_assay",
                     choices = c("Gene"="RNA","Surface Protein"="ADT"),
                     selected = "Gene",
-                    label = "Choose assay to view"),
-        
-        #Additional text below assay choice panel
-        tags$p("(RNA for diffential gene expression or ADT for surface protein expresssion)"),
+                    label = "Choose assay to view (gene or surface protein expression)"),
+
+        #1.2.1.4. Download Button for Table 
+        downloadButton(outputId = "de_download", label="Download Table")
       ),
       
       ###1.2.2. Main Panel with Table
@@ -494,8 +533,7 @@ corr_tab <- function(){
             pickerInput(inputId = "htb_selection",
                         label = "Restrict by Patient",
                         choices = patients,
-                        #Restrict to five patients due to memory limits and select the first five patients by default
-                        selected = patients[1:5], 
+                        selected = patients, 
                         multiple = TRUE,
                         options = list(
                           "selected-text-format" = "count > 3",
@@ -512,14 +550,6 @@ corr_tab <- function(){
       mainPanel(
         div(id="corr_main_panel", class="spinner-container-main", #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
             uiOutput(outputId = "corr_ui"))
-        
-#Old spinner 
-#        %>% 
-#          withSpinner(
-#            type = 3,
-#            color = "#555588",
-#            color.background = "#ffffff", #Must equal background color of panel
-#            id="corr_table_spinner")
         
         )#End MainPanel
       )#End sidebarLayout
@@ -550,7 +580,7 @@ ui <- tagList(
                       plots_tab()),
              tabPanel("DE Tables",
                       tables_tab()),
-             tabPanel("Feature Correlations",
+             tabPanel("Gene Correlations",
                       corr_tab())
              ),#End navbarPage()
   #Help button - Creates a Dropdown menu when clicked
@@ -577,21 +607,24 @@ ui <- tagList(
                                 font-size: 1.17em;"
                                    ),
                                    #Guided tour
-                                   actionLink(inputId = "start_intro",
-                                              class="blue_hover",
-                                              label = "(introjs help boxes)"),
+                                  # actionLink(inputId = "start_intro",
+                                  #            class="blue_hover",
+                                  #            label = "(introjs help boxes)"),
                                    
                                    #Interpreting scRNA-seq Plots
-                                   tags$a(href="#",
+                                   tags$a("Interpereting scRNA-seq Plots",
+                                          href="scRNA_Plots_Explained.html",
                                           class="blue_hover",
-                                          "Interpereting scRNA-seq Plots"),
+                                          target="_blank", #Opens link in new tab
+                                          rel="noopener noreferrer" #Cybersecurity measure for links that open in new tab: prevents tabnapping
+                                          ),
                                    
                                    #Tutorial Document
                                    tags$a("Tutorial Vignette",
                                           href="Shiny_Vignette.html",
                                           class="blue_hover",
                                           target="_blank", #Opens link in new tab
-                                          rel="noopener noreferrer" #Cybersecurity measure for links that open in new tab: prevents tabnapping
+                                          rel="noopener noreferrer" 
                                    ),#End Detailed Walkthrough link
                                    
                                    #File issue on github
@@ -1124,7 +1157,8 @@ server <- function(input,output,session){
   ) #End downloadHandler function
   
   #2.6. Create table with differential expression data
-  output$de_table <- renderDataTable({
+  #2.6.1. Define table content in reactive variable
+  de_table_content <- reactive({
     #Determine which file to load based on user selections
     #First layer of conditionals: choice of assay
     if (input$table_assay=="RNA"){
@@ -1139,7 +1173,7 @@ server <- function(input,output,session){
         #file name format: "<htb>_vs_all.tsv.gz"
         filename <- paste0("./Feature_Tables/",input$htb_ident_1,"_vs_all.tsv.gz")
       }
-      }
+    }
     
     #Conditionals for ADT assay
     else if (input$table_assay=="ADT"){
@@ -1155,10 +1189,68 @@ server <- function(input,output,session){
     }
     
     #Load file and display table
-    read_tsv(filename, show_col_types = FALSE) #show_col_types is set to FALSE to quiet a message printed to the console every time a table is loaded.
+    table <- read_tsv(filename, show_col_types = FALSE) #show_col_types is set to FALSE to quiet a message printed to the console every time a table is loaded.
+    #Creates a column ranked by adjusted p value
+    table$p_adj_rank <- order(table$p_val_adj)
     
-  }, escape = FALSE)
+    #Format columns of table
+    #p_val_adj, p_val: print in scientific format
+    table$p_val_adj <- format(table$p_val_adj, digits=5, nsmall=2, scientific=TRUE) |> as.numeric()
+    table$p_val <- format(table$p_val, digits=5, nsmall=2, scientific=TRUE) |> as.numeric()
+    #avg_log2FC: float with 5 digits
+    table$avg_log2FC <- format(table$avg_log2FC, digits=5, nsmall=2, scientific=FALSE) |> as.numeric()
+    
+    table
+  })
+  
+  
+  
+  #2.6.2 Define download button UI
+  de_button_ui<- eventReactive(input$de_submit,{ 
+    
+    })
+  
+  #2.6.3. Render DE Table and download button UI
+  output$de_table <- renderDT({de_table_content()}, 
+                              class="compact stripe cell-border",
+                              #Sorts by adjusted p value column (6th column, zero index for Javascript)
+                              options=list(order = list(list(5, 'asc'))),
+                              rownames=FALSE,
+                              selection='none',
+                              escape = FALSE)
 
+  output$de_download_button <- renderUI({de_button_ui()})
+  
+  #2.6.4. Download Handler for DE Table
+  output$de_download <- downloadHandler(
+    #Filename function: filename determined based on current user selections
+    filename=function(){
+      if (input$table_group_by=="response"){
+        #If response is chosen, display either resistant vs. sensitive or sensitive vs. resistant based on user selection
+        if (input$response_ident_1=="Resistant"){
+          filename <- glue("DE_table_R-vs-S_{input$table_assay}.csv")
+        } 
+        else {
+          filename <- glue("DE_table_S-vs-R_{input$table_assay}.csv")
+        }
+      }
+      else if (input$table_group_by=="htb"){
+        #If patient id (htb) is chosen, display the table corresponding to the patient id desired for comparison
+        #file name format: "<htb>_vs_all.tsv.gz"
+        filename <- glue("DE_Table_{input$htb_ident_1}-vs-all_{input$table_assay}.csv")
+      }
+      
+      #Return filename computed above
+      filename
+    },
+    content=function(file) {
+      write.csv(de_table_content(), 
+                file = file, 
+                row.names = FALSE)
+      },
+    contentType = "text/csv"
+  )
+  
   #2.7. Correlations Tab 
   
   #2.7.1 Reactive dropdown menu for patient 
@@ -1182,7 +1274,7 @@ server <- function(input,output,session){
                       inputId = "htb_selection",
                       label = "Restrict by Patient",
                       choices = valid_patients,
-                      selected = if (length(valid_patients)<5) valid_patients else valid_patients[1:5],
+                      selected = valid_patients,
                       options = list(
                         "selected-text-format" = "count > 3",
                         "actions-box"=TRUE
@@ -1350,9 +1442,11 @@ server <- function(input,output,session){
             filter(Feature != input$corr_feature_selection) |> #Filter out selected feature
             arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
           
+          #Round correlation coefficients to 5 digits
+          table$Correlation_Coefficient <- format(table$Correlation_Coefficient, digits=5, nsmall=2, scientific=FALSE) |> as.numeric()
+          
           })#End tryCatch
       
-      print("Hiding Waiter")
       #Hide loading screen
       waiter_hide(id = "corr_main_panel")
       
@@ -1458,6 +1552,7 @@ server <- function(input,output,session){
 
   #Table
   output$corr_table <- renderDT({corr_table_content()},
+                                class="compact stripe cell-border hover",
                                 selection="single",
                                 filter="top",
                                 colnames=c("Gene","Correlation Coefficient"),
@@ -1473,9 +1568,9 @@ server <- function(input,output,session){
   observeEvent(input$corr_submit,
                label = "Render Statistics",{
                  #Rendering Selections and Stats for report
-                 output$selected_clusters <- renderText(isolate(input$cluster_selection))
-                 output$selected_response <- renderText(isolate(input$response_selection))
-                 output$selected_htb <- renderText(isolate(input$htb_selection))
+                 output$selected_clusters <- renderText(isolate(vector_to_text(input$cluster_selection)))
+                 output$selected_response <- renderText(isolate(vector_to_text(input$response_selection)))
+                 output$selected_htb <- renderText(isolate(vector_to_text(input$htb_selection)))
                  output$print_n_cells <- renderText(isolate(rv$n_cells))
                  output$print_nonzero <- renderText(isolate(glue("{rv$n_nonzero} ({rv$percent_nonzero}%)")))
                })
