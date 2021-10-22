@@ -21,10 +21,13 @@ library(ggplot2)
 library(glue)
 library(DT)
 
-#Load Seurat object 
-#Currently using the sample AML dataset
+#Load Seurat object (D0/D30 data)
 #https://drive.google.com/file/d/1S7iGNzfmLX5g00zEgVX_Z98c6Xm0Bifb/view
-sobj <- readRDS("./Seurat_Objects/uhg_seurat_intro.Rds")
+sobj <- readRDS("./Seurat_Objects/longitudinal_samples_updated_2021-10-20.rds")
+
+#Define subsets for 
+#Diagnosis/follow-up (longitudinal samples, patients 1325, 1650, 1510, 1526, 1378, and 1724)
+d0_d30 <- subset(sobj, sub=htb %in% c("1325","1650","1510","1526","1378","1724"))
 
 #Define searchable features
 #Gene_expression features
@@ -57,13 +60,22 @@ valid_features <- list(`Genes`=as.list(genes),
                        `Metadata Features`=as.list(numeric_cols))
 
 #Specify metadata variables to group and split by in drop down menus
+#Choices are specific to the D0/D30 object
 meta_choices <- c("None"="none",
                   "Clusters"="clusters",
                   "Response"="response",
+                  "Response (Additional Detail)"="best_response",
                   "Treatment"="treatment",
-                  "Patient ID"="htb",
-                  "Capture Number"="capture_num",
-                  "Run"="run")
+                  "Patient ID"="htb")
+
+split_by_choices <- c("None"="none",
+                      "Clusters"="clusters",
+                      "Response"="response",
+                      "Response (Additional Detail)"="best_response",
+                      "Patient ID"="htb",
+                      #"sub" options below involve both a subset and a split.by on the treatment column
+                      "D0 vs. D30"="sub-d0_d30")#,
+                      #"Dignosis vs. Relapse"="sub-dx_rl")
 
 #Correlations tab: define valid metadata selections
 clusters <- levels(unique(sobj@meta.data$clusters)) #Displays clusters in numerical order
@@ -322,8 +334,40 @@ plots_tab <- function(){
                          div(style="margin-top: 0px; margin-bottom: 10px;",uiOutput(outputId = "feature_error"))
         ),#End 1.1.1.2.
         
+        ###1.1.1.3. Subsets for Plots
+        collapsible_panel(label="Subset Options",
+                           active=FALSE,
+                           uiOutput(outputId="plots_selected_subset"),
+                           pickerInput(inputId = "plots_cluster_selection",
+                                       label = "Restrict by Cluster",
+                                       choices = clusters,
+                                       selected = clusters,
+                                       multiple = TRUE,
+                                       options = list(
+                                         "selected-text-format" = "count > 5",
+                                         "size" = 10, #Define max options to show at a time to keep menu from being cut off
+                                         "actions-box"=TRUE)),
+                           pickerInput(inputId = "plots_response_selection",
+                                       label = "Restrict by Response",
+                                       choices = responses,
+                                       selected = responses,
+                                       multiple = TRUE),
+                           pickerInput(inputId = "plots_htb_selection",
+                                       label = "Restrict by Patient",
+                                       choices = patients,
+                                       selected = patients, 
+                                       multiple = TRUE,
+                                       options = list(
+                                         "selected-text-format" = "count > 3",
+                                         "size" = 10, 
+                                         "actions-box"=TRUE
+                                       )),
+                           actionButton(inputId="plots_subset_submit",
+                                         label="Apply Criteria")
+                           ),#End 1.1.1.3
+        
         ### Plot Specific Options ###
-        #1.1.1.3. Options specific to UMAP: panel will display if UMAP is checked
+        #1.1.1.4. Options specific to UMAP: panel will display if UMAP is checked
         conditionalPanel(condition = "input.make_umap==true",
                          collapsible_panel(label="UMAP Specific Options",
                                            active=TRUE,
@@ -333,15 +377,20 @@ plots_tab <- function(){
                                                        choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
                                                        selected = "clusters"),
                                            #Choose metadata to split UMAP by
-                                           selectInput(inputId = "umap_split_by", label = "Metadata to split by:", choices=meta_choices, selected = "none"),
+                                           selectInput(inputId = "umap_split_by", 
+                                                       label = "Metadata to split by:", 
+                                                       choices=split_by_choices, #Experimental 
+                                                       selected = "none"),
+                                           #If split by is specified, control number of columns with a slider
+                                           uiOutput(outputId = "umap_ncol_slider"),
                                            #UI for user control of plot dimensions, if desired
                                            manual_dim_UI(plot_type = "umap"),
                                            #Download button (plot specific)
                                            downloadButton(outputId = "umap_download",label="Download UMAP")
                                            )#End collapsible panel
-                         ),#End 1.1.1.3.
+                         ),#End 1.1.1.4.
         
-        #1.1.1.4. Options specific to feature plot
+        #1.1.1.5. Options specific to feature plot
         conditionalPanel(condition = "input.make_feature==true",
                          collapsible_panel(label = "Feature Plot Specific Options",
                                            active = FALSE,
@@ -356,9 +405,9 @@ plots_tab <- function(){
                                            #Download button (plot specific)
                                            downloadButton(outputId = "feature_download",label="Download Feature Plot")
                                            )#End collapsible_panel
-                         ),#End 1.1.1.4
+                         ),#End 1.1.1.5
         
-        #1.1.1.5. Options specific to violin plot
+        #1.1.1.6. Options specific to violin plot
         conditionalPanel(condition = "input.make_vln==true",
                          collapsible_panel(label = "Violin Plot Specific Options",
                                            active=FALSE,
@@ -374,14 +423,16 @@ plots_tab <- function(){
                                                        choices=meta_choices, 
                                                        selected = "none"),
                                            
+                                           #Slider to control number of columns if multiple features are entered
+                                           uiOutput(outputId = "vln_ncol_slider"),
                                            #UI for user control of plot dimensions, if desired
                                            manual_dim_UI(plot_type = "vln"),
                                            #Download button (plot specific)
                                            downloadButton(outputId = "vln_download",label="Download Violin Plot")
                                            )#End collapsible panel
-                         ), #End 1.1.1.5.
+                         ), #End 1.1.1.6.
         
-        #1.1.1.6. Options specific to dot plot
+        #1.1.1.7. Options specific to dot plot
         conditionalPanel(condition = "input.make_dot==true",
                          collapsible_panel(label="Dot Plot Specific Options",
                                            active=FALSE,
@@ -413,7 +464,7 @@ plots_tab <- function(){
                                            #Download button (plot specific)
                                            downloadButton(outputId = "dot_download",label="Download Dot Plot")
                                            ) #End collapsible panel
-                         ) #End 1.1.1.6 
+                         ) #End 1.1.1.7 
       ), #End 1.1.1.
       
       ###1.1.2. Main panel for displaying plot output###
@@ -643,21 +694,21 @@ ui <- tagList(
 
 ### 2. Server function (builds interactive plot to display in UI) ###
 server <- function(input,output,session){
-  #2.1. Initialize Session
-  #2.1.1. Initialize Reactive Values
+  #2.0. Initialize Session
+  #2.0.1. Initialize Reactive Values
   rv <- reactiveValues()
   #For correlations tab: report number of cells in a subset, number of cells where a gene is detected, and the proportion of detected cells
   rv$n_cells <- 0
   rv$n_nonzero <- 0
   rv$prop_nonzero <- 0
     
-  #2.1.2. Render feature choices for text feature selection (plots tab)
+  #2.0.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
                        inputId = "text_features", 
                        choices = valid_features, 
                        server = TRUE)
   
-  #2.1.3. Render feature choices for feature selection in the correlations tab
+  #2.0.3. Render feature choices for feature selection in the correlations tab
   updateSelectizeInput(session,
                        inputId = "corr_feature_selection", 
                        choices = genes,
@@ -687,9 +738,58 @@ server <- function(input,output,session){
             )
   })
   
-  ###Plots Tab
-  #2.2. UMAP plot
-  #2.2.1. Reactive UMAP plot dimensions
+  ###2.1. Plots Tab
+  #2.1.1 Define subset for plots 
+  #UI for defining the subset currently selected.
+  current_subset <- eventReactive(input$plots_subset_submit, label = "Plots: Current Subset UI", {
+    #Print current subset criteria, inline with captions
+    div(div(tags$strong("Clusters: "),textOutput(outputId = "plots_selected_clusters", inline = TRUE)),
+        div(tags$strong("Response criteria: "),textOutput(outputId = "plots_selected_response", inline = TRUE)),
+        div(tags$strong("Patients: "),textOutput(outputId = "plots_selected_htb", inline = TRUE))
+    )
+  })
+  
+  #Rendering text for selected subsets
+  observeEvent(input$plots_subset_submit, ignoreNULL = FALSE,
+               label = "Plots: Render Subset Criteria",{
+                 #print("Clusters selected",input$plots_cluster_selection)
+                 #print("Clusters",clusters)
+                 #print("Logic test:",setequal(input$plots_cluster_selection,clusters))
+                 
+                 #Rendering Selections and Stats for report
+                 output$plots_selected_clusters <- renderText({
+                   #If all clusters are selected, print "All"
+                   if(setequal(input$plots_cluster_selection,clusters)){
+                     print("All")
+                     #Otherwise, print the selected clusters
+                   } else { 
+                     isolate(vector_to_text(input$plots_cluster_selection))
+                     } #End Conditionals
+                 }) #End renderText
+                 
+                 #Selected Response Criteria
+                 output$plots_selected_response <- renderText({
+                   #Print "All" if all clusters are selected, otherwise print selected responses
+                   if(setequal(input$plots_response_selection,responses)){
+                     print("All")
+                     }else{
+                       isolate(vector_to_text(input$plots_response_selection))
+                       }#End conditionals
+                   }) #End renderText
+                 
+                #Selected Patients
+                 output$plots_selected_htb <- renderText({
+                   if(setequal(input$plots_htb_selection,patients)){
+                   #Print "all" if all patient IDs are selected, otherwise print selected patients
+                   print("All")
+                   }else{
+                     isolate(vector_to_text(input$plots_htb_selection))
+                     } #End conditionals
+                   }) #End renderText
+               })
+  
+  #2.1.2. UMAP plot
+  #2.1.2.1. Reactive UMAP plot dimensions
   #Width
   #Update text box to match slider when the slider is changed
   observeEvent(input$umap_width,{
@@ -718,7 +818,39 @@ server <- function(input,output,session){
     input$umap_height
   })
   
-  #2.2.2. Generate UI for UMAP plot: renders a plotOutput() with either automatic or manually specified dimensions based on user specifications
+  #2.1.2.2. ncol slider: appears when a split.by 
+  #Default value depends on the number of values in the metadata object in question. 
+  umap_ncol_slider <- eventReactive(input$umap_split_by, ignoreInit = TRUE, { #Do not need to render UI at startup
+    #Do not render when split.by is "none"
+    if (input$umap_split_by=="none"){
+      NULL
+    } else {
+      #Determine number of panels created by split_by choice.
+      #Use double-bracket means of accessing the metadata variable (supports entry of an arbitrary variable)
+      #This means of access returns a dataframe. Slice for the first row (the unique values)
+      n_panel <- unique(sobj[[input$umap_split_by]])[,1] |> length()
+      
+      #Determine initial value for ncol
+      #For less than four panels, this is equal to the number of panels. 
+      if (n_panel < 4){
+        default_col <- n_panel
+        #For 4 or more panels, the default value is 2.
+      } else {
+        default_col <- 2
+      }
+      
+      #Create/update slider input
+      sliderInput(inputId = "umap_ncol",
+                  label = "Number of columns: ",
+                  min = 1,
+                  max = n_panel, #Max value: equal to the number of levels in the given variable
+                  step = 1, #Only allow integer values
+                  ticks = FALSE,
+                  value = default_col)
+    } #End else
+  })
+  
+  #2.1.2.3. Generate UI for UMAP plot: renders a plotOutput() with either automatic or manually specified dimensions based on user specifications
   umap_UI <- reactive({
     if (input$umap_manual_dim==FALSE){
       plotOutput(outputId = "umap_slot_plot")
@@ -729,7 +861,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.2.3. Define UMAP Plot Content
+  #2.1.2.4. Define UMAP Plot Content
   #Plot content is defined separately in a reactive context, to be rendered later with the UI.
   umap_plot_content <- reactive({
     #Produce a single UMAP plot if no features to split by are specified
@@ -737,22 +869,32 @@ server <- function(input,output,session){
       DimPlot(sobj, 
               group.by = input$umap_group_by, 
               label = TRUE, 
-              reduction = "umap_harmony")
-      
-      #Otherwise, produce a UMAP split by the specified variable
+              reduction = "umap")
+    } else if (input$umap_split_by=="sub-d0_d30"){
+      #Special case: if a subset option is passed, make the plot based on the pertinent subset
+      DimPlot(d0_d30,
+              group.by = input$umap_group_by, 
+              split.by = "treatment", #The Treatment column shows the diagnosis vs. D30 data
+              label = TRUE, 
+              ncol = input$umap_ncol,
+              reduction = "umap")
     } else {
+      #UMAP with split.by defined and no special subset
       DimPlot(sobj, 
               group.by = input$umap_group_by, 
               split.by = input$umap_split_by, 
               label = TRUE, 
-              reduction = "umap_harmony")
+              ncol = input$umap_ncol,
+              reduction = "umap")
     }
   })
   
-  #2.2.4. Render UI
+  #2.1.2.5. Render UI Components
   output$umap_slot <- renderUI({umap_UI()})
   
-  #2.2.5. Render UMAP plot, with manual or automatic dimensions as specified
+  output$umap_ncol_slider <- renderUI({umap_ncol_slider()})
+  
+  #2.1.2.6. Render UMAP plot, with manual or automatic dimensions as specified
   #ObserveEvent will respond to the check box and the slider/text box pairs (other variables involved in plot construction are updated separately in the reactive function above)
   observeEvent(c(input$umap_manual_dim, input$umap_width, input$umap_width_text, input$umap_height,input$umap_height_text),{
     if (input$umap_manual_dim==FALSE){
@@ -764,7 +906,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.2.6. Download UMAP Plot
+  #2.1.2.7. Download UMAP Plot
   output$umap_download <- downloadHandler(
     filename = "UMAP_plot.png",
     content = function(file){
@@ -788,8 +930,8 @@ server <- function(input,output,session){
   
   #Feature and Violin Plots: choose whether to render a plot or a message based on user inputs
   
-  #2.3. Feature Plot 
-  #2.3.1 Reactive dimensions
+  #2.1.3. Feature Plot 
+  #2.1.3.1 Reactive dimensions
   
   ##Sync width inputs
   #Update text box to match slider value when slider is changed
@@ -824,7 +966,7 @@ server <- function(input,output,session){
     input$feature_height
   })
   
-  #2.3.2 Feature UI
+  #2.1.3.2 Feature UI
   feature_slot_UI <- reactive({
     #Condition A: no features have been entered yet
     if (length(input$text_features)==0){
@@ -846,7 +988,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.3.3. Generate content for plot (but only if features are entered)
+  #2.1.3.3. Generate content for plot (but only if features are entered)
   feature_plot_content <- reactive({
     if (length(input$text_features)>0){
       #If no split.by variable is specified, create a feature plot without the split.by argument
@@ -863,7 +1005,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.3.4. Render the UI and plot objects created above
+  #2.1.3.4. Render the UI and plot objects created above
   #UI
   output$feature_slot <- renderUI({feature_slot_UI()})
   
@@ -880,7 +1022,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.3.5. Feature Plot Download
+  #2.1.3.5. Feature Plot Download
   output$feature_download <- downloadHandler(
     filename = "Feature_plot.png",
     content = function(file){
@@ -901,8 +1043,8 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  #2.4. Violin plot
-  #2.4.1 Reactive plot dimensions
+  #2.1.4. Violin plot
+  #2.1.4.1 Reactive plot dimensions
   ##Sync width inputs
   #Update text box to match slider value when slider is changed
   observeEvent(input$vln_width,{
@@ -936,7 +1078,33 @@ server <- function(input,output,session){
     input$vln_height
   })
   
-  #2.4.2. Code for conditional UI
+  #2.1.4.2. Slider to control number of columns when multiple features are entered
+  vln_ncol_slider <- eventReactive(input$text_features, ignoreNULL = FALSE,{
+    #Only display slider when there is more than one feature
+    if (length(input$text_features) <= 1){
+      ui <- NULL
+    } else {
+      #Default number of columns: equal to the number of panels if there are less than four, otherwise equal to two
+      #Number of panels equals number of features for violin plots
+      if (length(input$text_features)<4){
+        default_col <- length(input$text_features)
+      } else {
+        default_col <- 2
+      }
+      
+      #Create/update slider input
+      ui<- sliderInput(inputId = "vln_ncol",
+                  label = "Number of columns: ",
+                  min = 1,
+                  max = length(input$text_features), #Max value: equal to the number of features entered
+                  step = 1, #Only allow integer values
+                  ticks = FALSE,
+                  value = default_col)
+    }
+    ui
+  })
+  
+  #2.1.4.3. Code for conditional UI
   vln_slot_UI <- reactive({
     #Condition A: no features have been entered yet
     if (length(input$text_features)==0){
@@ -958,25 +1126,47 @@ server <- function(input,output,session){
     
   })
   
-  #2.4.3. Code for content
+  #2.1.4.4. Code for content
   vln_plot_content <- reactive({
-    #Code will only run if features are entered
-    if (length(input$text_features)>0){
+    #If/else if structure: code runs when one or more features are entered.
+    #One feature entered: do not need ncol argument
+    if (length(input$text_features)==1){
+      #No nol, no split.by
       if (input$vln_split_by=="none"){
         VlnPlot(sobj, 
                 features = input$text_features,
                 group.by = input$vln_group_by)
+      #No ncol, split.by
       } else {
         VlnPlot(sobj, 
                 features = input$text_features,
                 group.by = input$vln_group_by,
                 split.by = input$vln_split_by) 
       }
+    #More than one feature entered: use ncol since there are multiple panels
+    } else if (length(input$text_features)>1){
+      #ncol and no split.by
+      if (input$vln_split_by=="none"){
+        VlnPlot(sobj, 
+                features = input$text_features,
+                group.by = input$vln_group_by,
+                ncol=input$vln_ncol)
+      #ncol and split.by
+      } else {
+        VlnPlot(sobj, 
+                features = input$text_features,
+                group.by = input$vln_group_by,
+                split.by = input$vln_split_by,
+                ncol=input$vln_ncol) 
+      }
     }
   })
   
-  #2.4.4. Render UI and content for violin plot
+  #2.1.4.5. Render UI components and content for violin plot
   output$vln_slot <- renderUI({vln_slot_UI()})
+  
+  #ncol slider
+  output$vln_ncol_slider <- renderUI({vln_ncol_slider()})
   
   #Render Plot: use automatic or manual width/height based on user specifications
   observeEvent(c(input$vln_manual_dim, input$vln_width, input$vln_width_text, input$vln_height,input$vln_height_text),{
@@ -990,7 +1180,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.4.5. Violin Plot Download
+  #2.1.4.6. Violin Plot Download
   output$vln_download <- downloadHandler(
     filename = "Violin_plot.png",
     content = function(file){
@@ -1011,8 +1201,8 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  #2.5. Dot plot
-  #2.5.1. Reactive plot dimensions
+  #2.1.5. Dot plot
+  #2.1.5.1. Reactive plot dimensions
   ##Sync width inputs
   #Update text box to match slider value when slider is changed
   observeEvent(input$dot_width,{
@@ -1046,7 +1236,7 @@ server <- function(input,output,session){
     input$dot_height
   })
   
-  #2.5.2. Feature choices
+  #2.1.5.2. Feature choices
   #First observeEvent() function
   #The function below responds to each feature entered while the "use separate features for dot plot" checkbox is not checked. It is designed to load the selected options in the background before the user checks the box, making them immediately available when the box is checked 
   observeEvent(input$text_features,
@@ -1072,7 +1262,7 @@ server <- function(input,output,session){
                                          server=TRUE)}
                   })
   
-  #2.5.3. Generate UI for dot plot
+  #2.1.5.3. Generate UI for dot plot
   #Use reactive instead of eventReactive since the update button is no longer in use
   dot_slot_UI <- reactive({
     #Condition A: no features are entered, and use of generic features is selected
@@ -1099,7 +1289,7 @@ server <- function(input,output,session){
     }
     })
   
-  #2.5.4. Generate dot plot content
+  #2.1.5.4. Generate dot plot content
   dot_plot_content <- reactive({
     #Only renders if condition C in 2.5.2 is met
     if (((input$diff_features_dot==FALSE)&(length(input$text_features)>=1))|((input$diff_features_dot==TRUE)&(length(input$dot_features)>=1))){
@@ -1118,7 +1308,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.5.5. Render dot plot UI and content
+  #2.1.5.5. Render dot plot UI and content
   #UI
   output$dot_slot <- renderUI({dot_slot_UI()})
   
@@ -1135,7 +1325,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.5.6. Dot Plot Download
+  #2.1.5.6. Dot Plot Download
   output$dot_download <- downloadHandler(
     filename = "Dot_plot.png",
     content = function(file){
@@ -1156,8 +1346,8 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  #2.6. Create table with differential expression data
-  #2.6.1. Define table content in reactive variable
+  #2.2. Create table with differential expression data
+  #2.2.1. Define table content in reactive variable
   de_table_content <- reactive({
     #Determine which file to load based on user selections
     #First layer of conditionals: choice of assay
@@ -1205,12 +1395,12 @@ server <- function(input,output,session){
   
   
   
-  #2.6.2 Define download button UI
+  #2.2.2 Define download button UI
   de_button_ui<- eventReactive(input$de_submit,{ 
     
     })
   
-  #2.6.3. Render DE Table and download button UI
+  #2.2.3. Render DE Table and download button UI
   output$de_table <- renderDT({de_table_content()}, 
                               class="compact stripe cell-border",
                               #Sorts by adjusted p value column (6th column, zero index for Javascript)
@@ -1221,7 +1411,7 @@ server <- function(input,output,session){
 
   output$de_download_button <- renderUI({de_button_ui()})
   
-  #2.6.4. Download Handler for DE Table
+  #2.2.4. Download Handler for DE Table
   output$de_download <- downloadHandler(
     #Filename function: filename determined based on current user selections
     filename=function(){
@@ -1251,9 +1441,9 @@ server <- function(input,output,session){
     contentType = "text/csv"
   )
   
-  #2.7. Correlations Tab 
+  ###2.3. Correlations Tab 
   
-  #2.7.1 Reactive dropdown menu for patient 
+  #2.3.1 Reactive dropdown menu for patient 
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
   #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized)
   #Running of code at startup is disabled with "ignoreInit=TRUE"
@@ -1284,9 +1474,9 @@ server <- function(input,output,session){
     waiter_hide(id = "corr_sidebar")
   })
  
-  #2.7.2. Correlation table for selected feature and restriction criteria
+  #2.3.2. Correlation table for selected feature and restriction criteria
   #Table updates only when the "Submit" button is clicked
-  #2.7.2.1. Store table content as reactive value
+  #2.3.2.1. Store table content as reactive value
   corr_table_content <- eventReactive(input$corr_submit,
                                       label="Corelation Table Content",
                                       ignoreInit = FALSE, 
@@ -1455,8 +1645,8 @@ server <- function(input,output,session){
     }
   })
   
-  #2.7.3. Correlations UI
-  #2.7.3.1 Main UI
+  #2.3.3. Correlations UI
+  #2.3.3.1 Main UI
   #IgnoreNULL set to false to get UI to render at startup
   corr_ui <- eventReactive(input$corr_submit, 
                            label = "Correlation Main UI (Define Content)",
@@ -1514,7 +1704,7 @@ server <- function(input,output,session){
       }
   })
   
-  #2.7.3.2 Correlations scatterplot UI
+  #2.3.3.2 Correlations scatterplot UI
   #Computed separately from main UI since it responds to a different user input (clicking table)
   corr_scatter_ui <- eventReactive(input$corr_table_rows_selected,
                                       label="Correlation Scatterplot UI",
@@ -1526,7 +1716,7 @@ server <- function(input,output,session){
                                         }
                                         })
   
-  #2.7.4. Plot of feature selected from table
+  #2.3.4. Plot of feature selected from table
   #Row index of user selection from table is stored in input$corr_table_rows_selected.
   corr_scatter <- eventReactive(input$corr_table_rows_selected,
                                 label="Correlation Scatterplot Content",{
@@ -1544,7 +1734,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.7.5. Render Correlation UI, table, scatterplot, and statistics
+  #2.3.5. Render Correlation UI, table, scatterplot, and statistics
   #Main UI
   output$corr_ui <- renderUI({corr_ui()})
   
