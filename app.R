@@ -77,17 +77,31 @@ split_by_choices <- c("None"="none",
                       "D0 vs. D30"="sub-d0_d30")#,
                       #"Dignosis vs. Relapse"="sub-dx_rl")
 
-#Correlations tab: define valid metadata selections
-clusters <- levels(unique(sobj@meta.data$clusters)) #Displays clusters in numerical order
-patients <- unique(sobj@meta.data$htb)
-responses <- unique(sobj@meta.data$response)
+###Correlations tab: define valid metadata selections
+#Clusters dropdown
+clusters <- levels(unique(sobj$clusters)) 
+
+#Response dropdown
+responses <- unique(sobj$response)
+
+#Treatment dropdown (for d0/d30 object. Shows as 'approximate timepoint')
+treatments <- unique(sobj$treatment)
+
+#Patients dropdown
+#The list of lists below displays patients in their respective groups
+#This should be passed to 'choices', but not 'selected' (selected must be a vector)
+patients_categories <- list(`d0/d30`=list("1325","1650","1510","1526","1378","1724"),
+                 `Dx/Rl`=list("1261","1467","719"),
+                 `Normal Bone Marrow`=list("BMMC_1","BMMC_2","BMMC_3"))
+#Vector of all patients, to be passed to 'selected' in dropdown menus
+patients <- unique(sobj$htb)
 
 #Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
 ### Functions Used 
 ### Manual_dim_UI ###
-#Creates two slider-text box pairs for manual control of theheight and width of a plot.
+#Creates two slider-text box pairs for manual control of the height and width of a plot.
 manual_dim_UI <- function(plot_type,
                                initial_width=700,
                                max_width=2000,
@@ -244,7 +258,34 @@ vector_to_text <- function(vector){
   }
 }
 ###
-  
+
+### Sort patient list
+#For the list of patients that display in the dropdown for the d0/d30 object,
+#Sort each sublist so the patients appear in order.
+sort_patient_list <- function(patient_list){
+  #Patients in d0/d30 and Dx/Rl are numeric values that can be sorted easily
+  patient_list$`d0/d30` <- patient_list$`d0/d30` |> 
+    as.numeric() |> 
+    sort() |> 
+    as.character() |> #Convert back to character values to avoid issues with further subsetting 
+    as.list()
+  patient_list$`Dx/Rl` <- patient_list$`Dx/Rl` |> 
+    as.numeric() |> 
+    sort() |> 
+    as.character() |> 
+    as.list()
+  #Normal bone marrow column consists of character IDs that are sorted properly with sort()
+  patient_list$`Normal Bone Marrow` <- patient_list$`Normal Bone Marrow` |> 
+    as.character() |> 
+    sort() |> 
+    as.list()
+  #Return patient list
+  patient_list
+}
+#Apply function to patients_categories so this list appears in order initially
+patients_categories <- sort_patient_list(patients_categories)
+###
+
 ### Table of Contents
 # 1. User Interface Functions
 #   1.1. Plots
@@ -354,7 +395,7 @@ plots_tab <- function(){
                                        multiple = TRUE),
                            pickerInput(inputId = "plots_htb_selection",
                                        label = "Restrict by Patient",
-                                       choices = patients,
+                                       choices = patients_categories, #Display patient groups to user
                                        selected = patients, 
                                        multiple = TRUE,
                                        options = list(
@@ -581,9 +622,18 @@ corr_tab <- function(){
                         choices = responses,
                         selected = responses,
                         multiple = TRUE),
+            pickerInput(inputId="treatment_selection",
+                        label = "Restrict by Timepoint (approximate)",
+                        choices = treatments,
+                        selected = treatments, 
+                        multiple = TRUE,
+                        options = list(
+                          "selected-text-format" = "count > 3",
+                          "actions-box"=TRUE
+                        )),
             pickerInput(inputId = "htb_selection",
                         label = "Restrict by Patient",
-                        choices = patients,
+                        choices = patients_categories,
                         selected = patients, 
                         multiple = TRUE,
                         options = list(
@@ -1447,7 +1497,7 @@ server <- function(input,output,session){
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
   #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized)
   #Running of code at startup is disabled with "ignoreInit=TRUE"
-  observeEvent(c(input$response_selection),ignoreInit = TRUE,label="Reactive HTB Dropdown",{ 
+  observeEvent(c(input$response_selection),ignoreInit = TRUE,label="Reactive Patient Dropdown",{ 
     #Show a spinner while the valid patient ID's are calculated
     waiter_show(
       id = "corr_sidebar",
@@ -1458,12 +1508,47 @@ server <- function(input,output,session){
     
     #Subset Seurat object for the selected response type and return vector of patients included in that type
     valid_patients <- unique(subset(sobj, subset = response %in% input$response_selection)$htb)
+    #List of valid patients: indicates group of patient in dropdown menu
+    valid_patients_categories=list(`d0/d30`=list(),
+                                    `Dx/Rl`=list(),
+                                    `Normal Bone Marrow`=list())
+    #Sort valid patients into above framework
+    for (patient in valid_patients){
+      #Iterate through valid_patients vector and place each choice in the relevant category
+      if(patient %in% c("1325","1650","1510","1526","1378","1724")){
+        #Append above patient ids to d0/d30 category
+        valid_patients_categories$`d0/d30` <- append(valid_patients_categories$`d0/d30`,patient)
+      } else if (patient %in% c("1261","1467","719")){
+        #Append above patient ids to Dx/Rl category
+        valid_patients_categories$`Dx/Rl` <- append(valid_patients_categories$`Dx/Rl`,patient)
+      } else if (patient %in% c("BMMC_1","BMMC_2","BMMC_3")){
+        #Append above patient (sample) ids to normal bone marrow category
+        valid_patients_categories$`Normal Bone Marrow` <- append(valid_patients_categories$`Normal Bone Marrow`,patient)
+      }
+    }
+    #Sort patients in each list to display in order
+    #Patients in d0/d30 and Dx/Rl are numeric values that can be sorted easily
+    valid_patients_categories$`d0/d30` <- valid_patients_categories$`d0/d30` |> 
+      as.numeric() |> 
+      sort() |> 
+      as.character() |> #Convert back to character values to avoid issues with further subsetting 
+      as.list()
+    valid_patients_categories$`Dx/Rl` <- valid_patients_categories$`Dx/Rl` |> 
+      as.numeric() |> 
+      sort() |> 
+      as.character() |> 
+      as.list()
+    #Normal bone marrow column consists of character IDs that are sorted properly with sort()
+    valid_patients_categories$`Normal Bone Marrow` <- valid_patients_categories$`Normal Bone Marrow` |> 
+      as.character() |> 
+      sort() |> 
+      as.list()
     
     #Update picker input with valid patient ID's
     updatePickerInput(session,
                       inputId = "htb_selection",
                       label = "Restrict by Patient",
-                      choices = valid_patients,
+                      choices = valid_patients_categories,
                       selected = valid_patients,
                       options = list(
                         "selected-text-format" = "count > 3",
@@ -1583,7 +1668,8 @@ server <- function(input,output,session){
           rv$s_sub <- subset(sobj, 
                           subset=(clusters %in% input$cluster_selection) & 
                             (response %in% input$response_selection) & 
-                            (htb %in% input$htb_selection)
+                            (htb %in% input$htb_selection) &
+                            (treatment %in% input$treatment_selection)
           )
           
           ###Subset Stats
