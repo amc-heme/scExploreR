@@ -424,6 +424,10 @@ plots_tab <- function(){
                                                        selected = "none"),
                                            #If split by is specified, control number of columns with a slider
                                            uiOutput(outputId = "umap_ncol_slider"),
+                                           #Checkbox: add or remove labels (labels on by default)
+                                           checkboxInput(inputId = "umap_label",
+                                                         label="Label Groups",
+                                                         value=TRUE),
                                            #UI for user control of plot dimensions, if desired
                                            manual_dim_UI(plot_type = "umap"),
                                            #Download button (plot specific)
@@ -918,14 +922,14 @@ server <- function(input,output,session){
     if (input$umap_split_by=="none"){
       DimPlot(sobj, 
               group.by = input$umap_group_by, 
-              label = TRUE, 
+              label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
               reduction = "umap")
     } else if (input$umap_split_by=="sub-d0_d30"){
       #Special case: if a subset option is passed, make the plot based on the pertinent subset
       DimPlot(d0_d30,
               group.by = input$umap_group_by, 
               split.by = "treatment", #The Treatment column shows the diagnosis vs. D30 data
-              label = TRUE, 
+              label = input$umap_label, 
               ncol = input$umap_ncol,
               reduction = "umap")
     } else {
@@ -933,7 +937,7 @@ server <- function(input,output,session){
       DimPlot(sobj, 
               group.by = input$umap_group_by, 
               split.by = input$umap_split_by, 
-              label = TRUE, 
+              label = input$umap_label, 
               ncol = input$umap_ncol,
               reduction = "umap")
     }
