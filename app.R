@@ -21,9 +21,9 @@ library(ggplot2)
 library(glue)
 library(DT)
 
-#Load Seurat object (D0/D30 data)
-#https://drive.google.com/file/d/1S7iGNzfmLX5g00zEgVX_Z98c6Xm0Bifb/view
-sobj <- readRDS("./Seurat_Objects/longitudinal_samples_updated_2021-10-20.rds")
+#Load Seurat object (D0/D30 data, modified to include gene signature scores)
+#https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
+sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
 #Define subsets for 
 #Diagnosis/follow-up (longitudinal samples, patients 1325, 1650, 1510, 1526, 1378, and 1724)
@@ -40,10 +40,24 @@ adts <- rownames(sobj[["ADT"]])
 adt_human_readable <- paste0(adts," (Surface Protein)") 
 
 #Machine-readable ADT value (format "ADT_<gene_name>")
-adt_machine_readable <-paste0("ADT_",adts) #Capital letters are used for this object
+adt_machine_readable <-paste0("adt_",adts) #Lower-case letters are used to access this object
 
 #Zip above into a list of key-value pairs (human-readable features as keys, machine-readable features as values)
 adt_list <- split(adt_machine_readable, adt_human_readable)
+###
+
+### Gene Signatures
+#Fetch gene signature scores
+sigs <- rownames(sobj[["SIG"]])
+
+#Human-readable gene signature values
+sig_human_readable <- paste0(sigs," (Gene Signature)") 
+
+#Machine-readable gene signature value (format "SIG_<gene_name>")
+sig_machine_readable <-paste0("sig_",sigs) #Lower-case letters are used to access this object
+
+#Zip above into a list of key-value pairs (human-readable features as keys, machine-readable features as values)
+sig_list <- split(sig_machine_readable, sig_human_readable)
 ###
 
 #Metadata columns (only numeric columns can be plotted)
@@ -57,6 +71,7 @@ numeric_cols <- meta_cols[sapply(meta_cols, FUN=function(x){
 #Combine into list
 valid_features <- list(`Genes`=as.list(genes),
                        `Surface Protein Markers`=adt_list,
+                       `Gene Signature Scores`=sig_list,
                        `Metadata Features`=as.list(numeric_cols))
 
 #Specify metadata variables to group and split by in drop down menus
