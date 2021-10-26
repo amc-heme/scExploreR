@@ -391,36 +391,36 @@ plots_tab <- function(){
         ),#End 1.1.1.2.
         
         ###1.1.1.3. Subsets for Plots
-        collapsible_panel(label="Subset Options",
-                           active=FALSE,
-                           uiOutput(outputId="plots_selected_subset"),
-                           pickerInput(inputId = "plots_cluster_selection",
-                                       label = "Restrict by Cluster",
-                                       choices = clusters,
-                                       selected = clusters,
-                                       multiple = TRUE,
-                                       options = list(
-                                         "selected-text-format" = "count > 5",
-                                         "size" = 10, #Define max options to show at a time to keep menu from being cut off
-                                         "actions-box"=TRUE)),
-                           pickerInput(inputId = "plots_response_selection",
-                                       label = "Restrict by Response",
-                                       choices = responses,
-                                       selected = responses,
-                                       multiple = TRUE),
-                           pickerInput(inputId = "plots_htb_selection",
-                                       label = "Restrict by Patient",
-                                       choices = patients_categories, #Display patient groups to user
-                                       selected = patients, 
-                                       multiple = TRUE,
-                                       options = list(
-                                         "selected-text-format" = "count > 3",
-                                         "size" = 10, 
-                                         "actions-box"=TRUE
-                                       )),
-                           actionButton(inputId="plots_subset_submit",
-                                         label="Apply Criteria")
-                           ),#End 1.1.1.3
+#        collapsible_panel(label="Subset Options",
+#                           active=FALSE,
+#                           uiOutput(outputId="plots_selected_subset"),
+#                           pickerInput(inputId = "plots_cluster_selection",
+#                                       label = "Restrict by Cluster",
+#                                       choices = clusters,
+#                                       selected = clusters,
+#                                       multiple = TRUE,
+#                                       options = list(
+#                                         "selected-text-format" = "count > 5",
+#                                         "size" = 10, #Define max options to show at a time to keep menu from being cut off
+#                                         "actions-box"=TRUE)),
+#                           pickerInput(inputId = "plots_response_selection",
+#                                       label = "Restrict by Response",
+#                                       choices = responses,
+#                                       selected = responses,
+#                                       multiple = TRUE),
+#                           pickerInput(inputId = "plots_htb_selection",
+#                                       label = "Restrict by Patient",
+#                                       choices = patients_categories, #Display patient groups to user
+#                                       selected = patients, 
+#                                       multiple = TRUE,
+#                                       options = list(
+#                                         "selected-text-format" = "count > 3",
+#                                         "size" = 10, 
+#                                         "actions-box"=TRUE
+#                                       )),
+#                           actionButton(inputId="plots_subset_submit",
+#                                         label="Apply Criteria")
+#                           ),#End 1.1.1.3
         
         ### Plot Specific Options ###
         #1.1.1.4. Options specific to UMAP: panel will display if UMAP is checked
@@ -1518,7 +1518,7 @@ server <- function(input,output,session){
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
   #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized)
   #Running of code at startup is disabled with "ignoreInit=TRUE"
-  observeEvent(c(input$response_selection),ignoreInit = TRUE,label="Reactive Patient Dropdown",{ 
+  observeEvent(c(input$response_selection, input$treatment_selection),ignoreInit = TRUE,label="Reactive Patient Dropdown",{ 
     #Show a spinner while the valid patient ID's are calculated
     waiter_show(
       id = "corr_sidebar",
@@ -1838,11 +1838,9 @@ server <- function(input,output,session){
                                      ignoreNULL = FALSE, {
                                        #Conditional level one, !hasName(): TRUE before table is created, FALSE after
                                        if (!hasName(input,"corr_table_rows_selected")){
-                                         print("if level one")
                                          #Display nothing before table is created
                                          NULL 
                                        } else {
-                                         print("Else level one")
                                          #Conditional level two
                                          #This value is greater than zero when the table is clicked
                                          if (length(input$corr_table_rows_selected)==0){
@@ -1852,7 +1850,6 @@ server <- function(input,output,session){
                                                               label = "Download Table",
                                                               icon = icon("table")))
                                          } else {
-                                           print("Else level two")
                                            #After table is clicked, display two download buttons for the table and graph
                                            div(downloadButton(outputId = "corr_download_table", 
                                                               label = "Download Table",
