@@ -125,3 +125,8 @@ z-index: 999; /* Default is 99,999, which displays over the help menu.*/
 table.hover > tbody > tr:hover{
   background-color: #B0BEDA66 !important; 
 }
+
+/* hidden_button class */
+.hidden-button{
+  display: none;
+}

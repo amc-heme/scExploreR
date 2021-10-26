@@ -646,9 +646,11 @@ corr_tab <- function(){
                           "actions-box"=TRUE
                         )),
             actionButton(inputId = "corr_submit",
-                         label = "Submit")#,
-            #Subset Stats Panel
-            #uiOutput(outputId = "sub_stats")
+                         label = "Submit"),
+            #TEMP: used to generate download buttons 
+            verbatimTextOutput(outputId = "debug"),
+            #Download Buttons: render after the correlations table and scatterplots are computed
+            uiOutput(outputId = "corr_downloads_ui")
             )#End corr-sidebar div
         ),#End sidebarPanel (1.3.1)
       #1.3.2 Main Pane
@@ -1729,6 +1731,7 @@ server <- function(input,output,session){
       
       #Hide loading screen
       waiter_hide(id = "corr_main_panel")
+      waiter_hide(id="corr_sidebar")
       
       #Return table for storage in corr_table_content()
       table
@@ -1737,7 +1740,7 @@ server <- function(input,output,session){
   
   #2.3.3. Correlations UI
   #2.3.3.1 Main UI
-  #IgnoreNULL set to false to get UI to render at startup
+  #IgnoreNULL set to false to get UI to render at start up
   corr_ui <- eventReactive(input$corr_submit, 
                            label = "Correlation Main UI (Define Content)",
                            ignoreNULL = FALSE, {
@@ -1753,6 +1756,14 @@ server <- function(input,output,session){
         id = "corr_main_panel",
         html = spin_loaders(id=2, color = "#555588"),
         color = "#FFFFFF",
+        hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+      )
+      
+      #Also display spinner over the options menu to keep user from being able to click download buttons before content is ready
+      waiter_show(
+        id = "corr_sidebar",
+        html = spin_loaders(id=2, color = "#555588"),
+        color = "#B1B1B188",
         hide_on_render = FALSE #Gives manual control of showing/hiding spinner
       )
       
@@ -1794,7 +1805,7 @@ server <- function(input,output,session){
       }
   })
   
-  #2.3.3.2 Correlations scatterplot UI
+  #2.3.3.2. Correlations scatterplot UI
   #Computed separately from main UI since it responds to a different user input (clicking table)
   corr_scatter_ui <- eventReactive(input$corr_table_rows_selected,
                                       label="Correlation Scatterplot UI",
@@ -1802,24 +1813,57 @@ server <- function(input,output,session){
                                         #Display the graph if rows are selected
                                         if (length(input$corr_table_rows_selected)>0){
                                           #Use two-column CSS class for inline display
-                                          plotOutput(outputId = "corr_scatter",height = "400px")     
+                                          plotOutput(outputId = "corr_scatter", height = "400px")     
                                         }
                                         })
+  
+  #2.3.3.3. Download Buttons for Table and Plots
+  corr_downloads_ui <- eventReactive(c(input$submit,input$corr_table_rows_selected),
+                                     label="Correlation Download Buttons UI",
+                                     ignoreNULL = FALSE, {
+                                       #Conditional level one, !hasName(): TRUE before table is created, FALSE after
+                                       if (!hasName(input,"corr_table_rows_selected")){
+                                         print("if level one")
+                                         #Display nothing before table is created
+                                         NULL 
+                                       } else {
+                                         print("Else level one")
+                                         #Conditional level two
+                                         #This value is greater than zero when the table is clicked
+                                         if (length(input$corr_table_rows_selected)==0){
+                                           print("If level two (no scatterplot)")
+                                           #Display button to download table after table is created
+                                           div(downloadButton(outputId = "corr_download_table", 
+                                                              label = "Download Table",
+                                                              icon = icon("table")))
+                                         } else {
+                                           print("Else level two")
+                                           #After table is clicked, display two download buttons for the table and graph
+                                           div(downloadButton(outputId = "corr_download_table", 
+                                                              label = "Download Table",
+                                                              icon = icon("table")),
+                                               downloadButton(outputId = "corr_download_scatter_1",
+                                                              label = "Download Scatterplot",
+                                                              icon = icon("poll"))
+                                           ) #End div
+                                         } #End else (level 2)
+                                       } #End else (level 1)
+                                     })
   
   #2.3.4. Plot of feature selected from table
   #Row index of user selection from table is stored in input$corr_table_rows_selected.
   corr_scatter <- eventReactive(input$corr_table_rows_selected,
                                 label="Correlation Scatterplot Content",{
     row_idx <- input$corr_table_rows_selected
-    #Take action only if a row is selected (length of selection > 0) 
-    if (row_idx>0){
+    #Take action only if a row is selected (selection!=0)
+    if (row_idx!=0){
       #Record gene name of row selected
-      gene_selected <- as.character(corr_table_content()[row_idx,1])
+      rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
       
       #Make and store scatterplot
       FeatureScatter(rv$s_sub, 
                      feature1 = input$corr_feature_selection, 
-                     feature2 = gene_selected, 
+                     feature2 = rv$gene_selected, 
                      group.by = "clusters")
     }
   })
@@ -1830,6 +1874,10 @@ server <- function(input,output,session){
   
   output$corr_scatter_ui <- renderUI({corr_scatter_ui()})
 
+  output$corr_downloads_ui <- renderUI({corr_downloads_ui()})
+    
+  output$corr_debug <- renderText({hasName(input,"corr_table_rows_selected")})
+  
   #Table
   output$corr_table <- renderDT({corr_table_content()},
                                 class="compact stripe cell-border hover",
@@ -1854,7 +1902,34 @@ server <- function(input,output,session){
                  output$print_n_cells <- renderText(isolate(rv$n_cells))
                  output$print_nonzero <- renderText(isolate(glue("{rv$n_nonzero} ({rv$percent_nonzero}%)")))
                })
-
+  
+  #2.3.6. Download Handlers
+  #Correlations Table
+  output$corr_download_table <- downloadHandler(
+    filename=function(){
+      glue("Corr_table_{input$corr_feature_selection}.csv")
+    },
+    content=function(file){
+      write.csv(corr_table_content(),
+                file=file,
+                row.names=FALSE)
+    },
+    contentType="text/csv"
+  )#End downloadHandler 
+  
+  #Scatterplot (of selected subset)
+  output$corr_download_scatter_1 <- downloadHandler(
+    filename=function(){
+      glue("Corr_scatter_{input$corr_feature_selection}-vs-{rv$gene_selected}.png")
+    },
+    content=function(file){
+      ggsave(file, 
+             plot=corr_scatter(), 
+             device="png",
+             bg="#FFFFFF")
+    },
+    contentType = "image/png"
+  )#End downloadHandler
     
 }
 
