@@ -594,6 +594,10 @@ tables_tab <- function(){
                         label = "Metadata for DE calculation:",
                         choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
                         selected = "clusters"),
+            #Checkbox: Positive markers only?
+            checkboxInput(inputId = "dge_pos",
+                          label="Positive Markers Only",
+                          value=FALSE),
             actionButton(inputId = "dge_submit",
                          label = "Update"),
             #Download Button
@@ -1669,9 +1673,11 @@ server <- function(input,output,session){
           print("Compute dge with presto")
           #Run Presto
           dge_table <-
-            wilcoxauc(dge_s_sub, group_by = input$dge_group_by) |> #Run presto on the subsetted object and indicated metadata slot
-            as_tibble() |> #Explicitly coerce to tibble
-            select(-c(statistic, auc)) |> # remove stat and auc from the output table
+            wilcoxauc(dge_s_sub, group_by = input$dge_group_by) %>%  #Run presto on the subsetted object and indicated metadata slot
+            as_tibble() %>%  #Explicitly coerce to tibble
+            select(-c(statistic, auc)) %>%  # remove stat and auc from the output table
+            # Using magrittr pipes here because the following statement doesn't work with base R pipes
+            {if (input$dge_pos) filter(., logFC > 0) else .} %>%  # remove negative logFCs if box is checked
             arrange(padj, pval, desc(abs(logFC))) #Arrange in descending order by significance, then absolute logFC
           
           
