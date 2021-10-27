@@ -592,12 +592,12 @@ tables_tab <- function(){
                         )),
             selectInput(inputId = "dge_group_by", 
                         label = "Metadata for DE calculation:",
-                        choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
+                        choices=meta_choices[!meta_choices %in% c("none", "best_response")], #Remove "none" and "best_response" from selectable options to group by
                         selected = "clusters"),
             #Checkbox: Positive markers only?
             checkboxInput(inputId = "dge_pos",
                           label="Positive Markers Only",
-                          value=FALSE),
+                          value = TRUE),
             actionButton(inputId = "dge_submit",
                          label = "Update"),
             #Download Button
@@ -1669,6 +1669,20 @@ server <- function(input,output,session){
           #Cells in subset
           rv$dge_n_cells <-
             length(Cells(dge_s_sub))
+          #Number of classes in selection
+          rv$dge_n_classes <- length(unique(dge_s_sub@meta.data[,input$dge_group_by]))
+          #Mode selection
+          rv$dge_mode <- ifelse(
+            rv$dge_n_classes == 2,
+            paste0(
+              "Differential Expression (",
+              unique(dge_s_sub@meta.data[, input$dge_group_by])[1],
+              " vs. ",
+              unique(dge_s_sub@meta.data[, input$dge_group_by])[2],
+              ")"
+            ),
+            paste0("Marker Identification (", rv$dge_n_classes, " classes)")
+          )
           
           print("Compute dge with presto")
           #Run Presto
@@ -1729,8 +1743,8 @@ server <- function(input,output,session){
                                   "Differential Expression/Marker Genes by {input$dge_group_by} in Subset"
                                 )
                               ),
-                              #Restriction criteria section
-                              tags$h3("Selected Restriction Criteria"),
+                              #Table Metadata section
+                              tags$h3("Table Metadata"),
                               #Make each input criteria appear inline
                               div(
                                 div(
@@ -1744,16 +1758,19 @@ server <- function(input,output,session){
                                 div(
                                   tags$strong("Patients: "),
                                   textOutput(outputId = "dge_selected_htb", inline = TRUE)
-                                )
-                              ),
-                              
-                              #Statistics section
-                              tags$h3("Quality Statistics for Subset"),
-                              div(
+                                ),
                                 div("(Subset created based on defined restriction criteria)"),
                                 div(
                                   tags$strong("Number of cells in subset: "),
                                   textOutput(outputId = "dge_print_n_cells", inline = TRUE)
+                                ),
+                                div(
+                                  tags$strong("Number of cells per class: "),
+                                  textOutput(outputId = "dge_print_n_cells_class", inline = TRUE)
+                                ),
+                                div(
+                                  tags$strong("Mode selected: "),
+                                  textOutput(outputId = "dge_print_mode", inline = TRUE)
                                 ),
                               ),
                               
@@ -1818,6 +1835,8 @@ server <- function(input,output,session){
                    renderText(isolate(vector_to_text(input$dge_htb_selection)))
                  output$dge_print_n_cells <-
                    renderText(isolate(rv$dge_n_cells))
+                 output$dge_print_mode <-
+                   renderText(isolate(rv$dge_mode))
                })
   
   #2.2.5. Download Handlers
