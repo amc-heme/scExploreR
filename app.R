@@ -667,8 +667,7 @@ corr_tab <- function(){
                         )),
             actionButton(inputId = "corr_submit",
                          label = "Submit"),
-            #TEMP: used to generate download buttons 
-            verbatimTextOutput(outputId = "debug"),
+            
             #Download Buttons: render after the correlations table and scatterplots are computed
             uiOutput(outputId = "corr_downloads_ui")
             )#End corr-sidebar div
@@ -1536,7 +1535,6 @@ server <- function(input,output,session){
       tryCatch(
         #If an error is caught: attempt to determine type of error by inspecting message text with grepl (not recommended, but I currently don't know any other way to catch this error type)
         error = function(cnd) {
-          print(class(cnd$message))
           #Error 1: RAM error
           if (grepl("cannot allocate vector of size", cnd$message)) {
             #This reactive value will instruct the correlation table UI to display differently based on the error
@@ -1644,11 +1642,9 @@ server <- function(input,output,session){
             )
           }
           
-          #This will eventually be replaced with an error message to display to the user
-          print("An error ocurred while computing correlation table code.")
-          print(cnd$message)
+          #Return nothing if an error occurs
           table <-
-            NULL #Return nothing if an error occurs
+            NULL 
         },
         #End error function
         #Begin tryCatch code
@@ -1824,8 +1820,9 @@ server <- function(input,output,session){
   })
   
   #Render Statistics
-  observeEvent(input$dge_submit,
-               label = "Render Statistics", {
+  observeEvent(input$dge_submit, 
+               ignoreNULL= FALSE,
+               label = "DE Render Statistics", {
                  #Rendering Selections and Stats for report
                  output$dge_selected_clusters <-
                    renderText(isolate(vector_to_text(input$dge_cluster_selection)))
