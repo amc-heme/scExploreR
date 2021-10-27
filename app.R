@@ -105,6 +105,14 @@ patients_categories <- list(`d0/d30`=list("1325","1650","1510","1526","1378","17
 #Vector of all patients, to be passed to 'selected' in dropdown menus
 patients <- unique(sobj$htb)
 
+#Compile the above valid choices into a valid choices (vc) list, 
+#so choices can be more easily passed to functions
+choices <- list("clusters"=clusters,
+           "responses"=responses, 
+           "treatments"=treatments,
+           "patients"=patients,
+           "patinets_categories",patients_categories)
+
 #Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
@@ -214,6 +222,48 @@ collapsible_panel <- function(...,label=NULL,active=FALSE){
       content_html <- div(...,class="content")
     }
   )#End taglist
+}
+###
+
+### Subset Menus UI Function ###
+# Generates a series of dropdown menus used to define subsets for an operation
+#For now, this is specific to the metadata values in the D0/D30 object
+subset_menus <- function(input_prefix,choices){
+  div(
+    pickerInput(inputId = glue("{input_prefix}_cluster_selection"),
+                label = "Restrict by Cluster",
+                choices = choices$clusters,
+                selected = choices$clusters,
+                multiple = TRUE,
+                options = list(
+                  "selected-text-format" = "count > 5",
+                  "size" = 10, #Define max options to show at a time to keep menu from being cut off
+                  "actions-box"=TRUE)),
+    pickerInput(inputId = glue("{input_prefix}_response_selection"),
+                label = "Restrict by Response",
+                choices = choices$responses,
+                selected = choices$responses,
+                multiple = TRUE),
+    pickerInput(inputId=glue("{input_prefix}_treatment_selection"),
+                label = "Restrict by Timepoint (approximate)",
+                choices = choices$treatments,
+                selected = choices$treatments, 
+                multiple = TRUE,
+                options = list(
+                  "selected-text-format" = "count > 3",
+                  "actions-box"=TRUE
+                )),
+    pickerInput(inputId = glue("{input_prefix}_htb_selection"),
+                label = "Restrict by Patient",
+                choices = choices$patients_categories, #Display patient groups to user
+                selected = choices$patients, 
+                multiple = TRUE,
+                options = list(
+                  "selected-text-format" = "count > 3",
+                  "size" = 10, 
+                  "actions-box"=TRUE
+                ))
+  )#End div
 }
 ###
 
@@ -385,36 +435,11 @@ plots_tab <- function(){
         ),#End 1.1.1.2.
         
         ###1.1.1.3. Subsets for Plots
-#        collapsible_panel(label="Subset Options",
-#                           active=FALSE,
-#                           uiOutput(outputId="plots_selected_subset"),
-#                           pickerInput(inputId = "plots_cluster_selection",
-#                                       label = "Restrict by Cluster",
-#                                       choices = clusters,
-#                                       selected = clusters,
-#                                       multiple = TRUE,
-#                                       options = list(
-#                                         "selected-text-format" = "count > 5",
-#                                         "size" = 10, #Define max options to show at a time to keep menu from being cut off
-#                                         "actions-box"=TRUE)),
-#                           pickerInput(inputId = "plots_response_selection",
-#                                       label = "Restrict by Response",
-#                                       choices = responses,
-#                                       selected = responses,
-#                                       multiple = TRUE),
-#                           pickerInput(inputId = "plots_htb_selection",
-#                                       label = "Restrict by Patient",
-#                                       choices = patients_categories, #Display patient groups to user
-#                                       selected = patients, 
-#                                       multiple = TRUE,
-#                                       options = list(
-#                                         "selected-text-format" = "count > 3",
-#                                         "size" = 10, 
-#                                         "actions-box"=TRUE
-#                                       )),
-#                           actionButton(inputId="plots_subset_submit",
-#                                         label="Apply Criteria")
-#                           ),#End 1.1.1.3
+        collapsible_panel(label="Subset Options",
+                          active=FALSE,
+                          uiOutput(outputId="plots_selected_subset"),
+                          subset_menus(input_prefix = "plots",choices=choices) 
+                           ),#End 1.1.1.3
         
         ### Plot Specific Options ###
         #1.1.1.4. Options specific to UMAP: panel will display if UMAP is checked
