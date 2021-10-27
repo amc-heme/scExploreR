@@ -21,6 +21,9 @@ library(ggplot2)
 library(glue)
 library(DT)
 
+#Additional Backend Packages
+library(presto)
+
 #Load Seurat object (D0/D30 data, modified to include gene signature scores)
 #https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
@@ -33,32 +36,23 @@ d0_d30 <- subset(sobj, sub=htb %in% c("1325","1650","1510","1526","1378","1724")
 #Gene_expression features
 genes <- rownames(sobj)
 
+### Define function to build feature lists from arbitrary assays
+feature_list <- function(assay, prefix_machine, suffix_human) {
+  #Fetch features in Seurat object by assay
+  features <- rownames(sobj[[assay]])
+  #Human-readable feature names
+  human_readable <- paste0(features, suffix_human)
+  #Machine-readable feature names (format "<prefix>_<feature_name>")
+  machine_readable <- paste0(prefix_machine, features)
+  #Zip above into a list of key-value pairs (human-readable features as keys, machine-readable features as values)
+  split(machine_readable, human_readable)
+}
+
 ### ADT features
-#Fetch ADTs in Seurat object
-adts <- rownames(sobj[["ADT"]])
-#Human-readable ADT values
-adt_human_readable <- paste0(adts," (Surface Protein)") 
-
-#Machine-readable ADT value (format "ADT_<gene_name>")
-adt_machine_readable <-paste0("adt_",adts) #Lower-case letters are used to access this object
-
-#Zip above into a list of key-value pairs (human-readable features as keys, machine-readable features as values)
-adt_list <- split(adt_machine_readable, adt_human_readable)
-###
+adt_list <- feature_list("ADT", "adt_", " (Surface Protein)")
 
 ### Gene Signatures
-#Fetch gene signature scores
-sigs <- rownames(sobj[["SIG"]])
-
-#Human-readable gene signature values
-sig_human_readable <- paste0(sigs," (Gene Signature)") 
-
-#Machine-readable gene signature value (format "SIG_<gene_name>")
-sig_machine_readable <-paste0("sig_",sigs) #Lower-case letters are used to access this object
-
-#Zip above into a list of key-value pairs (human-readable features as keys, machine-readable features as values)
-sig_list <- split(sig_machine_readable, sig_human_readable)
-###
+sig_list <- feature_list("SIG", "sig_", " (Gene Signature)")
 
 #Metadata columns (only numeric columns can be plotted)
 meta_cols <- names(sobj@meta.data)
@@ -555,58 +549,65 @@ plots_tab <- function(){
 ### 1.2 Tables Tab ###
 tables_tab <- function(){
   fluidPage(
-    #As with the plots tab, create a sidebar layout with options to select on the left and the table in the center
     sidebarLayout(
-      
-      ###1.2.1. Options Sidebar
+      #1.2.1. Options Panel
       sidebarPanel(
+        #Add a block to display a waiter over when the options are updating
+        div(id="dge_sidebar",
+            #1.2.1.1. Restrict correlation table by metadata
+            tags$h3("Differential Gene Expression"),
+            tags$p("The default table contains cluster markers for the entire dataset. For more complex analyses, restrict the analysis by metadata variables using the dropdown menus below, choose a metadata slot for which to calculate markers/DEGs, and click Update."),
+            pickerInput(inputId = "dge_cluster_selection",
+                        label = "Restrict by Cluster",
+                        choices = clusters,
+                        selected = clusters,
+                        multiple = TRUE,
+                        options = list(
+                          "selected-text-format" = "count > 5",
+                          "size" = 10, #Define max options to show at a time to keep menu from being cut off
+                          "actions-box"=TRUE)),
+            pickerInput(inputId = "dge_response_selection",
+                        label = "Restrict by Response",
+                        choices = responses,
+                        selected = responses,
+                        multiple = TRUE),
+            pickerInput(inputId="dge_treatment_selection",
+                        label = "Restrict by Timepoint (approximate)",
+                        choices = treatments,
+                        selected = treatments, 
+                        multiple = TRUE,
+                        options = list(
+                          "selected-text-format" = "count > 3",
+                          "actions-box"=TRUE
+                        )),
+            pickerInput(inputId = "dge_htb_selection",
+                        label = "Restrict by Patient",
+                        choices = patients_categories,
+                        selected = patients, 
+                        multiple = TRUE,
+                        options = list(
+                          "selected-text-format" = "count > 3",
+                          "size" = 10, 
+                          "actions-box"=TRUE
+                        )),
+            selectInput(inputId = "dge_group_by", 
+                        label = "Metadata for DE calculation:",
+                        choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
+                        selected = "clusters"),
+            actionButton(inputId = "dge_submit",
+                         label = "Update"),
+            #Download Button
+            uiOutput(outputId = "dge_downloads_ui")
+        )#End dge-sidebar div
+      ),#End sidebarPanel (1.3.1)
+      #1.3.2 Main Pane
+      mainPanel(
+        div(id="dge_main_panel", class="spinner-container-main", #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
+            uiOutput(outputId = "dge_ui"))
         
-        #1.2.1.1. Metadata to group by
-        selectInput(inputId = "table_group_by", label = "Select Variable to view gene expression data by", choices = c("Response"="response","Patient ID"= "htb")),
-        
-        #1.2.1.2. Ident.1 selections: choose which metadata variable to display differential expression for based on metadata selection
-        ### TODO: USE SERVER FUNCTION TO UPDATE SECOND DROPDOWN TO AVOID NEEDING ONE IDENT_1 INPUT FOR EACH METADATA TYPE 
-        #1.2.1.2.1. If response is chosen, show selection to display resistant vs. sensitive or sensitive vs. resistant
-        conditionalPanel(condition = "input.table_group_by=='response'",
-                         selectInput(inputId = "response_ident_1", 
-                                     choices = c("Resistant","Sensitive") ,
-                                     label="Choose response classification to view differential expression data for:"),
-                         "(Differential Expression results will be for the selected response classification relative to the other.)"),
-        
-        #1.2.1.2.2. If patient id is chosen, show selection input for patient id to compare relative to the others (ident.1 argument in FindMarkers())
-        conditionalPanel(condition = "input.table_group_by=='htb'",
-                         selectInput(inputId = "htb_ident_1",
-                                     choices = unique(sobj@meta.data[["htb"]]),
-                                     label ="Choose patient ID to view differential expression data for:"),
-                         
-                         #Additional text below group by choice panel
-                         "(Differential Expression results will be for the selected patient ID relaitve to all other patients)"),
-        
-        #1.2.1.2.3. If clusters is chosen as the group.by variable, show selection input for cluster id to compare to the others (ident.1 argument in FindMarkers())
-        conditionalPanel(condition="input.table_group_by=='clusters'",
-                         selectInput(inputId = "cluster_ident_1",
-                                     choices = levels(unique(sobj@meta.data[["clusters"]])),#called levels() to make choices show in numerical order
-                                     label="Choose cluster ID to view differential expression data for:"),
-                         
-                         #Additional text below group by choice panel
-                         "(Differential Expression results will be for the selected cluster ID relaitve to all other patients)"),
-        
-        tags$br(),
-        
-        #1.2.1.3. Ask user to specify whether gene expression or ADT data is desired
-        selectInput(inputId = "table_assay",
-                    choices = c("Gene"="RNA","Surface Protein"="ADT"),
-                    selected = "Gene",
-                    label = "Choose assay to view (gene or surface protein expression)"),
-
-        #1.2.1.4. Download Button for Table 
-        downloadButton(outputId = "de_download", label="Download Table")
-      ),
-      
-      ###1.2.2. Main Panel with Table
-      mainPanel(DTOutput(outputId = "de_table"))
-    )
-  )
+      )#End MainPanel
+    )#End sidebarLayout
+  )#End fluidPage
 }#End 1.2.
 
 ### 1.3 Correlation Tab ###
@@ -1417,100 +1418,416 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  #2.2. Create table with differential expression data
-  #2.2.1. Define table content in reactive variable
-  de_table_content <- reactive({
-    #Determine which file to load based on user selections
-    #First layer of conditionals: choice of assay
-    if (input$table_assay=="RNA"){
-      #Second layer of conditionals: choice of group.by variable
-      if (input$table_group_by=="response"){
-        #If response is chosen, display either resistant vs. sensitive or sensitive vs. resistant based on user selection
-        if (input$response_ident_1=="Resistant"){filename <- "./Feature_Tables/uhg_resistant_vs_sensitive.tsv.gz"} 
-        else {filename <- "./Feature_Tables/uhg_sensitive_vs_resistant.tsv.gz"}
-      }
-      else if (input$table_group_by=="htb"){
-        #If patient id (htb) is chosen, display the table corresponding to the patient id desired for comparison
-        #file name format: "<htb>_vs_all.tsv.gz"
-        filename <- paste0("./Feature_Tables/",input$htb_ident_1,"_vs_all.tsv.gz")
-      }
-    }
-    
-    #Conditionals for ADT assay
-    else if (input$table_assay=="ADT"){
-      if (input$table_group_by=="response"){
-        #If response is chosen, display either resistant vs. sensitive or sensitive vs. resistant based on user selection
-        if (input$response_ident_1=="Resistant"){filename <- "./Feature_Tables/uhg_resistant_vs_sensitive_adt.tsv.gz"} 
-        else {filename <- "./Feature_Tables/uhg_sensitive_vs_resistant_adt.tsv.gz"}
-      }
-      else if (input$table_group_by=="htb"){
-        #If patient id (htb) is chosen, display the table corresponding to the patient id desired for comparison
-        #file name format: "<htb>_vs_all.tsv.gz"
-        filename <- paste0("./Feature_Tables/",input$htb_ident_1,"_vs_all_adt.tsv.gz")}
-    }
-    
-    #Load file and display table
-    table <- read_tsv(filename, show_col_types = FALSE) #show_col_types is set to FALSE to quiet a message printed to the console every time a table is loaded.
-    #Creates a column ranked by adjusted p value
-    table$p_adj_rank <- order(table$p_val_adj)
-    
-    #Format columns of table
-    #p_val_adj, p_val: print in scientific format
-    table$p_val_adj <- format(table$p_val_adj, digits=5, nsmall=2, scientific=TRUE) |> as.numeric()
-    table$p_val <- format(table$p_val, digits=5, nsmall=2, scientific=TRUE) |> as.numeric()
-    #avg_log2FC: float with 5 digits
-    table$avg_log2FC <- format(table$avg_log2FC, digits=5, nsmall=2, scientific=FALSE) |> as.numeric()
-    
-    table
-  })
+  ###2.2. DGE Tab 
   
-  
-  
-  #2.2.2 Define download button UI
-  de_button_ui<- eventReactive(input$de_submit,{ 
-    
-    })
-  
-  #2.2.3. Render DE Table and download button UI
-  output$de_table <- renderDT({de_table_content()}, 
-                              class="compact stripe cell-border",
-                              #Sorts by adjusted p value column (6th column, zero index for Javascript)
-                              options=list(order = list(list(5, 'asc'))),
-                              rownames=FALSE,
-                              selection='none',
-                              escape = FALSE)
-
-  output$de_download_button <- renderUI({de_button_ui()})
-  
-  #2.2.4. Download Handler for DE Table
-  output$de_download <- downloadHandler(
-    #Filename function: filename determined based on current user selections
-    filename=function(){
-      if (input$table_group_by=="response"){
-        #If response is chosen, display either resistant vs. sensitive or sensitive vs. resistant based on user selection
-        if (input$response_ident_1=="Resistant"){
-          filename <- glue("DE_table_R-vs-S_{input$table_assay}.csv")
-        } 
-        else {
-          filename <- glue("DE_table_S-vs-R_{input$table_assay}.csv")
+  #2.2.1 Reactive dropdown menu for patient 
+  # The code in this section is duplicated from section 2.3.1, and should be rewritten as a function to avoid redundancy.
+  #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
+  #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized.
+  #Running of code at startup is disabled with "ignoreInit=TRUE"
+  # This (above line) is broken for DGE, but the behaviour is tolerable as-is. Should be formalized or fixed.
+  observeEvent(
+    c(input$dge_response_selection, input$dge_treatment_selection),
+    ignoreInit = TRUE,
+    label = "Reactive Patient Dropdown",
+    {
+      #Show a spinner while the valid patient ID's are calculated
+      waiter_show(
+        id = "dge_sidebar",
+        html = spin_loaders(id = 2, color = "#555588"),
+        color = "#B1B1B188",
+        hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+      )
+      
+      #Subset Seurat object for the selected response type and return vector of patients included in that type
+      valid_patients <-
+        unique(subset(sobj, subset = response %in% input$dge_response_selection)$htb)
+      #List of valid patients: indicates group of patient in dropdown menu
+      valid_patients_categories = list(
+        `d0/d30` = list(),
+        `Dx/Rl` = list(),
+        `Normal Bone Marrow` = list()
+      )
+      #Sort valid patients into above framework
+      for (patient in valid_patients) {
+        #Iterate through valid_patients vector and place each choice in the relevant category
+        if (patient %in% c("1325", "1650", "1510", "1526", "1378", "1724")) {
+          #Append above patient ids to d0/d30 category
+          valid_patients_categories$`d0/d30` <-
+            append(valid_patients_categories$`d0/d30`, patient)
+        } else if (patient %in% c("1261", "1467", "719")) {
+          #Append above patient ids to Dx/Rl category
+          valid_patients_categories$`Dx/Rl` <-
+            append(valid_patients_categories$`Dx/Rl`, patient)
+        } else if (patient %in% c("BMMC_1", "BMMC_2", "BMMC_3")) {
+          #Append above patient (sample) ids to normal bone marrow category
+          valid_patients_categories$`Normal Bone Marrow` <-
+            append(valid_patients_categories$`Normal Bone Marrow`, patient)
         }
       }
-      else if (input$table_group_by=="htb"){
-        #If patient id (htb) is chosen, display the table corresponding to the patient id desired for comparison
-        #file name format: "<htb>_vs_all.tsv.gz"
-        filename <- glue("DE_Table_{input$htb_ident_1}-vs-all_{input$table_assay}.csv")
-      }
+      #Sort patients in each list to display in order
+      #Patients in d0/d30 and Dx/Rl are numeric values that can be sorted easily
+      valid_patients_categories$`d0/d30` <-
+        valid_patients_categories$`d0/d30` |>
+        as.numeric() |>
+        sort() |>
+        as.character() |> #Convert back to character values to avoid issues with further subsetting
+        as.list()
+      valid_patients_categories$`Dx/Rl` <-
+        valid_patients_categories$`Dx/Rl` |>
+        as.numeric() |>
+        sort() |>
+        as.character() |>
+        as.list()
+      #Normal bone marrow column consists of character IDs that are sorted properly with sort()
+      valid_patients_categories$`Normal Bone Marrow` <-
+        valid_patients_categories$`Normal Bone Marrow` |>
+        as.character() |>
+        sort() |>
+        as.list()
       
-      #Return filename computed above
-      filename
-    },
-    content=function(file) {
-      write.csv(de_table_content(), 
-                file = file, 
-                row.names = FALSE)
-      },
-    contentType = "text/csv"
+      #Update picker input with valid patient ID's
+      updatePickerInput(
+        session,
+        inputId = "dge_htb_selection",
+        label = "Restrict by Patient",
+        choices = valid_patients_categories,
+        selected = valid_patients,
+        options = list(
+          "selected-text-format" = "count > 3",
+          "actions-box" = TRUE
+        )
+      )
+      
+      #Hide waiter
+      waiter_hide(id = "dge_sidebar")
+    }
   )
+  
+  #2.2.2. DGE table for selected metadata and restriction criteria
+  #Table updates only when the "Update" button is clicked
+  #2.2.2.1. Store table content as reactive value
+  dge_table_content <- eventReactive(
+    input$dge_submit,
+    label = "DGE Table Content",
+    ignoreInit = FALSE,
+    ignoreNULL = FALSE,
+    {
+      print("Running DGE table content code")
+      #Reactive value for identifying a memory error (defined here and reset to FALSE each time the dge table code is run)
+      rv$memory_error = FALSE
+      rv$vector_mem_error = FALSE
+      rv$other_error = FALSE
+      
+      #Show loading screen above main panel while table is computed (takes about a minute)
+      waiter_show(
+        id = "dge_main_panel",
+        html = spin_loaders(id = 2, color = "#555588"),
+        color = "#FFFFFF",
+        hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+      )
+      
+      #Error handling: errors are frequent in this script, often due to memory limitations, and they will result in the spinner not disappearing from the main window since waiter_hide() exists at the end this code block. Therefore, the code in this block must be handled with tryCatch() to capture errors.
+      # This error handling code has been duplicated verbatim from section 2.3.2.1 - likely isn't necessary here; should be removed if warranted by testing.
+      tryCatch(
+        #If an error is caught: attempt to determine type of error by inspecting message text with grepl (not recommended, but I currently don't know any other way to catch this error type)
+        error = function(cnd) {
+          print(class(cnd$message))
+          #Error 1: RAM error
+          if (grepl("cannot allocate vector of size", cnd$message)) {
+            #This reactive value will instruct the correlation table UI to display differently based on the error
+            rv$memory_error = TRUE
+            #Define notification to be displayed to user upon memory error
+            mem_err_ui <-
+              icon_notification_ui(
+                icon_name = "skull-crossbones",
+                message = tagList(
+                  "Memory Error: RAM is insufficient for analyzing the specified subset. Please narrow down the subset scope using the restriction criteria to the left, and feel free to ",
+                  tags$a(
+                    "let us know",
+                    href =
+                      "https://github.com/amc-heme/DataExploreShiny/issues",
+                    target =
+                      "_blank",
+                    #Opens link in new tab
+                    rel =
+                      "noopener noreferrer"
+                  ),
+                  " ",
+                  #Space after link
+                  "if you repeatedly recieve this error."
+                )#End tagList
+              )
+            
+            #Display notification
+            showNotification(
+              ui = mem_err_ui,
+              #Duration=NULL will make the message persist until dismissed
+              duration = NULL,
+              id = "dge_mem_error",
+              session =
+                session
+            )
+          }
+          #Error 2: vector memory exhausted
+          if (grepl("vector memory exhausted", cnd$message)) {
+            rv$vector_mem_error = TRUE
+            
+            #Define Notification UI
+            vector_err_ui <-
+              icon_notification_ui(
+                icon_name = "skull-crossbones",
+                message = tagList(
+                  "Error: vector memory exhausted. Please ",
+                  tags$a(
+                    "report this issue",
+                    href =
+                      "https://github.com/amc-heme/DataExploreShiny/issues",
+                    target =
+                      "_blank",
+                    #Opens link in new tab
+                    rel =
+                      "noopener noreferrer"
+                  ),
+                  " ",
+                  #Space after link
+                  "with a screenshot of the response criteria selected, and please narrow down the subset criteria for now."
+                )#End tagList
+              )
+            
+            #Display Notification
+            showNotification(
+              ui = vector_err_ui,
+              #Duration=NULL will make the message persist until dismissed
+              duration = NULL,
+              id = "dge_vector_mem_error",
+              session =
+                session
+            )
+          }
+          #Notification for any unforseen error type
+          else {
+            rv$other_error = TRUE
+            
+            #Define Notification UI
+            other_err_ui <-
+              icon_notification_ui(
+                icon_name = "skull-crossbones",
+                message = tagList(
+                  glue("Error: {cnd$message}. Please "),
+                  tags$a(
+                    "report this issue ",
+                    href =
+                      "https://github.com/amc-heme/DataExploreShiny/issues",
+                    target =
+                      "_blank",
+                    #Opens link in new tab
+                    rel =
+                      "noopener noreferrer"
+                  ),
+                  "with a screenshot of the app window."
+                )#End tagList
+              )
+            
+            #Display Notification
+            showNotification(
+              ui = other_err_ui,
+              #Duration=NULL will make the message persist until dismissed
+              duration = NULL,
+              id = "dge_other_error",
+              session =
+                session
+            )
+          }
+          
+          #This will eventually be replaced with an error message to display to the user
+          print("An error ocurred while computing correlation table code.")
+          print(cnd$message)
+          table <-
+            NULL #Return nothing if an error occurs
+        },
+        #End error function
+        #Begin tryCatch code
+        {
+          print("Make subset")
+          #Form subset based on chosen criteria
+          dge_s_sub <- subset(
+            sobj,
+            subset =
+              (clusters %in% input$dge_cluster_selection) &
+              (response %in% input$dge_response_selection) &
+              (htb %in% input$dge_htb_selection) &
+              (treatment %in% input$dge_treatment_selection)
+          )
+          
+          ###Subset Stats
+          print("Subset Stats")
+          #Cells in subset
+          rv$dge_n_cells <-
+            length(Cells(dge_s_sub))
+          
+          print("Compute dge with presto")
+          #Run Presto
+          dge_table <-
+            wilcoxauc(dge_s_sub, group_by = input$dge_group_by) |> #Run presto on the subsetted object and indicated metadata slot
+            as_tibble() |> #Explicitly coerce to tibble
+            select(-c(statistic, auc)) |> # remove stat and auc from the output table
+            arrange(padj, pval, desc(abs(logFC))) #Arrange in descending order by significance, then absolute logFC
+          
+          
+        }
+      )#End tryCatch
+      
+      #Hide loading screen
+      waiter_hide(id = "dge_main_panel")
+      waiter_hide(id = "dge_sidebar")
+      
+      #Return table for storage in dge_table_content()
+      datatable(
+        dge_table,
+        class = "compact stripe cell-border hover",
+        selection = "single",
+        filter = "top",
+        rownames = FALSE
+      ) %>%
+        formatSignif(3:8, 5) # This is more than enough - 3 is probably fine
+    }
+  )
+  
+  #2.2.3. DGE UI
+  #2.2.3.1. Main UI
+  #IgnoreNULL set to false to get UI to render at start up
+  dge_ui <- eventReactive(input$dge_submit,
+                          label = "DGE Main UI (Define Content)",
+                          ignoreNULL = FALSE, {
+                            print("DGE UI Function")
+                            waiter_show(
+                              id = "dge_main_panel",
+                              html = spin_loaders(id = 2, color = "#555588"),
+                              color = "#FFFFFF",
+                              hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+                            )
+                            
+                            #Also display spinner over the options menu to keep user from being able to click download buttons before content is ready
+                            waiter_show(
+                              id = "dge_sidebar",
+                              html = spin_loaders(id = 2, color = "#555588"),
+                              color = "#B1B1B188",
+                              hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+                            )
+                            
+                            #UI to display
+                            div(
+                              tags$h2(
+                                glue(
+                                  "Differential Expression/Marker Genes by {input$dge_group_by} in Subset"
+                                )
+                              ),
+                              #Restriction criteria section
+                              tags$h3("Selected Restriction Criteria"),
+                              #Make each input criteria appear inline
+                              div(
+                                div(
+                                  tags$strong("Clusters: "),
+                                  textOutput(outputId = "dge_selected_clusters", inline = TRUE)
+                                ),
+                                div(
+                                  tags$strong("Response criteria: "),
+                                  textOutput(outputId = "dge_selected_response", inline = TRUE)
+                                ),
+                                div(
+                                  tags$strong("Patients: "),
+                                  textOutput(outputId = "dge_selected_htb", inline = TRUE)
+                                )
+                              ),
+                              
+                              #Statistics section
+                              tags$h3("Quality Statistics for Subset"),
+                              div(
+                                div("(Subset created based on defined restriction criteria)"),
+                                div(
+                                  tags$strong("Number of cells in subset: "),
+                                  textOutput(outputId = "dge_print_n_cells", inline = TRUE)
+                                ),
+                              ),
+                              
+                              #Correlations table and plots
+                              tags$h3("DGE Table"),
+                              #Add table container
+                              div(#Use a DT data table
+                                DTOutput(outputId = "dge_table"))
+                            )#End UI div
+                          })
+  
+  #2.2.3.2. Download Buttons for Table and Plots
+  dge_downloads_ui <-
+    eventReactive(
+      c(input$submit, input$dge_table_rows_selected),
+      label = "DGE Download Buttons UI",
+      ignoreNULL = FALSE,
+      {
+        #Conditional level one, !hasName(): TRUE before table is created, FALSE after
+        if (!hasName(input, "dge_table_rows_selected")) {
+          #Display nothing before table is created
+          NULL
+        } else {
+          #Conditional level two (table created)
+          #Display button to download table after table is created
+          div(
+            downloadButton(
+              outputId = "dge_download_table",
+              label = "Download Table",
+              icon = icon("table")
+            )
+          )
+        }
+      }
+    )
+
+  
+  #2.2.4. Render DGE UI, table, and statistics
+  #Main UI
+  output$dge_ui <- renderUI({
+    dge_ui()
+  })
+  
+  output$dge_downloads_ui <- renderUI({
+    dge_downloads_ui()
+  })
+  
+  #Table
+  output$dge_table <- renderDT({
+    dge_table_content()
+  })
+  
+  #Render Statistics
+  observeEvent(input$dge_submit,
+               label = "Render Statistics", {
+                 #Rendering Selections and Stats for report
+                 output$dge_selected_clusters <-
+                   renderText(isolate(vector_to_text(input$dge_cluster_selection)))
+                 output$dge_selected_response <-
+                   renderText(isolate(vector_to_text(input$dge_response_selection)))
+                 output$dge_selected_htb <-
+                   renderText(isolate(vector_to_text(input$dge_htb_selection)))
+                 output$dge_print_n_cells <-
+                   renderText(isolate(rv$dge_n_cells))
+               })
+  
+  #2.2.5. Download Handlers
+  #Correlations Table
+  output$dge_download_table <- downloadHandler(
+    filename = function() {
+      glue("DGE_table_{input$dge_group_by}.csv")
+    },
+    content = function(file) {
+      write.csv(dge_table_content(),
+                file = file,
+                row.names = FALSE)
+    },
+    contentType = "text/csv"
+  )#End downloadHandler 
+
   
   ###2.3. Correlations Tab 
   
