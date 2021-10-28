@@ -606,7 +606,9 @@ tables_tab <- function(){
       ),#End sidebarPanel (1.3.1)
       #1.3.2 Main Pane
       mainPanel(
-        div(id="dge_main_panel", class="spinner-container-main", #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
+        #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
+        div(id="dge_main_panel", 
+            class="spinner-container-main", 
             uiOutput(outputId = "dge_ui"))
         
       )#End MainPanel
@@ -1516,7 +1518,6 @@ server <- function(input,output,session){
     ignoreInit = FALSE,
     ignoreNULL = FALSE,
     {
-      print("Running DGE table content code")
       #Reactive value for identifying a memory error (defined here and reset to FALSE each time the dge table code is run)
       rv$memory_error = FALSE
       rv$vector_mem_error = FALSE
@@ -1649,9 +1650,10 @@ server <- function(input,output,session){
         #End error function
         #Begin tryCatch code
         {
-          print("Make subset")
           #Form subset based on chosen criteria
-          dge_s_sub <- subset(
+          #Store in reactive variable so it can be accessed by 
+          #UMAP eventReactive() function
+          rv$dge_s_sub <- subset(
             sobj,
             subset =
               (clusters %in% input$dge_cluster_selection) &
@@ -1661,29 +1663,27 @@ server <- function(input,output,session){
           )
           
           ###Subset Stats
-          print("Subset Stats")
           #Cells in subset
           rv$dge_n_cells <-
-            length(Cells(dge_s_sub))
+            length(Cells(rv$dge_s_sub))
           #Number of classes in selection
-          rv$dge_n_classes <- length(unique(dge_s_sub@meta.data[,input$dge_group_by]))
+          rv$dge_n_classes <- length(unique(rv$dge_s_sub@meta.data[,input$dge_group_by]))
           #Mode selection
           rv$dge_mode <- ifelse(
             rv$dge_n_classes == 2,
             paste0(
               "Differential Expression (",
-              unique(dge_s_sub@meta.data[, input$dge_group_by])[1],
+              unique(rv$dge_s_sub@meta.data[, input$dge_group_by])[1],
               " vs. ",
-              unique(dge_s_sub@meta.data[, input$dge_group_by])[2],
+              unique(rv$dge_s_sub@meta.data[, input$dge_group_by])[2],
               ")"
             ),
             paste0("Marker Identification (", rv$dge_n_classes, " classes)")
           )
           
-          print("Compute dge with presto")
           #Run Presto
           dge_table <-
-            wilcoxauc(dge_s_sub, group_by = input$dge_group_by) %>%  #Run presto on the subsetted object and indicated metadata slot
+            wilcoxauc(rv$dge_s_sub, group_by = input$dge_group_by) %>%  #Run presto on the subsetted object and indicated metadata slot
             as_tibble() %>%  #Explicitly coerce to tibble
             select(-c(statistic, auc)) %>%  # remove stat and auc from the output table
             # Using magrittr pipes here because the following statement doesn't work with base R pipes
@@ -1737,10 +1737,11 @@ server <- function(input,output,session){
                               tags$h2(
                                 glue(
                                   "Differential Expression/Marker Genes by {input$dge_group_by} in Subset"
-                                )
+                                ),
+                                class="center"
                               ),
                               #Table Metadata section
-                              tags$h3("Table Metadata"),
+                              tags$h3("Table Metadata", class="center"),
                               #Make each input criteria appear inline
                               div(
                                 div(
@@ -1771,10 +1772,50 @@ server <- function(input,output,session){
                               ),
                               
                               #Correlations table and plots
-                              tags$h3("DGE Table"),
+                              tags$h3("DGE Table", class="center"),
                               #Add table container
                               div(#Use a DT data table
-                                DTOutput(outputId = "dge_table"))
+                                DTOutput(outputId = "dge_table")),
+                              
+                              #UMAP plot
+                              #Label: depends on mode
+                              #The conditional below is passed as an argument 
+                              #To the div() function to generate the HTML for the
+                              #DGE UI. hasName() is used to avoid errors arising
+                              #From the rv$dge_n_classes not yet existing
+                              #This happens at startup when the UI is computed 
+                              #Before the table, where rv$dge_n_classes is undefined.
+                              if(hasName(rv,"dge_n_classes")){
+                                #Title for differential gene expression mode
+                                if (rv$dge_n_classes == 2){
+                                  tags$h3("UMAP of groups being compared")
+                                }else{
+                                  #Title for marker identification mode
+                                  tagList(
+                                    #Center text
+                                    tags$h3("UMAP by class", 
+                                            class="center"),
+                                    tags$p("(Markers are computed for each group shown)", 
+                                           class="center")
+                                  )
+                                }
+                              } else {
+                                #This conditional will be run at startup.
+                                #The default is to compute markers for each cluster,
+                                #so the text for marker identification will be shown.
+                                tagList(
+                                  #Center text
+                                  tags$h3("UMAP by class",
+                                          class="center"),
+                                  tags$p("(Markers are computed for each group shown)", 
+                                         class="center")
+                                )
+                              }, #This comma is very important (conditional is an argument)
+                              
+                              #UMAP container
+                              plotOutput(outputId = "dge_umap",
+                                         height = "600px")
+                              
                             )#End UI div
                           })
   
@@ -1787,10 +1828,11 @@ server <- function(input,output,session){
       {
         #Conditional level one, !hasName(): TRUE before table is created, FALSE after
         if (!hasName(input, "dge_table_rows_selected")) {
+          #!hasName()==TRUE
           #Display nothing before table is created
           NULL
         } else {
-          #Conditional level two (table created)
+          #!hasName()==FALSE (table created)
           #Display button to download table after table is created
           div(
             downloadButton(
@@ -1803,8 +1845,43 @@ server <- function(input,output,session){
       }
     )
 
+  #2.2.4. UMAP of DE selected groups
+  dge_umap <- eventReactive(input$dge_submit, 
+                            ignoreNULL=FALSE, 
+                            label="DGE UMAP", {
+                              #ncol_argument: number of columns based on number
+                              #of classes being analyzed in the subset.
+                              #Use double-bracket means of accessing the 
+                              #metadata variable (supports entry of an arbitrary variable)
+                              #This means of access returns a dataframe. 
+                              #Slice for the first row (the unique values)
+                              n_panel <- unique(rv$dge_s_sub[[input$dge_group_by]])[,1] |> length()
+                              
+                              #Set ncol to number of panels if less than four
+                              #Panels are created
+                              if (n_panel<4){
+                                ncol=n_panel
+                              }
+                              #Use three columns for 4-9 panels
+                              else if (n_panel>=4 & n_panel<9){
+                                ncol=3
+                              }
+                              #Use four columns for 9+ panels
+                              else if (n_panel>=9){
+                                ncol=4
+                              }
+                              
+                              print(input$dge_group_by)
+                              print(glue("cells in subset {ncol(rv$dge_s_sub)}"))
+                              #Create UMAP of subsetted object, split by metadata
+                              #for object calculation, colored by cluster
+                              DimPlot(rv$dge_s_sub,
+                                      split.by = input$dge_group_by,
+                                      group.by = "clusters",
+                                      ncol=ncol)
+                            })
   
-  #2.2.4. Render DGE UI, table, and statistics
+  #2.2.5. Render DGE UI, table, and statistics
   #Main UI
   output$dge_ui <- renderUI({
     dge_ui()
@@ -1818,6 +1895,11 @@ server <- function(input,output,session){
   output$dge_table <- renderDT({
     dge_table_content()
   })
+  
+  #UMAP plot
+  output$dge_umap <- renderPlot({
+    dge_umap()
+    })
   
   #Render Statistics
   observeEvent(input$dge_submit, 
@@ -1836,7 +1918,7 @@ server <- function(input,output,session){
                    renderText(isolate(rv$dge_mode))
                })
   
-  #2.2.5. Download Handlers
+  #2.2.6. Download Handlers
   #Correlations Table
   output$dge_download_table <- downloadHandler(
     filename = function() {
@@ -2105,7 +2187,8 @@ server <- function(input,output,session){
     }
     #After a feature is applied and the submit button is pressed, display the table
     else {
-      #Display the loading screen (screen will show until the end of the corr_table_content calculation is reached).
+      #Display the loading screen (screen will show until the end of the 
+      #corr_table_content calculation is reached).
       waiter_show(
         id = "corr_main_panel",
         html = spin_loaders(id=2, color = "#555588"),

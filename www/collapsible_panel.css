@@ -130,3 +130,8 @@ table.hover > tbody > tr:hover{
 .hidden-button{
   display: none;
 }
+
+/* Center Header Tags in DGE UI */
+.center{
+  text-align: center;
+}
