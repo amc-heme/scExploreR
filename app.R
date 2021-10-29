@@ -1681,6 +1681,31 @@ server <- function(input,output,session){
             paste0("Marker Identification (", rv$dge_n_classes, " classes)")
           )
           
+          #Cells per class
+          #Calculate number of cells per class using metadata table of subset
+          n_by_class <- rv$dge_s_sub@meta.data |>
+            #Group by the specified metadata variable (.data and double braces 
+            #used so group_by can properly interpret the character vector input)
+            group_by(.data[[input$dge_group_by]]) |> 
+            summarise(n=n()) #Calculate number of cells per group 
+          
+          #Print class names and cell counts per class
+          #Convert class names and cell counts from tibble to character vector 
+          #Class names in first column of tibble
+          class_names <- as.character(n_by_class[[1]]) 
+          #Cell counts are in second column of tibble
+          n_cells <- n_by_class[[2]]
+          
+          #Build list of classes and the number of cells in each
+          n_list=list()
+          for (i in 1:nrow(n_by_class)){
+            n_list[[i]]<-glue("{class_names[i]}: {n_cells[i]}")
+          }
+          #Collapse list of class/count pairs into a string, 
+          #and store in reactive variable
+          rv$dge_n_by_class<-paste(n_list,collapse = "\n")
+          #\n is the separator (will be read by verbatimTextOutput())
+          
           #Run Presto
           dge_table <-
             wilcoxauc(rv$dge_s_sub, group_by = input$dge_group_by) %>%  #Run presto on the subsetted object and indicated metadata slot
@@ -1689,7 +1714,6 @@ server <- function(input,output,session){
             # Using magrittr pipes here because the following statement doesn't work with base R pipes
             {if (input$dge_pos) filter(., logFC > 0) else .} %>%  # remove negative logFCs if box is checked
             arrange(padj, pval, desc(abs(logFC))) #Arrange in descending order by significance, then absolute logFC
-          
           
         }
       )#End tryCatch
@@ -1715,7 +1739,8 @@ server <- function(input,output,session){
   #IgnoreNULL set to false to get UI to render at start up
   dge_ui <- eventReactive(input$dge_submit,
                           label = "DGE Main UI (Define Content)",
-                          ignoreNULL = FALSE, {
+                          ignoreNULL = FALSE, 
+                          {
                             print("DGE UI Function")
                             waiter_show(
                               id = "dge_main_panel",
@@ -1763,7 +1788,7 @@ server <- function(input,output,session){
                                 ),
                                 div(
                                   tags$strong("Number of cells per class: "),
-                                  textOutput(outputId = "dge_print_n_cells_class", inline = TRUE)
+                                  verbatimTextOutput(outputId = "dge_print_n_by_class") #inline = TRUE)
                                 ),
                                 div(
                                   tags$strong("Mode selected: "),
@@ -1871,8 +1896,6 @@ server <- function(input,output,session){
                                 ncol=4
                               }
                               
-                              print(input$dge_group_by)
-                              print(glue("cells in subset {ncol(rv$dge_s_sub)}"))
                               #Create UMAP of subsetted object, split by metadata
                               #for object calculation, colored by cluster
                               DimPlot(rv$dge_s_sub,
@@ -1904,7 +1927,8 @@ server <- function(input,output,session){
   #Render Statistics
   observeEvent(input$dge_submit, 
                ignoreNULL= FALSE,
-               label = "DE Render Statistics", {
+               label = "DE Render Statistics", 
+               {
                  #Rendering Selections and Stats for report
                  output$dge_selected_clusters <-
                    renderText(isolate(vector_to_text(input$dge_cluster_selection)))
@@ -1914,6 +1938,7 @@ server <- function(input,output,session){
                    renderText(isolate(vector_to_text(input$dge_htb_selection)))
                  output$dge_print_n_cells <-
                    renderText(isolate(rv$dge_n_cells))
+                 output$dge_print_n_by_class<- renderText(isolate(rv$dge_n_by_class))
                  output$dge_print_mode <-
                    renderText(isolate(rv$dge_mode))
                })
