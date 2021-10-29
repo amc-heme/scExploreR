@@ -1512,6 +1512,8 @@ server <- function(input,output,session){
   #2.2.2. DGE table for selected metadata and restriction criteria
   #Table updates only when the "Update" button is clicked
   #2.2.2.1. Store table content as reactive value
+  #The tibble generated here is converted to a DT in 2.2.2.2. for viewing, and
+  #Is passed to the download handler when the "download table" button is clicked.
   dge_table_content <- eventReactive(
     input$dge_submit,
     label = "DGE Table Content",
@@ -1723,16 +1725,24 @@ server <- function(input,output,session){
       waiter_hide(id = "dge_sidebar")
       
       #Return table for storage in dge_table_content()
-      datatable(
-        dge_table,
-        class = "compact stripe cell-border hover",
-        selection = "single",
-        filter = "top",
-        rownames = FALSE
-      ) %>%
-        formatSignif(3:8, 5) # This is more than enough - 3 is probably fine
+      dge_table
     }
   )
+  
+  #2.2.2.2. DGE table, as DT for viewing
+  dge_DT_content <- eventReactive(input$dge_submit, 
+                                  label = "DGE DT Generation",
+                                  ignoreNULL=FALSE, 
+                                  {
+    datatable(
+      dge_table_content(),
+      class = "compact stripe cell-border hover",
+      selection = "none",
+      filter = "top",
+      rownames = FALSE
+    ) %>%
+      formatSignif(3:8, 5) # This is more than enough - 3 is probably fine
+  })
   
   #2.2.3. DGE UI
   #2.2.3.1. Main UI
@@ -1916,7 +1926,7 @@ server <- function(input,output,session){
   
   #Table
   output$dge_table <- renderDT({
-    dge_table_content()
+    dge_DT_content()
   })
   
   #UMAP plot
@@ -2028,11 +2038,13 @@ server <- function(input,output,session){
  
   #2.3.2. Correlation table for selected feature and restriction criteria
   #Table updates only when the "Submit" button is clicked
-  #2.3.2.1. Store table content as reactive value
+  #2.3.2.1. Store table content (this table is accessed by the download handler,
+  #and converted to DT format in 2.3.2.2. for display in app)
   corr_table_content <- eventReactive(input$corr_submit,
                                       label="Corelation Table Content",
                                       ignoreInit = FALSE, 
-                                      ignoreNULL = FALSE, {
+                                      ignoreNULL = FALSE, 
+                                      {
     print("Running correlation table content code")
     #Reactive value for identifying a memory error (defined here and reset to FALSE each time the correlation table code is ran)
     rv$memory_error=FALSE
@@ -2186,7 +2198,7 @@ server <- function(input,output,session){
             arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
           
           #Round correlation coefficients to 5 digits
-          table$Correlation_Coefficient <- format(table$Correlation_Coefficient, digits=5, nsmall=2, scientific=FALSE) |> as.numeric()
+ #         table$Correlation_Coefficient <- format(table$Correlation_Coefficient, digits=5, nsmall=2, scientific=FALSE) |> as.numeric()
           
           })#End tryCatch
       
@@ -2199,12 +2211,30 @@ server <- function(input,output,session){
     }
   })
   
+  #2.3.2.2. Store table in DT format for display in app
+  corr_DT_content <- eventReactive(input$corr_submit,
+                                   label = "Corr DT Content",
+                                   ignoreNULL = FALSE,
+                                   {
+                                     datatable(
+                                       corr_table_content(),
+                                       class = "compact stripe cell-border hover",
+                                       selection = "single",
+                                       filter = "top",
+                                       rownames = FALSE
+                                     ) %>%
+                                       #Use 5 sig figs for column 2 
+                                       #(pearson coefficient column)
+                                       formatSignif(2, 5)
+                                   })
+  
   #2.3.3. Correlations UI
   #2.3.3.1 Main UI
   #IgnoreNULL set to false to get UI to render at start up
   corr_ui <- eventReactive(input$corr_submit, 
                            label = "Correlation Main UI (Define Content)",
-                           ignoreNULL = FALSE, {
+                           ignoreNULL = FALSE, 
+                           {
     print("Correlation UI Function")
     #UI: if the feature selection menu is empty (default state at initialization), prompt user to enter features
     if (input$corr_feature_selection == ""){
@@ -2329,21 +2359,26 @@ server <- function(input,output,session){
   
   #2.3.5. Render Correlation UI, table, scatterplot, and statistics
   #Main UI
-  output$corr_ui <- renderUI({corr_ui()})
+  output$corr_ui <- renderUI({
+    corr_ui()
+    })
   
-  output$corr_scatter_ui <- renderUI({corr_scatter_ui()})
+  output$corr_scatter_ui <- renderUI({
+    corr_scatter_ui()
+    })
 
-  output$corr_downloads_ui <- renderUI({corr_downloads_ui()})
+  output$corr_downloads_ui <- renderUI({
+    corr_downloads_ui()
+    })
     
-  output$corr_debug <- renderText({hasName(input,"corr_table_rows_selected")})
+  output$corr_debug <- renderText({
+    hasName(input,"corr_table_rows_selected")
+    })
   
   #Table
-  output$corr_table <- renderDT({corr_table_content()},
-                                class="compact stripe cell-border hover",
-                                selection="single",
-                                filter="top",
-                                colnames=c("Gene","Correlation Coefficient"),
-                                rownames=FALSE)
+  output$corr_table <- renderDT({
+    corr_DT_content()
+    })
   
   #Render correlation scatterplot
   observeEvent(input$corr_table_rows_selected, 
