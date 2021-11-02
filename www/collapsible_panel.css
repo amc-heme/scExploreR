@@ -130,3 +130,8 @@ table.hover > tbody > tr:hover{
 .hidden-button{
   display: none;
 }
+
+/* Subset summary in plots panel */ 
+#plots_subset_stats {
+  margin-bottom: 1em;
+}

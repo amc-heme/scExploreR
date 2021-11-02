@@ -105,13 +105,17 @@ patients_categories <- list(`d0/d30`=list("1325","1650","1510","1526","1378","17
 #Vector of all patients, to be passed to 'selected' in dropdown menus
 patients <- unique(sobj$htb)
 
+print("Patients Categories")
+print(patients_categories)
 #Compile the above valid choices into a valid choices (vc) list, 
 #so choices can be more easily passed to functions
 choices <- list("clusters"=clusters,
            "responses"=responses, 
            "treatments"=treatments,
            "patients"=patients,
-           "patinets_categories",patients_categories)
+           "patients_categories"=patients_categories)
+print("Choices List")
+print(choices)
 
 #Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
@@ -228,41 +232,51 @@ collapsible_panel <- function(...,label=NULL,active=FALSE){
 ### Subset Menus UI Function ###
 # Generates a series of dropdown menus used to define subsets for an operation
 #For now, this is specific to the metadata values in the D0/D30 object
-subset_menus <- function(input_prefix,choices){
+subset_menus <- function(input_prefix,choices,menus="all"){
   div(
-    pickerInput(inputId = glue("{input_prefix}_cluster_selection"),
-                label = "Restrict by Cluster",
-                choices = choices$clusters,
-                selected = choices$clusters,
-                multiple = TRUE,
-                options = list(
-                  "selected-text-format" = "count > 5",
-                  "size" = 10, #Define max options to show at a time to keep menu from being cut off
-                  "actions-box"=TRUE)),
-    pickerInput(inputId = glue("{input_prefix}_response_selection"),
-                label = "Restrict by Response",
-                choices = choices$responses,
-                selected = choices$responses,
-                multiple = TRUE),
-    pickerInput(inputId=glue("{input_prefix}_treatment_selection"),
-                label = "Restrict by Timepoint (approximate)",
-                choices = choices$treatments,
-                selected = choices$treatments, 
-                multiple = TRUE,
-                options = list(
-                  "selected-text-format" = "count > 3",
-                  "actions-box"=TRUE
-                )),
-    pickerInput(inputId = glue("{input_prefix}_htb_selection"),
-                label = "Restrict by Patient",
-                choices = choices$patients_categories, #Display patient groups to user
-                selected = choices$patients, 
-                multiple = TRUE,
-                options = list(
-                  "selected-text-format" = "count > 3",
-                  "size" = 10, 
-                  "actions-box"=TRUE
-                ))
+    #Display each picker menu if the user indicates its inclusion, 
+    #otherwise print a NULL element for that menu
+    if (menus=="all" | "clusters" %in% menus){
+      pickerInput(inputId = glue("{input_prefix}_cluster_selection"),
+                                                          label = "Restrict by Cluster",
+                                                          choices = choices$clusters,
+                                                          selected = choices$clusters,
+                                                          multiple = TRUE,
+                                                          options = list(
+                                                            "selected-text-format" = "count > 5",
+                                                            "size" = 10, #Define max options to show at a time to keep menu from being cut off
+                                                            "actions-box"=TRUE))
+      } else NULL,
+    if (menus=="all" | "response" %in% menus){
+      pickerInput(inputId = glue("{input_prefix}_response_selection"),
+                                                          label = "Restrict by Response",
+                                                          choices = choices$responses,
+                                                          selected = choices$responses,
+                                                          multiple = TRUE)
+      } else NULL,
+    if (menus=="all" | "treatment" %in% menus){
+      pickerInput(inputId=glue("{input_prefix}_treatment_selection"),
+                  label = "Restrict by Timepoint (approximate)",
+                  choices = choices$treatments,
+                  selected = choices$treatments, 
+                  multiple = TRUE,
+                  options = list(
+                    "selected-text-format" = "count > 3",
+                    "actions-box"=TRUE
+                  ))
+    } else NULL,
+    if(menus=="all" | "htb" %in% menus){
+      pickerInput(inputId = glue("{input_prefix}_htb_selection"),
+                  label = "Restrict by Patient",
+                  choices = choices$patients_categories, #Display patient groups to user
+                  selected = choices$patients, 
+                  multiple = TRUE,
+                  options = list(
+                    "selected-text-format" = "count > 3",
+                    "size" = 10, 
+                    "actions-box"=TRUE
+                  ))
+    } else NULL,
   )#End div
 }
 ###
@@ -548,24 +562,28 @@ plots_tab <- function(){
       
       ###1.1.2. Main panel for displaying plot output###
       mainPanel(
-        #Panels for plots: display if checkboxes corresponding to each type are checked
-        #1.1.2.1. UMAP plot panel
-        conditionalPanel(condition = "input.make_umap==true",
-                         uiOutput(outputId = "umap_slot")),
-        
-        #1.1.2.2. Panel for feature plot
-        #Will be a message or a plot, depending on whether features have been entered
-        conditionalPanel(condition = "input.make_feature==true",
-                         uiOutput(outputId = "feature_slot")),
-        
-        #1.1.2.3. Panel for violin plot
-        #UI displayed will vary based on the entry into the feature text box
-        conditionalPanel(condition="input.make_vln==true",
-                         uiOutput(outputId = "vln_slot")), 
-        
-        #1.1.2.4. Dot plot panel
-        conditionalPanel(condition = "input.make_dot==true",
-                         uiOutput(outputId = "dot_slot"))
+        #div added to contain Waiter spinner (forces the spinner to cover the full main panel)
+        div(id="plots_main_panel", 
+            class="spinner-container-main",
+            #Panels for plots: display if checkboxes corresponding to each type are checked
+            #1.1.2.1. UMAP plot panel
+            conditionalPanel(condition = "input.make_umap==true",
+                             uiOutput(outputId = "umap_slot")),
+            
+            #1.1.2.2. Panel for feature plot
+            #Will be a message or a plot, depending on whether features have been entered
+            conditionalPanel(condition = "input.make_feature==true",
+                             uiOutput(outputId = "feature_slot")),
+            
+            #1.1.2.3. Panel for violin plot
+            #UI displayed will vary based on the entry into the feature text box
+            conditionalPanel(condition="input.make_vln==true",
+                             uiOutput(outputId = "vln_slot")), 
+            
+            #1.1.2.4. Dot plot panel
+            conditionalPanel(condition = "input.make_dot==true",
+                             uiOutput(outputId = "dot_slot"))
+            ) #End div
       ) #End 1.1.2
     ) #End sidebarLayout() 
   ) #End fluidPage() 
@@ -631,7 +649,8 @@ tables_tab <- function(){
       ),#End sidebarPanel (1.3.1)
       #1.3.2 Main Pane
       mainPanel(
-        div(id="dge_main_panel", class="spinner-container-main", #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
+        div(id="dge_main_panel", 
+            class="spinner-container-main", #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
             uiOutput(outputId = "dge_ui"))
         
       )#End MainPanel
@@ -798,10 +817,15 @@ server <- function(input,output,session){
   #2.0. Initialize Session
   #2.0.1. Initialize Reactive Values
   rv <- reactiveValues()
-  #For correlations tab: report number of cells in a subset, number of cells where a gene is detected, and the proportion of detected cells
+  #For correlations tab: report number of cells in a subset, number of cells 
+  #where a gene is detected, and the proportion of detected cells
   rv$n_cells <- 0
   rv$n_nonzero <- 0
   rv$prop_nonzero <- 0
+  #rv$is_subset: used to tell the plots to plot the subsetted object instead of 
+  #the full object. This is FALSE initially and set to TRUE when the user chooses
+  #a subset.
+  rv$is_subset <- FALSE
     
   #2.0.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
@@ -841,53 +865,229 @@ server <- function(input,output,session){
   
   ###2.1. Plots Tab
   #2.1.1 Define subset for plots 
-  #UI for defining the subset currently selected.
-  current_subset <- eventReactive(input$plots_subset_submit, label = "Plots: Current Subset UI", {
-    #Print current subset criteria, inline with captions
-    div(div(tags$strong("Clusters: "),textOutput(outputId = "plots_selected_clusters", inline = TRUE)),
-        div(tags$strong("Response criteria: "),textOutput(outputId = "plots_selected_response", inline = TRUE)),
-        div(tags$strong("Patients: "),textOutput(outputId = "plots_selected_htb", inline = TRUE))
-    )
-  })
+  #2.1.1.1. Update choices in subset selection menu based on user selections
+  #Update patients menu based on entries in 'response' or 'treatment' (timepoint)
+  observeEvent(c(input$plots_response_selection,input$plots_treatment_selection),
+               ignoreNULL = FALSE,
+               label = "Plots Update Patients",
+               {
+                 #Display spinner during computation to keep user from choosing
+                 #outdated options
+                 #Show a spinner while the valid patient ID's are calculated
+                 waiter_show(
+                   id = "plots_sidebar",
+                   html = spin_loaders(id = 2, color = "#555588"),
+                   color = "#B1B1B188",
+                   hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+                 )
+                 
+                 #Filter object for treatment and response selections
+                 valid_patients <- sobj@meta.data |> 
+                   filter(
+                     (.data[["treatment"]] %in% input$plots_response_selection)&
+                       (.data[["response"]] %in% input$plots_treatment_selection)
+                   ) |> 
+                   #Select patients metadata column
+                   select(.data[["htb"]]) |> 
+                   #Return unique values
+                   unique() |>
+                   #Convert to a character vector
+                   unlist()
+                 
+                 #Form categorized list of valid patients for display in dropdown menu
+                 valid_patients_categories <- sort_patient_list(valid_patients)
+                 
+                 #Update patients dropdown menu with selections
+                 
+                 #Hide spinner
+                 waiter_hide("plots_sidebar")
+               })
+  
+  #2.1.1.2. Construct subset after "Apply Subset" button is clicked
+  plots_subset <- eventReactive(input$plots_subset_submit,
+                                ignoreNULL=FALSE,
+                                label = "Plots Subset", 
+                                {
+                                  print("Executing subset code")
+                                  #Display spinner over main window while the 
+                                  #subset is being computed
+                                  waiter_show(
+                                    id = "plots_main_panel",
+                                    html = spin_loaders(id = 2, color = "#555588"),
+                                    color = "#FFFFFF",
+                                    hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+                                  )
+                                  
+                                  #Also display a spinner over the text showing
+                                  #The metadata in the current subset
+                                  waiter_show(
+                                    id = "plots_subset_stats",
+                                    html = spin_loaders(id = 2, color = "#555588"),
+                                    color = "#B1B1B188",
+                                    hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+                                  )
+                                  
+                                  tryCatch(error=function(cnd){
+                                   #Return errors to user using notifications
+                                   #If an error is caught: attempt to determine 
+                                   #type of error by inspecting message text with 
+                                   #grepl (not recommended, but I currently don't 
+                                   #know any other way to catch this error type)
+                                   
+                                   #Special error types: customize the message 
+                                   #that appears 
+                                   #Error 1: No cells in selected subset
+                                   if (grepl("No cells found", cnd$message)) {
+                                     #This reactive value will instruct the correlation 
+                                     #table UI to display differently based on the error
+                                     rv$memory_error = TRUE
+                                     #Define notification to be displayed to user upon memory error
+                                     mem_err_ui <-
+                                       icon_notification_ui(
+                                         icon_name = "skull-crossbones",
+                                         message = tagList(
+                                           "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
+                                           tags$a(
+                                             "let us know",
+                                             href =
+                                               "https://github.com/amc-heme/DataExploreShiny/issues",
+                                             target =
+                                               "_blank",
+                                             #Opens link in new tab
+                                             rel =
+                                               "noopener noreferrer"
+                                           ),
+                                           #Period at end of link
+                                           "."
+                                         )#End tagList
+                                       )
+                                     
+                                     #Display notification
+                                     showNotification(
+                                       ui = mem_err_ui,
+                                       #Duration=NULL will make the message persist until dismissed
+                                       duration = NULL,
+                                       id = "plots_no_cells_found",
+                                       session =
+                                         session
+                                     )
+                                   } else {
+                                     #All other errors: use a generic notification
+                                     #Define Notification UI
+                                     other_err_ui <-
+                                       icon_notification_ui(
+                                         icon_name = "skull-crossbones",
+                                         message = tagList(
+                                           glue("Error: {cnd$message}. Please "),
+                                           tags$a(
+                                             "report this issue ",
+                                             href =
+                                               "https://github.com/amc-heme/DataExploreShiny/issues",
+                                             target =
+                                               "_blank",
+                                             #Opens link in new tab
+                                             rel =
+                                               "noopener noreferrer"
+                                           ),
+                                           "with a screenshot of the app window."
+                                         )#End tagList
+                                       )
+                                     
+                                     #Display Notification
+                                     showNotification(
+                                       ui = other_err_ui,
+                                       #Duration=NULL will make the message persist until dismissed
+                                       duration = NULL,
+                                       id = "plots_other_error",
+                                       session =
+                                         session
+                                     )
+                                   }
+                                   
+                                   #Return "NULL" for subset when an error has occurred
+                                   plots_s_sub <- NULL
+                                 }, #End tryCatch error function
+                                 #Begin tryCatch code
+                                 {
+                                   plots_s_sub <- subset(
+                                     sobj,
+                                     subset =
+                                       (clusters %in% input$plots_cluster_selection) &
+                                       (response %in% input$plots_response_selection) &
+                                       (htb %in% input$plots_htb_selection) &
+                                       (treatment %in% input$plots_treatment_selection)
+                                   )
+                                   
+                                 }
+                                 )#End tryCatch
+                                  
+                                  #Hide the water
+                                  waiter_hide("plots_main_panel")
+                                  
+                                  #Return subset to the eventReactive variable
+                                  plots_s_sub
+                                })
   
   #Rendering text for selected subsets
-  observeEvent(input$plots_subset_submit, ignoreNULL = FALSE,
-               label = "Plots: Render Subset Criteria",{
-                 #print("Clusters selected",input$plots_cluster_selection)
-                 #print("Clusters",clusters)
-                 #print("Logic test:",setequal(input$plots_cluster_selection,clusters))
+  observeEvent(input$plots_subset_submit, 
+               ignoreNULL = FALSE,
+               label = "Plots: Render Subset Criteria",
+               {
+                 #Store the current metadata levels stored in the selected subset
+                 responses_found <- unique(plots_subset()$response)
+                 treatments_found <- unique(plots_subset()$treatment)
+                 patients_found <- unique(plots_subset()$htb)
                  
                  #Rendering Selections and Stats for report
                  output$plots_selected_clusters <- renderText({
+                   clusters_found <- unique(plots_subset()$clusters)
                    #If all clusters are selected, print "All"
-                   if(setequal(input$plots_cluster_selection,clusters)){
-                     print("All")
+                   if(setequal(clusters_found,clusters)){
+                     "All"
                      #Otherwise, print the selected clusters
                    } else { 
-                     isolate(vector_to_text(input$plots_cluster_selection))
+                     isolate(vector_to_text(clusters_found))
                      } #End Conditionals
                  }) #End renderText
                  
                  #Selected Response Criteria
                  output$plots_selected_response <- renderText({
-                   #Print "All" if all clusters are selected, otherwise print selected responses
-                   if(setequal(input$plots_response_selection,responses)){
-                     print("All")
+                   #Print "All" if all response criteria are selected 
+                   if(setequal(responses_found,responses)){
+                     "All"
                      }else{
-                       isolate(vector_to_text(input$plots_response_selection))
+                       #Otherwise, print selected responses
+                       isolate(vector_to_text(responses_found))
                        }#End conditionals
                    }) #End renderText
                  
-                #Selected Patients
-                 output$plots_selected_htb <- renderText({
-                   if(setequal(input$plots_htb_selection,patients)){
-                   #Print "all" if all patient IDs are selected, otherwise print selected patients
-                   print("All")
+                 #Selected Timepoints
+                 output$plots_selected_treatment <- renderText({
+                   #Print "All" if all treatment categories (timepoints) are selected
+                   if(setequal(treatments_found,treatments)){
+                     "All"
                    }else{
-                     isolate(vector_to_text(input$plots_htb_selection))
-                     } #End conditionals
+                     #Otherwise, print selected treatment categories (timepoints)
+                     isolate(vector_to_text(treatments_found))
+                   }#End conditionals
+                 }) #End renderText
+                 
+                 #Selected Patients
+                 output$plots_selected_htb <- renderText({
+                   if(setequal(patients_found,patients)){
+                     #Print "all" if all patient IDs are selected
+                     "All"
+                     }else{
+                       #Otherwise, print selected patients
+                       isolate(vector_to_text(patients_found))
+                       } #End conditionals
                    }) #End renderText
+                 
+                 #When finished rendering current metadata, hide the spinner
+                 #over the panel
+                 waiter_hide("plots_subset_stats")
                })
+  
   
   #2.1.2. UMAP plot
   #2.1.2.1. Reactive UMAP plot dimensions
@@ -967,21 +1167,14 @@ server <- function(input,output,session){
   umap_plot_content <- reactive({
     #Produce a single UMAP plot if no features to split by are specified
     if (input$umap_split_by=="none"){
-      DimPlot(sobj, 
+      #Use full object if is_subset is FALSE, and use the subset otherwise
+      DimPlot(plots_subset(), 
               group.by = input$umap_group_by, 
               label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
               reduction = "umap")
-    } else if (input$umap_split_by=="sub-d0_d30"){
-      #Special case: if a subset option is passed, make the plot based on the pertinent subset
-      DimPlot(d0_d30,
-              group.by = input$umap_group_by, 
-              split.by = "treatment", #The Treatment column shows the diagnosis vs. D30 data
-              label = input$umap_label, 
-              ncol = input$umap_ncol,
-              reduction = "umap")
     } else {
       #UMAP with split.by defined and no special subset
-      DimPlot(sobj, 
+      DimPlot(plots_subset(), 
               group.by = input$umap_group_by, 
               split.by = input$umap_split_by, 
               label = input$umap_label, 
@@ -1094,12 +1287,12 @@ server <- function(input,output,session){
     if (length(input$text_features)>0){
       #If no split.by variable is specified, create a feature plot without the split.by argument
       if (input$feature_split_by=="none"){
-        FeaturePlot(sobj,
+        FeaturePlot(plots_subset(),
                     features=input$text_features)
       }
       #Otherwise, split by the user-specified variable
       else {
-        FeaturePlot(sobj, 
+        FeaturePlot(plots_subset(), 
                     features=input$text_features,
                     split.by = input$feature_split_by)
       }
@@ -1234,12 +1427,12 @@ server <- function(input,output,session){
     if (length(input$text_features)==1){
       #No nol, no split.by
       if (input$vln_split_by=="none"){
-        VlnPlot(sobj, 
+        VlnPlot(plots_subset(), 
                 features = input$text_features,
                 group.by = input$vln_group_by)
       #No ncol, split.by
       } else {
-        VlnPlot(sobj, 
+        VlnPlot(plots_subset(), 
                 features = input$text_features,
                 group.by = input$vln_group_by,
                 split.by = input$vln_split_by) 
@@ -1248,13 +1441,13 @@ server <- function(input,output,session){
     } else if (length(input$text_features)>1){
       #ncol and no split.by
       if (input$vln_split_by=="none"){
-        VlnPlot(sobj, 
+        VlnPlot(plots_subset(), 
                 features = input$text_features,
                 group.by = input$vln_group_by,
                 ncol=input$vln_ncol)
       #ncol and split.by
       } else {
-        VlnPlot(sobj, 
+        VlnPlot(plots_subset(), 
                 features = input$text_features,
                 group.by = input$vln_group_by,
                 split.by = input$vln_split_by,
@@ -1396,13 +1589,13 @@ server <- function(input,output,session){
     if (((input$diff_features_dot==FALSE)&(length(input$text_features)>=1))|((input$diff_features_dot==TRUE)&(length(input$dot_features)>=1))){
       #If user specifies the use of different features, use the dot plot-specific features instead of the generic text entry features
       if (input$diff_features_dot==TRUE){
-        DotPlot(sobj,
+        DotPlot(plots_subset(),
                 features = input$dot_features,
                 group.by = input$dot_group_by) + RotatedAxis()
       }
       else {
         #Check if split.by is specified
-        DotPlot(sobj, 
+        DotPlot(plots_subset(), 
                 features = input$text_features,
                 group.by = input$dot_group_by) + RotatedAxis()
       }
@@ -1502,12 +1695,14 @@ server <- function(input,output,session){
         sort() |>
         as.character() |> #Convert back to character values to avoid issues with further subsetting
         as.list()
+      
       valid_patients_categories$`Dx/Rl` <-
         valid_patients_categories$`Dx/Rl` |>
         as.numeric() |>
         sort() |>
         as.character() |>
         as.list()
+      
       #Normal bone marrow column consists of character IDs that are sorted properly with sort()
       valid_patients_categories$`Normal Bone Marrow` <-
         valid_patients_categories$`Normal Bone Marrow` |>
