@@ -70,17 +70,8 @@ meta_choices <- c("None"="none",
                   "Clusters"="clusters",
                   "Response"="response",
                   "Response (Additional Detail)"="best_response",
-                  "Treatment"="treatment",
+                  "Timepoint (Approximate)"="treatment",
                   "Patient ID"="htb")
-
-split_by_choices <- c("None"="none",
-                      "Clusters"="clusters",
-                      "Response"="response",
-                      "Response (Additional Detail)"="best_response",
-                      "Patient ID"="htb",
-                      #"sub" options below involve both a subset and a split.by on the treatment column
-                      "D0 vs. D30"="sub-d0_d30")#,
-                      #"Dignosis vs. Relapse"="sub-dx_rl")
 
 ###Correlations tab: define valid metadata selections
 #Clusters dropdown
@@ -101,8 +92,6 @@ patients_categories <- list(`d0/d30`=list("1325","1650","1510","1526","1378","17
 #Vector of all patients, to be passed to 'selected' in dropdown menus
 patients <- unique(sobj$htb)
 
-print("Patients Categories")
-print(patients_categories)
 #Compile the above valid choices into a valid choices (vc) list, 
 #so choices can be more easily passed to functions
 choices <- list("clusters"=clusters,
@@ -516,7 +505,7 @@ plots_tab <- function(){
                                                       #Choose metadata to split UMAP by
                                                       selectInput(inputId = "umap_split_by", 
                                                                   label = "Metadata to split by:",
-                                                                  choices=split_by_choices, #Experimental 
+                                                                  choices=meta_choices, #Experimental 
                                                                   selected = "none"),
                                                       #If split by is specified, control number 
                                                       #of columns with a slider
@@ -1110,10 +1099,10 @@ server <- function(input,output,session){
                    responses_found <- unique(plots_subset()$response)
                    treatments_found <- unique(plots_subset()$treatment)
                    patients_found <- unique(plots_subset()$htb)
+                   clusters_found <- unique(plots_subset()$clusters)
                    
                    #Rendering Selections and Stats for report
                    output$plots_selected_clusters <- renderText({
-                     clusters_found <- unique(plots_subset()$clusters)
                      #If all clusters are selected, print "All"
                      if(setequal(clusters_found,clusters)){
                        "All"
@@ -1194,16 +1183,21 @@ server <- function(input,output,session){
   })
   
   #2.1.2.2. ncol slider: appears when a split.by 
-  #Default value depends on the number of values in the metadata object in question. 
-  umap_ncol_slider <- eventReactive(input$umap_split_by, ignoreInit = TRUE, { #Do not need to render UI at startup
+  #Default value depends on the number of values in the metadata object in question.
+  #Updates when the split_by argument or the subset is changed
+  umap_ncol_slider <- eventReactive(c(input$umap_split_by,input$plots_subset_submit), 
+                                    #Do not need to render UI at startup
+                                    ignoreInit = TRUE, 
+                                    { 
     #Do not render when split.by is "none"
     if (input$umap_split_by=="none"){
       NULL
     } else {
       #Determine number of panels created by split_by choice.
-      #Use double-bracket means of accessing the metadata variable (supports entry of an arbitrary variable)
-      #This means of access returns a dataframe. Slice for the first row (the unique values)
-      n_panel <- unique(sobj[[input$umap_split_by]])[,1] |> length()
+      #Use double-bracket means of accessing the metadata variable (supports 
+      #entry of an arbitrary variable). This means of access returns a dataframe. 
+      #Slice for the first row (the unique values)
+      n_panel <- unique(plots_subset()[[input$umap_split_by]])[,1] |> length()
       
       #Determine initial value for ncol
       #For less than four panels, this is equal to the number of panels. 
