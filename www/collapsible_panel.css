@@ -131,10 +131,6 @@ table.hover > tbody > tr:hover{
   display: none;
 }
 
-/* Subset summary in plots panel */ 
-#plots_subset_stats {
-  margin-bottom: 1em;
-
 /* Center Header Tags in DGE UI */
 .center{
   text-align: center;

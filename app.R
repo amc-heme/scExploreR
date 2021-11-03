@@ -28,6 +28,10 @@ library(presto)
 #https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
+#Define subsets for 
+#Diagnosis/follow-up (longitudinal samples, patients 1325, 1650, 1510, 1526, 1378, and 1724)
+d0_d30 <- subset(sobj, sub=htb %in% c("1325","1650","1510","1526","1378","1724"))
+
 #Define searchable features
 #Gene_expression features
 genes <- rownames(sobj)
@@ -100,18 +104,6 @@ patients_categories <- list(`d0/d30`=list("1325","1650","1510","1526","1378","17
                  `Normal Bone Marrow`=list("BMMC_1","BMMC_2","BMMC_3"))
 #Vector of all patients, to be passed to 'selected' in dropdown menus
 patients <- unique(sobj$htb)
-
-print("Patients Categories")
-print(patients_categories)
-#Compile the above valid choices into a valid choices (vc) list, 
-#so choices can be more easily passed to functions
-choices <- list("clusters"=clusters,
-           "responses"=responses, 
-           "treatments"=treatments,
-           "patients"=patients,
-           "patients_categories"=patients_categories)
-print("Choices List")
-print(choices)
 
 #Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
@@ -225,58 +217,6 @@ collapsible_panel <- function(...,label=NULL,active=FALSE){
 }
 ###
 
-### Subset Menus UI Function ###
-# Generates a series of dropdown menus used to define subsets for an operation
-#For now, this is specific to the metadata values in the D0/D30 object
-subset_menus <- function(input_prefix,choices,menus="all"){
-  div(
-    #Display each picker menu if the user indicates its inclusion, 
-    #otherwise print a NULL element for that menu
-    if (menus=="all" | "clusters" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_cluster_selection"),
-                                                          label = "Restrict by Cluster",
-                                                          choices = choices$clusters,
-                                                          selected = choices$clusters,
-                                                          multiple = TRUE,
-                                                          options = list(
-                                                            "selected-text-format" = "count > 5",
-                                                            "size" = 10, #Define max options to show at a time to keep menu from being cut off
-                                                            "actions-box"=TRUE))
-      } else NULL,
-    if (menus=="all" | "response" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_response_selection"),
-                                                          label = "Restrict by Response",
-                                                          choices = choices$responses,
-                                                          selected = choices$responses,
-                                                          multiple = TRUE)
-      } else NULL,
-    if (menus=="all" | "treatment" %in% menus){
-      pickerInput(inputId=glue("{input_prefix}_treatment_selection"),
-                  label = "Restrict by Timepoint (approximate)",
-                  choices = choices$treatments,
-                  selected = choices$treatments, 
-                  multiple = TRUE,
-                  options = list(
-                    "selected-text-format" = "count > 3",
-                    "actions-box"=TRUE
-                  ))
-    } else NULL,
-    if(menus=="all" | "htb" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_htb_selection"),
-                  label = "Restrict by Patient",
-                  choices = choices$patients_categories, #Display patient groups to user
-                  selected = choices$patients, 
-                  multiple = TRUE,
-                  options = list(
-                    "selected-text-format" = "count > 3",
-                    "size" = 10, 
-                    "actions-box"=TRUE
-                  ))
-    } else NULL,
-  )#End div
-}
-###
-
 ### Icon Notification Function
 #Defines the HTML to be printed within a notification box. The function takes the name of a Font Awesome icon and a message as input, and will display the icon and the message inline.
 icon_notification_ui <- function(icon_name,message){
@@ -327,40 +267,6 @@ vector_to_text <- function(vector){
   }
 }
 ###
-
-### Build patient list
-#Taking a vector of valid patients as input, build_patient_list() compiles the 
-#choices into a categorized list for display in the dropdown menu
-#This is currently hard-coded for the d0/d30 object
-build_patient_list <- function(valid_patients){
-  #List of valid patients: based on group of patient in dropdown menu
-  valid_patients_categories = list(
-    `d0/d30` = list(),
-    `Dx/Rl` = list(),
-    `Normal Bone Marrow` = list()
-  )
-  
-  #Sort valid patients into above framework
-  for (patient in valid_patients) {
-    #Iterate through valid_patients vector and place each choice in the relevant category
-    if (patient %in% c("1325", "1650", "1510", "1526", "1378", "1724")) {
-      #Append above patient ids to d0/d30 category
-      valid_patients_categories$`d0/d30` <-
-        append(valid_patients_categories$`d0/d30`, patient)
-    } else if (patient %in% c("1261", "1467", "719")) {
-      #Append above patient ids to Dx/Rl category
-      valid_patients_categories$`Dx/Rl` <-
-        append(valid_patients_categories$`Dx/Rl`, patient)
-    } else if (patient %in% c("BMMC_1", "BMMC_2", "BMMC_3")) {
-      #Append above patient (sample) ids to normal bone marrow category
-      valid_patients_categories$`Normal Bone Marrow` <-
-        append(valid_patients_categories$`Normal Bone Marrow`, patient)
-    }
-  }
-  
-  #Return the categorized list of valid patients
-  valid_patients_categories
-}
 
 ### Sort patient list
 #For the list of patients that display in the dropdown for the d0/d30 object,
@@ -421,225 +327,220 @@ plots_tab <- function(){
   fluidPage(
     #Sidebar layout: consists of a side panel and a main panel
     sidebarLayout(
+      
       ### 1.1.1. Sidebar panel for user input ###
       sidebarPanel(fluid=FALSE,
-                   ### 1.1.1.1 Checkboxes for choosing desired plot
-                   # Two-column checkboxes: put inside inline block elements 
-                   #that span half of the sidebar panel
-                   div(class="two_column",
-                        style="float: left;",
-                        #Specify if UMAP Plot is desired
-                        materialSwitch(inputId = "make_umap",
-                                       label = "UMAP plot", 
-                                       value = TRUE,
-                                       right = TRUE,
-                                       status = "default"),
-                        
-                        #Specify if feature plot is desired
-                        materialSwitch(inputId = "make_feature",
-                                       label = "Feature Plot", 
-                                       value = FALSE,
-                                       right = TRUE,
-                                       status = "default")
-                        ),#End div
-                    
-                    div(class="two_column",
-                        #Specify if violin plot is desired
-                        materialSwitch(inputId = "make_vln",
-                                       label = "Violin Plot", 
-                                       value = FALSE,
-                                       right = TRUE,
-                                       status = "default"),
-                        #Specify if dot plot is desired
-                        materialSwitch(inputId = "make_dot",
-                                       label = "Dot Plot", 
-                                       value = FALSE,
-                                       right = TRUE,
-                                       status = "default")
-                        ),#End div
-                   
-                   ### 1.1.1.2. Feature Text Entry. Applies to feature, violin, 
-                   #and dot plots unless the user specifies the use of different 
-                   #features for each plot (currently only possible for dot plots) 
-                   conditionalPanel(condition="input.make_feature==true | input.make_vln==true | input.make_dot==true",
-                                    #Label
-                                    tags$p(tags$strong("Enter features to display on plots:")),
-                                    #Inline text entry and update button
-                                    div(style="vertical-align: top; margin-bottom: 0px;",
-                                        selectizeInput(inputId = "text_features",
-                                                       multiple = TRUE, 
-                                                       label = NULL,
-                                                       choices = NULL,
-                                                       selected = NULL,
-                                                       #Add remove button to inputs
-                                                       options = list(
-                                                         'plugins' = list('remove_button'),
-                                                         'create'=FALSE)) #Do not allow user to 
-                                        #input features not in the list of options
-                                        ),
-                                    #Error message: displayed if inalid features are 
-                                    #entered (currently unused)
-                                    div(style="margin-top: 0px; margin-bottom: 10px;",uiOutput(outputId = "feature_error"))
-                                    ),#End 1.1.1.2.
-                   
-                   ###1.1.1.3. Subsets for Plots
-                   collapsible_panel(label="Subset Options",
-                                     active=FALSE,
-                                     div(id="plots_subset_panel",
-                                         div(id="plots_subset_stats",
-                                             tags$strong("Metadata in Displayed Subset",id="plots_subset_header"),
-                                             div(tags$strong("Clusters: "),
-                                                 textOutput(outputId = "plots_selected_clusters", inline = TRUE)),
-                                             div(tags$strong("Response criteria: "),
-                                                 textOutput(outputId = "plots_selected_response", inline = TRUE)),
-                                             div(tags$strong("Timepoints: "),
-                                                 textOutput(outputId = "plots_selected_treatment", inline = TRUE)),
-                                             div(tags$strong("Patients: "),
-                                                 textOutput(outputId = "plots_selected_htb", inline = TRUE))
-                                         ),
-                                         subset_menus(input_prefix = "plots",choices=choices),
-                                         actionButton(inputId = "plots_subset_submit",
-                                                      label="Apply Subset")
-                                         )
-                          ),#End 1.1.1.3
-                   
-                   ### Plot Specific Options ###
-                   #1.1.1.4. Options specific to UMAP: panel will display if UMAP is checked
-                   conditionalPanel(condition = "input.make_umap==true",
-                                    collapsible_panel(label="UMAP Specific Options",
-                                                      active=TRUE,
-                                                      #Choose metadata to group UMAP by
-                                                      selectInput(inputId = "umap_group_by", 
-                                                                  label = "Metadata to group by:",
-                                                                  choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
-                                                                  selected = "clusters"),
-                                                      #Choose metadata to split UMAP by
-                                                      selectInput(inputId = "umap_split_by", 
-                                                                  label = "Metadata to split by:",
-                                                                  choices=split_by_choices, #Experimental 
-                                                                  selected = "none"),
-                                                      #If split by is specified, control number 
-                                                      #of columns with a slider
-                                                      uiOutput(outputId = "umap_ncol_slider"),
-                                                      #Checkbox: add or remove labels (labels on by default)
-                                                      checkboxInput(inputId = "umap_label",
-                                                                    label="Label Groups",
-                                                                    value=TRUE),
-                                                      #UI for user control of plot dimensions, if desired
-                                                      manual_dim_UI(plot_type = "umap"),
-                                                      #Download button (plot specific)
-                                                      downloadButton(outputId = "umap_download",label="Download UMAP")
-                                                      )#End collapsible panel
-                                    ),#End 1.1.1.4.
-                   
-                   #1.1.1.5. Options specific to feature plot
-                   conditionalPanel(condition = "input.make_feature==true",
-                                    collapsible_panel(label = "Feature Plot Specific Options",
-                                                      active = FALSE,
-                                                      #Feature plots do not have a group.by argument
-                                                      #Choose metadata to split feature plot by
-                                                      selectInput(inputId = "feature_split_by", 
-                                                                  label = "Metadata to split by:",
-                                                                  choices=meta_choices, 
-                                                                  selected = "none"),
-                                                      #UI for user control of plot dimensions, if desired
-                                                      manual_dim_UI(plot_type = "feature"),
-                                                      #Download button (plot specific)
-                                                      downloadButton(outputId = "feature_download",
-                                                                     label="Download Feature Plot")
-                                                      )#End collapsible_panel
-                                    ),#End 1.1.1.5
-                   
-                   #1.1.1.6. Options specific to violin plot
-                   conditionalPanel(condition = "input.make_vln==true",
-                                    collapsible_panel(label = "Violin Plot Specific Options",
-                                                      active=FALSE,
-                                                      #Choose metadata to group violin plot by
-                                                      selectInput(inputId = "vln_group_by", 
-                                                                  label = "Metadata to group by:",
-                                                                  choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group.by
-                                                                  selected = "clusters"),
-                                                      
-                                                      #Choose metadata to split violin plot by
-                                                      selectInput(inputId = "vln_split_by", 
-                                                                  label = "Metadata to split by:", 
-                                                                  choices=meta_choices,
-                                                                  selected = "none"),
-                                                      
-                                                      #Slider to control number of columns if multiple features are entered
-                                                      uiOutput(outputId = "vln_ncol_slider"),
-                                                      #UI for user control of plot dimensions, if desired
-                                                      manual_dim_UI(plot_type = "vln"),
-                                                      #Download button (plot specific)
-                                                      downloadButton(outputId = "vln_download",label="Download Violin Plot")
-                                                      )#End collapsible panel
-                                    ), #End 1.1.1.6.
-                   
-                   #1.1.1.7. Options specific to dot plot
-                   conditionalPanel(condition = "input.make_dot==true",
-                                    collapsible_panel(label="Dot Plot Specific Options",
-                                                      active=FALSE,
-                                                      #Choose metadata to group dot plot by
-                                                      selectInput(inputId = "dot_group_by",
-                                                                  label = "Metadata to group by:",
-                                                                  choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
-                                                                  selected = "clusters"),
-                                                      
-                                                      #Choosing different features
-                                                      checkboxInput(inputId = "diff_features_dot",
-                                                                    label="Use separate features for dot plot", 
-                                                                    value=FALSE),
-                                                      
-                                                      #If the checkbox above is selected, display a selectize input for feature selection
-                                                      conditionalPanel(condition="input.diff_features_dot==true",
-                                                                       #Label
-                                                                       tags$p(tags$strong("Enter features to display on dot plot:")),
-                                                                       #Selectize entry
-                                                                       div(style="vertical-align: top; margin-bottom: 0px;",
-                                                                           selectizeInput(inputId = "dot_features",
-                                                                                          multiple=TRUE,
-                                                                                          label=NULL,
-                                                                                          choices = NULL,
-                                                                                          selected = NULL,
-                                                                                          #Add remove button to inputs
-                                                                                          options = list(
-                                                                                            'plugins' = list('remove_button'),
-                                                                                            'create'=FALSE)
-                                                                                          )
-                                                                           )
-                                                                       ),
-                                                      #UI for user control of plot dimensions, if desired
-                                                      manual_dim_UI(plot_type = "dot"),
-                                                      #Download button (plot specific)
-                                                      downloadButton(outputId = "dot_download",label="Download Dot Plot")
-                                                      ) #End collapsible panel
-                                    ) #End 1.1.1.7
-                   ), #End 1.1.1.
+        ### 1.1.1.1 Checkboxes for choosing desired plot
+        # Two-column checkboxes: put inside inline block elements that span half of the sidebar panel
+        div(class="two_column",
+            style="float: left;",
+            #Specify if UMAP Plot is desired
+            materialSwitch(inputId = "make_umap",
+                           label = "UMAP plot", 
+                           value = TRUE,
+                           right = TRUE,
+                           status = "default"),
+            
+            #Specify if feature plot is desired
+            materialSwitch(inputId = "make_feature",
+                           label = "Feature Plot", 
+                           value = FALSE,
+                           right = TRUE,
+                           status = "default")
+            ),#End div
+        
+        div(class="two_column",
+            #Specify if violin plot is desired
+            materialSwitch(inputId = "make_vln",
+                           label = "Violin Plot", 
+                           value = FALSE,
+                           right = TRUE,
+                           status = "default"),
+            #Specify if dot plot is desired
+            materialSwitch(inputId = "make_dot",
+                           label = "Dot Plot", 
+                           value = FALSE,
+                           right = TRUE,
+                           status = "default")
+            ),#End div
+        
+        ### 1.1.1.2. Feature Text Entry. Applies to feature, violin, and dot plots unless the user specifies the use of different features for each plot (currently only possible for dot plots) 
+        conditionalPanel(condition="input.make_feature==true | input.make_vln==true | input.make_dot==true",
+                         #Label
+                         tags$p(tags$strong("Enter features to display on plots:")),
+                         #Inline text entry and update button
+                         div(style="vertical-align: top; margin-bottom: 0px;",
+                             selectizeInput(inputId = "text_features", 
+                                            multiple = TRUE, 
+                                            label = NULL,
+                                            choices = NULL,
+                                            selected = NULL,
+                                            #Add remove button to inputs
+                                            options = list(
+                                              'plugins' = list('remove_button'),
+                                              'create'=FALSE)) #Do not allow user to input features not in the list of options
+                         ),
+                         #Error message: displayed if inalid features are entered (currently unused)
+                         div(style="margin-top: 0px; margin-bottom: 10px;",uiOutput(outputId = "feature_error"))
+        ),#End 1.1.1.2.
+        
+        ###1.1.1.3. Subsets for Plots
+#        collapsible_panel(label="Subset Options",
+#                           active=FALSE,
+#                           uiOutput(outputId="plots_selected_subset"),
+#                           pickerInput(inputId = "plots_cluster_selection",
+#                                       label = "Restrict by Cluster",
+#                                       choices = clusters,
+#                                       selected = clusters,
+#                                       multiple = TRUE,
+#                                       options = list(
+#                                         "selected-text-format" = "count > 5",
+#                                         "size" = 10, #Define max options to show at a time to keep menu from being cut off
+#                                         "actions-box"=TRUE)),
+#                           pickerInput(inputId = "plots_response_selection",
+#                                       label = "Restrict by Response",
+#                                       choices = responses,
+#                                       selected = responses,
+#                                       multiple = TRUE),
+#                           pickerInput(inputId = "plots_htb_selection",
+#                                       label = "Restrict by Patient",
+#                                       choices = patients_categories, #Display patient groups to user
+#                                       selected = patients, 
+#                                       multiple = TRUE,
+#                                       options = list(
+#                                         "selected-text-format" = "count > 3",
+#                                         "size" = 10, 
+#                                         "actions-box"=TRUE
+#                                       )),
+#                           actionButton(inputId="plots_subset_submit",
+#                                         label="Apply Criteria")
+#                           ),#End 1.1.1.3
+        
+        ### Plot Specific Options ###
+        #1.1.1.4. Options specific to UMAP: panel will display if UMAP is checked
+        conditionalPanel(condition = "input.make_umap==true",
+                         collapsible_panel(label="UMAP Specific Options",
+                                           active=TRUE,
+                                           #Choose metadata to group UMAP by
+                                           selectInput(inputId = "umap_group_by", 
+                                                       label = "Metadata to group by:",
+                                                       choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
+                                                       selected = "clusters"),
+                                           #Choose metadata to split UMAP by
+                                           selectInput(inputId = "umap_split_by", 
+                                                       label = "Metadata to split by:", 
+                                                       choices=split_by_choices, #Experimental 
+                                                       selected = "none"),
+                                           #If split by is specified, control number of columns with a slider
+                                           uiOutput(outputId = "umap_ncol_slider"),
+                                           #Checkbox: add or remove labels (labels on by default)
+                                           checkboxInput(inputId = "umap_label",
+                                                         label="Label Groups",
+                                                         value=TRUE),
+                                           #UI for user control of plot dimensions, if desired
+                                           manual_dim_UI(plot_type = "umap"),
+                                           #Download button (plot specific)
+                                           downloadButton(outputId = "umap_download",label="Download UMAP")
+                                           )#End collapsible panel
+                         ),#End 1.1.1.4.
+        
+        #1.1.1.5. Options specific to feature plot
+        conditionalPanel(condition = "input.make_feature==true",
+                         collapsible_panel(label = "Feature Plot Specific Options",
+                                           active = FALSE,
+                                           #Feature plots do not have a group.by argument
+                                           #Choose metadata to split feature plot by
+                                           selectInput(inputId = "feature_split_by", 
+                                                       label = "Metadata to split by:", 
+                                                       choices=meta_choices, 
+                                                       selected = "none"),
+                                           #UI for user control of plot dimensions, if desired
+                                           manual_dim_UI(plot_type = "feature"),
+                                           #Download button (plot specific)
+                                           downloadButton(outputId = "feature_download",label="Download Feature Plot")
+                                           )#End collapsible_panel
+                         ),#End 1.1.1.5
+        
+        #1.1.1.6. Options specific to violin plot
+        conditionalPanel(condition = "input.make_vln==true",
+                         collapsible_panel(label = "Violin Plot Specific Options",
+                                           active=FALSE,
+                                           #Choose metadata to group violin plot by
+                                           selectInput(inputId = "vln_group_by", 
+                                                       label = "Metadata to group by:", 
+                                                       choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group.by 
+                                                       selected = "clusters"),
+                                           
+                                           #Choose metadata to split violin plot by
+                                           selectInput(inputId = "vln_split_by", 
+                                                       label = "Metadata to split by:", 
+                                                       choices=meta_choices, 
+                                                       selected = "none"),
+                                           
+                                           #Slider to control number of columns if multiple features are entered
+                                           uiOutput(outputId = "vln_ncol_slider"),
+                                           #UI for user control of plot dimensions, if desired
+                                           manual_dim_UI(plot_type = "vln"),
+                                           #Download button (plot specific)
+                                           downloadButton(outputId = "vln_download",label="Download Violin Plot")
+                                           )#End collapsible panel
+                         ), #End 1.1.1.6.
+        
+        #1.1.1.7. Options specific to dot plot
+        conditionalPanel(condition = "input.make_dot==true",
+                         collapsible_panel(label="Dot Plot Specific Options",
+                                           active=FALSE,
+                                           #Choose metadata to group dot plot by
+                                           selectInput(inputId = "dot_group_by", 
+                                                       label = "Metadata to group by:", 
+                                                       choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
+                                                       selected = "clusters"),
+                                              
+                                           #Choosing different features
+                                           checkboxInput(inputId = "diff_features_dot",label="Use separate features for dot plot", value=FALSE),
+                                           
+                                           #If the checkbox above is selected, display a selectize input for feature selection
+                                           conditionalPanel(condition="input.diff_features_dot==true",
+                                                            #Label
+                                                            tags$p(tags$strong("Enter features to display on dot plot:")),
+                                                            #Selectize entry
+                                                            div(style="vertical-align: top; margin-bottom: 0px;",
+                                                                selectizeInput(inputId = "dot_features",
+                                                                               multiple=TRUE,
+                                                                               label=NULL,
+                                                                               choices = NULL,
+                                                                               selected = NULL,
+                                                                               #Add remove button to inputs
+                                                                               options = list('plugins' = list('remove_button'),'create'=FALSE)))
+                                           ),
+                                           #UI for user control of plot dimensions, if desired
+                                           manual_dim_UI(plot_type = "dot"),
+                                           #Download button (plot specific)
+                                           downloadButton(outputId = "dot_download",label="Download Dot Plot")
+                                           ) #End collapsible panel
+                         ) #End 1.1.1.7 
+      ), #End 1.1.1.
       
       ###1.1.2. Main panel for displaying plot output###
       mainPanel(
-        #div added to contain Waiter spinner (forces the spinner to cover the full main panel)
-        div(id="plots_main_panel", 
-            class="spinner-container-main",
-            #Panels for plots: display if checkboxes corresponding to each type are checked
-            #1.1.2.1. UMAP plot panel
-            conditionalPanel(condition = "input.make_umap==true",
-                             uiOutput(outputId = "umap_slot")),
-            
-            #1.1.2.2. Panel for feature plot
-            #Will be a message or a plot, depending on whether features have been entered
-            conditionalPanel(condition = "input.make_feature==true",
-                             uiOutput(outputId = "feature_slot")),
-            
-            #1.1.2.3. Panel for violin plot
-            #UI displayed will vary based on the entry into the feature text box
-            conditionalPanel(condition="input.make_vln==true",
-                             uiOutput(outputId = "vln_slot")), 
-            
-            #1.1.2.4. Dot plot panel
-            conditionalPanel(condition = "input.make_dot==true",
-                             uiOutput(outputId = "dot_slot"))
-            ) #End div
+        #Panels for plots: display if checkboxes corresponding to each type are checked
+        #1.1.2.1. UMAP plot panel
+        conditionalPanel(condition = "input.make_umap==true",
+                         uiOutput(outputId = "umap_slot")),
+        
+        #1.1.2.2. Panel for feature plot
+        #Will be a message or a plot, depending on whether features have been entered
+        conditionalPanel(condition = "input.make_feature==true",
+                         uiOutput(outputId = "feature_slot")),
+        
+        #1.1.2.3. Panel for violin plot
+        #UI displayed will vary based on the entry into the feature text box
+        conditionalPanel(condition="input.make_vln==true",
+                         uiOutput(outputId = "vln_slot")), 
+        
+        #1.1.2.4. Dot plot panel
+        conditionalPanel(condition = "input.make_dot==true",
+                         uiOutput(outputId = "dot_slot"))
       ) #End 1.1.2
     ) #End sidebarLayout() 
   ) #End fluidPage() 
@@ -705,12 +606,11 @@ tables_tab <- function(){
       ),#End sidebarPanel (1.3.1)
       #1.3.2 Main Pane
       mainPanel(
-        Subsets_in_plots_tab
+        #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
         div(id="dge_main_panel", 
             class="spinner-container-main", 
-            #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
-            uiOutput(outputId = "dge_ui")
-           )#End dge_main_panel
+            uiOutput(outputId = "dge_ui"))
+        
       )#End MainPanel
     )#End sidebarLayout
   )#End fluidPage
@@ -874,15 +774,10 @@ server <- function(input,output,session){
   #2.0. Initialize Session
   #2.0.1. Initialize Reactive Values
   rv <- reactiveValues()
-  #For correlations tab: report number of cells in a subset, number of cells 
-  #where a gene is detected, and the proportion of detected cells
+  #For correlations tab: report number of cells in a subset, number of cells where a gene is detected, and the proportion of detected cells
   rv$n_cells <- 0
   rv$n_nonzero <- 0
   rv$prop_nonzero <- 0
-  #rv$is_subset: used to tell the plots to plot the subsetted object instead of 
-  #the full object. This is FALSE initially and set to TRUE when the user chooses
-  #a subset.
-  rv$is_subset <- FALSE
     
   #2.0.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
@@ -922,247 +817,53 @@ server <- function(input,output,session){
   
   ###2.1. Plots Tab
   #2.1.1 Define subset for plots 
-  #2.1.1.1. Update choices in subset selection menu based on user selections
-  #Update patients menu based on entries in 'response' or 'treatment' (timepoint)
-  observeEvent(c(input$plots_response_selection,input$plots_treatment_selection),
-               ignoreNULL = FALSE,
-               label = "Plots Update Patients",
-               {
-                 #Display spinner during computation to keep user from choosing
-                 #outdated options
-                 #Show a spinner while the valid patient ID's are calculated
-                 waiter_show(
-                   id = "plots_subset_panel",
-                   html = spin_loaders(id = 2, color = "#555588"),
-                   color = "#B1B1B188",
-                   hide_on_render = FALSE #Gives manual control of showing/hiding spinner
-                 )
-            
-                 #Filter object for treatment and response selections
-                 valid_patients <- sobj@meta.data |> 
-                   filter(
-                     (.data[["response"]] %in% input$plots_response_selection)&
-                       (.data[["treatment"]] %in% input$plots_treatment_selection)
-                   ) |> 
-                   #Select patients metadata column
-                   select(.data[["htb"]]) |> 
-                   #Return unique values
-                   unique() |>
-                   #Convert to a character vector
-                   unlist()
-                 
-                 #Form categorized list of valid patients for display in dropdown menu
-                 valid_patients_categories <- build_patient_list(valid_patients)
-                 #Sort patients categorized list so they appear in order
-                 valid_patients_categories <- sort_patient_list(valid_patients_categories)
-                 
-                 #Update picker input with valid patient IDs
-                 updatePickerInput(
-                   session,
-                   inputId = "plots_htb_selection",
-                   label = "Restrict by Patient",
-                   choices = valid_patients_categories,
-                   selected = valid_patients,
-                   options = list(
-                     "selected-text-format" = "count > 3",
-                     "actions-box" = TRUE
-                   )
-                 ) #End updatePickerInput
-                 
-                 #Hide spinner
-                 waiter_hide("plots_subset_panel")
-               })
-  
-  #2.1.1.2. Construct subset after "Apply Subset" button is clicked
-  plots_subset <- eventReactive(input$plots_subset_submit,
-                                ignoreNULL=FALSE,
-                                label = "Plots Subset", 
-                                {
-                                  print("Executing subset code")
-                                  #Display spinner over main window while the 
-                                  #subset is being computed
-                                  waiter_show(
-                                    id = "plots_main_panel",
-                                    html = spin_loaders(id = 2, color = "#555588"),
-                                    color = "#FFFFFF",
-                                    hide_on_render = FALSE #Gives manual control of showing/hiding spinner
-                                  )
-                                  
-                                  #Also display a spinner over the text showing
-                                  #The metadata in the current subset
-                                  waiter_show(
-                                    id = "plots_subset_stats",
-                                    html = spin_loaders(id = 2, color = "#555588"),
-                                    color = "#B1B1B188",
-                                    hide_on_render = FALSE #Gives manual control of showing/hiding spinner
-                                  )
-                                  
-                                  tryCatch(error=function(cnd){
-                                   #Return errors to user using notifications
-                                   #If an error is caught: attempt to determine 
-                                   #type of error by inspecting message text with 
-                                   #grepl (not recommended, but I currently don't 
-                                   #know any other way to catch this error type)
-                                   
-                                   #Special error types: customize the message 
-                                   #that appears 
-                                   #Error 1: No cells in selected subset
-                                   if (grepl("No cells found", cnd$message)) {
-                                     #This reactive value will instruct the correlation 
-                                     #table UI to display differently based on the error
-                                     rv$memory_error = TRUE
-                                     #Define notification to be displayed to user upon memory error
-                                     mem_err_ui <-
-                                       icon_notification_ui(
-                                         icon_name = "skull-crossbones",
-                                         message = tagList(
-                                           "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
-                                           tags$a(
-                                             "let us know",
-                                             href =
-                                               "https://github.com/amc-heme/DataExploreShiny/issues",
-                                             target =
-                                               "_blank",
-                                             #Opens link in new tab
-                                             rel =
-                                               "noopener noreferrer"
-                                           ),
-                                           #Period at end of link
-                                           "."
-                                         )#End tagList
-                                       )
-                                     
-                                     #Display notification
-                                     showNotification(
-                                       ui = mem_err_ui,
-                                       #Duration=NULL will make the message persist until dismissed
-                                       duration = NULL,
-                                       id = "plots_no_cells_found",
-                                       session =
-                                         session
-                                     )
-                                   } else {
-                                     #All other errors: use a generic notification
-                                     #Define Notification UI
-                                     other_err_ui <-
-                                       icon_notification_ui(
-                                         icon_name = "skull-crossbones",
-                                         message = tagList(
-                                           glue("Error: {cnd$message}. Please "),
-                                           tags$a(
-                                             "report this issue ",
-                                             href =
-                                               "https://github.com/amc-heme/DataExploreShiny/issues",
-                                             target =
-                                               "_blank",
-                                             #Opens link in new tab
-                                             rel =
-                                               "noopener noreferrer"
-                                           ),
-                                           "with a screenshot of the app window."
-                                         )#End tagList
-                                       )
-                                     
-                                     #Display Notification
-                                     showNotification(
-                                       ui = other_err_ui,
-                                       #Duration=NULL will make the message persist until dismissed
-                                       duration = NULL,
-                                       id = "plots_other_error",
-                                       session =
-                                         session
-                                     )
-                                   }
-                                   
-                                   #Return "NULL" for subset when an error has occurred
-                                   plots_s_sub <- NULL
-                                 }, #End tryCatch error function
-                                 #Begin tryCatch code
-                                 {
-                                   plots_s_sub <- subset(
-                                     sobj,
-                                     subset =
-                                       (clusters %in% input$plots_cluster_selection) &
-                                       (response %in% input$plots_response_selection) &
-                                       (htb %in% input$plots_htb_selection) &
-                                       (treatment %in% input$plots_treatment_selection)
-                                   )
-                                   
-                                 }
-                                 )#End tryCatch
-                                  
-                                  #Hide the water
-                                  waiter_hide("plots_main_panel")
-                                  
-                                  #Return subset to the eventReactive variable
-                                  plots_s_sub
-                                })
+  #UI for defining the subset currently selected.
+  current_subset <- eventReactive(input$plots_subset_submit, label = "Plots: Current Subset UI", {
+    #Print current subset criteria, inline with captions
+    div(div(tags$strong("Clusters: "),textOutput(outputId = "plots_selected_clusters", inline = TRUE)),
+        div(tags$strong("Response criteria: "),textOutput(outputId = "plots_selected_response", inline = TRUE)),
+        div(tags$strong("Patients: "),textOutput(outputId = "plots_selected_htb", inline = TRUE))
+    )
+  })
   
   #Rendering text for selected subsets
-  observeEvent(input$plots_subset_submit, 
-               ignoreNULL = FALSE,
-               label = "Plots: Render Subset Criteria",
-               {
-                 #plots_subset() is NULL if errors are found during the subsetting.
-                 #Code will only proceed with identifying metadata if no errors 
-                 #were encountered
-                 if(!is.null(plots_subset())){
-                   #Store the current metadata levels stored in the selected subset
-                   responses_found <- unique(plots_subset()$response)
-                   treatments_found <- unique(plots_subset()$treatment)
-                   patients_found <- unique(plots_subset()$htb)
-                   
-                   #Rendering Selections and Stats for report
-                   output$plots_selected_clusters <- renderText({
-                     clusters_found <- unique(plots_subset()$clusters)
-                     #If all clusters are selected, print "All"
-                     if(setequal(clusters_found,clusters)){
-                       "All"
-                       #Otherwise, print the selected clusters
-                     } else { 
-                       isolate(vector_to_text(clusters_found))
+  observeEvent(input$plots_subset_submit, ignoreNULL = FALSE,
+               label = "Plots: Render Subset Criteria",{
+                 #print("Clusters selected",input$plots_cluster_selection)
+                 #print("Clusters",clusters)
+                 #print("Logic test:",setequal(input$plots_cluster_selection,clusters))
+                 
+                 #Rendering Selections and Stats for report
+                 output$plots_selected_clusters <- renderText({
+                   #If all clusters are selected, print "All"
+                   if(setequal(input$plots_cluster_selection,clusters)){
+                     print("All")
+                     #Otherwise, print the selected clusters
+                   } else { 
+                     isolate(vector_to_text(input$plots_cluster_selection))
                      } #End Conditionals
-                   }) #End renderText
-                   
-                   #Selected Response Criteria
-                   output$plots_selected_response <- renderText({
-                     #Print "All" if all response criteria are selected 
-                     if(setequal(responses_found,responses)){
-                       "All"
+                 }) #End renderText
+                 
+                 #Selected Response Criteria
+                 output$plots_selected_response <- renderText({
+                   #Print "All" if all clusters are selected, otherwise print selected responses
+                   if(setequal(input$plots_response_selection,responses)){
+                     print("All")
                      }else{
-                       #Otherwise, print selected responses
-                       isolate(vector_to_text(responses_found))
-                     }#End conditionals
+                       isolate(vector_to_text(input$plots_response_selection))
+                       }#End conditionals
                    }) #End renderText
-                   
-                   #Selected Timepoints
-                   output$plots_selected_treatment <- renderText({
-                     #Print "All" if all treatment categories (timepoints) are selected
-                     if(setequal(treatments_found,treatments)){
-                       "All"
-                     }else{
-                       #Otherwise, print selected treatment categories (timepoints)
-                       isolate(vector_to_text(treatments_found))
-                     }#End conditionals
-                   }) #End renderText
-                   
-                   #Selected Patients
-                   output$plots_selected_htb <- renderText({
-                     if(setequal(patients_found,patients)){
-                       #Print "all" if all patient IDs are selected
-                       "All"
-                     }else{
-                       #Otherwise, print selected patients
-                       isolate(vector_to_text(patients_found))
+                 
+                #Selected Patients
+                 output$plots_selected_htb <- renderText({
+                   if(setequal(input$plots_htb_selection,patients)){
+                   #Print "all" if all patient IDs are selected, otherwise print selected patients
+                   print("All")
+                   }else{
+                     isolate(vector_to_text(input$plots_htb_selection))
                      } #End conditionals
                    }) #End renderText
-                 }
-                 
-                 #When finished rendering current metadata, hide the spinner
-                 #over the panel
-                 waiter_hide("plots_subset_stats")
                })
-  
   
   #2.1.2. UMAP plot
   #2.1.2.1. Reactive UMAP plot dimensions
@@ -1242,14 +943,21 @@ server <- function(input,output,session){
   umap_plot_content <- reactive({
     #Produce a single UMAP plot if no features to split by are specified
     if (input$umap_split_by=="none"){
-      #Use full object if is_subset is FALSE, and use the subset otherwise
-      DimPlot(plots_subset(), 
+      DimPlot(sobj, 
               group.by = input$umap_group_by, 
               label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
               reduction = "umap")
+    } else if (input$umap_split_by=="sub-d0_d30"){
+      #Special case: if a subset option is passed, make the plot based on the pertinent subset
+      DimPlot(d0_d30,
+              group.by = input$umap_group_by, 
+              split.by = "treatment", #The Treatment column shows the diagnosis vs. D30 data
+              label = input$umap_label, 
+              ncol = input$umap_ncol,
+              reduction = "umap")
     } else {
       #UMAP with split.by defined and no special subset
-      DimPlot(plots_subset(), 
+      DimPlot(sobj, 
               group.by = input$umap_group_by, 
               split.by = input$umap_split_by, 
               label = input$umap_label, 
@@ -1362,12 +1070,12 @@ server <- function(input,output,session){
     if (length(input$text_features)>0){
       #If no split.by variable is specified, create a feature plot without the split.by argument
       if (input$feature_split_by=="none"){
-        FeaturePlot(plots_subset(),
+        FeaturePlot(sobj,
                     features=input$text_features)
       }
       #Otherwise, split by the user-specified variable
       else {
-        FeaturePlot(plots_subset(), 
+        FeaturePlot(sobj, 
                     features=input$text_features,
                     split.by = input$feature_split_by)
       }
@@ -1502,12 +1210,12 @@ server <- function(input,output,session){
     if (length(input$text_features)==1){
       #No nol, no split.by
       if (input$vln_split_by=="none"){
-        VlnPlot(plots_subset(), 
+        VlnPlot(sobj, 
                 features = input$text_features,
                 group.by = input$vln_group_by)
       #No ncol, split.by
       } else {
-        VlnPlot(plots_subset(), 
+        VlnPlot(sobj, 
                 features = input$text_features,
                 group.by = input$vln_group_by,
                 split.by = input$vln_split_by) 
@@ -1516,13 +1224,13 @@ server <- function(input,output,session){
     } else if (length(input$text_features)>1){
       #ncol and no split.by
       if (input$vln_split_by=="none"){
-        VlnPlot(plots_subset(), 
+        VlnPlot(sobj, 
                 features = input$text_features,
                 group.by = input$vln_group_by,
                 ncol=input$vln_ncol)
       #ncol and split.by
       } else {
-        VlnPlot(plots_subset(), 
+        VlnPlot(sobj, 
                 features = input$text_features,
                 group.by = input$vln_group_by,
                 split.by = input$vln_split_by,
@@ -1664,13 +1372,13 @@ server <- function(input,output,session){
     if (((input$diff_features_dot==FALSE)&(length(input$text_features)>=1))|((input$diff_features_dot==TRUE)&(length(input$dot_features)>=1))){
       #If user specifies the use of different features, use the dot plot-specific features instead of the generic text entry features
       if (input$diff_features_dot==TRUE){
-        DotPlot(plots_subset(),
+        DotPlot(sobj,
                 features = input$dot_features,
                 group.by = input$dot_group_by) + RotatedAxis()
       }
       else {
         #Check if split.by is specified
-        DotPlot(plots_subset(), 
+        DotPlot(sobj, 
                 features = input$text_features,
                 group.by = input$dot_group_by) + RotatedAxis()
       }
@@ -1770,14 +1478,12 @@ server <- function(input,output,session){
         sort() |>
         as.character() |> #Convert back to character values to avoid issues with further subsetting
         as.list()
-      
       valid_patients_categories$`Dx/Rl` <-
         valid_patients_categories$`Dx/Rl` |>
         as.numeric() |>
         sort() |>
         as.character() |>
         as.list()
-      
       #Normal bone marrow column consists of character IDs that are sorted properly with sort()
       valid_patients_categories$`Normal Bone Marrow` <-
         valid_patients_categories$`Normal Bone Marrow` |>
