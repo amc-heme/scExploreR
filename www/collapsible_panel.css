@@ -134,4 +134,18 @@ table.hover > tbody > tr:hover{
 /* Subset summary in plots panel */ 
 #plots_subset_stats {
   margin-bottom: 1em;
+
+/* Center Header Tags in DGE UI */
+.center{
+  text-align: center;
+}
+
+/* CSS properties for DGE cells by class output */
+#dge_print_n_by_class{
+  width: 20%;
+  background-color: #FFFFFF;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  border: none;
+  margin: 0em 2em;
+  padding: 0em;
 }

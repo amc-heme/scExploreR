@@ -691,12 +691,12 @@ tables_tab <- function(){
                         )),
             selectInput(inputId = "dge_group_by", 
                         label = "Metadata for DE calculation:",
-                        choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
+                        choices=meta_choices[!meta_choices %in% c("none", "best_response")], #Remove "none" and "best_response" from selectable options to group by
                         selected = "clusters"),
             #Checkbox: Positive markers only?
             checkboxInput(inputId = "dge_pos",
                           label="Positive Markers Only",
-                          value=FALSE),
+                          value = TRUE),
             actionButton(inputId = "dge_submit",
                          label = "Update"),
             #Download Button
@@ -705,10 +705,12 @@ tables_tab <- function(){
       ),#End sidebarPanel (1.3.1)
       #1.3.2 Main Pane
       mainPanel(
+        Subsets_in_plots_tab
         div(id="dge_main_panel", 
-            class="spinner-container-main", #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
-            uiOutput(outputId = "dge_ui"))
-        
+            class="spinner-container-main", 
+            #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
+            uiOutput(outputId = "dge_ui")
+           )#End dge_main_panel
       )#End MainPanel
     )#End sidebarLayout
   )#End fluidPage
@@ -767,8 +769,7 @@ corr_tab <- function(){
                         )),
             actionButton(inputId = "corr_submit",
                          label = "Submit"),
-            #TEMP: used to generate download buttons 
-            verbatimTextOutput(outputId = "debug"),
+            
             #Download Buttons: render after the correlations table and scatterplots are computed
             uiOutput(outputId = "corr_downloads_ui")
             )#End corr-sidebar div
@@ -1805,13 +1806,14 @@ server <- function(input,output,session){
   #2.2.2. DGE table for selected metadata and restriction criteria
   #Table updates only when the "Update" button is clicked
   #2.2.2.1. Store table content as reactive value
+  #The tibble generated here is converted to a DT in 2.2.2.2. for viewing, and
+  #Is passed to the download handler when the "download table" button is clicked.
   dge_table_content <- eventReactive(
     input$dge_submit,
     label = "DGE Table Content",
     ignoreInit = FALSE,
     ignoreNULL = FALSE,
     {
-      print("Running DGE table content code")
       #Reactive value for identifying a memory error (defined here and reset to FALSE each time the dge table code is run)
       rv$memory_error = FALSE
       rv$vector_mem_error = FALSE
@@ -1830,7 +1832,6 @@ server <- function(input,output,session){
       tryCatch(
         #If an error is caught: attempt to determine type of error by inspecting message text with grepl (not recommended, but I currently don't know any other way to catch this error type)
         error = function(cnd) {
-          print(class(cnd$message))
           #Error 1: RAM error
           if (grepl("cannot allocate vector of size", cnd$message)) {
             #This reactive value will instruct the correlation table UI to display differently based on the error
@@ -1938,18 +1939,17 @@ server <- function(input,output,session){
             )
           }
           
-          #This will eventually be replaced with an error message to display to the user
-          print("An error ocurred while computing correlation table code.")
-          print(cnd$message)
+          #Return nothing if an error occurs
           table <-
-            NULL #Return nothing if an error occurs
+            NULL 
         },
         #End error function
         #Begin tryCatch code
         {
-          print("Make subset")
           #Form subset based on chosen criteria
-          dge_s_sub <- subset(
+          #Store in reactive variable so it can be accessed by 
+          #UMAP eventReactive() function
+          rv$dge_s_sub <- subset(
             sobj,
             subset =
               (clusters %in% input$dge_cluster_selection) &
@@ -1959,21 +1959,57 @@ server <- function(input,output,session){
           )
           
           ###Subset Stats
-          print("Subset Stats")
           #Cells in subset
           rv$dge_n_cells <-
-            length(Cells(dge_s_sub))
+            length(Cells(rv$dge_s_sub))
+          #Number of classes in selection
+          rv$dge_n_classes <- length(unique(rv$dge_s_sub@meta.data[,input$dge_group_by]))
+          #Mode selection
+          rv$dge_mode <- ifelse(
+            rv$dge_n_classes == 2,
+            paste0(
+              "Differential Expression (",
+              unique(rv$dge_s_sub@meta.data[, input$dge_group_by])[1],
+              " vs. ",
+              unique(rv$dge_s_sub@meta.data[, input$dge_group_by])[2],
+              ")"
+            ),
+            paste0("Marker Identification (", rv$dge_n_classes, " classes)")
+          )
           
-          print("Compute dge with presto")
+          #Cells per class
+          #Calculate number of cells per class using metadata table of subset
+          n_by_class <- rv$dge_s_sub@meta.data |>
+            #Group by the specified metadata variable (.data and double braces 
+            #used so group_by can properly interpret the character vector input)
+            group_by(.data[[input$dge_group_by]]) |> 
+            summarise(n=n()) #Calculate number of cells per group 
+          
+          #Print class names and cell counts per class
+          #Convert class names and cell counts from tibble to character vector 
+          #Class names in first column of tibble
+          class_names <- as.character(n_by_class[[1]]) 
+          #Cell counts are in second column of tibble
+          n_cells <- n_by_class[[2]]
+          
+          #Build list of classes and the number of cells in each
+          n_list=list()
+          for (i in 1:nrow(n_by_class)){
+            n_list[[i]]<-glue("{class_names[i]}: {n_cells[i]}")
+          }
+          #Collapse list of class/count pairs into a string, 
+          #and store in reactive variable
+          rv$dge_n_by_class<-paste(n_list,collapse = "\n")
+          #\n is the separator (will be read by verbatimTextOutput())
+          
           #Run Presto
           dge_table <-
-            wilcoxauc(dge_s_sub, group_by = input$dge_group_by) %>%  #Run presto on the subsetted object and indicated metadata slot
+            wilcoxauc(rv$dge_s_sub, group_by = input$dge_group_by) %>%  #Run presto on the subsetted object and indicated metadata slot
             as_tibble() %>%  #Explicitly coerce to tibble
             select(-c(statistic, auc)) %>%  # remove stat and auc from the output table
             # Using magrittr pipes here because the following statement doesn't work with base R pipes
             {if (input$dge_pos) filter(., logFC > 0) else .} %>%  # remove negative logFCs if box is checked
             arrange(padj, pval, desc(abs(logFC))) #Arrange in descending order by significance, then absolute logFC
-          
           
         }
       )#End tryCatch
@@ -1983,23 +2019,32 @@ server <- function(input,output,session){
       waiter_hide(id = "dge_sidebar")
       
       #Return table for storage in dge_table_content()
-      datatable(
-        dge_table,
-        class = "compact stripe cell-border hover",
-        selection = "single",
-        filter = "top",
-        rownames = FALSE
-      ) %>%
-        formatSignif(3:8, 5) # This is more than enough - 3 is probably fine
+      dge_table
     }
   )
+  
+  #2.2.2.2. DGE table, as DT for viewing
+  dge_DT_content <- eventReactive(input$dge_submit, 
+                                  label = "DGE DT Generation",
+                                  ignoreNULL=FALSE, 
+                                  {
+    datatable(
+      dge_table_content(),
+      class = "compact stripe cell-border hover",
+      selection = "none",
+      filter = "top",
+      rownames = FALSE
+    ) %>%
+      formatSignif(3:8, 5) # This is more than enough - 3 is probably fine
+  })
   
   #2.2.3. DGE UI
   #2.2.3.1. Main UI
   #IgnoreNULL set to false to get UI to render at start up
   dge_ui <- eventReactive(input$dge_submit,
                           label = "DGE Main UI (Define Content)",
-                          ignoreNULL = FALSE, {
+                          ignoreNULL = FALSE, 
+                          {
                             print("DGE UI Function")
                             waiter_show(
                               id = "dge_main_panel",
@@ -2021,10 +2066,11 @@ server <- function(input,output,session){
                               tags$h2(
                                 glue(
                                   "Differential Expression/Marker Genes by {input$dge_group_by} in Subset"
-                                )
+                                ),
+                                class="center"
                               ),
-                              #Restriction criteria section
-                              tags$h3("Selected Restriction Criteria"),
+                              #Table Metadata section
+                              tags$h3("Table Metadata", class="center"),
                               #Make each input criteria appear inline
                               div(
                                 div(
@@ -2038,24 +2084,67 @@ server <- function(input,output,session){
                                 div(
                                   tags$strong("Patients: "),
                                   textOutput(outputId = "dge_selected_htb", inline = TRUE)
-                                )
-                              ),
-                              
-                              #Statistics section
-                              tags$h3("Quality Statistics for Subset"),
-                              div(
+                                ),
                                 div("(Subset created based on defined restriction criteria)"),
                                 div(
                                   tags$strong("Number of cells in subset: "),
                                   textOutput(outputId = "dge_print_n_cells", inline = TRUE)
                                 ),
+                                div(
+                                  tags$strong("Number of cells per class: "),
+                                  verbatimTextOutput(outputId = "dge_print_n_by_class") #inline = TRUE)
+                                ),
+                                div(
+                                  tags$strong("Mode selected: "),
+                                  textOutput(outputId = "dge_print_mode", inline = TRUE)
+                                ),
                               ),
                               
                               #Correlations table and plots
-                              tags$h3("DGE Table"),
+                              tags$h3("DGE Table", class="center"),
                               #Add table container
                               div(#Use a DT data table
-                                DTOutput(outputId = "dge_table"))
+                                DTOutput(outputId = "dge_table")),
+                              
+                              #UMAP plot
+                              #Label: depends on mode
+                              #The conditional below is passed as an argument 
+                              #To the div() function to generate the HTML for the
+                              #DGE UI. hasName() is used to avoid errors arising
+                              #From the rv$dge_n_classes not yet existing
+                              #This happens at startup when the UI is computed 
+                              #Before the table, where rv$dge_n_classes is undefined.
+                              if(hasName(rv,"dge_n_classes")){
+                                #Title for differential gene expression mode
+                                if (rv$dge_n_classes == 2){
+                                  tags$h3("UMAP of groups being compared")
+                                }else{
+                                  #Title for marker identification mode
+                                  tagList(
+                                    #Center text
+                                    tags$h3("UMAP by class", 
+                                            class="center"),
+                                    tags$p("(Markers are computed for each group shown)", 
+                                           class="center")
+                                  )
+                                }
+                              } else {
+                                #This conditional will be run at startup.
+                                #The default is to compute markers for each cluster,
+                                #so the text for marker identification will be shown.
+                                tagList(
+                                  #Center text
+                                  tags$h3("UMAP by class",
+                                          class="center"),
+                                  tags$p("(Markers are computed for each group shown)", 
+                                         class="center")
+                                )
+                              }, #This comma is very important (conditional is an argument)
+                              
+                              #UMAP container
+                              plotOutput(outputId = "dge_umap",
+                                         height = "600px")
+                              
                             )#End UI div
                           })
   
@@ -2068,10 +2157,11 @@ server <- function(input,output,session){
       {
         #Conditional level one, !hasName(): TRUE before table is created, FALSE after
         if (!hasName(input, "dge_table_rows_selected")) {
+          #!hasName()==TRUE
           #Display nothing before table is created
           NULL
         } else {
-          #Conditional level two (table created)
+          #!hasName()==FALSE (table created)
           #Display button to download table after table is created
           div(
             downloadButton(
@@ -2084,8 +2174,41 @@ server <- function(input,output,session){
       }
     )
 
+  #2.2.4. UMAP of DE selected groups
+  dge_umap <- eventReactive(input$dge_submit, 
+                            ignoreNULL=FALSE, 
+                            label="DGE UMAP", {
+                              #ncol_argument: number of columns based on number
+                              #of classes being analyzed in the subset.
+                              #Use double-bracket means of accessing the 
+                              #metadata variable (supports entry of an arbitrary variable)
+                              #This means of access returns a dataframe. 
+                              #Slice for the first row (the unique values)
+                              n_panel <- unique(rv$dge_s_sub[[input$dge_group_by]])[,1] |> length()
+                              
+                              #Set ncol to number of panels if less than four
+                              #Panels are created
+                              if (n_panel<4){
+                                ncol=n_panel
+                              }
+                              #Use three columns for 4-9 panels
+                              else if (n_panel>=4 & n_panel<9){
+                                ncol=3
+                              }
+                              #Use four columns for 9+ panels
+                              else if (n_panel>=9){
+                                ncol=4
+                              }
+                              
+                              #Create UMAP of subsetted object, split by metadata
+                              #for object calculation, colored by cluster
+                              DimPlot(rv$dge_s_sub,
+                                      split.by = input$dge_group_by,
+                                      group.by = "clusters",
+                                      ncol=ncol)
+                            })
   
-  #2.2.4. Render DGE UI, table, and statistics
+  #2.2.5. Render DGE UI, table, and statistics
   #Main UI
   output$dge_ui <- renderUI({
     dge_ui()
@@ -2097,12 +2220,19 @@ server <- function(input,output,session){
   
   #Table
   output$dge_table <- renderDT({
-    dge_table_content()
+    dge_DT_content()
   })
   
+  #UMAP plot
+  output$dge_umap <- renderPlot({
+    dge_umap()
+    })
+  
   #Render Statistics
-  observeEvent(input$dge_submit,
-               label = "Render Statistics", {
+  observeEvent(input$dge_submit, 
+               ignoreNULL= FALSE,
+               label = "DE Render Statistics", 
+               {
                  #Rendering Selections and Stats for report
                  output$dge_selected_clusters <-
                    renderText(isolate(vector_to_text(input$dge_cluster_selection)))
@@ -2112,9 +2242,12 @@ server <- function(input,output,session){
                    renderText(isolate(vector_to_text(input$dge_htb_selection)))
                  output$dge_print_n_cells <-
                    renderText(isolate(rv$dge_n_cells))
+                 output$dge_print_n_by_class<- renderText(isolate(rv$dge_n_by_class))
+                 output$dge_print_mode <-
+                   renderText(isolate(rv$dge_mode))
                })
   
-  #2.2.5. Download Handlers
+  #2.2.6. Download Handlers
   #Correlations Table
   output$dge_download_table <- downloadHandler(
     filename = function() {
@@ -2199,11 +2332,13 @@ server <- function(input,output,session){
  
   #2.3.2. Correlation table for selected feature and restriction criteria
   #Table updates only when the "Submit" button is clicked
-  #2.3.2.1. Store table content as reactive value
+  #2.3.2.1. Store table content (this table is accessed by the download handler,
+  #and converted to DT format in 2.3.2.2. for display in app)
   corr_table_content <- eventReactive(input$corr_submit,
                                       label="Corelation Table Content",
                                       ignoreInit = FALSE, 
-                                      ignoreNULL = FALSE, {
+                                      ignoreNULL = FALSE, 
+                                      {
     print("Running correlation table content code")
     #Reactive value for identifying a memory error (defined here and reset to FALSE each time the correlation table code is ran)
     rv$memory_error=FALSE
@@ -2357,7 +2492,7 @@ server <- function(input,output,session){
             arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
           
           #Round correlation coefficients to 5 digits
-          table$Correlation_Coefficient <- format(table$Correlation_Coefficient, digits=5, nsmall=2, scientific=FALSE) |> as.numeric()
+ #         table$Correlation_Coefficient <- format(table$Correlation_Coefficient, digits=5, nsmall=2, scientific=FALSE) |> as.numeric()
           
           })#End tryCatch
       
@@ -2370,12 +2505,30 @@ server <- function(input,output,session){
     }
   })
   
+  #2.3.2.2. Store table in DT format for display in app
+  corr_DT_content <- eventReactive(input$corr_submit,
+                                   label = "Corr DT Content",
+                                   ignoreNULL = FALSE,
+                                   {
+                                     datatable(
+                                       corr_table_content(),
+                                       class = "compact stripe cell-border hover",
+                                       selection = "single",
+                                       filter = "top",
+                                       rownames = FALSE
+                                     ) %>%
+                                       #Use 5 sig figs for column 2 
+                                       #(pearson coefficient column)
+                                       formatSignif(2, 5)
+                                   })
+  
   #2.3.3. Correlations UI
   #2.3.3.1 Main UI
   #IgnoreNULL set to false to get UI to render at start up
   corr_ui <- eventReactive(input$corr_submit, 
                            label = "Correlation Main UI (Define Content)",
-                           ignoreNULL = FALSE, {
+                           ignoreNULL = FALSE, 
+                           {
     print("Correlation UI Function")
     #UI: if the feature selection menu is empty (default state at initialization), prompt user to enter features
     if (input$corr_feature_selection == ""){
@@ -2383,7 +2536,8 @@ server <- function(input,output,session){
     }
     #After a feature is applied and the submit button is pressed, display the table
     else {
-      #Display the loading screen (screen will show until the end of the corr_table_content calculation is reached).
+      #Display the loading screen (screen will show until the end of the 
+      #corr_table_content calculation is reached).
       waiter_show(
         id = "corr_main_panel",
         html = spin_loaders(id=2, color = "#555588"),
@@ -2499,21 +2653,26 @@ server <- function(input,output,session){
   
   #2.3.5. Render Correlation UI, table, scatterplot, and statistics
   #Main UI
-  output$corr_ui <- renderUI({corr_ui()})
+  output$corr_ui <- renderUI({
+    corr_ui()
+    })
   
-  output$corr_scatter_ui <- renderUI({corr_scatter_ui()})
+  output$corr_scatter_ui <- renderUI({
+    corr_scatter_ui()
+    })
 
-  output$corr_downloads_ui <- renderUI({corr_downloads_ui()})
+  output$corr_downloads_ui <- renderUI({
+    corr_downloads_ui()
+    })
     
-  output$corr_debug <- renderText({hasName(input,"corr_table_rows_selected")})
+  output$corr_debug <- renderText({
+    hasName(input,"corr_table_rows_selected")
+    })
   
   #Table
-  output$corr_table <- renderDT({corr_table_content()},
-                                class="compact stripe cell-border hover",
-                                selection="single",
-                                filter="top",
-                                colnames=c("Gene","Correlation Coefficient"),
-                                rownames=FALSE)
+  output$corr_table <- renderDT({
+    corr_DT_content()
+    })
   
   #Render correlation scatterplot
   observeEvent(input$corr_table_rows_selected, 
