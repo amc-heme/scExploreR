@@ -705,7 +705,6 @@ tables_tab <- function(){
       ),#End sidebarPanel (1.3.1)
       #1.3.2 Main Pane
       mainPanel(
-        Subsets_in_plots_tab
         div(id="dge_main_panel", 
             class="spinner-container-main", 
             #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
