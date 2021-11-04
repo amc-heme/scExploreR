@@ -1682,8 +1682,9 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  ###2.2. DGE Tab 
-  #2.2.1 Reactive dropdown menu for patient 
+  ###2.2. DGE Tab
+  #2.2.1. Reactive dropdown menus
+  #2.2.1.1. Reactive dropdown menu for patient 
   # The code in this section is duplicated from section 2.3.1, and should be rewritten as a function to avoid redundancy.
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
   #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized.
@@ -1702,54 +1703,27 @@ server <- function(input,output,session){
         hide_on_render = FALSE #Gives manual control of showing/hiding spinner
       )
       
-      #Subset Seurat object for the selected response type and return vector of patients included in that type
-      valid_patients <-
-        unique(subset(sobj, subset = response %in% input$dge_response_selection)$htb)
-      #List of valid patients: indicates group of patient in dropdown menu
-      valid_patients_categories = list(
-        `d0/d30` = list(),
-        `Dx/Rl` = list(),
-        `Normal Bone Marrow` = list()
-      )
-      #Sort valid patients into above framework
-      for (patient in valid_patients) {
-        #Iterate through valid_patients vector and place each choice in the relevant category
-        if (patient %in% c("1325", "1650", "1510", "1526", "1378", "1724")) {
-          #Append above patient ids to d0/d30 category
-          valid_patients_categories$`d0/d30` <-
-            append(valid_patients_categories$`d0/d30`, patient)
-        } else if (patient %in% c("1261", "1467", "719")) {
-          #Append above patient ids to Dx/Rl category
-          valid_patients_categories$`Dx/Rl` <-
-            append(valid_patients_categories$`Dx/Rl`, patient)
-        } else if (patient %in% c("BMMC_1", "BMMC_2", "BMMC_3")) {
-          #Append above patient (sample) ids to normal bone marrow category
-          valid_patients_categories$`Normal Bone Marrow` <-
-            append(valid_patients_categories$`Normal Bone Marrow`, patient)
-        }
-      }
-      #Sort patients in each list to display in order
-      #Patients in d0/d30 and Dx/Rl are numeric values that can be sorted easily
-      valid_patients_categories$`d0/d30` <-
-        valid_patients_categories$`d0/d30` |>
-        as.numeric() |>
-        sort() |>
-        as.character() |> #Convert back to character values to avoid issues with further subsetting
-        as.list()
       
-      valid_patients_categories$`Dx/Rl` <-
-        valid_patients_categories$`Dx/Rl` |>
-        as.numeric() |>
-        sort() |>
-        as.character() |>
-        as.list()
+      #DGE Metadata Subset ####
+      #Valid for all modes except dge with response or treatment as the group.by variable
+      #Filter object for treatment and response selections
+      valid_patients <- sobj@meta.data |> 
+        filter(
+          (.data[["response"]] %in% input$dge_response_selection)&
+            (.data[["treatment"]] %in% input$dge_treatment_selection)
+        ) |> 
+        #Select patients metadata column
+        select(.data[["htb"]]) |> 
+        #Return unique values
+        unique() |>
+        #Convert to a character vector
+        unlist()
       
-      #Normal bone marrow column consists of character IDs that are sorted properly with sort()
-      valid_patients_categories$`Normal Bone Marrow` <-
-        valid_patients_categories$`Normal Bone Marrow` |>
-        as.character() |>
-        sort() |>
-        as.list()
+      #Form categorized list of valid patients for display in dropdown menu
+      valid_patients_categories <- build_patient_list(valid_patients)
+      #Sort patients categorized list so they appear in order
+      valid_patients_categories <- sort_patient_list(valid_patients_categories)
+      #####
       
       #Update picker input with valid patient ID's
       updatePickerInput(
@@ -1768,6 +1742,80 @@ server <- function(input,output,session){
       waiter_hide(id = "dge_sidebar")
     }
   )
+  
+  #2.2.1.2. Reactive dropdown when DGE is the mode and either patient or
+  #timepoint is the group by variable
+  observeEvent(
+    c(input$dge_group_1, input$dge_group_2),
+    ignoreInit = TRUE,
+    label = "Reactive Patient Dropdown (DGE Groups)",
+    {
+      #Only update patients when response or treatment is the group_by variable
+      if(input$dge_group_by %in% c("response","treatment")){
+        #Show a spinner while the valid patient ID's are calculated
+        waiter_show(
+          id = "dge_sidebar",
+          html = spin_loaders(id = 2, color = "#555588"),
+          color = "#B1B1B188",
+          hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+        )
+        
+        #DGE Metadata Subset (groups mode) ####
+        #Filter object using the two group selections for either response or
+        #treatment, and the picker input selections for the other variable
+        if (input$dge_group_by=="treatment"){
+          valid_patients <- sobj@meta.data |> 
+            filter(
+              #Use two treatment selections and picker input for response
+              (.data[["response"]] %in% input$dge_response_selection)&
+                (.data[["treatment"]] %in% c(input$dge_group_1,input$dge_group_2))
+            ) |> 
+            #Select patients metadata column
+            select(.data[["htb"]]) |> 
+            #Return unique values
+            unique() |>
+            #Convert to a character vector
+            unlist()
+        }else if (input$dge_group_by=="response"){
+          valid_patients <- sobj@meta.data |> 
+            filter(
+              #Use two response selections and picker input for treatment
+              (.data[["response"]] %in% c(input$dge_group_1,input$dge_group_2))&
+                (.data[["treatment"]] %in% input$dge_treatment_selection)
+            ) |> 
+            #Select patients metadata column
+            select(.data[["htb"]]) |> 
+            #Return unique values
+            unique() |>
+            #Convert to a character vector
+            unlist()
+        }
+
+        #Form categorized list of valid patients for display in dropdown menu
+        valid_patients_categories <- build_patient_list(valid_patients)
+        #Sort patients categorized list so they appear in order
+        valid_patients_categories <- sort_patient_list(valid_patients_categories)
+        #####
+        
+        #Update picker input with valid patient ID's
+        updatePickerInput(
+          session,
+          inputId = "dge_htb_selection",
+          label = "Restrict by Patient",
+          choices = valid_patients_categories,
+          selected = valid_patients,
+          options = list(
+            "selected-text-format" = "count > 3",
+            "actions-box" = TRUE
+          )
+        )
+        
+        #Hide waiter
+        waiter_hide(id = "dge_sidebar")
+      }
+    }
+    )
+  
   
   #2.2.2. DGE table for selected metadata and restriction criteria
   #Table updates only when the "Update" button is clicked
@@ -1866,6 +1914,42 @@ server <- function(input,output,session){
               #Duration=NULL will make the message persist until dismissed
               duration = NULL,
               id = "dge_vector_mem_error",
+              session =
+                session
+            )
+          
+            #Error 3: No cells found in current Subset
+          } else if (grepl("No cells found", cnd$message)) {
+            #This reactive value will instruct the correlation 
+            #table UI to display differently based on the error
+            rv$memory_error = TRUE
+            #Define notification to be displayed to user upon memory error
+            mem_err_ui <-
+              icon_notification_ui(
+                icon_name = "skull-crossbones",
+                message = tagList(
+                  "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
+                  tags$a(
+                    "let us know",
+                    href =
+                      "https://github.com/amc-heme/DataExploreShiny/issues",
+                    target =
+                      "_blank",
+                    #Opens link in new tab
+                    rel =
+                      "noopener noreferrer"
+                  ),
+                  #Period at end of link
+                  "."
+                )#End tagList
+              )
+            
+            #Display notification
+            showNotification(
+              ui = mem_err_ui,
+              #Duration=NULL will make the message persist until dismissed
+              duration = NULL,
+              id = "plots_no_cells_found",
               session =
                 session
             )
@@ -2128,9 +2212,6 @@ server <- function(input,output,session){
                                   textOutput(outputId = "dge_print_mode", inline=FALSE)
                                 ),
                                 tags$strong("Subset Used for Test", class="x-large inline-block space-top"),
-                                #div("Cells matching the ", style="{
-                                #  margin-top: 0.3em;
-                                #  }"),
                                 div(
                                   tags$strong("Clusters: "),
                                   textOutput(outputId = "dge_selected_clusters", inline = TRUE)
@@ -2223,7 +2304,7 @@ server <- function(input,output,session){
             selectInput(inputId = "dge_group_by",
                         label = "Choose metadata to use for marker identification:",
                         #Remove "none" and "best_response" from selectable options to group by
-                        choices = meta_choices[!meta_choices %in% c("none", "best response")],
+                        choices = meta_choices[!meta_choices %in% c("none", "best_response")],
                         #At startup, marker selection is ran with clusters as the
                         #group by variable.
                         selected="clusters"),
@@ -2322,17 +2403,26 @@ server <- function(input,output,session){
                                               #Convert factor of choices to character vector
                                               as.character()
                                             
-                                            
-                                            print("Marker Choices")
-                                            print(marker_choices)
-                                            
+                                            #If the group by variable is patient
+                                            #ID, form the categorized list of 
+                                            #patients
+                                            if (input$dge_group_by=="htb"){
+                                              valid_patients_categorized <- build_patient_list(marker_choices)
+                                              valid_patients_categorized <- sort_patient_list(valid_patients_categorized)
+                                            }
+                                          
                                             #Choose classes to include in marker search
                                             #Input id: use group by variable and syntax
                                             #Used for subsetting in other tabs to simplify
                                             #Subset computation when the table is computed
                                             pickerInput(inputId = glue("dge_{input$dge_group_by}_selection"),
                                                         label = "Choose classes to include in marker computation",
-                                                        choices = marker_choices,
+                                                        #Choices: if patient ID
+                                                        #is the group by variable,
+                                                        #Use the categorized patient list
+                                                        choices = 
+                                                          if (input$dge_group_by!="htb") {marker_choices} 
+                                                        else {valid_patients_categorized},
                                                         #At startup, marker_choices 
                                                         #is equal to all clusters in the
                                                         #object. All are selected by 
@@ -2527,6 +2617,8 @@ server <- function(input,output,session){
                        unname() |> 
                        #Convert factor of criteria to character vector
                        as.character() |> 
+                       #Sort patient vector 
+                       sort() |> 
                        #Convert to grammatically correct output
                        vector_to_text()
                    })
@@ -2590,43 +2682,25 @@ server <- function(input,output,session){
       hide_on_render = FALSE #Gives manual control of showing/hiding spinner
     )
     
-    #Subset Seurat object for the selected response type and return vector of patients included in that type
-    valid_patients <- unique(subset(sobj, subset = response %in% input$response_selection)$htb)
-    #List of valid patients: indicates group of patient in dropdown menu
-    valid_patients_categories=list(`d0/d30`=list(),
-                                    `Dx/Rl`=list(),
-                                    `Normal Bone Marrow`=list())
-    #Sort valid patients into above framework
-    for (patient in valid_patients){
-      #Iterate through valid_patients vector and place each choice in the relevant category
-      if(patient %in% c("1325","1650","1510","1526","1378","1724")){
-        #Append above patient ids to d0/d30 category
-        valid_patients_categories$`d0/d30` <- append(valid_patients_categories$`d0/d30`,patient)
-      } else if (patient %in% c("1261","1467","719")){
-        #Append above patient ids to Dx/Rl category
-        valid_patients_categories$`Dx/Rl` <- append(valid_patients_categories$`Dx/Rl`,patient)
-      } else if (patient %in% c("BMMC_1","BMMC_2","BMMC_3")){
-        #Append above patient (sample) ids to normal bone marrow category
-        valid_patients_categories$`Normal Bone Marrow` <- append(valid_patients_categories$`Normal Bone Marrow`,patient)
-      }
-    }
-    #Sort patients in each list to display in order
-    #Patients in d0/d30 and Dx/Rl are numeric values that can be sorted easily
-    valid_patients_categories$`d0/d30` <- valid_patients_categories$`d0/d30` |> 
-      as.numeric() |> 
-      sort() |> 
-      as.character() |> #Convert back to character values to avoid issues with further subsetting 
-      as.list()
-    valid_patients_categories$`Dx/Rl` <- valid_patients_categories$`Dx/Rl` |> 
-      as.numeric() |> 
-      sort() |> 
-      as.character() |> 
-      as.list()
-    #Normal bone marrow column consists of character IDs that are sorted properly with sort()
-    valid_patients_categories$`Normal Bone Marrow` <- valid_patients_categories$`Normal Bone Marrow` |> 
-      as.character() |> 
-      sort() |> 
-      as.list()
+    #Corr dplyr subset ####
+    #Filter object for treatment and response selections, and find valid patients
+    valid_patients <- sobj@meta.data |> 
+      filter(
+        (.data[["response"]] %in% input$response_selection)&
+          (.data[["treatment"]] %in% input$treatment_selection)
+      ) |> 
+      #Select patients metadata column
+      select(.data[["htb"]]) |> 
+      #Return unique values
+      unique() |>
+      #Convert to a character vector
+      unlist()
+    
+    #Form categorized list of valid patients for display in dropdown menu
+    valid_patients_categories <- build_patient_list(valid_patients)
+    #Sort patients categorized list so they appear in order
+    valid_patients_categories <- sort_patient_list(valid_patients_categories)
+    #####
     
     #Update picker input with valid patient ID's
     updatePickerInput(session,
@@ -2718,6 +2792,42 @@ server <- function(input,output,session){
                              duration = NULL,
                              id = "corr_vector_mem_error",
                              session=session)
+            
+            #Error 3: No Cells in Subset
+          } else if (grepl("No cells found", cnd$message)) {
+            #This reactive value will instruct the correlation 
+            #table UI to display differently based on the error
+            rv$memory_error = TRUE
+            #Define notification to be displayed to user upon memory error
+            mem_err_ui <-
+              icon_notification_ui(
+                icon_name = "skull-crossbones",
+                message = tagList(
+                  "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
+                  tags$a(
+                    "let us know",
+                    href =
+                      "https://github.com/amc-heme/DataExploreShiny/issues",
+                    target =
+                      "_blank",
+                    #Opens link in new tab
+                    rel =
+                      "noopener noreferrer"
+                  ),
+                  #Period at end of link
+                  "."
+                )#End tagList
+              )
+            
+            #Display notification
+            showNotification(
+              ui = mem_err_ui,
+              #Duration=NULL will make the message persist until dismissed
+              duration = NULL,
+              id = "plots_no_cells_found",
+              session =
+                session
+            )
           }
           #Notification for any unforseen error type
           else {
