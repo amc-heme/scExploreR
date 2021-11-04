@@ -99,8 +99,6 @@ choices <- list("clusters"=clusters,
            "treatments"=treatments,
            "patients"=patients,
            "patients_categories"=patients_categories)
-print("Choices List")
-print(choices)
 
 #Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
@@ -221,8 +219,8 @@ subset_menus <- function(input_prefix,choices,menus="all"){
   div(
     #Display each picker menu if the user indicates its inclusion, 
     #otherwise print a NULL element for that menu
-    if (menus=="all" | "clusters" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_cluster_selection"),
+    if (menus=="all" || "clusters" %in% menus){
+      pickerInput(inputId = glue("{input_prefix}_clusters_selection"),
                                                           label = "Restrict by Cluster",
                                                           choices = choices$clusters,
                                                           selected = choices$clusters,
@@ -232,14 +230,14 @@ subset_menus <- function(input_prefix,choices,menus="all"){
                                                             "size" = 10, #Define max options to show at a time to keep menu from being cut off
                                                             "actions-box"=TRUE))
       } else NULL,
-    if (menus=="all" | "response" %in% menus){
+    if (menus=="all" || "response" %in% menus){
       pickerInput(inputId = glue("{input_prefix}_response_selection"),
                                                           label = "Restrict by Response",
                                                           choices = choices$responses,
                                                           selected = choices$responses,
                                                           multiple = TRUE)
       } else NULL,
-    if (menus=="all" | "treatment" %in% menus){
+    if (menus=="all" || "treatment" %in% menus){
       pickerInput(inputId=glue("{input_prefix}_treatment_selection"),
                   label = "Restrict by Timepoint (approximate)",
                   choices = choices$treatments,
@@ -250,7 +248,7 @@ subset_menus <- function(input_prefix,choices,menus="all"){
                     "actions-box"=TRUE
                   ))
     } else NULL,
-    if(menus=="all" | "htb" %in% menus){
+    if(menus=="all" || "htb" %in% menus){
       pickerInput(inputId = glue("{input_prefix}_htb_selection"),
                   label = "Restrict by Patient",
                   choices = choices$patients_categories, #Display patient groups to user
@@ -644,50 +642,30 @@ tables_tab <- function(){
         div(id="dge_sidebar",
             #1.2.1.1. Restrict correlation table by metadata
             tags$h3("Differential Gene Expression"),
-            tags$p("The default table contains cluster markers for the entire dataset. For more complex analyses, restrict the analysis by metadata variables using the dropdown menus below, choose a metadata slot for which to calculate markers/DEGs, and click Update."),
-            pickerInput(inputId = "dge_cluster_selection",
-                        label = "Restrict by Cluster",
-                        choices = clusters,
-                        selected = clusters,
-                        multiple = TRUE,
-                        options = list(
-                          "selected-text-format" = "count > 5",
-                          "size" = 10, #Define max options to show at a time to keep menu from being cut off
-                          "actions-box"=TRUE)),
-            pickerInput(inputId = "dge_response_selection",
-                        label = "Restrict by Response",
-                        choices = responses,
-                        selected = responses,
-                        multiple = TRUE),
-            pickerInput(inputId="dge_treatment_selection",
-                        label = "Restrict by Timepoint (approximate)",
-                        choices = treatments,
-                        selected = treatments, 
-                        multiple = TRUE,
-                        options = list(
-                          "selected-text-format" = "count > 3",
-                          "actions-box"=TRUE
-                        )),
-            pickerInput(inputId = "dge_htb_selection",
-                        label = "Restrict by Patient",
-                        choices = patients_categories,
-                        selected = patients, 
-                        multiple = TRUE,
-                        options = list(
-                          "selected-text-format" = "count > 3",
-                          "size" = 10, 
-                          "actions-box"=TRUE
-                        )),
-            selectInput(inputId = "dge_group_by", 
-                        label = "Metadata for DE calculation:",
-                        choices=meta_choices[!meta_choices %in% c("none", "best_response")], #Remove "none" and "best_response" from selectable options to group by
-                        selected = "clusters"),
-            #Checkbox: Positive markers only?
+            tags$p("The default table contains cluster markers for the entire dataset. For more complex analyses, use the dropdown menus below to choose  ... "),
+            selectInput(inputId = "dge_mode",
+                        label = "Choose test to perform",
+                        #User chooses either dge or marker identification.
+                        #Human- and computer- readable names given for both options
+                        choices = c("Marker Identification"="mode_marker",
+                                   "Differential Expression"="mode_dge"),
+                        #Marker selection on clusters is displayed at startup
+                        selected = "mode_marker"),
+            #Further dropdown menus are specific to the chosen mode
+            uiOutput(outputId = "dge_conditional_menus"),
+            #Checkbox to return positive markers only (shown for both modes)
             checkboxInput(inputId = "dge_pos",
                           label="Positive Markers Only",
                           value = TRUE),
+            #Submit button
             actionButton(inputId = "dge_submit",
                          label = "Update"),
+            
+#            selectInput(inputId = "dge_group_by", 
+#                        label = "Metadata for DE calculation:",
+#                        choices=meta_choices[!meta_choices %in% c("none", "best_response")], #Remove "none" and "best_response" from selectable options to group by
+#                        selected = "clusters"),
+            
             #Download Button
             uiOutput(outputId = "dge_downloads_ui")
         )#End dge-sidebar div
@@ -696,7 +674,8 @@ tables_tab <- function(){
       mainPanel(
         div(id="dge_main_panel", 
             class="spinner-container-main", 
-            #Div added to contain Waiter spinner (forces the spinner to cover the full main panel)
+            #Div added to contain Waiter spinner (forces the spinner to 
+            #cover the full main panel)
             uiOutput(outputId = "dge_ui")
            )#End dge_main_panel
       )#End MainPanel
@@ -722,7 +701,7 @@ corr_tab <- function(){
                            choices = NULL,
                            selected = character(0),
                            options = list("placeholder"="Enter gene name")),
-            pickerInput(inputId = "cluster_selection",
+            pickerInput(inputId = "clusters_selection",
                         label = "Restrict by Cluster",
                         choices = clusters,
                         selected = clusters,
@@ -1070,7 +1049,7 @@ server <- function(input,output,session){
                                    plots_s_sub <- subset(
                                      sobj,
                                      subset =
-                                       (clusters %in% input$plots_cluster_selection) &
+                                       (clusters %in% input$plots_clusters_selection) &
                                        (response %in% input$plots_response_selection) &
                                        (htb %in% input$plots_htb_selection) &
                                        (treatment %in% input$plots_treatment_selection)
@@ -1709,7 +1688,6 @@ server <- function(input,output,session){
   ) #End downloadHandler function
   
   ###2.2. DGE Tab 
-  
   #2.2.1 Reactive dropdown menu for patient 
   # The code in this section is duplicated from section 2.3.1, and should be rewritten as a function to avoid redundancy.
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
@@ -1804,7 +1782,7 @@ server <- function(input,output,session){
   dge_table_content <- eventReactive(
     input$dge_submit,
     label = "DGE Table Content",
-    ignoreInit = FALSE,
+    ignoreInit = TRUE,
     ignoreNULL = FALSE,
     {
       #Reactive value for identifying a memory error (defined here and reset to FALSE each time the dge table code is run)
@@ -1942,14 +1920,90 @@ server <- function(input,output,session){
           #Form subset based on chosen criteria
           #Store in reactive variable so it can be accessed by 
           #UMAP eventReactive() function
-          rv$dge_s_sub <- subset(
-            sobj,
-            subset =
-              (clusters %in% input$dge_cluster_selection) &
-              (response %in% input$dge_response_selection) &
-              (htb %in% input$dge_htb_selection) &
-              (treatment %in% input$dge_treatment_selection)
-          )
+          
+          #Subset method depends on whether marker identification or
+          #dge is selected
+          if (input$dge_mode=="mode_marker"){
+            #Marker identification: create subset based on the subset 
+            #dropdown menus, and include the group_by metadata in the 
+            #subset. The group_by dropdown is named reactively according
+            #to user choice, such that its id matches one of the four below. 
+            rv$dge_s_sub <- subset(
+              sobj,
+              subset =
+                (clusters %in% input$dge_clusters_selection) &
+                (response %in% input$dge_response_selection) &
+                (htb %in% input$dge_htb_selection) &
+                (treatment %in% input$dge_treatment_selection)
+            )#End subset
+          }else{
+            #For DGE, define subset conditionally based on the group by
+            #variable selection (VERY messy, but works for now)
+            if (input$dge_group_by=="clusters"){
+              #Subset will use the subset criteria chosen, as well as the two
+              #classes chosen for the group by variable 
+              
+              #Create a vector with the two classes chosen for DGE
+              clusters_selected_vector <- c(input$dge_group_1, input$dge_group_2)
+              
+              #Subset as usual for all variables except for the group by variable
+              rv$dge_s_sub <- subset(
+                sobj,
+                subset =
+                  #Use the vector above for the group_by_variable
+                  (clusters %in% clusters_selected_vector) &
+                  (response %in% input$dge_response_selection) &
+                  (htb %in% input$dge_htb_selection) &
+                  (treatment %in% input$dge_treatment_selection)
+              )#End subset
+              
+            } else if (input$dge_group_by=="response"){
+              #Create a vector with the two response classes chosen for DGE
+              response_selected_vector <- c(input$dge_group_1, input$dge_group_2)
+              
+              #Subset as usual for all variables except for response
+              rv$dge_s_sub <- subset(
+                sobj,
+                subset =
+                  #Use the vector above for the group_by_variable
+                  (clusters %in% input$dge_clusters_selection) &
+                  (response %in% response_selected_vector) &
+                  (htb %in% input$dge_htb_selection) &
+                  (treatment %in% input$dge_treatment_selection)
+              )#End subset
+              
+            } else if (input$dge_group_by=="htb"){
+              #Create a vector with the two htb classes chosen for DGE
+              htb_selected_vector <- c(input$dge_group_1, input$dge_group_2)
+              
+              #Subset as usual for all variables except for htb
+              rv$dge_s_sub <- subset(
+                sobj,
+                subset =
+                  #Use the vector above for the group_by_variable
+                  (clusters %in% input$dge_clusters_selection) &
+                  (response %in% input$dge_response_selection) &
+                  (htb %in% htb_selected_vector) &
+                  (treatment %in% input$dge_treatment_selection)
+              )#End subset
+              
+            } else if (input$dge_group_by=="treatment"){
+              #Create a vector with the two treatment (timepoint) classes chosen for DGE
+              treatment_selected_vector <- c(input$dge_group_1, input$dge_group_2)
+              
+              #Subset as usual for all variables except for treatment
+              rv$dge_s_sub <- subset(
+                sobj,
+                subset =
+                  #Use the vector above for the group_by_variable
+                  (clusters %in% input$dge_clusters_selection) &
+                  (response %in% input$dge_response_selection) &
+                  (htb %in% input$dge_htb_selection) &
+                  (treatment %in% treatment_selected_vector)
+              )#End subset
+            }
+
+          }
           
           ###Subset Stats
           #Cells in subset
@@ -2001,9 +2055,11 @@ server <- function(input,output,session){
             as_tibble() %>%  #Explicitly coerce to tibble
             select(-c(statistic, auc)) %>%  # remove stat and auc from the output table
             # Using magrittr pipes here because the following statement doesn't work with base R pipes
-            {if (input$dge_pos) filter(., logFC > 0) else .} %>%  # remove negative logFCs if box is checked
-            arrange(padj, pval, desc(abs(logFC))) #Arrange in descending order by significance, then absolute logFC
-          
+            # remove negative logFCs if box is checked
+            {if (input$dge_pos) filter(., logFC > 0) else .} %>%
+            #Arrange in ascending order for padj, pval (lower values are more
+            #"significant"). Ascending order is used for the log fold-change
+            arrange(padj, pval, desc(abs(logFC))) 
         }
       )#End tryCatch
       
@@ -2031,11 +2087,12 @@ server <- function(input,output,session){
       formatSignif(3:8, 5) # This is more than enough - 3 is probably fine
   })
   
-  #2.2.3. DGE UI
-  #2.2.3.1. Main UI
+  #2.2.3. DGE UI Components
+  #2.2.3.1. DGE Main UI (Stats and Table/UMAP Outputs)
   #IgnoreNULL set to false to get UI to render at start up
   dge_ui <- eventReactive(input$dge_submit,
                           label = "DGE Main UI (Define Content)",
+                          ignoreInit=TRUE,
                           ignoreNULL = FALSE, 
                           {
                             print("DGE UI Function")
@@ -2141,7 +2198,169 @@ server <- function(input,output,session){
                             )#End UI div
                           })
   
-  #2.2.3.2. Download Buttons for Table and Plots
+  #2.2.3.2. Conditional Dropdown Menus: display based on whether DGE or marker 
+  #identification is selected
+  #2.2.3.2.1. Main Dropdown interface
+  dge_conditional_menus <- 
+    eventReactive(
+      c(input$dge_mode),
+      label = "DGE Conditional Menus",
+      ignoreNULL = FALSE,
+      {
+        if (input$dge_mode=="mode_marker"){
+          #UI for marker selection
+          #Metadata to use for marker identification
+          ui <- tagList(
+            selectInput(inputId = "dge_group_by",
+                        label = "Choose metadata to use for marker identification:",
+                        #Remove "none" and "best_response" from selectable options to group by
+                        choices = meta_choices[!meta_choices %in% c("none", "best response")],
+                        #At startup, marker selection is ran with clusters as the
+                        #group by variable.
+                        selected="clusters"),
+            #Choice of classes to include in marker identification 
+            #Based on group_by selection above
+            uiOutput(outputId = "dge_marker_selection"),
+            #Subset choices: depend on what the user selects for the group by variable
+            uiOutput(outputId = "dge_subset_selection")
+          )#end tagList 
+          
+        } else {
+          #UI for differential gene expression
+          #Metadata to use for dge: text displayed to user is different
+          ui <- tagList(
+            selectInput(inputId = "dge_group_by",
+                        label = "Choose metadata to use for differential gene expression:",
+                        #Remove "none" and "best_response" from selectable options to group by
+                        choices = meta_choices[!meta_choices %in% c("none", "best_response")],
+                        #Clusters is selected by default
+                        selected = "clusters"
+            ),#End selectInput
+            #Choice of groups to compare: depends on what metadata type is selected
+            uiOutput(outputId = "dge_group_selection"),
+            #Subset choices: also depends on user selection
+            uiOutput(outputId = "dge_subset_selection")
+          )#End tagList
+        }
+        
+        #Return the ui defined by the conditionals above
+        ui
+      })
+  
+  #2.2.3.2.2. UI to pick groups to compare for DGE
+  dge_group_selection <- eventReactive(input$dge_group_by,
+                                       label="DGE: groups for DGE test",
+                                       ignoreNULL = FALSE,
+                                       {
+                                         print("Running code for DGE selections")
+                                         #UI is only displayed when dge is selected
+                                         if (input$dge_mode=="mode_dge"){
+                                           #Use metadata type to determine choices 
+                                           #for dropdown menu
+                                           dge_group_choices = sobj@meta.data |>
+                                             #Get unique values for the metadata type entered
+                                             select(.data[[input$dge_group_by]]) |> 
+                                             unique() |>
+                                             #Convert to vector
+                                             unlist() |> 
+                                             #Remove names from vector 
+                                             unname() |> 
+                                             #Convert factor of choices to character vector
+                                             as.character()
+                                           
+                                           #Choose two groups for dge from the metadata
+                                           #type specified by the user. 
+                                           #tagList: combines the elements below to 
+                                           #Output them together
+                                           tagList(
+                                             #Put choices beside one another in two-column format
+                                             div(class="two_column float_left",
+                                                 selectInput(inputId = "dge_group_1",
+                                                             label = "Group 1",
+                                                             choices = dge_group_choices,
+                                                             selected = dge_group_choices[1])
+                                             ), #End div
+                                             div(class="two_column float_right",
+                                                 selectInput(inputId = "dge_group_2",
+                                                             label = "Group 2",
+                                                             choices = dge_group_choices,
+                                                             selected = dge_group_choices[2])
+                                             )
+                                           )#End tagList
+                                           
+                                           #Do not display UI if mode is not dge
+                                         } else NULL
+                                       })
+  
+  #2.2.3.2.3. UI to pick classes for marker identification
+  dge_marker_selection <- eventReactive(input$dge_group_by,
+                                        label="DGE: groups for marker identificaiton",
+                                        ignoreNULL = FALSE,
+                                        {
+                                          #UI is only displayed when marker identification is selected
+                                          if (input$dge_mode=="mode_marker"){
+                                            
+                                            #Use metadata type to determine choices 
+                                            #for picker menu
+                                            marker_choices = sobj@meta.data |>
+                                              #Get unique values for the metadata type entered
+                                              select(.data[[input$dge_group_by]]) |> 
+                                              unique() |>
+                                              #Convert to vector
+                                              unlist() |> 
+                                              #Remove names from vector 
+                                              unname() |> 
+                                              #Convert factor of choices to character vector
+                                              as.character()
+                                            
+                                            
+                                            print("Marker Choices")
+                                            print(marker_choices)
+                                            
+                                            #Choose classes to include in marker search
+                                            #Input id: use group by variable and syntax
+                                            #Used for subsetting in other tabs to simplify
+                                            #Subset computation when the table is computed
+                                            pickerInput(inputId = glue("dge_{input$dge_group_by}_selection"),
+                                                        label = "Choose classes to include in marker computation",
+                                                        choices = marker_choices,
+                                                        #At startup, marker_choices 
+                                                        #is equal to all clusters in the
+                                                        #object. All are selected by 
+                                                        #default.
+                                                        selected = marker_choices,
+                                                        multiple = TRUE,
+                                                        options = list(
+                                                          "selected-text-format" = "count > 3",
+                                                          "size" = 10, 
+                                                          #Define max options to show at 
+                                                          #a time to keep menu from being cut off
+                                                          "actions-box"=TRUE))
+                                            #Do not display UI if the mode is not marker identification
+                                          } else NULL 
+                                        })
+  
+  #2.2.3.2.4. UI to select subset, for both DGE and marker identification
+  dge_subset_selection <- eventReactive(input$dge_group_by,
+                                        label="DGE: Subset Menu",
+                                        ignoreNULL = FALSE,
+                                        {
+                                          print("Computing subset menus UI")
+                                          #Subset menus: one menu for each metadata 
+                                          #category that can be selected for the group
+                                          #by variable, minus the current selected 
+                                          #category
+                                          menu_categories <- meta_choices[!meta_choices %in% c("none", "best_response", input$dge_group_by)]
+                                          
+                                          #Use the subset_menus function to create the
+                                          #subset dropdowns UI
+                                          subset_menus(input_prefix = "dge",
+                                                       #Choices is a list defined at 
+                                                       #Startup
+                                                       choices = choices,
+                                                       menus = menu_categories)
+                                        })
+  #2.2.3.3. Download Buttons for Table and Plots
   dge_downloads_ui <-
     eventReactive(
       c(input$submit, input$dge_table_rows_selected),
@@ -2170,6 +2389,7 @@ server <- function(input,output,session){
   #2.2.4. UMAP of DE selected groups
   dge_umap <- eventReactive(input$dge_submit, 
                             ignoreNULL=FALSE, 
+                            ignoreInit=TRUE,
                             label="DGE UMAP", {
                               #ncol_argument: number of columns based on number
                               #of classes being analyzed in the subset.
@@ -2177,7 +2397,8 @@ server <- function(input,output,session){
                               #metadata variable (supports entry of an arbitrary variable)
                               #This means of access returns a dataframe. 
                               #Slice for the first row (the unique values)
-                              n_panel <- unique(rv$dge_s_sub[[input$dge_group_by]])[,1] |> length()
+                              n_panel <- unique(rv$dge_s_sub[[input$dge_group_by]])[,1] |>
+                                length()
                               
                               #Set ncol to number of panels if less than four
                               #Panels are created
@@ -2207,6 +2428,28 @@ server <- function(input,output,session){
     dge_ui()
   })
   
+  #Sidebar conditional UI
+  #Main conditional UI
+  output$dge_conditional_menus <- renderUI({
+    dge_conditional_menus()
+  })
+  
+  #Marker selection, if indicated
+  output$dge_marker_selection <- renderUI({
+    dge_marker_selection()
+  })
+  
+  #Group selection, if indicated
+  output$dge_group_selection <- renderUI({
+    dge_group_selection()
+  })
+  
+  #Subset selection (depends on entries for marker and group selection)
+  output$dge_subset_selection <- renderUI({
+    dge_subset_selection()
+  })
+  
+  #Download buttons
   output$dge_downloads_ui <- renderUI({
     dge_downloads_ui()
   })
@@ -2228,7 +2471,7 @@ server <- function(input,output,session){
                {
                  #Rendering Selections and Stats for report
                  output$dge_selected_clusters <-
-                   renderText(isolate(vector_to_text(input$dge_cluster_selection)))
+                   renderText(isolate(vector_to_text(input$dge_clusters_selection)))
                  output$dge_selected_response <-
                    renderText(isolate(vector_to_text(input$dge_response_selection)))
                  output$dge_selected_htb <-
@@ -2432,7 +2675,7 @@ server <- function(input,output,session){
           print("Make subset")
           #Form subset based on chosen criteria (store in reactive value so the subset can be accessed in the scatterplot function)
           rv$s_sub <- subset(sobj, 
-                          subset=(clusters %in% input$cluster_selection) & 
+                          subset=(clusters %in% input$clusters_selection) & 
                             (response %in% input$response_selection) & 
                             (htb %in% input$htb_selection) &
                             (treatment %in% input$treatment_selection)
@@ -2677,7 +2920,7 @@ server <- function(input,output,session){
   observeEvent(input$corr_submit,
                label = "Render Statistics",{
                  #Rendering Selections and Stats for report
-                 output$selected_clusters <- renderText(isolate(vector_to_text(input$cluster_selection)))
+                 output$selected_clusters <- renderText(isolate(vector_to_text(input$clusters_selection)))
                  output$selected_response <- renderText(isolate(vector_to_text(input$response_selection)))
                  output$selected_htb <- renderText(isolate(vector_to_text(input$htb_selection)))
                  output$print_n_cells <- renderText(isolate(rv$n_cells))

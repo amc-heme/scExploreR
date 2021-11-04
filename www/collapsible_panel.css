@@ -76,6 +76,7 @@ box-sizing: inherit;
 
 /* New CSS Testing*/
 /* Copy below CSS to separate document when functional */
+/* Two-column panel */
 .two_column {
 	width: 50%;
 	display: inline-block;
@@ -83,6 +84,17 @@ box-sizing: inherit;
 	padding: 5px;
 	padding-top: 0px;
 	padding-bottom: 0px;
+}
+
+/* Add to two-column classes to automatically align left and right*/
+.float_left {
+	/* Use this class for the left column */
+  float: left;
+}
+
+.float_right {
+	/* Use this class for the right column */
+  float: right;
 }
 
 /* Compact Table */
