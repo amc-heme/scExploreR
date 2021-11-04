@@ -831,7 +831,7 @@ ui <- tagList(
   includeScript("www/button_wizzard.js")
 )
 
-### 2. Server function (builds interactive plot to display in UI) ###
+### 2. Server function (builds interactive plot to display in UI) #####
 server <- function(input,output,session){
   #2.0. Initialize Session
   #2.0.1. Initialize Reactive Values
@@ -882,7 +882,7 @@ server <- function(input,output,session){
             )
   })
   
-  ###2.1. Plots Tab
+  ### 2.1. Plots Tab #####
   #2.1.1 Define subset for plots 
   #2.1.1.1. Update choices in subset selection menu based on user selections
   #Update patients menu based on entries in 'response' or 'treatment' (timepoint)
@@ -1682,8 +1682,8 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  ###2.2. DGE Tab
-  #2.2.1. Reactive dropdown menus
+  ### 2.2. DGE Tab #####
+  #2.2.1. Reactive dropdown menus 
   #2.2.1.1. Reactive dropdown menu for patient 
   # The code in this section is duplicated from section 2.3.1, and should be rewritten as a function to avoid redundancy.
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
@@ -1702,7 +1702,6 @@ server <- function(input,output,session){
         color = "#B1B1B188",
         hide_on_render = FALSE #Gives manual control of showing/hiding spinner
       )
-      
       
       #DGE Metadata Subset ####
       #Valid for all modes except dge with response or treatment as the group.by variable
@@ -1729,7 +1728,11 @@ server <- function(input,output,session){
       updatePickerInput(
         session,
         inputId = "dge_htb_selection",
-        label = "Restrict by Patient",
+        #If patients is the group by variable, do not change the label
+        #(a special label is used for the group by category)
+        label = 
+          if (input$dge_group_by=="htb") {NULL}
+          else {"Restrict by Patient"},
         choices = valid_patients_categories,
         selected = valid_patients,
         options = list(
@@ -1815,6 +1818,21 @@ server <- function(input,output,session){
       }
     }
     )
+  
+  #2.2.1.3. Update group 2 menu after DGE group 1 selection
+  observeEvent(
+    c(input$dge_group_1),
+    ignoreInit = TRUE,
+    label = "Reactive Patient Dropdown (DGE Groups)",
+    {
+      updateSelectInput(
+        session,
+        inputId = "dge_group_2",
+        label = "Group 2",
+        #Update choices to exclude the current group 1 choice
+        choices = rv$dge_group_choices[rv$dge_group_choices!=input$dge_group_1]
+      )
+    })
   
   
   #2.2.2. DGE table for selected metadata and restriction criteria
@@ -2346,8 +2364,11 @@ server <- function(input,output,session){
                                          #UI is only displayed when dge is selected
                                          if (input$dge_mode=="mode_dge"){
                                            #Use metadata type to determine choices 
-                                           #for dropdown menu
-                                           dge_group_choices = sobj@meta.data |>
+                                           #for dropdown menu. Store in a reactive
+                                           #variable so group 2 can be reactively
+                                           #updated to exclude the selection in
+                                           #group 1
+                                           rv$dge_group_choices = sobj@meta.data |>
                                              #Get unique values for the metadata type entered
                                              select(.data[[input$dge_group_by]]) |> 
                                              unique() |>
@@ -2367,14 +2388,14 @@ server <- function(input,output,session){
                                              div(class="two_column float_left",
                                                  selectInput(inputId = "dge_group_1",
                                                              label = "Group 1",
-                                                             choices = dge_group_choices,
-                                                             selected = dge_group_choices[1])
+                                                             choices = rv$dge_group_choices,
+                                                             selected = rv$dge_group_choices[1])
                                              ), #End div
                                              div(class="two_column float_right",
                                                  selectInput(inputId = "dge_group_2",
                                                              label = "Group 2",
-                                                             choices = dge_group_choices,
-                                                             selected = dge_group_choices[2])
+                                                             choices = rv$dge_group_choices,
+                                                             selected = rv$dge_group_choices[2])
                                              )
                                            )#End tagList
                                            
@@ -2667,7 +2688,7 @@ server <- function(input,output,session){
   )#End downloadHandler 
 
   
-  ###2.3. Correlations Tab 
+  ### 2.3. Correlations Tab #####
   
   #2.3.1 Reactive dropdown menu for patient 
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
