@@ -1782,10 +1782,10 @@ server <- function(input,output,session){
   dge_table_content <- eventReactive(
     input$dge_submit,
     label = "DGE Table Content",
-    ignoreInit = TRUE,
     ignoreNULL = FALSE,
     {
-      #Reactive value for identifying a memory error (defined here and reset to FALSE each time the dge table code is run)
+      #Reactive value for identifying a memory error (defined here and reset to 
+      #FALSE each time the dge table code is run)
       rv$memory_error = FALSE
       rv$vector_mem_error = FALSE
       rv$other_error = FALSE
@@ -1920,7 +1920,7 @@ server <- function(input,output,session){
           #Form subset based on chosen criteria
           #Store in reactive variable so it can be accessed by 
           #UMAP eventReactive() function
-          
+          print("Computing Subset")
           #Subset method depends on whether marker identification or
           #dge is selected
           if (input$dge_mode=="mode_marker"){
@@ -2005,6 +2005,7 @@ server <- function(input,output,session){
 
           }
           
+          print("Subset Stats")
           ###Subset Stats
           #Cells in subset
           rv$dge_n_cells <-
@@ -2024,6 +2025,7 @@ server <- function(input,output,session){
             paste0("Marker Identification (", rv$dge_n_classes, " classes)")
           )
           
+          print("n_by_class")
           #Cells per class
           #Calculate number of cells per class using metadata table of subset
           n_by_class <- rv$dge_s_sub@meta.data |>
@@ -2049,6 +2051,7 @@ server <- function(input,output,session){
           rv$dge_n_by_class<-paste(n_list,collapse = "\n")
           #\n is the separator (will be read by verbatimTextOutput())
           
+          print("Presto")
           #Run Presto
           dge_table <-
             wilcoxauc(rv$dge_s_sub, group_by = input$dge_group_by) %>%  #Run presto on the subsetted object and indicated metadata slot
@@ -2063,6 +2066,7 @@ server <- function(input,output,session){
         }
       )#End tryCatch
       
+      print("Code to hide waiter")
       #Hide loading screen
       waiter_hide(id = "dge_main_panel")
       waiter_hide(id = "dge_sidebar")
@@ -2077,6 +2081,7 @@ server <- function(input,output,session){
                                   label = "DGE DT Generation",
                                   ignoreNULL=FALSE, 
                                   {
+                                    print("Output as DT")
     datatable(
       dge_table_content(),
       class = "compact stripe cell-border hover",
@@ -2389,8 +2394,8 @@ server <- function(input,output,session){
   #2.2.4. UMAP of DE selected groups
   dge_umap <- eventReactive(input$dge_submit, 
                             ignoreNULL=FALSE, 
-                            ignoreInit=TRUE,
                             label="DGE UMAP", {
+                              print("DGE UMAP")
                               #ncol_argument: number of columns based on number
                               #of classes being analyzed in the subset.
                               #Use double-bracket means of accessing the 
