@@ -642,7 +642,7 @@ tables_tab <- function(){
         div(id="dge_sidebar",
             #1.2.1.1. Restrict correlation table by metadata
             tags$h3("Differential Gene Expression"),
-            tags$p("The default table contains cluster markers for the entire dataset. For more complex analyses, use the dropdown menus below to choose  ... "),
+            tags$p("Use the dropdown menus below to select the desired test, the groups to use, and the subset on which to perform the test."),
             selectInput(inputId = "dge_mode",
                         label = "Choose test to perform",
                         #User chooses either dge or marker identification.
@@ -660,11 +660,6 @@ tables_tab <- function(){
             #Submit button
             actionButton(inputId = "dge_submit",
                          label = "Update"),
-            
-#            selectInput(inputId = "dge_group_by", 
-#                        label = "Metadata for DE calculation:",
-#                        choices=meta_choices[!meta_choices %in% c("none", "best_response")], #Remove "none" and "best_response" from selectable options to group by
-#                        selected = "clusters"),
             
             #Download Button
             uiOutput(outputId = "dge_downloads_ui")
@@ -2125,9 +2120,17 @@ server <- function(input,output,session){
                                 class="center"
                               ),
                               #Table Metadata section
-                              tags$h3("Table Metadata", class="center"),
+                              tags$h3("Test Summary", class="center"),
                               #Make each input criteria appear inline
                               div(
+                                div(
+                                  tags$strong("Test selected", class="x-large inline-block"),
+                                  textOutput(outputId = "dge_print_mode", inline=FALSE)
+                                ),
+                                tags$strong("Subset Used for Test", class="x-large inline-block space-top"),
+                                #div("Cells matching the ", style="{
+                                #  margin-top: 0.3em;
+                                #  }"),
                                 div(
                                   tags$strong("Clusters: "),
                                   textOutput(outputId = "dge_selected_clusters", inline = TRUE)
@@ -2137,22 +2140,23 @@ server <- function(input,output,session){
                                   textOutput(outputId = "dge_selected_response", inline = TRUE)
                                 ),
                                 div(
+                                  tags$strong("Timepoints (approximate): "),
+                                  textOutput(outputId = "dge_selected_treatment", inline = TRUE)
+                                ),
+                                div(
                                   tags$strong("Patients: "),
                                   textOutput(outputId = "dge_selected_htb", inline = TRUE)
                                 ),
-                                div("(Subset created based on defined restriction criteria)"),
                                 div(
-                                  tags$strong("Number of cells in subset: "),
+                                  tags$strong("Number of cells in subset: ",
+                                              class="space-top inline-block"),
                                   textOutput(outputId = "dge_print_n_cells", inline = TRUE)
                                 ),
                                 div(
                                   tags$strong("Number of cells per class: "),
-                                  verbatimTextOutput(outputId = "dge_print_n_by_class") #inline = TRUE)
-                                ),
-                                div(
-                                  tags$strong("Mode selected: "),
-                                  textOutput(outputId = "dge_print_mode", inline = TRUE)
-                                ),
+                                  verbatimTextOutput(outputId = "dge_print_n_by_class") 
+                                )
+                                
                               ),
                               
                               #Correlations table and plots
@@ -2474,16 +2478,84 @@ server <- function(input,output,session){
                ignoreNULL= FALSE,
                label = "DE Render Statistics", 
                {
-                 #Rendering Selections and Stats for report
+                 #New stats computation: find unique classes in the subset 
+                 #created (rather than the user input)
+                 #Render Clusters in subset
                  output$dge_selected_clusters <-
-                   renderText(isolate(vector_to_text(input$dge_clusters_selection)))
+                   renderText({
+                     rv$dge_s_sub@meta.data |> 
+                       #Get unique clusters in subset
+                       select(clusters) |> 
+                       unique() |>
+                       #Convert to vector (returns a factor)
+                       unlist() |> 
+                       #Remove names from vector 
+                       unname() |> 
+                       #Convert factor of clusters to character vector
+                       as.character() |> 
+                       #Convert to grammatically correct output
+                       vector_to_text()
+                   })
+                 
+                 #Render Response Criteria
                  output$dge_selected_response <-
-                   renderText(isolate(vector_to_text(input$dge_response_selection)))
+                   renderText({
+                     rv$dge_s_sub@meta.data |> 
+                       #Get unique response criteria in subset
+                       select(response) |> 
+                       unique() |>
+                       #Convert to vector
+                       unlist() |> 
+                       #Remove names from vector 
+                       unname() |> 
+                       #Convert factor of criteria to character vector
+                       as.character() |> 
+                       #Convert to grammatically correct output
+                       vector_to_text()
+                   })
+                 
+                 #Render Patients
                  output$dge_selected_htb <-
-                   renderText(isolate(vector_to_text(input$dge_htb_selection)))
+                   renderText({
+                     rv$dge_s_sub@meta.data |> 
+                       #Get unique response criteria in subset
+                       select(htb) |> 
+                       unique() |>
+                       #Convert to vector
+                       unlist() |> 
+                       #Remove names from vector 
+                       unname() |> 
+                       #Convert factor of criteria to character vector
+                       as.character() |> 
+                       #Convert to grammatically correct output
+                       vector_to_text()
+                   })
+                 
+                 #Render timepoints
+                 output$dge_selected_treatment <- 
+                   renderText({
+                     rv$dge_s_sub@meta.data |> 
+                       #Get unique treatment (timepoints) in subset
+                       select(treatment) |> 
+                       unique() |>
+                       #Convert to vector
+                       unlist() |> 
+                       #Remove names from vector 
+                       unname() |> 
+                       #Convert factor to character vector
+                       as.character() |> 
+                       #Convert to grammatically correct output
+                       vector_to_text()
+                   })
+                 
+                 #N cells in subset
                  output$dge_print_n_cells <-
                    renderText(isolate(rv$dge_n_cells))
+                 
+                 #N by class
                  output$dge_print_n_by_class<- renderText(isolate(rv$dge_n_by_class))
+                 
+                 #Current Test
                  output$dge_print_mode <-
                    renderText(isolate(rv$dge_mode))
                })

@@ -162,3 +162,20 @@ table.hover > tbody > tr:hover{
   margin: 0em 2em;
   padding: 0em;
 }
+
+/* Text CSS Classes: Facilitates Report Layout Printing */
+.large {
+  font-size: 1.17em;
+}
+
+.x-large{
+  font-size: 1.3em;
+}
+
+.inline-block{
+  display: inline-block;
+}
+
+.space-top{
+  margin-top: 0.5em;
+}
