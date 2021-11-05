@@ -16,6 +16,7 @@ options(shiny.reactlog=TRUE)
 
 #Tidyverse Packages
 library(tidyverse)
+library(stringr)
 library(dplyr)
 library(ggplot2)
 library(glue)
@@ -1754,6 +1755,8 @@ server <- function(input,output,session){
     label = "Reactive Patient Dropdown (DGE Groups)",
     {
       #Only update patients when response or treatment is the group_by variable
+      #If patient ID is the group by variable, update response and treatment menus
+      #See else if at end of if statement below
       if(input$dge_group_by %in% c("response","treatment")){
         #Show a spinner while the valid patient ID's are calculated
         waiter_show(
@@ -1791,7 +1794,7 @@ server <- function(input,output,session){
             #Return unique values
             unique() |>
             #Convert to a character vector
-            unlist()
+            unlist() 
         }
 
         #Form categorized list of valid patients for display in dropdown menu
@@ -1815,7 +1818,62 @@ server <- function(input,output,session){
         
         #Hide waiter
         waiter_hide(id = "dge_sidebar")
+        
+      } else if (input$dge_group_by=="htb") {
+        #In thus case, update *treatment* and *response* selections to reflect
+        #selected patients
+        #Show a spinner while the valid patient ID's are calculated
+        waiter_show(
+          id = "dge_sidebar",
+          html = spin_loaders(id = 2, color = "#555588"),
+          color = "#B1B1B188",
+          hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+        )
+        
+        valid_choices <- sobj@meta.data |> 
+          filter(
+            #Use two treatment selections and picker input for response
+            (.data[["htb"]] %in% c(input$dge_group_1,input$dge_group_2))
+            ) |> 
+          #Select treatment and response columns
+          select(.data[["treatment"]],.data[["response"]]) #|> 
+        
+        #From the filtered metadata table above, fetch unique
+        #treatment and response values and process to correct input
+        valid_response <- valid_choices$response |> 
+          #Return unique values
+          unique() |> 
+          #Convert to a character vector
+          unlist() |> 
+          #Sort values (use function from stringr 
+          #package for natural sorting)
+          str_sort(numeric=TRUE)
+        
+        valid_treatment <- valid_choices$treatment |> 
+          #Return unique values
+          unique() |> 
+          #Convert to a character vector
+          unlist() |> 
+          #Sort values
+          str_sort(numeric=TRUE)
+        
+        #Update response input with valid choices
+        updatePickerInput(session,
+                          inputId = "dge_response_selection",
+                          label = "Restrict by Response",
+                          choices = valid_response,
+                          selected = valid_response)
+        
+        updatePickerInput(session,
+                          inputId = "dge_treatment_selection",
+                          label = "Restrict by Timepoint (approximate)",
+                          choices = valid_treatment,
+                          selected = valid_treatment)
+        
+        #Hide waiter
+        waiter_hide(id = "dge_sidebar")
       }
+      
     }
     )
   
@@ -1825,12 +1883,22 @@ server <- function(input,output,session){
     ignoreInit = TRUE,
     label = "Reactive Patient Dropdown (DGE Groups)",
     {
+      #Define valid choices for group 2 (excludes the choice currently
+      #selected for group 1)
+      new_choices<- rv$dge_group_choices[rv$dge_group_choices!=input$dge_group_1]  |> 
+      #Sort choices
+      str_sort(numeric=TRUE)
+      
       updateSelectInput(
         session,
         inputId = "dge_group_2",
         label = "Group 2",
         #Update choices to exclude the current group 1 choice
-        choices = rv$dge_group_choices[rv$dge_group_choices!=input$dge_group_1]
+        choices = new_choices,
+        #Preserve current selection in group 2, unless it is invalid
+        selected= 
+          if(input$dge_group_2!=input$dge_group_1) {input$dge_group_2} 
+          else {new_choices[1]}
       )
     })
   
@@ -2377,7 +2445,9 @@ server <- function(input,output,session){
                                              #Remove names from vector 
                                              unname() |> 
                                              #Convert factor of choices to character vector
-                                             as.character()
+                                             as.character() |> 
+                                             #Sort choices
+                                             str_sort(numeric=TRUE)
                                            
                                            #Choose two groups for dge from the metadata
                                            #type specified by the user. 
@@ -2422,7 +2492,9 @@ server <- function(input,output,session){
                                               #Remove names from vector 
                                               unname() |> 
                                               #Convert factor of choices to character vector
-                                              as.character()
+                                              as.character() |> 
+                                              #Sort choices
+                                              str_sort(numeric=TRUE)
                                             
                                             #If the group by variable is patient
                                             #ID, form the categorized list of 
@@ -2639,7 +2711,7 @@ server <- function(input,output,session){
                        #Convert factor of criteria to character vector
                        as.character() |> 
                        #Sort patient vector 
-                       sort() |> 
+                       str_sort(numeric=TRUE) |> 
                        #Convert to grammatically correct output
                        vector_to_text()
                    })
