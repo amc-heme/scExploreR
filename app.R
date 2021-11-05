@@ -2088,7 +2088,31 @@ server <- function(input,output,session){
           print("Computing Subset")
           #Subset method depends on whether marker identification or
           #dge is selected
-          if (input$dge_mode=="mode_marker" & input$dge_group_by == "clusters"){
+          dge_clusters_int = unlist(ifelse(
+            input$dge_group_by == "clusters",
+            list(input$dge_clusters_selection_group),
+            list(input$dge_clusters_selection)
+          ))
+          
+          dge_response_int = unlist(ifelse(
+            input$dge_group_by == "response",
+            list(input$dge_response_selection_group),
+            list(input$dge_response_selection)
+          ))
+          
+          dge_htb_int = unlist(ifelse(
+            input$dge_group_by == "htb",
+            list(input$dge_htb_selection_group),
+            list(input$dge_htb_selection)
+          ))
+          
+          dge_treatment_int = unlist(ifelse(
+            input$dge_group_by == "treatment",
+            list(input$dge_treatment_selection_group),
+            list(input$dge_treatment_selection)
+          ))
+          
+          if (input$dge_mode=="mode_marker"){
             #Marker identification: create subset based on the subset 
             #dropdown menus, and include the group_by metadata in the 
             #subset. The group_by dropdown is named reactively according
@@ -2096,23 +2120,10 @@ server <- function(input,output,session){
             rv$dge_s_sub <- subset(
               sobj,
               subset =
-                (clusters %in% input$dge_clusters_selection2) &
-                (response %in% input$dge_response_selection) &
-                (htb %in% input$dge_htb_selection) &
-                (treatment %in% input$dge_treatment_selection)
-            )#End subset
-          } else if (input$dge_mode=="mode_marker"){
-            #Marker identification: create subset based on the subset 
-            #dropdown menus, and include the group_by metadata in the 
-            #subset. The group_by dropdown is named reactively according
-            #to user choice, such that its id matches one of the four below. 
-            rv$dge_s_sub <- subset(
-              sobj,
-              subset =
-                (clusters %in% input$dge_clusters_selection) &
-                (response %in% input$dge_response_selection) &
-                (htb %in% input$dge_htb_selection) &
-                (treatment %in% input$dge_treatment_selection)
+                (clusters %in% dge_clusters_int) &
+                (response %in% dge_response_int) &
+                (htb %in% dge_htb_int) &
+                (treatment %in% dge_treatment_int)
             )#End subset
           }else{
             #For DGE, define subset conditionally based on the group by
@@ -2130,9 +2141,9 @@ server <- function(input,output,session){
                 subset =
                   #Use the vector above for the group_by_variable
                   (clusters %in% clusters_selected_vector) &
-                  (response %in% input$dge_response_selection) &
-                  (htb %in% input$dge_htb_selection) &
-                  (treatment %in% input$dge_treatment_selection)
+                  (response %in% dge_response_int) &
+                  (htb %in% dge_htb_int) &
+                  (treatment %in% dge_treatment_int)
               )#End subset
               
             } else if (input$dge_group_by=="response"){
@@ -2144,10 +2155,10 @@ server <- function(input,output,session){
                 sobj,
                 subset =
                   #Use the vector above for the group_by_variable
-                  (clusters %in% input$dge_clusters_selection) &
+                  (clusters %in% dge_clusters_int) &
                   (response %in% response_selected_vector) &
-                  (htb %in% input$dge_htb_selection) &
-                  (treatment %in% input$dge_treatment_selection)
+                  (htb %in% dge_htb_int) &
+                  (treatment %in% dge_treatment_int)
               )#End subset
               
             } else if (input$dge_group_by=="htb"){
@@ -2159,10 +2170,10 @@ server <- function(input,output,session){
                 sobj,
                 subset =
                   #Use the vector above for the group_by_variable
-                  (clusters %in% input$dge_clusters_selection) &
-                  (response %in% input$dge_response_selection) &
+                  (clusters %in% dge_clusters_int) &
+                  (response %in% dge_response_int) &
                   (htb %in% htb_selected_vector) &
-                  (treatment %in% input$dge_treatment_selection)
+                  (treatment %in% dge_treatment_int)
               )#End subset
               
             } else if (input$dge_group_by=="treatment"){
@@ -2174,9 +2185,9 @@ server <- function(input,output,session){
                 sobj,
                 subset =
                   #Use the vector above for the group_by_variable
-                  (clusters %in% input$dge_clusters_selection) &
-                  (response %in% input$dge_response_selection) &
-                  (htb %in% input$dge_htb_selection) &
+                  (clusters %in% dge_clusters_int) &
+                  (response %in% dge_response_int) &
+                  (htb %in% dge_htb_int) &
                   (treatment %in% treatment_selected_vector)
               )#End subset
             }
@@ -2521,7 +2532,7 @@ server <- function(input,output,session){
                                             #Input id: use group by variable and syntax
                                             #Used for subsetting in other tabs to simplify
                                             #Subset computation when the table is computed
-                                            pickerInput(inputId = ifelse(glue("dge_{input$dge_group_by}_selection") == "dge_clusters_selection", "dge_clusters_selection2", glue("dge_{input$dge_group_by}_selection")),
+                                            pickerInput(inputId = glue("dge_{input$dge_group_by}_selection_group"),
                                                         label = "Choose classes to include in marker computation",
                                                         #Choices: if patient ID
                                                         #is the group by variable,
