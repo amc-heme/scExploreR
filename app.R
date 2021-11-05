@@ -2088,7 +2088,20 @@ server <- function(input,output,session){
           print("Computing Subset")
           #Subset method depends on whether marker identification or
           #dge is selected
-          if (input$dge_mode=="mode_marker"){
+          if (input$dge_mode=="mode_marker" & input$dge_group_by == "clusters"){
+            #Marker identification: create subset based on the subset 
+            #dropdown menus, and include the group_by metadata in the 
+            #subset. The group_by dropdown is named reactively according
+            #to user choice, such that its id matches one of the four below. 
+            rv$dge_s_sub <- subset(
+              sobj,
+              subset =
+                (clusters %in% input$dge_clusters_selection2) &
+                (response %in% input$dge_response_selection) &
+                (htb %in% input$dge_htb_selection) &
+                (treatment %in% input$dge_treatment_selection)
+            )#End subset
+          } else if (input$dge_mode=="mode_marker"){
             #Marker identification: create subset based on the subset 
             #dropdown menus, and include the group_by metadata in the 
             #subset. The group_by dropdown is named reactively according
@@ -2508,7 +2521,7 @@ server <- function(input,output,session){
                                             #Input id: use group by variable and syntax
                                             #Used for subsetting in other tabs to simplify
                                             #Subset computation when the table is computed
-                                            pickerInput(inputId = glue("dge_{input$dge_group_by}_selection"),
+                                            pickerInput(inputId = ifelse(glue("dge_{input$dge_group_by}_selection") == "dge_clusters_selection", "dge_clusters_selection2", glue("dge_{input$dge_group_by}_selection")),
                                                         label = "Choose classes to include in marker computation",
                                                         #Choices: if patient ID
                                                         #is the group by variable,
