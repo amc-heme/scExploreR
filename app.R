@@ -2088,6 +2088,9 @@ server <- function(input,output,session){
           print("Computing Subset")
           #Subset method depends on whether marker identification or
           #dge is selected
+          
+          ## Pick the appropriate input variables bases on the group_by selection
+          ## Not clear why the listing and unlisting is required for a character vector
           dge_clusters_int = unlist(ifelse(
             input$dge_group_by == "clusters",
             list(input$dge_clusters_selection_group),
