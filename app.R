@@ -2086,8 +2086,6 @@ server <- function(input,output,session){
           #Store in reactive variable so it can be accessed by 
           #UMAP eventReactive() function
           print("Computing Subset")
-          #Subset method depends on whether marker identification or
-          #dge is selected
           
           ## Pick the appropriate input variables bases on the group_by selection
           ## Not clear why the listing and unlisting is required for a character vector
@@ -2115,6 +2113,8 @@ server <- function(input,output,session){
             list(input$dge_treatment_selection)
           ))
           
+          #Subset method depends on whether marker identification or
+          #dge is selected
           if (input$dge_mode=="mode_marker"){
             #Marker identification: create subset based on the subset 
             #dropdown menus, and include the group_by metadata in the 
