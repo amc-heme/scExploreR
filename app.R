@@ -1356,16 +1356,20 @@ server <- function(input,output,session){
       #If no split.by variable is specified, create a feature plot without the split.by argument
       if (input$feature_split_by=="none"){
         FeaturePlot(plots_subset(),
-                    features=input$text_features) +
+                    features=input$text_features) &
           #Legend position: "right" if a legend is desired, and "none" if not
+          #Ampersand operator used for feature plots to get legend removal to 
+          #apply to all panels
           theme(legend.position = if (input$feature_legend==TRUE)"right" else "none")
       }
       #Otherwise, split by the user-specified variable
       else {
         FeaturePlot(plots_subset(), 
                     features=input$text_features,
-                    split.by = input$feature_split_by) +
+                    split.by = input$feature_split_by) &
           #Legend position: "right" if a legend is desired, and "none" if not
+          #Ampersand operator used for feature plots to get legend removal to
+          #apply to all panels
           theme(legend.position = if (input$feature_legend==TRUE)"right" else "none")
       }
     }
@@ -1522,7 +1526,7 @@ server <- function(input,output,session){
                 group.by = input$vln_group_by,
                 ncol=input$vln_ncol) +
           #Legend position: "right" if a legend is desired, and "none" if not
-          theme(legend.position = if (input$vln_legend==TRUE)"right" else "none")
+          theme(legend.position = if (input$vln_legend==TRUE) "right" else "none")
       #ncol and split.by
       } else {
         VlnPlot(plots_subset(), 
@@ -1531,7 +1535,7 @@ server <- function(input,output,session){
                 split.by = input$vln_split_by,
                 ncol=input$vln_ncol) +
           #Legend position: "right" if a legend is desired, and "none" if not
-          theme(legend.position = if (input$vln_legend==TRUE)"right" else "none")
+          theme(legend.position = if (input$vln_legend==TRUE) "right" else "none")
       }
     }
   })
