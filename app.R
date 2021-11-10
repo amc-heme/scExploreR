@@ -509,9 +509,14 @@ plots_tab <- function(){
                                                       #If split by is specified, control number 
                                                       #of columns with a slider
                                                       uiOutput(outputId = "umap_ncol_slider"),
-                                                      #Checkbox: add or remove labels (labels on by default)
+                                                      #Checkbox: add or remove labels 
+                                                      #(labels on by default)
                                                       checkboxInput(inputId = "umap_label",
                                                                     label="Label Groups",
+                                                                    value=TRUE),
+                                                      #Checkbox to add or remove Legend
+                                                      checkboxInput(inputId="umap_legend",
+                                                                    label="Include Legend",
                                                                     value=TRUE),
                                                       #UI for user control of plot dimensions, if desired
                                                       manual_dim_UI(plot_type = "umap"),
@@ -530,6 +535,10 @@ plots_tab <- function(){
                                                                   label = "Metadata to split by:",
                                                                   choices=meta_choices, 
                                                                   selected = "none"),
+                                                      #Checkbox to add or remove Legend
+                                                      checkboxInput(inputId="feature_legend",
+                                                                    label="Include Legend",
+                                                                    value=TRUE),
                                                       #UI for user control of plot dimensions, if desired
                                                       manual_dim_UI(plot_type = "feature"),
                                                       #Download button (plot specific)
@@ -554,8 +563,13 @@ plots_tab <- function(){
                                                                   choices=meta_choices,
                                                                   selected = "none"),
                                                       
-                                                      #Slider to control number of columns if multiple features are entered
+                                                      #Slider to control number of columns 
+                                                      #if multiple features are entered
                                                       uiOutput(outputId = "vln_ncol_slider"),
+                                                      #Checkbox to add or remove Legend
+                                                      checkboxInput(inputId="vln_legend",
+                                                                    label="Include Legend",
+                                                                    value=TRUE),
                                                       #UI for user control of plot dimensions, if desired
                                                       manual_dim_UI(plot_type = "vln"),
                                                       #Download button (plot specific)
@@ -570,7 +584,9 @@ plots_tab <- function(){
                                                       #Choose metadata to group dot plot by
                                                       selectInput(inputId = "dot_group_by",
                                                                   label = "Metadata to group by:",
-                                                                  choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
+                                                                  #Remove "none" from selectable 
+                                                                  #options to group by
+                                                                  choices=meta_choices[!meta_choices %in% "none"], 
                                                                   selected = "clusters"),
                                                       
                                                       #Choosing different features
@@ -578,7 +594,8 @@ plots_tab <- function(){
                                                                     label="Use separate features for dot plot", 
                                                                     value=FALSE),
                                                       
-                                                      #If the checkbox above is selected, display a selectize input for feature selection
+                                                      #If the checkbox above is selected, 
+                                                      #display a selectize input for feature selection
                                                       conditionalPanel(condition="input.diff_features_dot==true",
                                                                        #Label
                                                                        tags$p(tags$strong("Enter features to display on dot plot:")),
@@ -596,6 +613,10 @@ plots_tab <- function(){
                                                                                           )
                                                                            )
                                                                        ),
+                                                      #Checkbox to add or remove Legend
+                                                      checkboxInput(inputId="dot_legend",
+                                                                    label="Include Legend",
+                                                                    value=TRUE),
                                                       #UI for user control of plot dimensions, if desired
                                                       manual_dim_UI(plot_type = "dot"),
                                                       #Download button (plot specific)
@@ -1214,7 +1235,9 @@ server <- function(input,output,session){
       DimPlot(plots_subset(), 
               group.by = input$umap_group_by, 
               label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
-              reduction = "umap")
+              reduction = "umap") +
+        #Legend position: "right" if a legend is desired, and "none" if not
+        theme(legend.position = if (input$umap_legend==TRUE)"right" else "none")
     } else {
       #UMAP with split.by defined and no special subset
       DimPlot(plots_subset(), 
@@ -1222,7 +1245,9 @@ server <- function(input,output,session){
               split.by = input$umap_split_by, 
               label = input$umap_label, 
               ncol = input$umap_ncol,
-              reduction = "umap")
+              reduction = "umap") +
+        #Legend position: "right" if a legend is desired, and "none" if not
+        theme(legend.position = if (input$umap_legend==TRUE)"right" else "none")
     }
   })
   
@@ -1331,13 +1356,17 @@ server <- function(input,output,session){
       #If no split.by variable is specified, create a feature plot without the split.by argument
       if (input$feature_split_by=="none"){
         FeaturePlot(plots_subset(),
-                    features=input$text_features)
+                    features=input$text_features) +
+          #Legend position: "right" if a legend is desired, and "none" if not
+          theme(legend.position = if (input$feature_legend==TRUE)"right" else "none")
       }
       #Otherwise, split by the user-specified variable
       else {
         FeaturePlot(plots_subset(), 
                     features=input$text_features,
-                    split.by = input$feature_split_by)
+                    split.by = input$feature_split_by) +
+          #Legend position: "right" if a legend is desired, and "none" if not
+          theme(legend.position = if (input$feature_legend==TRUE)"right" else "none")
       }
     }
   })
@@ -1472,13 +1501,17 @@ server <- function(input,output,session){
       if (input$vln_split_by=="none"){
         VlnPlot(plots_subset(), 
                 features = input$text_features,
-                group.by = input$vln_group_by)
+                group.by = input$vln_group_by) +
+          #Legend position: "right" if a legend is desired, and "none" if not
+          theme(legend.position = if (input$vln_legend==TRUE)"right" else "none")
       #No ncol, split.by
       } else {
         VlnPlot(plots_subset(), 
                 features = input$text_features,
                 group.by = input$vln_group_by,
-                split.by = input$vln_split_by) 
+                split.by = input$vln_split_by) +
+          #Legend position: "right" if a legend is desired, and "none" if not
+          theme(legend.position = if (input$vln_legend==TRUE)"right" else "none")
       }
     #More than one feature entered: use ncol since there are multiple panels
     } else if (length(input$text_features)>1){
@@ -1487,14 +1520,18 @@ server <- function(input,output,session){
         VlnPlot(plots_subset(), 
                 features = input$text_features,
                 group.by = input$vln_group_by,
-                ncol=input$vln_ncol)
+                ncol=input$vln_ncol) +
+          #Legend position: "right" if a legend is desired, and "none" if not
+          theme(legend.position = if (input$vln_legend==TRUE)"right" else "none")
       #ncol and split.by
       } else {
         VlnPlot(plots_subset(), 
                 features = input$text_features,
                 group.by = input$vln_group_by,
                 split.by = input$vln_split_by,
-                ncol=input$vln_ncol) 
+                ncol=input$vln_ncol) +
+          #Legend position: "right" if a legend is desired, and "none" if not
+          theme(legend.position = if (input$vln_legend==TRUE)"right" else "none")
       }
     }
   })
@@ -1634,13 +1671,19 @@ server <- function(input,output,session){
       if (input$diff_features_dot==TRUE){
         DotPlot(plots_subset(),
                 features = input$dot_features,
-                group.by = input$dot_group_by) + RotatedAxis()
+                group.by = input$dot_group_by) + 
+          RotatedAxis() +
+          #Legend position: "right" if a legend is desired, and "none" if not
+          theme(legend.position = if (input$dot_legend==TRUE)"right" else "none")
       }
       else {
         #Check if split.by is specified
         DotPlot(plots_subset(), 
                 features = input$text_features,
-                group.by = input$dot_group_by) + RotatedAxis()
+                group.by = input$dot_group_by) + 
+          RotatedAxis() +
+          #Legend position: "right" if a legend is desired, and "none" if not
+          theme(legend.position = if (input$dot_legend==TRUE)"right" else "none")
       }
     }
   })
