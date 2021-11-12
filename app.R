@@ -29,7 +29,7 @@ library(presto)
 #https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
-#Define searchable features
+##Define searchable features and Metadata ####
 #Gene_expression features
 genes <- rownames(sobj)
 
@@ -45,10 +45,10 @@ feature_list <- function(assay, prefix_machine, suffix_human) {
   split(machine_readable, human_readable)
 }
 
-### ADT features
+###ADT features
 adt_list <- feature_list("ADT", "adt_", " (Surface Protein)")
 
-### Gene Signatures
+###Gene Signatures
 sig_list <- feature_list("SIG", "sig_", " (Gene Signature)")
 
 #Metadata columns (only numeric columns can be plotted)
@@ -74,7 +74,21 @@ meta_choices <- c("None"="none",
                   "Timepoint (Approximate)"="treatment",
                   "Patient ID"="htb")
 
-###Correlations tab: define valid metadata selections
+##Plots tab ####
+#Store UMAP Dimensions of full object
+#This is used to allow plotting of subsets with original axes scales
+#Plot a UMAP of the full data, store it to memory, and record the
+#x and y limits of the plot
+umap_orig <- DimPlot(sobj, 
+                      group.by = "clusters")
+#Record limits
+xlim_orig <- layer_scales(umap_orig)$x$range$range
+ylim_orig <- layer_scales(umap_orig)$y$range$range
+
+#Store number of cells: used to determine if it is a subset
+n_cells_original <- ncol(sobj)
+
+##Correlations tab: define valid metadata selections ####
 #Clusters dropdown
 clusters <- levels(unique(sobj$clusters)) 
 
@@ -104,7 +118,7 @@ choices <- list("clusters"=clusters,
 #Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
-### Functions Used 
+# Functions Used ##### 
 ### Manual_dim_UI ###
 #Creates two slider-text box pairs for manual control of the height and width of a plot.
 manual_dim_UI <- function(plot_type,
@@ -165,7 +179,7 @@ manual_dim_UI <- function(plot_type,
   
   div(#Create checkbox: if checked, manual dimensions for the plot will be used according to inputs below.
     checkboxInput(inputId = checkbox_id,
-                  label="Manually adjust plot dimensions",
+                  label="Manually Adjust Plot Dimensions",
                   value=FALSE),
     
     #Panel below displays when box is checked.
@@ -377,7 +391,7 @@ sort_patient_list <- function(patient_list){
 patients_categories <- sort_patient_list(patients_categories)
 ###
 
-### Table of Contents
+# Table of Contents #####
 # 1. User Interface Functions
 #   1.1. Plots
 #     1.1.1. Sidebar Panel
@@ -498,12 +512,12 @@ plots_tab <- function(){
                                                       active=TRUE,
                                                       #Choose metadata to group UMAP by
                                                       selectInput(inputId = "umap_group_by", 
-                                                                  label = "Metadata to group by:",
+                                                                  label = "Metadata to Group by:",
                                                                   choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
                                                                   selected = "clusters"),
                                                       #Choose metadata to split UMAP by
                                                       selectInput(inputId = "umap_split_by", 
-                                                                  label = "Metadata to split by:",
+                                                                  label = "Metadata to Split By:",
                                                                   choices=meta_choices, #Experimental 
                                                                   selected = "none"),
                                                       #If split by is specified, control number 
@@ -518,10 +532,13 @@ plots_tab <- function(){
                                                       checkboxInput(inputId="umap_legend",
                                                                     label="Include Legend",
                                                                     value=TRUE),
+                                                      #If plotting a subset: checkbox to use 
+                                                      #original dimensions 
+                                                      uiOutput(outputId="umap_limits_checkbox"),
                                                       #UI for user control of plot dimensions, if desired
                                                       manual_dim_UI(plot_type = "umap"),
                                                       #Download button (plot specific)
-                                                      downloadButton(outputId = "umap_download",label="Download UMAP")
+                                                      downloadButton(outputId = "umap_download", label="Download UMAP")
                                                       )#End collapsible panel
                                     ),#End 1.1.1.4.
                    
@@ -853,7 +870,7 @@ ui <- tagList(
   includeScript("www/button_wizzard.js")
 )
 
-### 2. Server function (builds interactive plot to display in UI) #####
+# 2. Server function (builds interactive plot to display in UI) #####
 server <- function(input,output,session){
   #2.0. Initialize Session
   #2.0.1. Initialize Reactive Values
@@ -904,8 +921,8 @@ server <- function(input,output,session){
             )
   })
   
-  ### 2.1. Plots Tab #####
-  #2.1.1 Define subset for plots 
+  ## 2.1. Plots Tab #####
+  ### 2.1.1 Define subset for plots #####
   #2.1.1.1. Update choices in subset selection menu based on user selections
   #Update patients menu based on entries in 'response' or 'treatment' (timepoint)
   observeEvent(c(input$plots_response_selection,input$plots_treatment_selection),
@@ -957,7 +974,7 @@ server <- function(input,output,session){
                  waiter_hide("plots_subset_panel")
                })
   
-  #2.1.1.2. Construct subset after "Apply Subset" button is clicked
+  # 2.1.1.2. Construct subset after "Apply Subset" button is clicked
   plots_subset <- eventReactive(input$plots_subset_submit,
                                 ignoreNULL=FALSE,
                                 label = "Plots Subset", 
@@ -1148,8 +1165,8 @@ server <- function(input,output,session){
                })
   
   
-  #2.1.2. UMAP plot
-  #2.1.2.1. Reactive UMAP plot dimensions
+  ### 2.1.2. UMAP plot #######
+  #### 2.1.2.1. Reactive UMAP plot dimensions ####
   #Width
   #Update text box to match slider when the slider is changed
   observeEvent(input$umap_width,{
@@ -1178,7 +1195,7 @@ server <- function(input,output,session){
     input$umap_height
   })
   
-  #2.1.2.2. ncol slider: appears when a split.by 
+  #### 2.1.2.2. ncol slider: appears when a split.by ####
   #Default value depends on the number of values in the metadata object in question.
   #Updates when the split_by argument or the subset is changed
   umap_ncol_slider <- eventReactive(c(input$umap_split_by,input$plots_subset_submit), 
@@ -1206,7 +1223,7 @@ server <- function(input,output,session){
       
       #Create/update slider input
       sliderInput(inputId = "umap_ncol",
-                  label = "Number of columns: ",
+                  label = "Number of Columns: ",
                   min = 1,
                   max = n_panel, #Max value: equal to the number of levels in the given variable
                   step = 1, #Only allow integer values
@@ -1215,7 +1232,28 @@ server <- function(input,output,session){
     } #End else
   })
   
-  #2.1.2.3. Generate UI for UMAP plot: renders a plotOutput() with either automatic or manually specified dimensions based on user specifications
+  #### 2.1.2.3. UI to specify original axis limits when a subset is plotted ####
+  umap_limits_checkbox <- eventReactive(input$plots_subset_submit,
+                                        label = "UMAP Limits UI",
+                                        {
+                                          #Checkbox will only appear when a subset 
+                                          #is selected.The presence of a subset 
+                                          #will be tested by observing the number 
+                                          #of cells in the subset
+                                          if (n_cells_original != ncol(plots_subset())) {
+                                            checkboxInput(inputId = "umap_original_limits",
+                                                          label = "Use Original Axes Limits",
+                                                          value = FALSE)
+                                          }else {
+                                            #Display nothing when the number of
+                                            #cells are equal between the subset
+                                            #and the full dataset
+                                            NULL
+                                          }
+                                        })
+  
+  #### 2.1.2.4. Generate UI for UMAP plot: renders a plotOutput() with either ####
+  #automatic or manually specified dimensions based on user specifications
   umap_UI <- reactive({
     if (input$umap_manual_dim==FALSE){
       plotOutput(outputId = "umap_slot_plot")
@@ -1226,49 +1264,97 @@ server <- function(input,output,session){
     }
   })
   
-  #2.1.2.4. Define UMAP Plot Content
+  #### 2.1.2.5. Define UMAP Plot ####
   #Plot content is defined separately in a reactive context, to be rendered later with the UI.
-  umap_plot_content <- reactive({
+  umap_plot <- reactive({
     #Produce a single UMAP plot if no features to split by are specified
     if (input$umap_split_by=="none"){
       #Use full object if is_subset is FALSE, and use the subset otherwise
-      DimPlot(plots_subset(), 
-              group.by = input$umap_group_by, 
-              label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
-              reduction = "umap") +
-        #Legend position: "right" if a legend is desired, and "none" if not
-        theme(legend.position = if (input$umap_legend==TRUE)"right" else "none")
+      dimplot <- DimPlot(plots_subset(), 
+                         group.by = input$umap_group_by, 
+                         label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
+                         reduction = "umap") 
     } else {
       #UMAP with split.by defined and no special subset
-      DimPlot(plots_subset(), 
-              group.by = input$umap_group_by, 
-              split.by = input$umap_split_by, 
-              label = input$umap_label, 
-              ncol = input$umap_ncol,
-              reduction = "umap") +
-        #Legend position: "right" if a legend is desired, and "none" if not
-        theme(legend.position = if (input$umap_legend==TRUE)"right" else "none")
+      dimplot <- DimPlot(plots_subset(),
+                         group.by = input$umap_group_by,
+                         split.by = input$umap_split_by,
+                         label = input$umap_label,
+                         ncol = input$umap_ncol,
+                         reduction = "umap") 
     }
   })
   
-  #2.1.2.5. Render UI Components
+  #### 2.1.2.6. Add Layers to Plot content
+  umap_plot_content <- eventReactive(c(input$umap_original_limits,input$umap_legend),
+                                     label="Add Layers to UMAP",
+                                     {
+                                       #Layers: a list of extra layers to apply 
+                                       #to the plot after creation, based on user 
+                                       #input (works well with conditionals)
+                                       layers <- list(
+                                         #Element A 
+                                         #Legend position: "right" if a legend is desired, and "none" if not
+                                         theme(legend.position = if (input$umap_legend==TRUE)"right" else "none"),
+                                         
+                                         #B-C. Axis limits: use limits from full dataset if specified
+                                         #Element B
+                                         #Must first test to see if subset is present
+                                         #Input container does not exist if there is no subset
+                                         if(n_cells_original != ncol(plots_subset())){
+                                           #Add original limits to the list if the 
+                                           #corresponding checkbox is checked
+                                           if (input$umap_original_limits==TRUE)scale_x_continuous(limits=xlim_orig)
+                                         },
+                                         #Element C
+                                         #Check for subset (input container in 
+                                         #child conditional does not exist 
+                                         #before a subset is created)
+                                         if(n_cells_original != ncol(plots_subset())){
+                                           #Add original limits to the list if the 
+                                           #corresponding checkbox is checked
+                                           if(input$umap_original_limits==TRUE)scale_y_continuous(limits=ylim_orig) 
+                                         }
+                                       )
+                                       
+                                       #Modify the plot created in eventReactive
+                                       #function using the layers defined above
+                                       umap_plot_content <- umap_plot() &
+                                         layers
+                                       
+                                       #Return plot to umap_plot_content()
+                                       umap_plot_content
+                                     })
+  
+  #### 2.1.2.7. Render UI Components ###
   output$umap_slot <- renderUI({umap_UI()})
   
   output$umap_ncol_slider <- renderUI({umap_ncol_slider()})
   
-  #2.1.2.6. Render UMAP plot, with manual or automatic dimensions as specified
-  #ObserveEvent will respond to the check box and the slider/text box pairs (other variables involved in plot construction are updated separately in the reactive function above)
-  observeEvent(c(input$umap_manual_dim, input$umap_width, input$umap_width_text, input$umap_height,input$umap_height_text),{
-    if (input$umap_manual_dim==FALSE){
-      output$umap_slot_plot <- renderPlot(umap_plot_content())
-    } else {
-      output$umap_slot_plot <- renderPlot(umap_plot_content(), 
-                                width = umap_width(), 
-                                height = umap_height())
-    }
-  })
+  output$umap_limits_checkbox <- renderUI({umap_limits_checkbox()})
   
-  #2.1.2.7. Download UMAP Plot
+  #### 2.1.2.8. Render UMAP plot, with manual or automatic dimensions as specified #####
+  #ObserveEvent will respond to the check box and the slider/text box pairs 
+  #(other variables involved in plot construction will also cause the plot to
+  #re-render)
+  observeEvent(
+    c(input$umap_manual_dim, 
+                 input$umap_width, 
+                 input$umap_width_text, 
+                 input$umap_height,
+                 input$umap_height_text),
+    {
+      if (input$umap_manual_dim==FALSE){
+        output$umap_slot_plot <- renderPlot(umap_plot_content())
+        } else {
+          output$umap_slot_plot <- renderPlot(umap_plot_content(), 
+                                              width = umap_width(), 
+                                              height = umap_height())
+          }
+      }
+    )
+  
+  #### 2.1.2.8. Download UMAP Plot ####
   output$umap_download <- downloadHandler(
     filename = "UMAP_plot.png",
     content = function(file){
@@ -1292,8 +1378,8 @@ server <- function(input,output,session){
   
   #Feature and Violin Plots: choose whether to render a plot or a message based on user inputs
   
-  #2.1.3. Feature Plot 
-  #2.1.3.1 Reactive dimensions
+  ### 2.1.3. Feature Plot ##### 
+  #### 2.1.3.1 Reactive dimensions ####
   
   ##Sync width inputs
   #Update text box to match slider value when slider is changed
@@ -1328,7 +1414,7 @@ server <- function(input,output,session){
     input$feature_height
   })
   
-  #2.1.3.2 Feature UI
+  #### 2.1.3.2 Feature UI ####
   feature_slot_UI <- reactive({
     #Condition A: no features have been entered yet
     if (length(input$text_features)==0){
@@ -1350,7 +1436,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.1.3.3. Generate content for plot (but only if features are entered)
+  #### 2.1.3.3. Generate content for plot (but only if features are entered) ####
   feature_plot_content <- reactive({
     if (length(input$text_features)>0){
       #If no split.by variable is specified, create a feature plot without the split.by argument
@@ -1375,7 +1461,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.1.3.4. Render the UI and plot objects created above
+  #### 2.1.3.4. Render the UI and plot objects created above ####
   #UI
   output$feature_slot <- renderUI({feature_slot_UI()})
   
@@ -1392,7 +1478,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.1.3.5. Feature Plot Download
+  #### 2.1.3.5. Feature Plot Download ####
   output$feature_download <- downloadHandler(
     filename = "Feature_plot.png",
     content = function(file){
@@ -1413,8 +1499,8 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  #2.1.4. Violin plot
-  #2.1.4.1 Reactive plot dimensions
+  ### 2.1.4. Violin plot ######
+  #### 2.1.4.1 Reactive plot dimensions ####
   ##Sync width inputs
   #Update text box to match slider value when slider is changed
   observeEvent(input$vln_width,{
@@ -1448,13 +1534,14 @@ server <- function(input,output,session){
     input$vln_height
   })
   
-  #2.1.4.2. Slider to control number of columns when multiple features are entered
+  #### 2.1.4.2. Slider to control number of columns when multiple features are entered ####
   vln_ncol_slider <- eventReactive(input$text_features, ignoreNULL = FALSE,{
     #Only display slider when there is more than one feature
     if (length(input$text_features) <= 1){
       ui <- NULL
     } else {
-      #Default number of columns: equal to the number of panels if there are less than four, otherwise equal to two
+      #Default number of columns: equal to the number of panels if there are 
+      #less than four, otherwise equal to two
       #Number of panels equals number of features for violin plots
       if (length(input$text_features)<4){
         default_col <- length(input$text_features)
@@ -1474,7 +1561,7 @@ server <- function(input,output,session){
     ui
   })
   
-  #2.1.4.3. Code for conditional UI
+  #### 2.1.4.3. Code for conditional UI ####
   vln_slot_UI <- reactive({
     #Condition A: no features have been entered yet
     if (length(input$text_features)==0){
@@ -1496,7 +1583,7 @@ server <- function(input,output,session){
     
   })
   
-  #2.1.4.4. Code for content
+  #### 2.1.4.4. Code for content ####
   vln_plot_content <- reactive({
     #If/else if structure: code runs when one or more features are entered.
     #One feature entered: do not need ncol argument
@@ -1540,7 +1627,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.1.4.5. Render UI components and content for violin plot
+  #### 2.1.4.5. Render UI components and content for violin plot ####
   output$vln_slot <- renderUI({vln_slot_UI()})
   
   #ncol slider
@@ -1558,7 +1645,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.1.4.6. Violin Plot Download
+  #### 2.1.4.6. Violin Plot Download ####
   output$vln_download <- downloadHandler(
     filename = "Violin_plot.png",
     content = function(file){
@@ -1579,8 +1666,8 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  #2.1.5. Dot plot
-  #2.1.5.1. Reactive plot dimensions
+  ### 2.1.5. Dot plot #####
+  #### 2.1.5.1. Reactive plot dimensions ######
   ##Sync width inputs
   #Update text box to match slider value when slider is changed
   observeEvent(input$dot_width,{
@@ -1614,7 +1701,7 @@ server <- function(input,output,session){
     input$dot_height
   })
   
-  #2.1.5.2. Feature choices
+  #### 2.1.5.2. Feature choices #####
   #First observeEvent() function
   #The function below responds to each feature entered while the "use separate features for dot plot" checkbox is not checked. It is designed to load the selected options in the background before the user checks the box, making them immediately available when the box is checked 
   observeEvent(input$text_features,
@@ -1640,7 +1727,7 @@ server <- function(input,output,session){
                                          server=TRUE)}
                   })
   
-  #2.1.5.3. Generate UI for dot plot
+  #### 2.1.5.3. Generate UI for dot plot #####
   #Use reactive instead of eventReactive since the update button is no longer in use
   dot_slot_UI <- reactive({
     #Condition A: no features are entered, and use of generic features is selected
@@ -1667,7 +1754,7 @@ server <- function(input,output,session){
     }
     })
   
-  #2.1.5.4. Generate dot plot content
+  #### 2.1.5.4. Generate dot plot content #####
   dot_plot_content <- reactive({
     #Only renders if condition C in 2.5.2 is met
     if (((input$diff_features_dot==FALSE)&(length(input$text_features)>=1))|((input$diff_features_dot==TRUE)&(length(input$dot_features)>=1))){
@@ -1692,7 +1779,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.1.5.5. Render dot plot UI and content
+  #### 2.1.5.5. Render dot plot UI and content ####
   #UI
   output$dot_slot <- renderUI({dot_slot_UI()})
   
@@ -1709,7 +1796,7 @@ server <- function(input,output,session){
     }
   })
   
-  #2.1.5.6. Dot Plot Download
+  #### 2.1.5.6. Dot Plot Download #####
   output$dot_download <- downloadHandler(
     filename = "Dot_plot.png",
     content = function(file){
@@ -1730,8 +1817,8 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  ### 2.2. DGE Tab #####
-  #2.2.1. Reactive dropdown menus 
+  ## 2.2. DGE Tab #####
+  ### 2.2.1. Reactive dropdown menus 
   #2.2.1.1. Reactive dropdown menu for patient 
   # The code in this section is duplicated from section 2.3.1, and should be rewritten as a function to avoid redundancy.
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
