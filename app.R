@@ -423,9 +423,9 @@ plots_tab <- function(){
   fluidPage(
     #Sidebar layout: consists of a side panel and a main panel
     sidebarLayout(
-      ### 1.1.1. Sidebar panel for user input ###
+      ### 1.1.1. Sidebar panel for user input ####
       sidebarPanel(fluid=FALSE,
-                   ### 1.1.1.1 Checkboxes for choosing desired plot
+                   #### 1.1.1.1 Checkboxes for choosing desired plot ####
                    # Two-column checkboxes: put inside inline block elements 
                    #that span half of the sidebar panel
                    div(class="two_column",
@@ -460,9 +460,10 @@ plots_tab <- function(){
                                        status = "default")
                         ),#End div
                    
-                   ### 1.1.1.2. Feature Text Entry. Applies to feature, violin, 
-                   #and dot plots unless the user specifies the use of different 
-                   #features for each plot (currently only possible for dot plots) 
+                   #### 1.1.1.2. Feature Text Entry. ####  
+                   #Applies to feature, violin, and dot plots unless the user 
+                   #specifies the use of different features for each plot 
+                   #(this is currently only possible for dot plots) 
                    conditionalPanel(condition="input.make_feature==true | input.make_vln==true | input.make_dot==true",
                                     #Label
                                     tags$p(tags$strong("Enter features to display on plots:")),
@@ -484,7 +485,7 @@ plots_tab <- function(){
                                     div(style="margin-top: 0px; margin-bottom: 10px;",uiOutput(outputId = "feature_error"))
                                     ),#End 1.1.1.2.
                    
-                   ###1.1.1.3. Subsets for Plots
+                   #### 1.1.1.3. Subsets for Plots ####
                    collapsible_panel(label="Subset Options",
                                      active=FALSE,
                                      div(id="plots_subset_panel",
@@ -506,14 +507,16 @@ plots_tab <- function(){
                           ),#End 1.1.1.3
                    
                    ### Plot Specific Options ###
-                   #1.1.1.4. Options specific to UMAP: panel will display if UMAP is checked
+                   #### 1.1.1.4. Options specific to UMAP ####
+                   #Panel will display if UMAP is checked
                    conditionalPanel(condition = "input.make_umap==true",
                                     collapsible_panel(label="UMAP Specific Options",
                                                       active=TRUE,
                                                       #Choose metadata to group UMAP by
                                                       selectInput(inputId = "umap_group_by", 
                                                                   label = "Metadata to Group by:",
-                                                                  choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group by
+                                                                  #Remove "none" from selectable options to group by
+                                                                  choices=meta_choices[!meta_choices %in% "none"], 
                                                                   selected = "clusters"),
                                                       #Choose metadata to split UMAP by
                                                       selectInput(inputId = "umap_split_by", 
@@ -542,7 +545,7 @@ plots_tab <- function(){
                                                       )#End collapsible panel
                                     ),#End 1.1.1.4.
                    
-                   #1.1.1.5. Options specific to feature plot
+                   #### 1.1.1.5. Options specific to feature plot ####
                    conditionalPanel(condition = "input.make_feature==true",
                                     collapsible_panel(label = "Feature Plot Specific Options",
                                                       active = FALSE,
@@ -556,6 +559,9 @@ plots_tab <- function(){
                                                       checkboxInput(inputId="feature_legend",
                                                                     label="Include Legend",
                                                                     value=TRUE),
+                                                      #If plotting a subset: checkbox to use 
+                                                      #original dimensions 
+                                                      uiOutput(outputId="feature_limits_checkbox"),
                                                       #UI for user control of plot dimensions, if desired
                                                       manual_dim_UI(plot_type = "feature"),
                                                       #Download button (plot specific)
@@ -564,7 +570,7 @@ plots_tab <- function(){
                                                       )#End collapsible_panel
                                     ),#End 1.1.1.5
                    
-                   #1.1.1.6. Options specific to violin plot
+                   #### 1.1.1.6. Options specific to violin plot ####
                    conditionalPanel(condition = "input.make_vln==true",
                                     collapsible_panel(label = "Violin Plot Specific Options",
                                                       active=FALSE,
@@ -594,7 +600,7 @@ plots_tab <- function(){
                                                       )#End collapsible panel
                                     ), #End 1.1.1.6.
                    
-                   #1.1.1.7. Options specific to dot plot
+                   #### 1.1.1.7. Options specific to dot plot ####
                    conditionalPanel(condition = "input.make_dot==true",
                                     collapsible_panel(label="Dot Plot Specific Options",
                                                       active=FALSE,
@@ -642,7 +648,7 @@ plots_tab <- function(){
                                     ) #End 1.1.1.7
                    ), #End 1.1.1.
       
-      ###1.1.2. Main panel for displaying plot output###
+      ### 1.1.2. Main panel for displaying plot output ####
       mainPanel(
         #div added to contain Waiter spinner (forces the spinner to cover the full main panel)
         div(id="plots_main_panel", 
@@ -652,7 +658,7 @@ plots_tab <- function(){
             conditionalPanel(condition = "input.make_umap==true",
                              uiOutput(outputId = "umap_slot")),
             
-            #1.1.2.2. Panel for feature plot
+            #1.1.2.2. Panel for feature plot 
             #Will be a message or a plot, depending on whether features have been entered
             conditionalPanel(condition = "input.make_feature==true",
                              uiOutput(outputId = "feature_slot")),
@@ -884,6 +890,10 @@ server <- function(input,output,session){
   #the full object. This is FALSE initially and set to TRUE when the user chooses
   #a subset.
   rv$is_subset <- FALSE
+  #*_use_original_limits: if TRUE, modify the axes on UMAP and feature plots to
+  #match the original UMAPs created from the full dataset
+  rv$umap_use_original_limits=FALSE
+  rv$feature_use_original_limits=FALSE
     
   #2.0.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
@@ -1165,7 +1175,7 @@ server <- function(input,output,session){
                })
   
   
-  ### 2.1.2. UMAP plot #######
+  ### 2.1.2. UMAP plot ####
   #### 2.1.2.1. Reactive UMAP plot dimensions ####
   #Width
   #Update text box to match slider when the slider is changed
@@ -1270,22 +1280,22 @@ server <- function(input,output,session){
     #Produce a single UMAP plot if no features to split by are specified
     if (input$umap_split_by=="none"){
       #Use full object if is_subset is FALSE, and use the subset otherwise
-      dimplot <- DimPlot(plots_subset(), 
-                         group.by = input$umap_group_by, 
-                         label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
-                         reduction = "umap") 
+      DimPlot(plots_subset(),
+              group.by = input$umap_group_by,
+              label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
+              reduction = "umap") 
     } else {
       #UMAP with split.by defined and no special subset
-      dimplot <- DimPlot(plots_subset(),
-                         group.by = input$umap_group_by,
-                         split.by = input$umap_split_by,
-                         label = input$umap_label,
-                         ncol = input$umap_ncol,
-                         reduction = "umap") 
+      DimPlot(plots_subset(),
+              group.by = input$umap_group_by,
+              split.by = input$umap_split_by,
+              label = input$umap_label,
+              ncol = input$umap_ncol,
+              reduction = "umap") 
     }
   })
   
-  #### 2.1.2.6. Add Layers to Plot content
+  #### 2.1.2.6. Add ggplot Layers to modify plot content
   umap_plot_content <- eventReactive(c(input$umap_original_limits,input$umap_legend),
                                      label="Add Layers to UMAP",
                                      {
@@ -1327,11 +1337,17 @@ server <- function(input,output,session){
                                      })
   
   #### 2.1.2.7. Render UI Components ###
-  output$umap_slot <- renderUI({umap_UI()})
+  output$umap_slot <- renderUI({
+    umap_UI()
+    })
   
-  output$umap_ncol_slider <- renderUI({umap_ncol_slider()})
+  output$umap_ncol_slider <- renderUI({
+    umap_ncol_slider()
+    })
   
-  output$umap_limits_checkbox <- renderUI({umap_limits_checkbox()})
+  output$umap_limits_checkbox <- renderUI({
+    umap_limits_checkbox()
+    })
   
   #### 2.1.2.8. Render UMAP plot, with manual or automatic dimensions as specified #####
   #ObserveEvent will respond to the check box and the slider/text box pairs 
@@ -1354,7 +1370,7 @@ server <- function(input,output,session){
       }
     )
   
-  #### 2.1.2.8. Download UMAP Plot ####
+  #### 2.1.2.9. Download UMAP Plot ####
   output$umap_download <- downloadHandler(
     filename = "UMAP_plot.png",
     content = function(file){
@@ -1414,7 +1430,26 @@ server <- function(input,output,session){
     input$feature_height
   })
   
-  #### 2.1.3.2 Feature UI ####
+  #### 2.1.3.2 UI to specify origional access limits ####
+  #Appears only when a subset is plotted
+  feature_limits_checkbox <- eventReactive(input$plots_subset_submit,
+                                        label = "Feature Limits UI",
+                                        {
+                                          #Checkbox will only appear when a subset 
+                                          #is selected.The presence of a subset 
+                                          #will be tested by observing the number 
+                                          #of cells in the subset
+                                          print("Code to build feature limits checkbox")
+                                          if (n_cells_original != ncol(plots_subset())) {
+                                            checkboxInput(inputId = "feature_original_limits",
+                                                          label = "Use Original Axes Limits",
+                                                          value = FALSE)
+                                          } else {
+                                            NULL
+                                          }
+                                        })
+  
+  #### 2.1.3.3 Feature UI ####
   feature_slot_UI <- reactive({
     #Condition A: no features have been entered yet
     if (length(input$text_features)==0){
@@ -1436,34 +1471,88 @@ server <- function(input,output,session){
     }
   })
   
-  #### 2.1.3.3. Generate content for plot (but only if features are entered) ####
+  #### 2.1.3.4. Server Component for Original Axes Checkbox
+  #Right after a subset is specified, an error appears saying that the condition
+  #for computing original axes does not exist. This is likely due to the fact that
+  #the input for specifying original axes is created after the subset is submitted
+  #and the new plot drawn, and the conditional relying on that input is within the
+  #plotting function.
+  observeEvent(input$feature_original_limits,
+               label="Toggle Limits: Feature Plot",
+               {
+                 #Set the reactive value based on the state of the input
+                 #Reactive value was created on startup so it always has a value
+                 if (input$feature_original_limits==TRUE){
+                   rv$feature_use_original_limits=TRUE
+                 } else{
+                   rv$feature_use_original_limits=FALSE
+                 }
+               })
+  
+  #### 2.1.3.4. Generate content for plot (but only if features are entered) ####
   feature_plot_content <- reactive({
     if (length(input$text_features)>0){
       #If no split.by variable is specified, create a feature plot without the split.by argument
       if (input$feature_split_by=="none"){
-        FeaturePlot(plots_subset(),
-                    features=input$text_features) &
-          #Legend position: "right" if a legend is desired, and "none" if not
-          #Ampersand operator used for feature plots to get legend removal to 
-          #apply to all panels
-          theme(legend.position = if (input$feature_legend==TRUE)"right" else "none")
+        feature_plot <- FeaturePlot(plots_subset(),
+                                    features=input$text_features)
       }
       #Otherwise, split by the user-specified variable
       else {
-        FeaturePlot(plots_subset(), 
-                    features=input$text_features,
-                    split.by = input$feature_split_by) &
-          #Legend position: "right" if a legend is desired, and "none" if not
-          #Ampersand operator used for feature plots to get legend removal to
-          #apply to all panels
-          theme(legend.position = if (input$feature_legend==TRUE)"right" else "none")
+        feature_plot <- FeaturePlot(plots_subset(), 
+                                    features=input$text_features,
+                                    split.by = input$feature_split_by)
       }
+      
+      #Add ggplot layers to modify plot
+      #Layers: a list of ggplot layers, based on user input (list works well 
+      #with conditionals)
+      layers <- list(
+        #Element A 
+        #Legend position: "right" if a 
+        #legend is desired, and "none" if not
+        theme(legend.position = if (input$feature_legend==TRUE)"right" else "none"),
+        
+        #B-C. Axis limits: use limits from full dataset if specified
+        #Element B
+        #Must first test to see if subset is present
+        #Input container does not exist if there is no subset
+        if(n_cells_original != ncol(plots_subset())){
+          #Add original limits to the list if the 
+          #corresponding checkbox is checked
+          if (rv$feature_use_original_limits==TRUE) scale_x_continuous(limits=xlim_orig)
+        },
+        #Element C
+        #Check for subset (input container in 
+        #child conditional does not exist 
+        #before a subset is created)
+        if(n_cells_original != ncol(plots_subset())){
+          #Add original limits to the list if the 
+          #corresponding checkbox is checked
+          if(rv$feature_use_original_limits==TRUE) scale_y_continuous(limits=ylim_orig) 
+        }
+      )
+      
+      #Modify the plot created in eventReactive
+      #function using the layers defined above
+      feature_plot_content <- feature_plot &
+        layers
+      
+      #Return plot to feature_plot_content()
+      feature_plot_content
     }
   })
   
-  #### 2.1.3.4. Render the UI and plot objects created above ####
+  #### 2.1.3.5. Render the UI and plot objects created above ####
   #UI
-  output$feature_slot <- renderUI({feature_slot_UI()})
+  output$feature_slot <- renderUI({
+    feature_slot_UI()
+    })
+  
+  #Limits checkbox
+  output$feature_limits_checkbox <- renderUI({
+    feature_limits_checkbox()
+  })
   
   #Plot: width of plot will be either automatically determined or manually set to user specifications based on whether user requests manual control of dimensions.
   observeEvent(c(input$feature_manual_dim, input$feature_width, input$feature_width_text, input$feature_height,input$feature_height_text),{
@@ -1478,7 +1567,7 @@ server <- function(input,output,session){
     }
   })
   
-  #### 2.1.3.5. Feature Plot Download ####
+  #### 2.1.3.6. Feature Plot Download ####
   output$feature_download <- downloadHandler(
     filename = "Feature_plot.png",
     content = function(file){
