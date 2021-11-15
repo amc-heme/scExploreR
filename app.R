@@ -1274,67 +1274,82 @@ server <- function(input,output,session){
     }
   })
   
-  #### 2.1.2.5. Define UMAP Plot ####
+  #### 2.1.3.5. Server Component for Original Axes Checkbox ####
+  #Right after a subset is specified, an error appears saying that the condition
+  #for computing original axes (input$umap_original_limits) does not exist. This 
+  #likely occurs because the input for specifying original axes is created after 
+  #the subset is submitted and the new plot drawn, and the conditional relying 
+  #on that input is within the plotting function.
+  observeEvent(input$umap_original_limits,
+               label="Toggle Limits: UMAP Plot",
+               {
+                 #Set the reactive value based on the state of the input
+                 #Reactive value was created on startup so it always has a value
+                 if (input$umap_original_limits==TRUE){
+                   rv$umap_use_original_limits=TRUE
+                 } else{
+                   rv$umap_use_original_limits=FALSE
+                 }
+               })
+  
+  #### 2.1.2.6. Define UMAP Plot ####
   #Plot content is defined separately in a reactive context, to be rendered later with the UI.
-  umap_plot <- reactive({
+  umap_plot_content <- reactive({
     #Produce a single UMAP plot if no features to split by are specified
     if (input$umap_split_by=="none"){
       #Use full object if is_subset is FALSE, and use the subset otherwise
-      DimPlot(plots_subset(),
-              group.by = input$umap_group_by,
-              label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
-              reduction = "umap") 
+      umap_plot <- DimPlot(plots_subset(),
+                           group.by = input$umap_group_by,
+                           label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
+                           reduction = "umap") 
     } else {
       #UMAP with split.by defined and no special subset
-      DimPlot(plots_subset(),
-              group.by = input$umap_group_by,
-              split.by = input$umap_split_by,
-              label = input$umap_label,
-              ncol = input$umap_ncol,
-              reduction = "umap") 
+      umap_plot <- DimPlot(plots_subset(),
+                           group.by = input$umap_group_by,
+                           split.by = input$umap_split_by,
+                           label = input$umap_label,
+                           ncol = input$umap_ncol,
+                           reduction = "umap") 
     }
+    
+    #Modify plot after creation with ggplot layers according to user input
+    #'layers' is a list of layers that is applied to the plot
+    #List format works more effectively with conditional statements
+    layers <- list(
+      #Element A 
+      #Legend position: "right" if a legend is desired, and "none" if not
+      theme(legend.position = if (input$umap_legend==TRUE)"right" else "none"),
+      
+      #B-C. Axis limits: use limits from full dataset if specified
+      #Element B
+      #Must first test to see if subset is present
+      #Input container does not exist if there is no subset
+      if(n_cells_original != ncol(plots_subset())){
+        #Add original limits to the list if the 
+        #corresponding checkbox is checked
+        #The conditional is tied to a reactive value instead of the input to avoid
+        #An error that occurs when this function is evaluated before the input is 
+        #defined. 
+        if (rv$umap_use_original_limits==TRUE) scale_x_continuous(limits=xlim_orig)
+      },
+      #Element C
+      #Check for subset (input container in 
+      #child conditional does not exist 
+      #before a subset is created)
+      if(n_cells_original != ncol(plots_subset())){
+        #Add original limits to the list if the 
+        #corresponding checkbox is checked
+        if(rv$umap_use_original_limits==TRUE) scale_y_continuous(limits=ylim_orig) 
+      }
+    )
+    
+    #Modify the plot using the layers defined above
+    umap_plot <- umap_plot &
+      layers
+    
+    #Return plot to umap_plot_content()
+    umap_plot
   })
-  
-  #### 2.1.2.6. Add ggplot Layers to modify plot content
-  umap_plot_content <- eventReactive(c(input$umap_original_limits,input$umap_legend),
-                                     label="Add Layers to UMAP",
-                                     {
-                                       #Layers: a list of extra layers to apply 
-                                       #to the plot after creation, based on user 
-                                       #input (works well with conditionals)
-                                       layers <- list(
-                                         #Element A 
-                                         #Legend position: "right" if a legend is desired, and "none" if not
-                                         theme(legend.position = if (input$umap_legend==TRUE)"right" else "none"),
-                                         
-                                         #B-C. Axis limits: use limits from full dataset if specified
-                                         #Element B
-                                         #Must first test to see if subset is present
-                                         #Input container does not exist if there is no subset
-                                         if(n_cells_original != ncol(plots_subset())){
-                                           #Add original limits to the list if the 
-                                           #corresponding checkbox is checked
-                                           if (input$umap_original_limits==TRUE)scale_x_continuous(limits=xlim_orig)
-                                         },
-                                         #Element C
-                                         #Check for subset (input container in 
-                                         #child conditional does not exist 
-                                         #before a subset is created)
-                                         if(n_cells_original != ncol(plots_subset())){
-                                           #Add original limits to the list if the 
-                                           #corresponding checkbox is checked
-                                           if(input$umap_original_limits==TRUE)scale_y_continuous(limits=ylim_orig) 
-                                         }
-                                       )
-                                       
-                                       #Modify the plot created in eventReactive
-                                       #function using the layers defined above
-                                       umap_plot_content <- umap_plot() &
-                                         layers
-                                       
-                                       #Return plot to umap_plot_content()
-                                       umap_plot_content
-                                     })
   
   #### 2.1.2.7. Render UI Components ###
   output$umap_slot <- renderUI({
@@ -1396,7 +1411,6 @@ server <- function(input,output,session){
   
   ### 2.1.3. Feature Plot ##### 
   #### 2.1.3.1 Reactive dimensions ####
-  
   ##Sync width inputs
   #Update text box to match slider value when slider is changed
   observeEvent(input$feature_width,{
@@ -1432,8 +1446,9 @@ server <- function(input,output,session){
   
   #### 2.1.3.2 UI to specify origional access limits ####
   #Appears only when a subset is plotted
-  feature_limits_checkbox <- eventReactive(input$plots_subset_submit,
+  feature_limits_checkbox <- eventReactive(c(input$plots_subset_submit),
                                         label = "Feature Limits UI",
+                                        ignoreNULL = FALSE,
                                         {
                                           #Checkbox will only appear when a subset 
                                           #is selected.The presence of a subset 
@@ -1471,7 +1486,7 @@ server <- function(input,output,session){
     }
   })
   
-  #### 2.1.3.4. Server Component for Original Axes Checkbox
+  #### 2.1.3.4. Server Component for Original Axes Checkbox ####
   #Right after a subset is specified, an error appears saying that the condition
   #for computing original axes does not exist. This is likely due to the fact that
   #the input for specifying original axes is created after the subset is submitted
@@ -1489,7 +1504,7 @@ server <- function(input,output,session){
                  }
                })
   
-  #### 2.1.3.4. Generate content for plot (but only if features are entered) ####
+  #### 2.1.3.5. Generate content for plot (but only if features are entered) ####
   feature_plot_content <- reactive({
     if (length(input$text_features)>0){
       #If no split.by variable is specified, create a feature plot without the split.by argument
@@ -1535,15 +1550,15 @@ server <- function(input,output,session){
       
       #Modify the plot created in eventReactive
       #function using the layers defined above
-      feature_plot_content <- feature_plot &
+      feature_plot <- feature_plot &
         layers
       
       #Return plot to feature_plot_content()
-      feature_plot_content
+      feature_plot
     }
   })
   
-  #### 2.1.3.5. Render the UI and plot objects created above ####
+  #### 2.1.3.6. Render the UI and plot objects created above ####
   #UI
   output$feature_slot <- renderUI({
     feature_slot_UI()
@@ -1567,7 +1582,7 @@ server <- function(input,output,session){
     }
   })
   
-  #### 2.1.3.6. Feature Plot Download ####
+  #### 2.1.3.7. Feature Plot Download ####
   output$feature_download <- downloadHandler(
     filename = "Feature_plot.png",
     content = function(file){
