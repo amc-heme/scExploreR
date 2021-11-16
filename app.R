@@ -25,6 +25,9 @@ library(DT)
 #Additional Backend Packages
 library(presto)
 
+#R functions designed for Shiny
+source("./R/collapsible_panel.R")
+
 #Load Seurat object (D0/D30 data, modified to include gene signature scores)
 #https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
@@ -202,30 +205,6 @@ manual_dim_UI <- function(plot_type,
     )#End conditional panel
     )#End div
 }
-
-### Collapsible panel UI function ###
-#Will create a panel with a header that will toggle between hiding and showing its contents when the user clicks the header. 
-#Must include the files "collapsible_panel.css" and "collapsible_panel.js" in the UI function for this to work properly.
-collapsible_panel <- function(...,label=NULL,active=FALSE){
-  #Use taglist to return button tag for header and div tag for content
-  tagList( 
-    #Header of panel: built with button tag. The label the user enters will be header text 
-    button_html <- tags$button(type="button",
-                               class=if (active==FALSE) "collapsible" else "collapsible active", #collapsible: starts closed; collapsible active: starts open
-                               #Pass the user-provided label to the button text
-                               if (!is.null(label)) as.character(label)),
-    
-    #Pass all content to div tag
-    #If active==TRUE, the style attribute display will be set to "block" to display the content upon loading
-    if (active==TRUE){
-      content_html <- div(...,class="content",style="display:block;")
-    } else {
-      #Otherwise, the default value of none will be used to hide content initially
-      content_html <- div(...,class="content")
-    }
-  )#End taglist
-}
-###
 
 ### Subset Menus UI Function ###
 # Generates a series of dropdown menus used to define subsets for an operation
@@ -460,6 +439,10 @@ plots_tab <- function(){
                                        status = "default")
                         ),#End div
                    
+                   #TEMP: verify that collapsible panels are working
+                   verbatimTextOutput(outputId = "test"),
+                   verbatimTextOutput(outputId = "check_inputs"),
+                   
                    #### 1.1.1.2. Feature Text Entry. ####  
                    #Applies to feature, violin, and dot plots unless the user 
                    #specifies the use of different features for each plot 
@@ -479,14 +462,12 @@ plots_tab <- function(){
                                                          'plugins' = list('remove_button'),
                                                          'create'=FALSE)) #Do not allow user to 
                                         #input features not in the list of options
-                                        ),
-                                    #Error message: displayed if inalid features are 
-                                    #entered (currently unused)
-                                    div(style="margin-top: 0px; margin-bottom: 10px;",uiOutput(outputId = "feature_error"))
+                                        )
                                     ),#End 1.1.1.2.
                    
                    #### 1.1.1.3. Subsets for Plots ####
-                   collapsible_panel(label="Subset Options",
+                   collapsible_panel(inputId="plots_subset_collapsible",
+                                     label="Subset Options",
                                      active=FALSE,
                                      div(id="plots_subset_panel",
                                          div(id="plots_subset_stats",
@@ -510,7 +491,8 @@ plots_tab <- function(){
                    #### 1.1.1.4. Options specific to UMAP ####
                    #Panel will display if UMAP is checked
                    conditionalPanel(condition = "input.make_umap==true",
-                                    collapsible_panel(label="UMAP Specific Options",
+                                    collapsible_panel(inputId="plots_umap_collapsible",
+                                                      label="UMAP Specific Options",
                                                       active=TRUE,
                                                       #Choose metadata to group UMAP by
                                                       selectInput(inputId = "umap_group_by", 
@@ -547,7 +529,8 @@ plots_tab <- function(){
                    
                    #### 1.1.1.5. Options specific to feature plot ####
                    conditionalPanel(condition = "input.make_feature==true",
-                                    collapsible_panel(label = "Feature Plot Specific Options",
+                                    collapsible_panel(inputId="plots_feature_collapsible",
+                                                      label = "Feature Plot Specific Options",
                                                       active = FALSE,
                                                       #Feature plots do not have a group.by argument
                                                       #Choose metadata to split feature plot by
@@ -572,7 +555,8 @@ plots_tab <- function(){
                    
                    #### 1.1.1.6. Options specific to violin plot ####
                    conditionalPanel(condition = "input.make_vln==true",
-                                    collapsible_panel(label = "Violin Plot Specific Options",
+                                    collapsible_panel(inputId="plots_vln_collapsible",
+                                                      label = "Violin Plot Specific Options",
                                                       active=FALSE,
                                                       #Choose metadata to group violin plot by
                                                       selectInput(inputId = "vln_group_by", 
@@ -602,7 +586,8 @@ plots_tab <- function(){
                    
                    #### 1.1.1.7. Options specific to dot plot ####
                    conditionalPanel(condition = "input.make_dot==true",
-                                    collapsible_panel(label="Dot Plot Specific Options",
+                                    collapsible_panel(inputId="plots_dot_collapsible",
+                                                      label="Dot Plot Specific Options",
                                                       active=FALSE,
                                                       #Choose metadata to group dot plot by
                                                       selectInput(inputId = "dot_group_by",
@@ -894,6 +879,12 @@ server <- function(input,output,session){
   #match the original UMAPs created from the full dataset
   rv$umap_use_original_limits=FALSE
   rv$feature_use_original_limits=FALSE
+  
+  #TEMP: print outputs of collapsible panels
+  output$test <- renderText("This is working")
+  output$check_inputs <- renderText({
+    glue("input$plots_umap_collapsible: {input$plots_umap_collapsible}")
+  })
     
   #2.0.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
@@ -1243,7 +1234,7 @@ server <- function(input,output,session){
   })
   
   #### 2.1.2.3. UI to specify original axis limits when a subset is plotted ####
-  umap_limits_checkbox <- eventReactive(input$plots_subset_submit,
+  umap_limits_checkbox <- eventReactive(c(input$plots_subset_submit, input$plots_feature_collapsible),
                                         label = "UMAP Limits UI",
                                         {
                                           #Checkbox will only appear when a subset 
@@ -1445,8 +1436,9 @@ server <- function(input,output,session){
   })
   
   #### 2.1.3.2 UI to specify origional access limits ####
-  #Appears only when a subset is plotted
-  feature_limits_checkbox <- eventReactive(c(input$plots_subset_submit),
+  #Appears only when a subset is plotted (reacts to submit button and clicks on
+  #the collapsible panel header for feature plots)
+  feature_limits_checkbox <- eventReactive(c(input$plots_subset_submit, input$plots_feature_collapsible),
                                         label = "Feature Limits UI",
                                         ignoreNULL = FALSE,
                                         {
