@@ -439,10 +439,6 @@ plots_tab <- function(){
                                        status = "default")
                         ),#End div
                    
-                   #TEMP: verify that collapsible panels are working
-                   verbatimTextOutput(outputId = "test"),
-                   verbatimTextOutput(outputId = "check_inputs"),
-                   
                    #### 1.1.1.2. Feature Text Entry. ####  
                    #Applies to feature, violin, and dot plots unless the user 
                    #specifies the use of different features for each plot 
@@ -879,12 +875,6 @@ server <- function(input,output,session){
   #match the original UMAPs created from the full dataset
   rv$umap_use_original_limits=FALSE
   rv$feature_use_original_limits=FALSE
-  
-  #TEMP: print outputs of collapsible panels
-  output$test <- renderText("This is working")
-  output$check_inputs <- renderText({
-    glue("input$plots_umap_collapsible: {input$plots_umap_collapsible}")
-  })
     
   #2.0.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
