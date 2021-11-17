@@ -27,12 +27,33 @@ library(presto)
 
 #Load functions in ./R directory
 #Get list of files
-source_files = list.files(path = "./R", 
+source_files <- list.files(path = "./R", 
                           pattern="*.R$", 
                           full.names=TRUE, 
                           ignore.case=TRUE)
 #Use source() to import files into R
 sapply(source_files,source)
+
+#Load CSS files for app: CSS files are defined and each file is converted to a
+#<script> tag using includeCSS(). Each tag defined is passed to a list, which is
+#included in the main UI function.
+#Get list of .css files in www/ directory
+css_files <- list.files(path = "./www", 
+                          pattern="*.css$", 
+                          full.names=TRUE, 
+                          ignore.case=TRUE)
+#Create list of style tags for each CSS file
+css_list <- lapply(css_files,includeCSS)
+
+#Load Javasctipt files for app: find all .js files in www/ directory and create
+#a list of script() tags using includeScript().
+#Get list of .js files in www/ directory
+js_files <- list.files(path = "./www", 
+                        pattern="*.js$", 
+                        full.names=TRUE, 
+                        ignore.case=TRUE)
+#Create list of style tags for each CSS file
+js_list <- lapply(js_files,includeScript)
 
 #Load Seurat object (D0/D30 data, modified to include gene signature scores)
 #https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
@@ -53,6 +74,10 @@ feature_list <- function(assay, prefix_machine, suffix_human) {
   #Zip above into a list of key-value pairs (human-readable features as keys, machine-readable features as values)
   split(machine_readable, human_readable)
 }
+
+#For future generalization of app: fetch names of all assays to pass to functions
+#for generating feature lists
+#assays <- names(sobj@assays)
 
 ###ADT features
 adt_list <- feature_list("ADT", "adt_", " (Surface Protein)")
@@ -108,19 +133,17 @@ responses <- unique(sobj$response)
 treatments <- unique(sobj$treatment)
 
 #Patients dropdown
-#The list of lists below displays patients in their respective groups
-#This should be passed to 'choices', but not 'selected' (selected must be a vector)
-patients_categories <- list(`d0/d30`=list("1325","1650","1510","1526","1378","1724"),
-                 `Dx/Rl`=list("1261","1467","719"),
-                 `Normal Bone Marrow`=list("BMMC_1","BMMC_2","BMMC_3"))
+#Create vector and list of patients
+#Vector is processed by server; list of patients sorted by dataset type (normal 
+#bone marrow, d0/d30, dx/Rl) is displayed to user
+#Vector of all patients
+patients <- unique(sobj$htb)
+#Use function from R/d0-d30_patient_list.R to build list of patients 
+patients_categories <- build_patient_list(patients)
 #Apply sorting function to patients_categories so this list appears in order initially
 patients_categories <- sort_patient_list(patients_categories)
-#Vector of all patients, to be passed to 'selected' in dropdown menus
-#Vector is processed by server; list of options is displayed to user
-patients <- unique(sobj$htb)
 
-
-#Compile the above valid choices into a valid choices (vc) list, 
+#Compile the valid selections above into a valid choices (vc) list, 
 #so choices can be more easily passed to functions
 choices <- list("clusters"=clusters,
            "responses"=responses, 
@@ -535,12 +558,9 @@ corr_tab <- function(){
 
 ### Define user interface: code for navigation panel and references to tabs
 ui <- tagList(
-  #CSS for Collapsible Panels
-  includeCSS("www/collapsible_panel.css"),
-  #CSS for Custom Scrollbars
-  includeCSS("www/fancy_scroll.css"),
-  #CSS for help button and dropdown menu
-  includeCSS("www/help_button_and_dropdown.css"),
+  #Add CSS from each .css file in the www/ directory
+  #Uses a list of style tags defined at startup
+  css_list,
   #Introjs UI: for guided tour
   introjsUI(),
   #Waiter UI: spinners
@@ -614,8 +634,8 @@ ui <- tagList(
                     )#End Help Button
                     )#End introBox2
            ),#End introBox 1
-  includeScript("www/collapsible_panel.js"),
-  includeScript("www/button_wizzard.js")
+  #Include list of scripts build from .js files in www/ directory
+  js_list
 )
 
 # 2. Server function (builds interactive plot to display in UI) #####

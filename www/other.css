@@ -1,0 +1,26 @@
+/* New CSS Testing*/
+/* Copy below CSS to separate document when functional */
+/* Waiter (spinner) overlay */
+.waiter-overlay{
+z-index: 999; /* Default is 99,999, which displays over the help menu.*/
+}
+
+/* hidden_button class */
+.hidden-button{
+  display: none;
+}
+
+/* Subset summary in plots panel */
+#plots_subset_stats {
+  margin-bottom: 1em;
+}
+/* CSS properties for DGE cells by class output */
+/* consider generalizing to verbatimtextoutput blocks*/
+#dge_print_n_by_class{
+  width: 20%;
+  background-color: #FFFFFF;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  border: none;
+  margin: 0em 2em;
+  padding: 0em;
+}
