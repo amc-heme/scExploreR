@@ -1,0 +1,51 @@
+/* CSS for styling the help button and its dropdown menu*/
+#help {	
+  z-index: 1200; /* Navbar has a z-index of 1,000 */
+  position: absolute;
+  top: 7px;
+}
+
+/* Help dropdown */
+#dropdown-menu-help {
+  z-index: 1201;
+  top: 50px;
+  font-size: 1.17em;
+}
+
+/* Fix navbar height at 50 pixels*/
+/* Keeps navbar from expanding over content when help menu is opened*/
+.navbar{
+  /* min-height is set at 50px in Shiny CSS*/
+  max-height: 50px;
+}
+
+/* CSS properties for links. These are default for links in the dropdown menu that are not wrapped in the introBox()*/
+/* (Default styles apply to the hierarchy dropdown-menu>li>a, but not to dropdown-menu>li>div>a (introBox adds div tag))*/
+/* The blue_hover class must be added to apply style of neighboring links to links wrapped in introBox() */
+.blue_hover {
+	display: block;
+    padding: 3px 20px;
+    clear: both;
+    font-weight: 400;
+    line-height: 1.42857143;
+    color: #333;
+    white-space: nowrap;
+}
+
+/* Style for hovering over links */
+/* For links not wrapped in a help box, the default CSS for dropdown-menu>li>div>a will override blue_hover.*/
+/* !Important ensures that the non-default properties below are applied. */
+.blue_hover:hover{
+	background-color: #31B0D5AA !important;
+	border-radius: 7px !important;
+	/* text-decoration defaults to none (no underline) for dropdown links outside the introBox()*/
+	text-decoration: none; 
+}
+
+/* CSS that applies when link is clicked*/
+/* Must specify to override default color and text decoration properties*/
+/* CSS below restores properties to the "normal" state */
+.blue_hover:focus{
+	color: #333;
+	text-decoration: none; 
+}

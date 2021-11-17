@@ -1,0 +1,68 @@
+.col-sm-4{
+    overflow-y: auto;
+	max-height: 85vh;
+	}
+	
+/* Stack Overflow Style Scrollbar */ 
+/* (for side panel) */
+.col-sm-4::-webkit-scrollbar{
+	width: 10px;
+	height: 10px;
+	/* Sets color of scrollbar background and rounds edges */
+	background-color: #AAAAAA44;
+	border-radius: 5px;
+	}
+	
+.col-sm-4::-webkit-scrollbar-corner{
+	background-color: transparent;
+	border-color: transparent;
+	}
+	
+/* Scrollbar thumb properties (shows current position) */
+.col-sm-4::-webkit-scrollbar-thumb{
+	border-radius: 10px;
+	background-color: #888888;
+	}
+	
+.col-sm-4::-webkit-scrollbar-track{
+	border-radius: 10px;
+	background-color: transparent;
+	}
+	
+/* Main Window */
+.col-sm-8{
+	overflow-y: auto;
+	overflow-x: auto;
+	max-height: 85vh;
+	}
+
+/* Loading Spinner Containers for Main Window*/
+.spinner-container-main{
+	height: 85vh;
+}
+	
+/* Stack Overflow Style Scrollbar for Main Window */
+.col-sm-8::-webkit-scrollbar{
+	width: 10px; 
+	height: 10px;
+	/* Sets color of scrollbar background and rounds edges */
+	background-color: #AAAAAA44;
+	border-radius: 5px;
+	}
+	
+.col-sm-8::-webkit-scrollbar-corner{
+	background-color: transparent;
+	border-color: transparent;
+	}
+	
+/* Scrollbar thumb properties (shows current position) */
+.col-sm-8::-webkit-scrollbar-thumb{
+	border-radius: 10px;
+	background-color: #888888;
+	}
+	
+
+.col-sm-8::-webkit-scrollbar-track{
+	border-radius: 10px;
+	background-color: transparent;
+	}

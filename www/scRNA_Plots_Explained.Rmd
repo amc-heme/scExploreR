@@ -1,0 +1,26 @@
+---
+title: "scRNA-Seq Plots Explained"
+output: html_document
+---
+
+### UMAP Plots 
+
+UMAP plots display each measured cell on a scatterplot, where the location of each cell is determined in this data by the similarity of gene expression to neighboring cells. In reality, there are more than the two dimensions displayed. However, visualization and interpretation of these lesser contributing dimensions is difficult and highly complicates interpretation. We therefore visualize the entire data set in two dimensions and display the clusters and cell types in this space. 
+
+Over interpretation of UMAPs is a common pitfall and should be cautioned against. The structure of the data is dependent on numerous variables including the specific algorithm used, data sparsity, and type of data used to generate the plots (e.g. RNA-seq, ADT, etc). Therefore, the distance between clusters cannot be used to draw biological conclusions; all that can be concluded is that cells next to one another have similar gene expression profiles. For simplicity, in this data we have calculated inter-cell relationships based on only gene expression. Future implementations will consider additional layers of information as described above. 
+
+### Feature Plots
+
+Feature plots are UMAP plots with each cell colored according to the extent a given gene or surface protein marker is expressed in the cell; darker colors indicate higher expression levels in that cell. Feature plots are useful for identifying clusters that express a gene or surface protein to a greater extent, and when split by a metadata category (such as response type), they can give an overview of how expression patterns for the defined gene/surface protein differ between different metadata groups (such as sensitive vs. resistant patients).
+
+### Violin Plots
+
+Violin plots show the distribution of expression values for a given gene/surface protein marker in each group of cells (groups are metadata categories such as cluster, patient ID, response type, etc.). The width of each group's illustration ("violin") is determined by the relative number of cells in the group with an expression value at the given coordinate, and each cell is represented on the violin as a point at its corresponding expression value.
+
+### Dot Plots
+
+For a defined set of genes/surface protein markers (features), dot plots represent both the percentage of cells in each metadata group expressing each feature, and the average expression in each group. A dot is plotted for each feature and metadata group combination: groups are plotted on rows, and features are plotted on columns. The size of the dot shows the percentage of cells in a metadata group expressing the feature it represents, and the color of the dot shows the average expression of the representative feature in the group. 
+
+### Scatterplots (Correlations Tab)
+
+The scatterplots in the correlations tab show the expression of the gene queried (x-axis) vs. the one selected from the table of correlated genes (y-axis). Each point on the scatterplot represents a cell. The plot is similar in principle to a flow cytometry plot, but due to technical challenges in scRNA-sequencing we caution against over-interpereting this plot. The plot is intended to visualize the correlation between the two genes of interest.
