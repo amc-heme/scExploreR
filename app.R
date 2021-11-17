@@ -25,8 +25,14 @@ library(DT)
 #Additional Backend Packages
 library(presto)
 
-#R functions designed for Shiny
-source("./R/collapsible_panel.R")
+#Load functions in ./R directory
+#Get list of files
+source_files = list.files(path = "./R", 
+                          pattern="*.R$", 
+                          full.names=TRUE, 
+                          ignore.case=TRUE)
+#Use source() to import files into R
+sapply(source_files,source)
 
 #Load Seurat object (D0/D30 data, modified to include gene signature scores)
 #https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
@@ -107,8 +113,12 @@ treatments <- unique(sobj$treatment)
 patients_categories <- list(`d0/d30`=list("1325","1650","1510","1526","1378","1724"),
                  `Dx/Rl`=list("1261","1467","719"),
                  `Normal Bone Marrow`=list("BMMC_1","BMMC_2","BMMC_3"))
+#Apply sorting function to patients_categories so this list appears in order initially
+patients_categories <- sort_patient_list(patients_categories)
 #Vector of all patients, to be passed to 'selected' in dropdown menus
+#Vector is processed by server; list of options is displayed to user
 patients <- unique(sobj$htb)
+
 
 #Compile the above valid choices into a valid choices (vc) list, 
 #so choices can be more easily passed to functions
@@ -120,255 +130,6 @@ choices <- list("clusters"=clusters,
 
 #Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
-
-# Functions Used ##### 
-### Manual_dim_UI ###
-#Creates two slider-text box pairs for manual control of the height and width of a plot.
-manual_dim_UI <- function(plot_type,
-                               initial_width=700,
-                               max_width=2000,
-                               min_width=200,
-                               initial_height=400,
-                               max_height=2000,
-                               min_height=200){
-  #Plot_dimension_input: used within manual_dim_UI. Creates a slider and text box intended to input either the width or height of a plot when manual dimensions are desired
-  plot_dimension_input <-function(slider_input_id,
-                                  box_input_id,
-                                  label=NULL,
-                                  slider_min=100,
-                                  slider_max=1500,
-                                  initial_value=350,
-                                  style=NULL){
-    div(style=style,
-        #Label (if indicated)
-        #Additional instructions are printed with label
-        if (!is.null(label)){
-          tags$p(tags$strong(label),
-                 tags$br(),
-                 "(Press enter to update text box value)")
-        },
-        
-        
-        #Slider (takes up 60% of element width)
-        span(style="display: inline-block; vertical-align:top; width: 60%",
-             sliderInput(inputId=slider_input_id,
-                         label=NULL,
-                         min = slider_min,
-                         value= initial_value,
-                         max= slider_max,
-                         ticks=FALSE,
-                         post=" px")
-        ),
-        
-        #Text box
-        span(style="display: inline-block; width: 60px; margin-bottom:0px; margin-left:5px;",
-             searchInput(inputId=box_input_id,
-                         value = initial_value,
-                         label=NULL)),
-        #px suffix after text box
-        span(style="display: inline-block;",
-             "px"))
-  }
-  
-  #Form inputId values for each UI component created
-  checkbox_id <- paste0(plot_type,"_manual_dim")
-  width_slider_id <- paste0(plot_type,"_width")
-  width_textbox_id <- paste0(plot_type,"_width_text")
-  height_slider_id <- paste0(plot_type,"_height")
-  height_textbox_id <-paste0(plot_type,"_height_text")
-  
-  #Create string for the "condition" argument in the conditionalpanel
-  manual_dimensions_desired <- paste0("input.",checkbox_id,"==true")
-  
-  div(#Create checkbox: if checked, manual dimensions for the plot will be used according to inputs below.
-    checkboxInput(inputId = checkbox_id,
-                  label="Manually Adjust Plot Dimensions",
-                  value=FALSE),
-    
-    #Panel below displays when box is checked.
-    conditionalPanel(condition=manual_dimensions_desired,
-                     #Slider/text box for specifying width
-                     plot_dimension_input(slider_input_id = width_slider_id,
-                                          box_input_id = width_textbox_id,
-                                          label = paste0("Use slider or text box to adjust plot width"), 
-                                          initial_value = initial_width, 
-                                          slider_min = min_width,
-                                          slider_max=max_width),
-                     
-                     #Slider/text box for height
-                     plot_dimension_input(slider_input_id = height_slider_id,
-                                          box_input_id = height_textbox_id,
-                                          label = paste0("Use slider or text box to adjust plot height"), 
-                                          initial_value = initial_height, 
-                                          slider_min = min_height, 
-                                          slider_max = max_height)
-    )#End conditional panel
-    )#End div
-}
-
-### Subset Menus UI Function ###
-# Generates a series of dropdown menus used to define subsets for an operation
-#For now, this is specific to the metadata values in the D0/D30 object
-subset_menus <- function(input_prefix,choices,menus="all"){
-  div(
-    #Display each picker menu if the user indicates its inclusion, 
-    #otherwise print a NULL element for that menu
-    if (menus=="all" || "clusters" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_clusters_selection"),
-                                                          label = "Restrict by Cluster",
-                                                          choices = choices$clusters,
-                                                          selected = choices$clusters,
-                                                          multiple = TRUE,
-                                                          options = list(
-                                                            "selected-text-format" = "count > 5",
-                                                            "size" = 10, #Define max options to show at a time to keep menu from being cut off
-                                                            "actions-box"=TRUE))
-      } else NULL,
-    if (menus=="all" || "response" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_response_selection"),
-                                                          label = "Restrict by Response",
-                                                          choices = choices$responses,
-                                                          selected = choices$responses,
-                                                          multiple = TRUE)
-      } else NULL,
-    if (menus=="all" || "treatment" %in% menus){
-      pickerInput(inputId=glue("{input_prefix}_treatment_selection"),
-                  label = "Restrict by Timepoint (approximate)",
-                  choices = choices$treatments,
-                  selected = choices$treatments, 
-                  multiple = TRUE,
-                  options = list(
-                    "selected-text-format" = "count > 3",
-                    "actions-box"=TRUE
-                  ))
-    } else NULL,
-    if(menus=="all" || "htb" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_htb_selection"),
-                  label = "Restrict by Patient",
-                  choices = choices$patients_categories, #Display patient groups to user
-                  selected = choices$patients, 
-                  multiple = TRUE,
-                  options = list(
-                    "selected-text-format" = "count > 3",
-                    "size" = 10, 
-                    "actions-box"=TRUE
-                  ))
-    } else NULL,
-  )#End div
-}
-###
-
-### Icon Notification Function
-#Defines the HTML to be printed within a notification box. The function takes the name of a Font Awesome icon and a message as input, and will display the icon and the message inline.
-icon_notification_ui <- function(icon_name,message){
-  span(
-    #Icon (inline and enlarged)
-    icon(icon_name, style="display: inline-block; font-size: 1.7em;"),
-    #Message (inline with icon, font slightly enlarged)
-    span(message,style="font-size: 1.17em;")
-    )
-  }
-###
-
-### Vector to Text
-# Prints the contents of a vector as a string with commas separating each element. 
-# Used to create the formal report giving the subset criteria in the gene correlations tab
-vector_to_text <- function(vector){
-  if (is.null(vector)){
-    "NULL"
-  }
-  #For one entry, report the choice.
-  else if (length(vector)==1){
-    paste(vector)
-  }
-  #For two entries, use 'and' between choices
-  else if (length(vector)==2){
-    paste0(vector[1]," and ",vector[2])
-  }
-  #Multiple entries: iteratively integrate elements in a single string using paste0.
-  else {
-    #For more than 2 entries, must list with commas between each choice, and 'and' in front of the last choice
-    for (i in (1:(length(vector)))){
-      #First element: create string_return string and store the first element in the string. 
-      #Add a comma at the end.
-      if (i==1){
-        string_return <- paste0(vector[i],",")
-      }
-      #For all entries except the last entry, add the ith entry to the text vector with a comma at the end.
-      else if (i!=length(vector)){
-        string_return <- paste0(string_return," ",vector[i],",",collapse = "")
-      }
-      #Last entry: add ', and', then the last entry, then a period. 
-      else{
-        string_return <- paste0(string_return," and ",vector[i],collapse="")
-      }
-    }
-    #When finished iterating through all entries, print the result.
-    string_return
-  }
-}
-###
-
-### Build patient list
-#Taking a vector of valid patients as input, build_patient_list() compiles the 
-#choices into a categorized list for display in the dropdown menu
-#This is currently hard-coded for the d0/d30 object
-build_patient_list <- function(valid_patients){
-  #List of valid patients: based on group of patient in dropdown menu
-  valid_patients_categories = list(
-    `d0/d30` = list(),
-    `Dx/Rl` = list(),
-    `Normal Bone Marrow` = list()
-  )
-  
-  #Sort valid patients into above framework
-  for (patient in valid_patients) {
-    #Iterate through valid_patients vector and place each choice in the relevant category
-    if (patient %in% c("1325", "1650", "1510", "1526", "1378", "1724")) {
-      #Append above patient ids to d0/d30 category
-      valid_patients_categories$`d0/d30` <-
-        append(valid_patients_categories$`d0/d30`, patient)
-    } else if (patient %in% c("1261", "1467", "719")) {
-      #Append above patient ids to Dx/Rl category
-      valid_patients_categories$`Dx/Rl` <-
-        append(valid_patients_categories$`Dx/Rl`, patient)
-    } else if (patient %in% c("BMMC_1", "BMMC_2", "BMMC_3")) {
-      #Append above patient (sample) ids to normal bone marrow category
-      valid_patients_categories$`Normal Bone Marrow` <-
-        append(valid_patients_categories$`Normal Bone Marrow`, patient)
-    }
-  }
-  
-  #Return the categorized list of valid patients
-  valid_patients_categories
-}
-
-### Sort patient list
-#For the list of patients that display in the dropdown for the d0/d30 object,
-#Sort each sublist so the patients appear in order.
-sort_patient_list <- function(patient_list){
-  #Patients in d0/d30 and Dx/Rl are numeric values that can be sorted easily
-  patient_list$`d0/d30` <- patient_list$`d0/d30` |> 
-    as.numeric() |> 
-    sort() |> 
-    as.character() |> #Convert back to character values to avoid issues with further subsetting 
-    as.list()
-  patient_list$`Dx/Rl` <- patient_list$`Dx/Rl` |> 
-    as.numeric() |> 
-    sort() |> 
-    as.character() |> 
-    as.list()
-  #Normal bone marrow column consists of character IDs that are sorted properly with sort()
-  patient_list$`Normal Bone Marrow` <- patient_list$`Normal Bone Marrow` |> 
-    as.character() |> 
-    sort() |> 
-    as.list()
-  #Return patient list
-  patient_list
-}
-#Apply function to patients_categories so this list appears in order initially
-patients_categories <- sort_patient_list(patients_categories)
-###
 
 # Table of Contents #####
 # 1. User Interface Functions
