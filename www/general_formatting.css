@@ -1,9 +1,17 @@
 /* Formatting for text and other elements */
 
+/* Adjust margins of headers */
+h2, h3 {
+  margin-top: 10px !important;
+  margin-bottom: 5px !important;
+}
+
 /* Text CSS Classes */
 /* Center Header Tags */
 .center{
   text-align: center;
+  /* Display must be set to block for centering to work */
+  display: block;
 }
 
 /* Large font*/
@@ -16,13 +24,26 @@
   font-size: 1.3em;
 }
 
-/* Spacing before line */
+/* Spacing before element */
 .space-top{
   margin-top: 0.5em;
 }
 
+/* Spacing after element */
+.half-space-bottom{
+  margin-bottom: 0.5em;
+}
+
+.single-space-bottom{
+  margin-bottom: 1.0em;
+}
+
 .inline-block{
   display: inline-block;
+}
+
+.block {
+  display: block;
 }
 
 /* Two-column panel */

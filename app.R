@@ -663,6 +663,8 @@ server <- function(input,output,session){
   #match the original UMAPs created from the full dataset
   rv$umap_use_original_limits=FALSE
   rv$feature_use_original_limits=FALSE
+  #This is true when rows are selected from the correlations table
+  rv$corr_rows_selected=FALSE
     
   #2.0.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
@@ -1692,8 +1694,8 @@ server <- function(input,output,session){
   ) #End downloadHandler function
   
   ## 2.2. DGE Tab #####
-  ### 2.2.1. Reactive dropdown menus 
-  #2.2.1.1. Reactive dropdown menu for patient 
+  ### 2.2.1. Reactive dropdown menus ####
+  #### 2.2.1.1. Reactive dropdown menu for patient ####
   # The code in this section is duplicated from section 2.3.1, and should be rewritten as a function to avoid redundancy.
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
   #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized.
@@ -1712,7 +1714,7 @@ server <- function(input,output,session){
         hide_on_render = FALSE #Gives manual control of showing/hiding spinner
       )
       
-      #DGE Metadata Subset ####
+      ###### DGE Metadata Subset #####
       #Valid for all modes except dge with response or treatment as the group.by variable
       #Filter object for treatment and response selections
       valid_patients <- sobj@meta.data |> 
@@ -1731,7 +1733,6 @@ server <- function(input,output,session){
       valid_patients_categories <- build_patient_list(valid_patients)
       #Sort patients categorized list so they appear in order
       valid_patients_categories <- sort_patient_list(valid_patients_categories)
-      #####
       
       #Update picker input with valid patient ID's
       updatePickerInput(
@@ -1755,8 +1756,7 @@ server <- function(input,output,session){
     }
   )
   
-  #2.2.1.2. Reactive dropdown when DGE is the mode and either patient or
-  #timepoint is the group by variable
+  #### 2.2.1.2. Reactive dropdown: DGE and either patient or timepoint as the group by variable ####
   observeEvent(
     c(input$dge_group_1, input$dge_group_2),
     ignoreInit = TRUE,
@@ -1774,7 +1774,7 @@ server <- function(input,output,session){
           hide_on_render = FALSE #Gives manual control of showing/hiding spinner
         )
         
-        #DGE Metadata Subset (groups mode) ####
+        ###### DGE Metadata Subset (groups mode) ####
         #Filter object using the two group selections for either response or
         #treatment, and the picker input selections for the other variable
         if (input$dge_group_by=="treatment"){
@@ -1809,7 +1809,6 @@ server <- function(input,output,session){
         valid_patients_categories <- build_patient_list(valid_patients)
         #Sort patients categorized list so they appear in order
         valid_patients_categories <- sort_patient_list(valid_patients_categories)
-        #####
         
         #Update picker input with valid patient ID's
         updatePickerInput(
@@ -1885,7 +1884,7 @@ server <- function(input,output,session){
     }
     )
   
-  #2.2.1.3. Update group 2 menu after DGE group 1 selection
+  #### 2.2.1.3. Update group 2 menu after DGE group 1 selection ####
   observeEvent(
     c(input$dge_group_1),
     ignoreInit = TRUE,
@@ -1911,9 +1910,9 @@ server <- function(input,output,session){
     })
   
   
-  #2.2.2. DGE table for selected metadata and restriction criteria
+  ### 2.2.2. DGE table for selected metadata and restriction criteria ####
   #Table updates only when the "Update" button is clicked
-  #2.2.2.1. Store table content as reactive value
+  #### 2.2.2.1. Store table content as reactive value ####
   #The tibble generated here is converted to a DT in 2.2.2.2. for viewing, and
   #Is passed to the download handler when the "download table" button is clicked.
   dge_table_content <- eventReactive(
@@ -1935,14 +1934,22 @@ server <- function(input,output,session){
         hide_on_render = FALSE #Gives manual control of showing/hiding spinner
       )
       
-      #Error handling: errors are frequent in this script, often due to memory limitations, and they will result in the spinner not disappearing from the main window since waiter_hide() exists at the end this code block. Therefore, the code in this block must be handled with tryCatch() to capture errors.
-      # This error handling code has been duplicated verbatim from section 2.3.2.1 - likely isn't necessary here; should be removed if warranted by testing.
+      #Error handling: errors are frequent in this script, often due to memory 
+      #limitations, and they will result in the spinner not disappearing from 
+      #the main window since waiter_hide() exists at the end this code block. 
+      #Therefore, the code in this block must be handled with tryCatch() to 
+      #capture errors. This error handling code has been duplicated verbatim 
+      #from section 2.3.2.1 - likely isn't necessary here; should be removed 
+      #if warranted by testing.
       tryCatch(
-        #If an error is caught: attempt to determine type of error by inspecting message text with grepl (not recommended, but I currently don't know any other way to catch this error type)
+        #If an error is caught: attempt to determine type of error by inspecting
+        #message text with grepl (not recommended, but I currently don't know 
+        #any other way to catch this error type)
         error = function(cnd) {
           #Error 1: RAM error
           if (grepl("cannot allocate vector of size", cnd$message)) {
-            #This reactive value will instruct the correlation table UI to display differently based on the error
+            #This reactive value will instruct the correlation table UI 
+            #to display differently based on the error
             rv$memory_error = TRUE
             #Define notification to be displayed to user upon memory error
             mem_err_ui <-
@@ -2254,11 +2261,15 @@ server <- function(input,output,session){
           print("Presto")
           #Run Presto
           dge_table <-
-            wilcoxauc(rv$dge_s_sub, group_by = input$dge_group_by) %>%  #Run presto on the subsetted object and indicated metadata slot
-            as_tibble() %>%  #Explicitly coerce to tibble
-            select(-c(statistic, auc)) %>%  # remove stat and auc from the output table
-            # Using magrittr pipes here because the following statement doesn't work with base R pipes
-            # remove negative logFCs if box is checked
+            #Run presto on the subsetted object and indicated metadata slot
+            wilcoxauc(rv$dge_s_sub, group_by = input$dge_group_by) %>% 
+            #Explicitly coerce to tibble
+            as_tibble() %>%  
+            #remove stat and auc from the output table
+            select(-c(statistic, auc)) %>%  
+            #Using magrittr pipes here because the following statement 
+            #doesn't work with base R pipes
+            #remove negative logFCs if box is checked
             {if (input$dge_pos) filter(., logFC > 0) else .} %>%
             #Arrange in ascending order for padj, pval (lower values are more
             #"significant"). Ascending order is used for the log fold-change
@@ -2276,7 +2287,7 @@ server <- function(input,output,session){
     }
   )
   
-  #2.2.2.2. DGE table, as DT for viewing
+  #### 2.2.2.2. DGE table, as DT for viewing ####
   dge_DT_content <- eventReactive(input$dge_submit, 
                                   label = "DGE DT Generation",
                                   ignoreNULL=FALSE, 
@@ -2292,8 +2303,8 @@ server <- function(input,output,session){
       formatSignif(3:8, 5) # This is more than enough - 3 is probably fine
   })
   
-  #2.2.3. DGE UI Components
-  #2.2.3.1. DGE Main UI (Stats and Table/UMAP Outputs)
+  ### 2.2.3. DGE UI Components ####
+  #### 2.2.3.1. DGE Main UI (Stats and Table/UMAP Outputs) ####
   #IgnoreNULL set to false to get UI to render at start up
   dge_ui <- eventReactive(input$dge_submit,
                           label = "DGE Main UI (Define Content)",
@@ -2409,8 +2420,8 @@ server <- function(input,output,session){
                             )#End UI div
                           })
   
-  #2.2.3.2. Conditional Dropdown Menus: display based on whether DGE or marker 
-  #identification is selected
+  #### 2.2.3.2. Conditional Dropdown Menus ####
+  #display based on whether DGE or marker identification is selected
   #2.2.3.2.1. Main Dropdown interface
   dge_conditional_menus <- 
     eventReactive(
@@ -2587,7 +2598,7 @@ server <- function(input,output,session){
                                                        choices = choices,
                                                        menus = menu_categories)
                                         })
-  #2.2.3.3. Download Buttons for Table and Plots
+  #### 2.2.3.3. Download Buttons for Table and Plots ####
   dge_downloads_ui <-
     eventReactive(
       c(input$submit, input$dge_table_rows_selected),
@@ -2613,7 +2624,7 @@ server <- function(input,output,session){
       }
     )
 
-  #2.2.4. UMAP of DE selected groups
+  #### 2.2.4. UMAP of DE selected groups ####
   dge_umap <- eventReactive(input$dge_submit, 
                             ignoreNULL=FALSE, 
                             label="DGE UMAP", {
@@ -2649,7 +2660,7 @@ server <- function(input,output,session){
                                       ncol=ncol)
                             })
   
-  #2.2.5. Render DGE UI, table, and statistics
+  #### 2.2.5. Render DGE UI, table, and statistics ####
   #Main UI
   output$dge_ui <- renderUI({
     dge_ui()
@@ -2780,7 +2791,7 @@ server <- function(input,output,session){
                    renderText(isolate(rv$dge_mode))
                })
   
-  #2.2.6. Download Handlers
+  #### 2.2.6. Download Handlers ####
   #Correlations Table
   output$dge_download_table <- downloadHandler(
     filename = function() {
@@ -3042,9 +3053,6 @@ server <- function(input,output,session){
             filter(Feature != input$corr_feature_selection) |> #Filter out selected feature
             arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
           
-          #Round correlation coefficients to 5 digits
- #         table$Correlation_Coefficient <- format(table$Correlation_Coefficient, digits=5, nsmall=2, scientific=FALSE) |> as.numeric()
-          
           })#End tryCatch
       
       #Hide loading screen
@@ -3105,30 +3113,31 @@ server <- function(input,output,session){
       )
       
       #UI to display 
-      div(
-        tags$h2(glue("Genes correlated with {input$corr_feature_selection} in Subset")),
+      tagList(
+        tags$h2(glue("Genes correlated with {input$corr_feature_selection} in Subset"), class="center"),
         #Restriction criteria section
-        tags$h3("Selected Restriction Criteria"),
+        tags$h3("Selected Restriction Criteria", class="center"),
         #Make each input criteria appear inline
-        div(div(tags$strong("Clusters: "),textOutput(outputId = "selected_clusters", inline = TRUE)),
-            div(tags$strong("Response criteria: "),textOutput(outputId = "selected_response", inline = TRUE)),
-            div(tags$strong("Patients: "),textOutput(outputId = "selected_htb", inline = TRUE))
-            ),
+        tagList(div(tags$strong("Clusters: "),textOutput(outputId = "selected_clusters", inline = TRUE)),
+                div(tags$strong("Response criteria: "),textOutput(outputId = "selected_response", inline = TRUE)),
+                div(tags$strong("Patients: "),textOutput(outputId = "selected_htb", inline = TRUE))
+                ),
         
         #Statistics section
-        tags$h3("Quality Statistics for Gene and Subset"),
-        div(div("(Subset created based on defined restriction criteria)"),
+        tags$h3("Quality Statistics for Gene and Subset", class="center"),
+        tagList(div("(Subset created based on defined restriction criteria)"),
             div(tags$strong("Number of cells in subset: "),textOutput(outputId = "print_n_cells", inline = TRUE)),
             div(tags$strong(glue("Cells with non-zero reads for {input$corr_feature_selection}:")),textOutput(outputId = "print_nonzero", inline = TRUE))
             ),
         
         #Correlations table and plots
-        tags$h3("Correlated Genes"),
+        tags$h3("Correlated Genes", class="center"),
         #Output: table is rendered inline with scatterplot, which is defined in a separate eventReactive function
         #Scatterplot only appears when the user makes a selection on the table
         #Add table container
         div(class="two-column",
             style="width: 40%; float: left;",
+            tags$strong("Correlation Table", class="center single-space-bottom"),
             #Use a DT data table
             DTOutput(outputId = "corr_table")
         ),
@@ -3138,7 +3147,7 @@ server <- function(input,output,session){
             #UI for scatterplot rendered in separate eventReactive function
             uiOutput(outputId = "corr_scatter_ui")
             )
-        )#End UI div
+        )#End tagList
       }
   })
   
@@ -3150,8 +3159,18 @@ server <- function(input,output,session){
                                    {
                                      #Display the graph if rows are selected
                                       if (length(input$corr_table_rows_selected)>0){
-                                        #Use two-column CSS class for inline display
-                                        plotOutput(outputId = "corr_scatter", height = "400px")
+                                        tagList(
+                                          tags$strong("Scatterplot for Subset", 
+                                                      class="center single-space-bottom"),
+                                          plotOutput(outputId = "corr_scatter_subset", 
+                                                     height = "400px", 
+                                                     width="400px"),
+                                          tags$strong("Scatterplot for Full Data", 
+                                                      class="center single-space-bottom"),
+                                          plotOutput(outputId = "corr_scatter_global", 
+                                                     height = "400px", 
+                                                     width="400px")
+                                          )
                                         }
                                      })
   
@@ -3179,17 +3198,20 @@ server <- function(input,output,session){
                                                 choices=meta_choices[!meta_choices %in% "none"], 
                                                 selected = "clusters"
                                               ),
-                                              #split.by selection
-                                              selectInput(
-                                                inputId = "corr_scatter_split_by",
-                                                label = "Metadata to Split By:",
-                                                choices=meta_choices,
-                                                selected = "none"
-                                              ),
                                               #Download button for scatterplot
+                                              #Subset
                                               downloadButton(
-                                                outputId = "corr_download_scatter_1",
-                                                label = "Download Scatterplot",
+                                                outputId = "corr_download_scatter_subset",
+                                                label = "Download Scatterplot (Subset)",
+                                                #Adds space before button
+                                                class="space-top",
+                                                icon = icon("poll")
+                                              ), #End downloadButton
+                                              #Download button for scatterplot
+                                              #Full data
+                                              downloadButton(
+                                                outputId = "corr_download_scatter_global",
+                                                label = "Download Scatterplot (Full Data)",
                                                 #Adds space before button
                                                 class="space-top",
                                                 icon = icon("poll")
@@ -3221,39 +3243,83 @@ server <- function(input,output,session){
                                        } #End else
                                      })
   
-  ### 2.3.4. Plot of feature selected from table ####
-  #Row index of user selection from table is stored in input$corr_table_rows_selected.
-  corr_scatter <- eventReactive(input$corr_table_rows_selected,
-                                label="Correlation Scatterplot Content",{
-    row_idx <- input$corr_table_rows_selected
-    #Take action only if a row is selected (selection!=0)
-    if (row_idx!=0){
-      #Record gene name of row selected
-      rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
-      
-      #Make and store scatterplot
-      FeatureScatter(rv$s_sub, 
-                     feature1 = input$corr_feature_selection, 
-                     feature2 = rv$gene_selected, 
-                     group.by = "clusters")
-    }
-  })
+  ### 2.3.4. Server Value for Rows Selected from Table ####
+  #Becuase input$corr_table_rows_selected is NULL before the table is clicked,
+  #An error flickers where the correlation plots are before displaying the plots,
+  #giving the user the impression that an error has occurred. 
+  observeEvent(input$corr_table_rows_selected,
+               label = "Rows Selected: Server Value",
+               {
+                 #If the number of rows selected is defined and greater than 
+                 #zero, set rv$rows_selected to TRUE
+                 if (input$corr_table_rows_selected!=0){
+                   rv$corr_rows_selected=TRUE
+                 }
+               })
   
-  ### 2.3.5. Render Correlation UI, table, scatterplot, and statistics ####
+  
+  ### 2.3.5. Plot of feature selected from table ####
+  #### 2.3.5.1. Correlation scatterplot for subset
+  #Row index of user selection from table is stored in input$corr_table_rows_selected.
+  corr_scatter_subset <- eventReactive(c(input$corr_table_rows_selected, input$corr_scatter_group_by),
+                                  label="Correlation Scatterplot Content (Subset)",
+                                  {
+                                    row_idx <- input$corr_table_rows_selected
+                                    #Take action only if a row is selected
+                                    if (rv$corr_rows_selected==TRUE){
+                                      #Record gene name of row selected
+                                      rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
+        
+                                      #Make and store scatterplot
+                                      FeatureScatter(rv$s_sub, 
+                                                     feature1 = input$corr_feature_selection, 
+                                                     feature2 = rv$gene_selected,
+                                                     #group.by and split.by according to user input
+                                                     group.by = input$corr_scatter_group_by)
+                                      }
+                                    })
+  
+  #### 2.3.5.2. Correlation plot for full data
+  corr_scatter_global <- eventReactive(c(input$corr_table_rows_selected, input$corr_scatter_group_by), 
+                                       label="Correlation Scatterplot Content (Global)",
+                                       {
+                                         row_idx <- input$corr_table_rows_selected
+                                         #Take action only if a row is selected 
+                                         if (rv$corr_rows_selected==TRUE){
+                                           #Record gene name of row selected
+                                           rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
+                                           
+                                           #Make and store scatterplot 
+                                           #Use full object
+                                           FeatureScatter(sobj, 
+                                                          feature1 = input$corr_feature_selection, 
+                                                          feature2 = rv$gene_selected,
+                                                          #group.by and split.by according to user input
+                                                          group.by = input$corr_scatter_group_by)
+                                         }
+                                       })
+  
+  ### 2.3.6. Render Correlation UI, table, scatterplot, and statistics ####
   #Main UI
   output$corr_ui <- renderUI({
     corr_ui()
     })
   
-  #Container for scatterplot (main panel)
+  #Container for scatterplots (main panel)
   output$corr_scatter_ui <- renderUI({
     corr_scatter_ui()
     })
 
   #Scatterplot (main panel, in UI container)
   observeEvent(input$corr_table_rows_selected, 
-               label = "Render Corr Scatter", {
-                 output$corr_scatter <- renderPlot({corr_scatter()})
+               label = "Render Corr Scatter (Subset)", {
+                 output$corr_scatter_subset <- renderPlot({corr_scatter_subset()})
+               })
+  
+  #Scatterplot (main panel, in UI container)
+  observeEvent(input$corr_table_rows_selected, 
+               label = "Render Corr Scatter (Global)", {
+                 output$corr_scatter_global <- renderPlot({corr_scatter_global()})
                })
   
   #Options for scatterplot (sidebar panel)
@@ -3282,7 +3348,7 @@ server <- function(input,output,session){
                  output$print_nonzero <- renderText(isolate(glue("{rv$n_nonzero} ({rv$percent_nonzero}%)")))
                })
   
-  ### 2.3.6. Download Handlers ####
+  ### 2.3.7. Download Handlers ####
   #Correlations Table
   output$corr_download_table <- downloadHandler(
     filename=function(){
@@ -3296,20 +3362,33 @@ server <- function(input,output,session){
     contentType="text/csv"
   )#End downloadHandler 
   
-  #Scatterplot (of selected subset)
-  output$corr_download_scatter_1 <- downloadHandler(
+  #Scatterplot (for selected subset)
+  output$corr_download_scatter_subset <- downloadHandler(
     filename=function(){
-      glue("Corr_scatter_{input$corr_feature_selection}-vs-{rv$gene_selected}.png")
+      glue("Corr_scatter_{input$corr_feature_selection}-vs-{rv$gene_selected}_subset.png")
     },
     content=function(file){
       ggsave(file, 
-             plot=corr_scatter(), 
+             plot=corr_scatter_subset(), 
              device="png",
              bg="#FFFFFF")
     },
     contentType = "image/png"
   )#End downloadHandler
-    
+  
+  #Scatterplot (for full data)
+  output$corr_download_scatter_global <- downloadHandler(
+    filename=function(){
+      glue("Corr_scatter_{input$corr_feature_selection}-vs-{rv$gene_selected}_global.png")
+    },
+    content=function(file){
+      ggsave(file, 
+             plot=corr_scatter_global(), 
+             device="png",
+             bg="#FFFFFF")
+    },
+    contentType = "image/png"
+  )#End downloadHandler
 }
 
 # Run the application 
