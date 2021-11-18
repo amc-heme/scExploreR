@@ -1,5 +1,5 @@
 // Define the opening/closing behavior of the collapsible panel ////////////////
-var coll = document.getElementsByClassName("collapsible");
+/*var coll = document.getElementsByClassName("collapsible");
 var i;
 
 for (i = 0; i < coll.length; i++) {
@@ -21,7 +21,7 @@ for (i = 0; i < coll.length; i++) {
       content.style.display = "block";
     }
   });
-}
+} */
 
 // Create a custom input container for the collapsible panel ///////////////////
 // The panel header will function like an action button.
@@ -65,12 +65,29 @@ $.extend(panelActionButton, {
     $(el).on(
       "click.panelActionButton",
       function(){
+        // ActionButton behavior
+        // Change value upon click
         const $el = $(this);
         //Value of panel before it is clicked: same as actionButton
         //Equal to its current value on the server, or zero at startup
         const val = $el.data("val") || 0;
         //Increment value by one when clicked
         $el.data("val",val+1);
+
+        //Collapsible Panel behavior
+        //Open & close panel upon click by toggling the class of the object
+        //When active, the header displays with a down arrow
+        //When not active, the header displays with an arrow
+        //pointing to the side.
+        el.classList.toggle("active");
+        //Find the content (sibling elements) and toggle the display properties
+        //between 'none' (hidden) and 'block' (visible)
+        var content = el.nextElementSibling;
+        if (content.style.display === "block"){
+          content.style.display = "none";
+        } else {
+          content.style.display = "block";
+        }
         //Callback: not needed for this event type
         callback(false);
       } //End event function
