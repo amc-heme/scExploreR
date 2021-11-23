@@ -154,6 +154,45 @@ choices <- list("clusters"=clusters,
 #Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
+#Error Handling: define possible errors ####
+#Errors are defined in a list using the functions in "./R/error_handling.R". 
+#The error_handler() function is executed in a tryCatch() statement and checks
+#the error message returned against a list of errors.
+## List of errors for subset operations ####
+subset_error_list<- list(add_error_notification(message="cannot allocate vector of size",
+                                                notification_ui=icon_notification_ui_2(icon_name = "skull-crossbones",
+                                                                                       tagList(
+                                                                                         "Memory Error: RAM is insufficient for analyzing the specified subset. Please narrow down the subset scope using the restriction criteria to the left, and feel free to", 
+                                                                                         github_link(display_text = "let us know"),
+                                                                                         " ",#Space after link
+                                                                                         "if you repeatedly recieve this error.")#End tagList
+                                                ),#End icon_notification_ui
+                                                notification_id = "mem_error"
+),#End add_error_notification
+
+#Error 2: Vector memory exhausted
+add_error_notification(message="vector memory exhausted",
+                       notification_ui=icon_notification_ui_2(icon_name = "skull-crossbones",
+                                                              "Error: vector memory exhausted. If this issue persists, please ",
+                                                              github_link("contact us"),
+                                                              " with a screenshot of the response criteria selected. For now, narrowing down the subset criteria may resolve the error."
+                       ),#End icon_notification_ui
+                       notification_id = "vector_mem_error"
+),
+
+#Error 3: No Cells in Subset
+add_error_notification(message = "No cells found",
+                       icon_notification_ui_2(
+                         icon_name = "skull-crossbones",
+                         "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
+                         github_link("let us know"),
+                         #Period at end of link
+                         "."
+                       ),#End icon_notification_ui
+                       notification_id = "no_cells_found"
+)#End add_error_notification
+)#End list of error definitions (subset_errors)
+
 # Table of Contents #####
 # 1. User Interface Functions
 #   1.1. Plots
@@ -779,85 +818,26 @@ server <- function(input,output,session){
                                     hide_on_render = FALSE #Gives manual control of showing/hiding spinner
                                   )
                                   
-                                  tryCatch(error=function(cnd){
-                                   #Return errors to user using notifications
-                                   #If an error is caught: attempt to determine 
-                                   #type of error by inspecting message text with 
-                                   #grepl (not recommended, but I currently don't 
-                                   #know any other way to catch this error type)
+                                  plots_s_sub <- tryCatch(error=function(cnd){
+                                    #Return errors to user using notifications
+                                    #If an error is caught: the function below
+                                    #determines the type of error by inspecting 
+                                    #message text with grepl (not recommended, 
+                                    #but I currently don't know any other way to 
+                                    #catch this error type)
+                                    error_handler(session,
+                                                  cnd_message=cnd$message,
+                                                  #Uses a list of 
+                                                  #subset-specific errors 
+                                                  error_list = subset_error_list,
+                                                  #Id prefix for the 
+                                                  #notification elements
+                                                  id_prefix = "plots")
                                    
-                                   #Special error types: customize the message 
-                                   #that appears 
-                                   #Error 1: No cells in selected subset
-                                   if (grepl("No cells found", cnd$message)) {
-                                     #This reactive value will instruct the correlation 
-                                     #table UI to display differently based on the error
-                                     rv$memory_error = TRUE
-                                     #Define notification to be displayed to user upon memory error
-                                     mem_err_ui <-
-                                       icon_notification_ui(
-                                         icon_name = "skull-crossbones",
-                                         message = tagList(
-                                           "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
-                                           tags$a(
-                                             "let us know",
-                                             href =
-                                               "https://github.com/amc-heme/DataExploreShiny/issues",
-                                             target =
-                                               "_blank",
-                                             #Opens link in new tab
-                                             rel =
-                                               "noopener noreferrer"
-                                           ),
-                                           #Period at end of link
-                                           "."
-                                         )#End tagList
-                                       )
-                                     
-                                     #Display notification
-                                     showNotification(
-                                       ui = mem_err_ui,
-                                       #Duration=NULL will make the message persist until dismissed
-                                       duration = NULL,
-                                       id = "plots_no_cells_found",
-                                       session =
-                                         session
-                                     )
-                                   } else {
-                                     #All other errors: use a generic notification
-                                     #Define Notification UI
-                                     other_err_ui <-
-                                       icon_notification_ui(
-                                         icon_name = "skull-crossbones",
-                                         message = tagList(
-                                           glue("Error: {cnd$message}. Please "),
-                                           tags$a(
-                                             "report this issue ",
-                                             href =
-                                               "https://github.com/amc-heme/DataExploreShiny/issues",
-                                             target =
-                                               "_blank",
-                                             #Opens link in new tab
-                                             rel =
-                                               "noopener noreferrer"
-                                           ),
-                                           "with a screenshot of the app window."
-                                         )#End tagList
-                                       )
-                                     
-                                     #Display Notification
-                                     showNotification(
-                                       ui = other_err_ui,
-                                       #Duration=NULL will make the message persist until dismissed
-                                       duration = NULL,
-                                       id = "plots_other_error",
-                                       session =
-                                         session
-                                     )
-                                   }
-                                   
-                                   #Return "NULL" for subset when an error has occurred
-                                   plots_s_sub <- NULL
+                                    #Return "NULL" for subset when an 
+                                    #error has occurred
+                                    plots_s_sub <- NULL
+                                    return(plots_s_sub)
                                  }, #End tryCatch error function
                                  #Begin tryCatch code
                                  {
@@ -877,6 +857,7 @@ server <- function(input,output,session){
                                   waiter_hide("plots_main_panel")
                                   
                                   #Return subset to the eventReactive variable
+                                  print("about to request plots_s_sub")
                                   plots_s_sub
                                 })
   
@@ -1066,6 +1047,11 @@ server <- function(input,output,session){
   #### 2.1.2.6. Define UMAP Plot ####
   #Plot content is defined separately in a reactive context, to be rendered later with the UI.
   umap_plot_content <- reactive({
+    #validate will keep plot code from running if the subset is NULL 
+    #(no cells in subset)
+    validate(
+      need(plots_subset(), "No cells in subset.")
+    )
     #Produce a single UMAP plot if no features to split by are specified
     if (input$umap_split_by=="none"){
       #Use full object if is_subset is FALSE, and use the subset otherwise
@@ -1790,7 +1776,7 @@ server <- function(input,output,session){
             unique() |>
             #Convert to a character vector
             unlist()
-        }else if (input$dge_group_by=="response"){
+        } else if (input$dge_group_by=="response"){
           valid_patients <- sobj@meta.data |> 
             filter(
               #Use two response selections and picker input for treatment
@@ -1941,158 +1927,25 @@ server <- function(input,output,session){
       #capture errors. This error handling code has been duplicated verbatim 
       #from section 2.3.2.1 - likely isn't necessary here; should be removed 
       #if warranted by testing.
-      tryCatch(
-        #If an error is caught: attempt to determine type of error by inspecting
-        #message text with grepl (not recommended, but I currently don't know 
-        #any other way to catch this error type)
+      dge_table <- tryCatch(
+        #If an error is caught: attempt to determine type of 
+        #error by inspecting message text with grepl (not recommended, 
+        #but I currently don't know any other way to catch this error type)
         error = function(cnd) {
-          #Error 1: RAM error
-          if (grepl("cannot allocate vector of size", cnd$message)) {
-            #This reactive value will instruct the correlation table UI 
-            #to display differently based on the error
-            rv$memory_error = TRUE
-            #Define notification to be displayed to user upon memory error
-            mem_err_ui <-
-              icon_notification_ui(
-                icon_name = "skull-crossbones",
-                message = tagList(
-                  "Memory Error: RAM is insufficient for analyzing the specified subset. Please narrow down the subset scope using the restriction criteria to the left, and feel free to ",
-                  tags$a(
-                    "let us know",
-                    href =
-                      "https://github.com/amc-heme/DataExploreShiny/issues",
-                    target =
-                      "_blank",
-                    #Opens link in new tab
-                    rel =
-                      "noopener noreferrer"
-                  ),
-                  " ",
-                  #Space after link
-                  "if you repeatedly recieve this error."
-                )#End tagList
-              )
-            
-            #Display notification
-            showNotification(
-              ui = mem_err_ui,
-              #Duration=NULL will make the message persist until dismissed
-              duration = NULL,
-              id = "dge_mem_error",
-              session =
-                session
-            )
-          }
-          #Error 2: vector memory exhausted
-          if (grepl("vector memory exhausted", cnd$message)) {
-            rv$vector_mem_error = TRUE
-            
-            #Define Notification UI
-            vector_err_ui <-
-              icon_notification_ui(
-                icon_name = "skull-crossbones",
-                message = tagList(
-                  "Error: vector memory exhausted. Please ",
-                  tags$a(
-                    "report this issue",
-                    href =
-                      "https://github.com/amc-heme/DataExploreShiny/issues",
-                    target =
-                      "_blank",
-                    #Opens link in new tab
-                    rel =
-                      "noopener noreferrer"
-                  ),
-                  " ",
-                  #Space after link
-                  "with a screenshot of the response criteria selected, and please narrow down the subset criteria for now."
-                )#End tagList
-              )
-            
-            #Display Notification
-            showNotification(
-              ui = vector_err_ui,
-              #Duration=NULL will make the message persist until dismissed
-              duration = NULL,
-              id = "dge_vector_mem_error",
-              session =
-                session
-            )
-          
-            #Error 3: No cells found in current Subset
-          } else if (grepl("No cells found", cnd$message)) {
-            #This reactive value will instruct the correlation 
-            #table UI to display differently based on the error
-            rv$memory_error = TRUE
-            #Define notification to be displayed to user upon memory error
-            mem_err_ui <-
-              icon_notification_ui(
-                icon_name = "skull-crossbones",
-                message = tagList(
-                  "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
-                  tags$a(
-                    "let us know",
-                    href =
-                      "https://github.com/amc-heme/DataExploreShiny/issues",
-                    target =
-                      "_blank",
-                    #Opens link in new tab
-                    rel =
-                      "noopener noreferrer"
-                  ),
-                  #Period at end of link
-                  "."
-                )#End tagList
-              )
-            
-            #Display notification
-            showNotification(
-              ui = mem_err_ui,
-              #Duration=NULL will make the message persist until dismissed
-              duration = NULL,
-              id = "plots_no_cells_found",
-              session =
-                session
-            )
-          }
-          #Notification for any unforseen error type
-          else {
-            rv$other_error = TRUE
-            
-            #Define Notification UI
-            other_err_ui <-
-              icon_notification_ui(
-                icon_name = "skull-crossbones",
-                message = tagList(
-                  glue("Error: {cnd$message}. Please "),
-                  tags$a(
-                    "report this issue ",
-                    href =
-                      "https://github.com/amc-heme/DataExploreShiny/issues",
-                    target =
-                      "_blank",
-                    #Opens link in new tab
-                    rel =
-                      "noopener noreferrer"
-                  ),
-                  "with a screenshot of the app window."
-                )#End tagList
-              )
-            
-            #Display Notification
-            showNotification(
-              ui = other_err_ui,
-              #Duration=NULL will make the message persist until dismissed
-              duration = NULL,
-              id = "dge_other_error",
-              session =
-                session
-            )
-          }
+          #Use error_handler function to display notifications to the 
+          #user based on the error message
+          error_handler(session,
+                        cnd_message=cnd$message,
+                        #The error handling function uses a list 
+                        #of subset-specific errors 
+                        error_list = subset_error_list,
+                        #Id prefix for notification elements
+                        id_prefix = "dge")
           
           #Return nothing if an error occurs
-          table <-
+          dge_table <-
             NULL 
+          return(dge_table)
         },
         #End error function
         #Begin tryCatch code
@@ -2858,8 +2711,9 @@ server <- function(input,output,session){
  
   ### 2.3.2. Correlation table for selected feature and restriction criteria ####
   #Table updates only when the "Submit" button is clicked
-  #### 2.3.2.1. Store table content (this table is accessed by the download handler, ####
-  #and converted to DT format in 2.3.2.2. for display in app)
+  #### 2.3.2.1. Compute table content ####
+  #The table in this function is accessed by the download handler,
+  #and converted to DT format in 2.3.2.2. for display in app
   corr_table_content <- eventReactive(input$corr_submit,
                                       label="Corelation Table Content",
                                       ignoreInit = FALSE, 
@@ -2882,119 +2736,21 @@ server <- function(input,output,session){
       )
       
       #Error handling: errors are frequent in this script, often due to memory limitations, and they will result in the spinner not disappearing from the main window since waiter_hide() exists at the end this code block. Therefore, the code in this block must be handled with tryCatch() to capture errors.
-      tryCatch(
-        #If an error is caught: attempt to determine type of error by inspecting message text with grepl (not recommended, but I currently don't know any other way to catch this error type)
+      cor_table <- tryCatch(
+        #If an error is caught: attempt to determine type of error by
+        #inspecting message text with grepl (not recommended, but I
+        #currently don't know any other way to catch this error type)
         error = function(cnd){
-          print(class(cnd$message))
-          #Error 1: RAM error
-          if (grepl("cannot allocate vector of size",cnd$message)){
-            #This reactive value will instruct the correlation table UI to display differently based on the error
-            rv$memory_error=TRUE
-            #Define notification to be displayed to user upon memory error
-            mem_err_ui <- icon_notification_ui(icon_name = "skull-crossbones",
-                                               message = tagList(
-                                                 "Memory Error: RAM is insufficient for analyzing the specified subset. Please narrow down the subset scope using the restriction criteria to the left, and feel free to ",
-                                                 tags$a("let us know",
-                                                        href="https://github.com/amc-heme/DataExploreShiny/issues",
-                                                        target="_blank", #Opens link in new tab
-                                                        rel="noopener noreferrer"),
-                                                 " ",#Space after link 
-                                                 "if you repeatedly recieve this error.")#End tagList
-                                               )
-            
-            #Display notification
-            showNotification(ui=mem_err_ui, 
-                             #Duration=NULL will make the message persist until dismissed
-                             duration = NULL,
-                             id = "corr_mem_error",
-                             session=session)
-          }
-          #Error 2: vector memory exhausted
-          if (grepl("vector memory exhausted",cnd$message)){
-            rv$vector_mem_error=TRUE
-            
-            #Define Notification UI
-            vector_err_ui <- icon_notification_ui(icon_name = "skull-crossbones",
-                                               message = tagList(
-                                                 "Error: vector memory exhausted. Please ",
-                                                 tags$a("report this issue",
-                                                        href="https://github.com/amc-heme/DataExploreShiny/issues",
-                                                        target="_blank", #Opens link in new tab
-                                                        rel="noopener noreferrer"),
-                                                 " ", #Space after link
-                                                 "with a screenshot of the response criteria selected, and please narrow down the subset criteria for now.")#End tagList
-            )
-            
-            #Display Notification
-            showNotification(ui=vector_err_ui, 
-                             #Duration=NULL will make the message persist until dismissed
-                             duration = NULL,
-                             id = "corr_vector_mem_error",
-                             session=session)
-            
-            #Error 3: No Cells in Subset
-          } else if (grepl("No cells found", cnd$message)) {
-            #This reactive value will instruct the correlation 
-            #table UI to display differently based on the error
-            rv$memory_error = TRUE
-            #Define notification to be displayed to user upon memory error
-            mem_err_ui <-
-              icon_notification_ui(
-                icon_name = "skull-crossbones",
-                message = tagList(
-                  "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
-                  tags$a(
-                    "let us know",
-                    href =
-                      "https://github.com/amc-heme/DataExploreShiny/issues",
-                    target =
-                      "_blank",
-                    #Opens link in new tab
-                    rel =
-                      "noopener noreferrer"
-                  ),
-                  #Period at end of link
-                  "."
-                )#End tagList
-              )
-            
-            #Display notification
-            showNotification(
-              ui = mem_err_ui,
-              #Duration=NULL will make the message persist until dismissed
-              duration = NULL,
-              id = "plots_no_cells_found",
-              session =
-                session
-            )
-          }
-          #Notification for any unforseen error type
-          else {
-            rv$other_error=TRUE
-            
-            #Define Notification UI
-            other_err_ui <- icon_notification_ui(icon_name = "skull-crossbones",
-                                                  message = tagList(
-                                                    glue("Error: {cnd$message}. Please "),
-                                                    tags$a("report this issue ",
-                                                           href="https://github.com/amc-heme/DataExploreShiny/issues",
-                                                           target="_blank", #Opens link in new tab
-                                                           rel="noopener noreferrer"),
-                                                    "with a screenshot of the app window.")#End tagList
-            )
-            
-            #Display Notification
-            showNotification(ui=other_err_ui, 
-                             #Duration=NULL will make the message persist until dismissed
-                             duration = NULL,
-                             id = "corr_other_error",
-                             session=session)
-          }
+          error_handler(session, 
+                        cnd_message=cnd$message,
+                        #Uses a list of subset-specific errors 
+                        error_list=subset_error_list,
+                        #Id prefix for notification elements
+                        id_prefix = "plots")
           
-          #This will eventually be replaced with an error message to display to the user
-          print("An error ocurred while computing correlation table code.")
-          print(cnd$message)
-          table <- NULL #Return nothing if an error occurs
+          #Return nothing for the correlation table if an error occurs
+          cor_table <- NULL 
+          return(table)
         },#End error function
         #Begin tryCatch code
         {
@@ -3060,7 +2816,7 @@ server <- function(input,output,session){
       waiter_hide(id="corr_sidebar")
       
       #Return table for storage in corr_table_content()
-      table
+      cor_table
     }
   })
   

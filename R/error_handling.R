@@ -44,43 +44,6 @@ add_error_notification <- function(message,notification_ui,notification_id){
   error
 }
 
-
-#Use the above information to create a list of errors to catch
-# List of errors for subset operations ####
-subset_error_list<- list(add_error_notification(message="cannot allocate vector of size",
-                                         notification_ui=icon_notification_ui_2(icon_name = "skull-crossbones",
-                                                                                tagList(
-                                                                                  "Memory Error: RAM is insufficient for analyzing the specified subset. Please narrow down the subset scope using the restriction criteria to the left, and feel free to", 
-                                                                                  github_link(display_text = "let us know"),
-                                                                                  " ",#Space after link
-                                                                                  "if you repeatedly recieve this error.")#End tagList
-                                         ),#End icon_notification_ui
-                                         notification_id = "mem_error"
-),#End add_error_notification
-
-#Error 2: Vector memory exhausted
-add_error_notification(message="vector memory exhausted",
-                       notification_ui=icon_notification_ui_2(icon_name = "skull-crossbones",
-                                                              "Error: vector memory exhausted. If this issue persists, please ",
-                                                              github_link("contact us"),
-                                                              " with a screenshot of the response criteria selected. For now, narrowing down the subset criteria may resolve the error."
-                       ),#End icon_notification_ui
-                       notification_id = "vector_mem_error"
-),
-
-#Error 3: No Cells in Subset
-add_error_notification(message = "No cells found",
-                       icon_notification_ui_2(
-                         icon_name = "skull-crossbones",
-                         "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
-                         github_link("let_us_know"),
-                         #Period at end of link
-                         "."
-                       ),#End icon_notification_ui
-                       notification_id = "no_cells_found"
-)#End add_error_notification
-)#End list of error definitions
-
 # Error Handler Function #### 
 #Given an error condition message returned in a tryCatch() 
 #statement and a list connecting error messages to UI for shiny notifications,
@@ -91,6 +54,9 @@ add_error_notification(message = "No cells found",
 #issue_href argument. The duration the message remains on the screen can be set 
 #and is NULL by default; this will result in a persistent notification. 
 error_handler <- function(session,cnd_message,error_list,issue_href="https://github.com/amc-heme/DataExploreShiny/issues", id_prefix="",duration=NULL){
+  #Error match: conditional that is set to TRUE when an error is found, signaling
+  #the function not to run the code for displaying a generic error message
+  error_match <- FALSE
   #Loop through all defined error types (error_list)
   for (error_type in error_list){
     #If the condition message (the error that is returned) matches the error 
@@ -104,25 +70,31 @@ error_handler <- function(session,cnd_message,error_list,issue_href="https://git
                        duration = duration,
                        id = paste0(id_prefix,"_",error_type$notification_id),
                        session=session)
+      
+      #If error is found, set error_match to TRUE and break the loop 
+      error_match <- TRUE
+      break
     }
-    #If error is found, break the loop 
-    break
+    
   }
-  #If all error types are looped through and no match is found, display a generic
-  #error message
-  #Define UI for generic error
-  #Define Notification UI
-  other_err_ui <- icon_notification_ui_2(icon_name = "skull-crossbones",
-                                         glue("Error: {cnd$message}. Please "),
-                                         github_link("report this issue"),
-                                         " with a screenshot of the app window."
-  )
   
-  #Display Notification
-  showNotification(ui=other_err_ui,
-                   #Duration=NULL will make the message 
-                   #persist until dismissed (default)
-                   duration = duration,
-                   id = paste0(id_prefix,"_other_error"),
-                   session=session)
+  #If all error types are looped through and no match is found, 
+  #display a generic error message
+  if (error_match==FALSE){
+    #Define UI for generic error
+    other_err_ui <- icon_notification_ui_2(icon_name = "skull-crossbones",
+                                           glue("Error: {cnd_message}. Please "),
+                                           github_link("report this issue"),
+                                           " with a screenshot of the app window."
+    )
+    
+    #Display Notification
+    showNotification(ui=other_err_ui,
+                     #Duration=NULL will make the message 
+                     #persist until dismissed (default)
+                     duration = duration,
+                     id = paste0(id_prefix,"_other_error"),
+                     session=session)
+  }
+  
 }
