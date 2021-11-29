@@ -806,7 +806,8 @@ server <- function(input,output,session){
                                     id = "plots_main_panel",
                                     html = spin_loaders(id = 2, color = "#555588"),
                                     color = "#FFFFFF",
-                                    hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+                                    #Gives manual control of showing/hiding spinner
+                                    hide_on_render = FALSE 
                                   )
                                   
                                   #Also display a spinner over the text showing
@@ -1050,7 +1051,9 @@ server <- function(input,output,session){
     #validate will keep plot code from running if the subset is NULL 
     #(no cells in subset)
     validate(
-      need(plots_subset(), "No cells in subset.")
+      need(plots_subset(),
+           #No message displayed (a notification is already displayed)
+           message = "")
     )
     #Produce a single UMAP plot if no features to split by are specified
     if (input$umap_split_by=="none"){
@@ -1796,7 +1799,7 @@ server <- function(input,output,session){
         #Sort patients categorized list so they appear in order
         valid_patients_categories <- sort_patient_list(valid_patients_categories)
         
-        #Update picker input with valid patient ID's
+        #Update picker input with valid patient IDs
         updatePickerInput(
           session,
           inputId = "dge_htb_selection",
@@ -2067,9 +2070,14 @@ server <- function(input,output,session){
           
           print("Subset Stats")
           ###Subset Stats
+          #Subset stats
+          #compute_subset_stats(input,output,session,rv,nonzero_threshold)
+            
           #Cells in subset
           rv$dge_n_cells <-
             length(Cells(rv$dge_s_sub))
+          
+          ## DGE-specific Stats
           #Number of classes in selection
           rv$dge_n_classes <- length(unique(rv$dge_s_sub@meta.data[,input$dge_group_by]))
           #Mode selection
@@ -2765,37 +2773,41 @@ server <- function(input,output,session){
           
           ###Subset Stats
           print("Subset Stats")
-          #Determine the proportion of cells with nonzero reads for the selected gene. If it is below the threshold defined at the top of this script, return a warning to the user.
-          #Cells in subset
-          rv$n_cells <- length(Cells(rv$s_sub))
-          #Cells with nonzero reads
-          rv$n_nonzero <- sum(rv$s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
-          #Proportion of nonzero reads
-          rv$prop_nonzero <- rv$n_nonzero/rv$n_cells
-          #Store as a percentage (format to show at least two digits after decimal point, and at least three sig figs)
-          rv$percent_nonzero <- format(rv$prop_nonzero*100, digits=3, nsmall=2, scientific=FALSE)
-          print(paste0("Percent nonzero: ",rv$percent_nonzero,"%"))
-        
-          #Notification if nonzero proportion is too low
-          if (rv$prop_nonzero < nonzero_threshold){
-            #Define notification UI (warning icon plus text)
-            notification_ui <- span(
-              #Warning icon (inline and enlarged)
-              icon("exclamation-triangle", style="display: inline-block; font-size: 1.7em;"),
-              #Notification text with proportion and number of non-zero cells
-              span(glue("Low gene coverage: the selected feature was detected in {rv$percent_nonzero}% of cells within the selection restriction criteria ({rv$n_nonzero}/{rv$n_cells} cells). Correlation results may be inaccurate."),
-                   #Font size of notification text 
-                   style="font-size: 1.17em;")#End span
-            )#End notification_ui span
-            
-            #Display notification UI
-            showNotification(ui=notification_ui, 
-                             #Duration=NULL will make the message persist until dismissed
-                             duration = NULL,
-                             id = "corr_high_zero_content",
-                             session=session)
-          } 
-          ###
+          #Determine the proportion of cells with nonzero reads for the selected 
+          #gene. If it is below the threshold defined at the top of this script,
+          #return a warning to the user.
+          
+          compute_subset_stats(input,output,session,rv,nonzero_threshold)
+#          #Cells in subset
+#          rv$n_cells <- length(Cells(rv$s_sub))
+#          #Cells with nonzero reads
+#          rv$n_nonzero <- sum(rv$s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
+#          #Proportion of nonzero reads
+#          rv$prop_nonzero <- rv$n_nonzero/rv$n_cells
+#          #Store as a percentage (format to show at least two digits after decimal #point, and at least three sig figs)
+#          rv$percent_nonzero <- format(rv$prop_nonzero*100, digits=3, nsmall=2, #scientific=FALSE)
+#          print(paste0("Percent nonzero: ",rv$percent_nonzero,"%"))
+#        
+#          #Notification if nonzero proportion is too low
+#          if (rv$prop_nonzero < nonzero_threshold){
+#            #Define notification UI (warning icon plus text)
+#            notification_ui <- span(
+#              #Warning icon (inline and enlarged)
+#              icon("exclamation-triangle", style="display: inline-block; font-size: 1.7em;"),
+#              #Notification text with proportion and number of non-zero cells
+#              span(glue("Low gene coverage: the selected feature was detected in #{rv$percent_nonzero}% of cells within the selection restriction criteria ({rv$n_nonzero}/{rv$n_cells} cells). Correlation results may be inaccurate."),
+#                   #Font size of notification text 
+#                   style="font-size: 1.17em;")#End span
+#            )#End notification_ui span
+#            
+#            #Display notification UI
+#            showNotification(ui=notification_ui, 
+#                             #Duration=NULL will make the message persist until #dismissed
+#                             duration = NULL,
+#                             id = "corr_high_zero_content",
+#                             session=session)
+#          } 
+#          ###
           
           print("Make Matrix")
           #Convert subset data to matrix and transpose so columns are gene names
@@ -3096,12 +3108,7 @@ server <- function(input,output,session){
   #Render Statistics
   observeEvent(input$corr_submit,
                label = "Render Statistics",{
-                 #Rendering Selections and Stats for report
-                 output$selected_clusters <- renderText(isolate(vector_to_text(input$clusters_selection)))
-                 output$selected_response <- renderText(isolate(vector_to_text(input$response_selection)))
-                 output$selected_htb <- renderText(isolate(vector_to_text(input$htb_selection)))
-                 output$print_n_cells <- renderText(isolate(rv$n_cells))
-                 output$print_nonzero <- renderText(isolate(glue("{rv$n_nonzero} ({rv$percent_nonzero}%)")))
+                 render_statistics(input,output,session,rv)
                })
   
   ### 2.3.7. Download Handlers ####
