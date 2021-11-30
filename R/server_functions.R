@@ -61,6 +61,8 @@ render_statistics <- function(input,output,session,rv){
   #Percent of cells with non-zero reads
   output$print_nonzero <- renderText(isolate(glue("{rv$n_nonzero} ({rv$percent_nonzero}%)")))
 
+}
+  
 #Compute_correlation: ####
 #Takes the gene selection via input and the Seurat object via object, and 
 #computes a correlation table for the selected gene in the Seurat object
