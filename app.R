@@ -700,10 +700,10 @@ server <- function(input,output,session){
   rv$is_subset <- FALSE
   #*_use_original_limits: if TRUE, modify the axes on UMAP and feature plots to
   #match the original UMAPs created from the full dataset
-  rv$umap_use_original_limits=FALSE
-  rv$feature_use_original_limits=FALSE
+  rv$umap_use_original_limits <- FALSE
+  rv$feature_use_original_limits <- FALSE
   #This is true when rows are selected from the correlations table
-  rv$corr_rows_selected=FALSE
+  rv$corr_rows_selected <- FALSE
     
   #2.0.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
