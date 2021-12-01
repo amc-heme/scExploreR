@@ -2,7 +2,9 @@
 /* Copy below CSS to separate document when functional */
 /* Waiter (spinner) overlay */
 .waiter-overlay{
-z-index: 999; /* Default is 99,999, which displays over the help menu.*/
+/* Default z-index is 99,999, which displays over the
+help menu (z-index of 1000) */
+z-index: 999;
 }
 
 /* hidden_button class */
@@ -23,4 +25,10 @@ z-index: 999; /* Default is 99,999, which displays over the help menu.*/
   border: none;
   margin: 0em 2em;
   padding: 0em;
+}
+
+/* Correlations tab UI: remove margin from bottom of
+group by dropdown menu */
+#corr_scatter_group_by{
+  margin-bottom: 0em;
 }

@@ -552,7 +552,8 @@ corr_tab <- function(){
                         multiple = TRUE,
                         options = list(
                           "selected-text-format" = "count > 5",
-                          "size" = 10, #Define max options to show at a time to keep menu from being cut off
+                          #Define max options to show at a time to keep menu from being cut off
+                          "size" = 10, 
                           "actions-box"=TRUE)),
             pickerInput(inputId = "response_selection",
                         label = "Restrict by Response",
@@ -704,6 +705,8 @@ server <- function(input,output,session){
   rv$feature_use_original_limits <- FALSE
   #This is true when rows are selected from the correlations table
   rv$corr_rows_selected <- FALSE
+  #This is true when a subset is selected in the correlations tab
+  rv$corr_is_subset <- FALSE
     
   #2.0.2. Render feature choices for text feature selection (plots tab)
   updateSelectizeInput(session,
@@ -2743,8 +2746,10 @@ server <- function(input,output,session){
         hide_on_render = FALSE #Gives manual control of showing/hiding spinner
       )
       
-      #Error handling: errors are frequent in this script, often due to memory limitations, and they will result in the spinner not disappearing from the main window since waiter_hide() exists at the end this code block. Therefore, the code in this block must be handled with tryCatch() to capture errors.
-      cor_table <- tryCatch(
+      #Error handling: the code in this block must be handled with tryCatch() to 
+      #capture errors that may arise from selecting subsets with zero cells, or 
+      #from memory limitations that may be reached with larger datasets.
+      corr_table <- tryCatch(
         #If an error is caught: attempt to determine type of error by
         #inspecting message text with grepl (not recommended, but I
         #currently don't know any other way to catch this error type)
@@ -2757,69 +2762,79 @@ server <- function(input,output,session){
                         id_prefix = "plots")
           
           #Return nothing for the correlation table if an error occurs
-          cor_table <- NULL 
+          corr_table <- NULL 
           return(table)
         },#End error function
         #Begin tryCatch code
         {
           print("Make subset")
-          #Form subset based on chosen criteria (store in reactive value so the subset can be accessed in the scatterplot function)
+          #Form subset based on chosen criteria (store in reactive value so the 
+          #subset can be accessed in the scatterplot function)
           rv$s_sub <- subset(sobj, 
                           subset=(clusters %in% input$clusters_selection) & 
                             (response %in% input$response_selection) & 
                             (htb %in% input$htb_selection) &
                             (treatment %in% input$treatment_selection)
           )
+          #Determine if the subset created is a subset (if it is the full data,
+          #use different procedures for creating/rendering the table and plots)
+          if (n_cells_original!=ncol(rv$s_sub)){
+            rv$corr_is_subset <- TRUE
+          } else {
+            rv$corr_is_subset <- FALSE
+          }
           
           ###Subset Stats
           print("Subset Stats")
           #Determine the proportion of cells with nonzero reads for the selected 
           #gene. If it is below the threshold defined at the top of this script,
           #return a warning to the user.
-          
           compute_subset_stats(input,output,session,rv,nonzero_threshold)
-#          #Cells in subset
-#          rv$n_cells <- length(Cells(rv$s_sub))
-#          #Cells with nonzero reads
-#          rv$n_nonzero <- sum(rv$s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
-#          #Proportion of nonzero reads
-#          rv$prop_nonzero <- rv$n_nonzero/rv$n_cells
-#          #Store as a percentage (format to show at least two digits after decimal #point, and at least three sig figs)
-#          rv$percent_nonzero <- format(rv$prop_nonzero*100, digits=3, nsmall=2, #scientific=FALSE)
-#          print(paste0("Percent nonzero: ",rv$percent_nonzero,"%"))
-#        
-#          #Notification if nonzero proportion is too low
-#          if (rv$prop_nonzero < nonzero_threshold){
-#            #Define notification UI (warning icon plus text)
-#            notification_ui <- span(
-#              #Warning icon (inline and enlarged)
-#              icon("exclamation-triangle", style="display: inline-block; font-size: 1.7em;"),
-#              #Notification text with proportion and number of non-zero cells
-#              span(glue("Low gene coverage: the selected feature was detected in #{rv$percent_nonzero}% of cells within the selection restriction criteria ({rv$n_nonzero}/{rv$n_cells} cells). Correlation results may be inaccurate."),
-#                   #Font size of notification text 
-#                   style="font-size: 1.17em;")#End span
-#            )#End notification_ui span
-#            
-#            #Display notification UI
-#            showNotification(ui=notification_ui, 
-#                             #Duration=NULL will make the message persist until #dismissed
-#                             duration = NULL,
-#                             id = "corr_high_zero_content",
-#                             session=session)
-#          } 
-#          ###
           
-          print("Make Matrix")
-          #Convert subset data to matrix and transpose so columns are gene names
-          mat <- t(as.matrix(rv$s_sub@assays$RNA@data))
+          #Compute correlations
+          #If a subset has been selected, correlation coefficients between the 
+          #selected feature and others will be computed for both the full data 
+          #and the subset, and both will be displayed. If a subset is not selected, 
+          #correlation coefficients will only be computed for the full data.
+          if (rv$corr_is_subset==TRUE){
+            #Subset is selected: compute both tables and merge
+            table_full <- compute_correlation(input,
+                                              object = sobj,
+                                              colnames=c("Feature","Correlation_Global")
+                                              )
+            
+            table_subset <- compute_correlation(input,
+                                                object = rv$s_sub,
+                                                colnames=c("Feature","Correlation_Subset")
+                                                )
+            
+            #Merge individual tables and arrange in descending order by the 
+            #subset correlation coefficient
+            corr_table <- merge(table_full,table_subset, by = "Feature") |>
+              arrange(desc(.data[["Correlation_Subset"]]))
+            
+          }else{
+            #A subset is not present: compute the table for the subset
+            corr_table <- compute_correlation(input,
+                                         object = rv$s_sub,
+                                         colnames=c("Feature","Correlation_Subset")
+                                         )
+          }
           
-          print("Compute correlations")
-          #Form correlation matrix
-          table <- cor(mat[,input$corr_feature_selection],mat) |> #Compute correlation between selected feature and others
-            t() |> #Code returns coefficients for each feature in rows (want columns) 
-            enframe("Feature","Correlation_Coefficient") |> #Convert matrix to tibble
-            filter(Feature != input$corr_feature_selection) |> #Filter out selected feature
-            arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
+          #Return corr_table to eventReactive() function
+          corr_table
+          
+#          print("Make Matrix")
+#          #Convert subset data to matrix and transpose so columns are gene names
+#          mat <- t(as.matrix(rv$s_sub@assays$RNA@data))
+#          
+#          print("Compute correlations")
+#          #Form correlation matrix
+#          table <- cor(mat[,input$corr_feature_selection],mat) |> #Compute correlation between selected feature and others
+#            t() |> #Code returns coefficients for each feature in rows (want columns) 
+#            enframe("Feature","Correlation_Coefficient") |> #Convert matrix to tibble
+#            filter(Feature != input$corr_feature_selection) |> #Filter out selected feature
+#            arrange(desc(Correlation_Coefficient)) #Arrange in descending order by correlation coeff
           
           })#End tryCatch
       
@@ -2828,25 +2843,75 @@ server <- function(input,output,session){
       waiter_hide(id="corr_sidebar")
       
       #Return table for storage in corr_table_content()
-      cor_table
+      corr_table
     }
   })
   
   #### 2.3.2.2. Store table in DT format for display in app ####
-  corr_DT_content <- eventReactive(input$corr_submit,
+  corr_DT_content <- eventReactive(c(input$corr_submit,rv$corr_is_subset),
                                    label = "Corr DT Content",
                                    ignoreNULL = FALSE,
                                    {
+                                     #Define header for datatable using HTML
+                                     if(rv$corr_is_subset==TRUE){
+                                       #If a subset is selected, the header will 
+                                       #have three columns for the feature, the 
+                                       #global correlation coefficients, and the 
+                                       #correlation coefficients for the subset
+                                       header <- tags$table(
+                                         #center-colnames class: centers the 
+                                         #column names in the header
+                                         class = "compact stripe cell-border hover center-colnames",
+                                         tags$thead(
+                                           tags$tr(
+                                             tags$th("Feature"),
+                                             tags$th(
+                                               tagList("Correlation",
+                                                       tags$br(),
+                                                       "(Global)"
+                                               )
+                                             ),
+                                             tags$th(
+                                               tagList("Correlation",
+                                                       tags$br(),
+                                                       "(Subset)")
+                                             ) #End th
+                                           ) #End tr
+                                         ) #End thead
+                                       ) #End table
+                                       
+                                     } else {
+                                       header <- tags$table(
+                                         #center-colnames class: centers the 
+                                         #column names in the header
+                                         class = "compact stripe cell-border hover center-colnames",
+                                         tags$thead(
+                                           tags$tr(
+                                             tags$th("Feature"),
+                                             tags$th(
+                                               tagList("Correlation Coefficient",
+                                                       tags$br(),
+                                                       "(Global)")
+                                             ) #End th
+                                           ) #End tr
+                                         ) #End thead
+                                       ) #End table tag
+                                       }
+                                     
                                      datatable(
                                        corr_table_content(),
                                        class = "compact stripe cell-border hover",
                                        selection = "single",
                                        filter = "top",
-                                       rownames = FALSE
+                                       rownames = FALSE,
+                                       container = header
                                      ) %>%
-                                       #Use 5 sig figs for column 2 
-                                       #(pearson coefficient column)
-                                       formatSignif(2, 5)
+                                       #Use 5 sig figs for pearson coefficient 
+                                       #column(s). If a subset is used, this 
+                                       #will be columns 2 and 3; if not, 
+                                       #this will be column 2.
+                                       formatSignif(columns= if(rv$corr_is_subset==TRUE) c(2,3) else 2, 
+                                                    digits=5)
                                    })
   
   ### 2.3.3. Correlations UI ####
@@ -2921,31 +2986,44 @@ server <- function(input,output,session){
   
   #### 2.3.3.2. Correlations scatterplot UI ####
   #Computed separately from main UI since it responds to a different user input (clicking table)
-  corr_scatter_ui <- eventReactive(input$corr_table_rows_selected,
+  corr_scatter_ui <- eventReactive(c(input$corr_table_rows_selected,rv$corr_is_subset),
                                       label="Correlation Scatterplot UI",
                                       ignoreNULL = FALSE,
                                    {
                                      #Display the graph if rows are selected
                                       if (length(input$corr_table_rows_selected)>0){
-                                        tagList(
-                                          tags$strong("Scatterplot for Subset", 
-                                                      class="center single-space-bottom"),
-                                          plotOutput(outputId = "corr_scatter_subset", 
-                                                     height = "400px", 
-                                                     width="400px"),
-                                          tags$strong("Scatterplot for Full Data", 
-                                                      class="center single-space-bottom"),
-                                          plotOutput(outputId = "corr_scatter_global", 
-                                                     height = "400px", 
-                                                     width="400px")
+                                        #If a subset is selected, display two 
+                                        #plots: one for the subset and one for 
+                                        #the full data.
+                                        if (rv$corr_is_subset==TRUE){
+                                          tagList(
+                                            tags$strong("Scatterplot for Subset", 
+                                                        class="center single-space-bottom"),
+                                            plotOutput(outputId = "corr_scatter_subset", 
+                                                       height = "400px", 
+                                                       width="400px"),
+                                            tags$strong("Scatterplot for Full Data", 
+                                                        class="center single-space-bottom"),
+                                            plotOutput(outputId = "corr_scatter_global", 
+                                                       height = "400px", 
+                                                       width="400px")
                                           )
+                                        } else {
+                                          tagList(
+                                            tags$strong("Scatterplot", 
+                                                        class="center single-space-bottom"),
+                                            plotOutput(outputId = "corr_scatter_global", 
+                                                       height = "400px", 
+                                                       width="400px")
+                                            )
+                                          }
                                         }
                                      })
   
   #### 2.3.3.3. UI for customizing the scatterplot ####
   #This appears in the sidebar and displays a list of options used for customizing
   #the scatterplot
-  corr_scatter_options <- eventReactive(input$corr_table_rows_selected,
+  corr_scatter_options <- eventReactive(c(input$corr_table_rows_selected, rv$corr_is_subset),
                                         label="Corr. Scatterplot Options UI",
                                         ignoreNULL = FALSE,
                                         {
@@ -2967,21 +3045,33 @@ server <- function(input,output,session){
                                                 selected = "clusters"
                                               ),
                                               #Download button for scatterplot
-                                              #Subset
-                                              downloadButton(
-                                                outputId = "corr_download_scatter_subset",
-                                                label = "Download Scatterplot (Subset)",
-                                                #Adds space before button
-                                                class="space-top",
-                                                icon = icon("poll")
-                                              ), #End downloadButton
+                                              #Subset (displays only if a subset is selected)
+                                              if(rv$corr_is_subset==TRUE){
+                                                downloadButton(
+                                                  outputId = "corr_download_scatter_subset",
+                                                  label = "Download Scatterplot (Subset)",
+                                                  #Adds space before button
+                                                  class="space-top",
+                                                  icon = icon("poll")
+                                                )
+                                              } else NULL, #End downloadButton tag
                                               #Download button for scatterplot
                                               #Full data
                                               downloadButton(
                                                 outputId = "corr_download_scatter_global",
-                                                label = "Download Scatterplot (Full Data)",
+                                                #Label changes based on whether 
+                                                #a subset is selected
+                                                label = if(rv$corr_is_subset==TRUE){
+                                                  "Download Scatterplot (Full Data)"
+                                                  } else {
+                                                    "Download Scatterplot"},
                                                 #Adds space before button
-                                                class="space-top",
+                                                #This is only needed when a 
+                                                #subset is selected and there 
+                                                #are two buttons
+                                                class=if(rv$corr_is_subset==TRUE){
+                                                  "space-top"
+                                                  } else NULL,
                                                 icon = icon("poll")
                                               ) #End downloadButton
                                             ) #End collapsible_panel  
@@ -3015,30 +3105,49 @@ server <- function(input,output,session){
   #Becuase input$corr_table_rows_selected is NULL before the table is clicked,
   #An error flickers where the correlation plots are before displaying the plots,
   #giving the user the impression that an error has occurred. 
-  observeEvent(input$corr_table_rows_selected,
+  corr_rows_selected <- eventReactive(input$corr_table_rows_selected,
                label = "Rows Selected: Server Value",
                {
-                 #If the number of rows selected is defined and greater than 
-                 #zero, set rv$rows_selected to TRUE
-                 if (input$corr_table_rows_selected!=0){
-                   rv$corr_rows_selected=TRUE
+                 #If the number of rows selected is not NULL and not equal to 
+                 #`character(0)` (Value assigned by Shiny when no rows are 
+                 #selected), set rv$rows_selected to TRUE
+                 print(glue("Rows are selected: {(!identical(input$corr_table_rows_selected,character(0)))&
+                     (!is.null(input$corr_table_rows_selected))}"))
+                 if ((!identical(input$corr_table_rows_selected,character(0)))&
+                     (!is.null(input$corr_table_rows_selected))){
+                   corr_rows_selected=TRUE
+                 } else {
+                   #If a row is deselected or the table is re-computed, this must
+                   #be set back to FALSE to keep the scatterplot from running when
+                   #a feature is not selected, which will cause an error
+                   corr_rows_selected=FALSE
                  }
+                 
+                 return(corr_rows_selected)
                })
   
   
   ### 2.3.5. Plot of feature selected from table ####
   #### 2.3.5.1. Correlation scatterplot for subset
   #Row index of user selection from table is stored in input$corr_table_rows_selected.
-  corr_scatter_subset <- eventReactive(c(input$corr_table_rows_selected, input$corr_scatter_group_by),
+  #Reactive variable responds to input$corr_table_rows_selected and rv$corr_table_rows_selected
+  #input$corr_table_rows_selected is the index of the row selected, while
+  #corr_rows_selected() is the boolean generated in 2.3.4. This value is required 
+  #to prevent the code from running when the user has de-selected values 
+  corr_scatter_subset <- eventReactive(c(input$corr_table_rows_selected,
+                                         corr_rows_selected(),
+                                         input$corr_scatter_group_by),
                                   label="Correlation Scatterplot Content (Subset)",
                                   {
                                     row_idx <- input$corr_table_rows_selected
+                                    print(glue("corr_rows_selected(): {corr_rows_selected()}"))
                                     #Take action only if a row is selected
-                                    if (rv$corr_rows_selected==TRUE){
+                                    if (corr_rows_selected()==TRUE){
                                       #Record gene name of row selected
                                       rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
         
                                       #Make and store scatterplot
+                                      print(glue("For scatterplot: input$corr_feature_selection: {input$corr_feature_selection}"))
                                       FeatureScatter(rv$s_sub, 
                                                      feature1 = input$corr_feature_selection, 
                                                      feature2 = rv$gene_selected,
@@ -3048,12 +3157,14 @@ server <- function(input,output,session){
                                     })
   
   #### 2.3.5.2. Correlation plot for full data
-  corr_scatter_global <- eventReactive(c(input$corr_table_rows_selected, input$corr_scatter_group_by), 
+  corr_scatter_global <- eventReactive(c(input$corr_table_rows_selected, 
+                                         corr_rows_selected(),
+                                         input$corr_scatter_group_by), 
                                        label="Correlation Scatterplot Content (Global)",
                                        {
                                          row_idx <- input$corr_table_rows_selected
                                          #Take action only if a row is selected 
-                                         if (rv$corr_rows_selected==TRUE){
+                                         if (corr_rows_selected()==TRUE){
                                            #Record gene name of row selected
                                            rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
                                            
