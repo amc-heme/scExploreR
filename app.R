@@ -703,8 +703,6 @@ server <- function(input,output,session){
   #match the original UMAPs created from the full dataset
   rv$umap_use_original_limits <- FALSE
   rv$feature_use_original_limits <- FALSE
-  #This is true when rows are selected from the correlations table
-  rv$corr_rows_selected <- FALSE
   #This is true when a subset is selected in the correlations tab
   rv$corr_is_subset <- FALSE
     
