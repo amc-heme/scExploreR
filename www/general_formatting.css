@@ -1,0 +1,68 @@
+/* Formatting for text and other elements */
+
+/* Adjust margins of headers */
+h2, h3 {
+  margin-top: 10px !important;
+  margin-bottom: 5px !important;
+}
+
+/* Text CSS Classes */
+/* Center Header Tags */
+.center{
+  text-align: center;
+  /* Display must be set to block for centering to work */
+  display: block;
+}
+
+/* Large font*/
+.large {
+  font-size: 1.17em;
+}
+
+/* Extra-large font */
+.x-large{
+  font-size: 1.3em;
+}
+
+/* Spacing before element */
+.space-top{
+  margin-top: 0.5em;
+}
+
+/* Spacing after element */
+.half-space-bottom{
+  margin-bottom: 0.5em;
+}
+
+.single-space-bottom{
+  margin-bottom: 1.0em;
+}
+
+.inline-block{
+  display: inline-block;
+}
+
+.block {
+  display: block;
+}
+
+/* Two-column panel */
+.two_column {
+	width: 50%;
+	display: inline-block;
+	/* Add padding to sides of columns */
+	padding: 5px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+/* Add to two-column classes to automatically align left and right*/
+.float_left {
+	/* Use this class for the left column */
+  float: left;
+}
+
+.float_right {
+	/* Use this class for the right column */
+  float: right;
+}

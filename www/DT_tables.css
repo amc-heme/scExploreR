@@ -1,0 +1,31 @@
+/* Compact Table */
+/* Decrease padding in header*/
+table.dataTable thead th,table.dataTable thead td{
+  padding: 5px 18px;
+  border-bottom:1px solid #111;
+}
+
+/* Decrease Height of filter bar*/
+.form-control{
+  height: 30px;
+  padding: 5px 12px;
+}
+
+/* Re-size 'reset' button to fit filter bar */
+.form-control-feedback{
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+}
+
+/* Change cover of hover in DT tables where
+hover is enabled */
+table.hover > tbody > tr:hover{
+  background-color: #B0BEDA66 !important;
+}
+
+/* Center text in column names of DT tables
+with the center-colnames class*/
+table.center-colnames > thead > tr > th{
+  text-align: center !important;
+}
