@@ -9,6 +9,7 @@ library(rintrojs)
 library(shinydashboard)
 library(waiter)
 library(shinycssloaders)
+library(shinyjs)
 
 #Reactlog (for debugging)
 library(reactlog)
@@ -603,7 +604,8 @@ corr_tab <- function(){
   )#End fluidPage
 }#End 1.3.
 
-### Define user interface: code for navigation panel and references to tabs
+# Main UI ####
+# Navigation panel and references to tabs
 ui <- tagList(
   #Add CSS from each .css file in the www/ directory
   #Uses a list of style tags defined at startup
@@ -612,6 +614,8 @@ ui <- tagList(
   introjsUI(),
   #Waiter UI: spinners
   useWaiter(),
+  #Shinyjs: a Shiny JavaScript extension
+  useShinyjs(),
   #CSS Defined in Header
   tags$head(tags$style(HTML("body{
                             padding-top: 60px;
@@ -2728,15 +2732,14 @@ server <- function(input,output,session){
                                       ignoreInit = FALSE, 
                                       ignoreNULL = FALSE, 
                                       {
-    print("Running correlation table content code")
-    #Reactive value for identifying a memory error (defined here and reset to FALSE each time the correlation table code is ran)
-    rv$memory_error=FALSE
-    rv$vector_mem_error=FALSE
-    rv$other_error=FALSE
-    
+
     # Only run the correlation table code if a feature has been specified
     if (input$corr_feature_selection != ""){
-      #Show loading screen above main panel while table is computed (takes about a minute) 
+      #Hide the main screen UI while calculations are performed
+      #Selector argument: a jQuery selector. The .find() method will hide all 
+      #elements contained within corr_main_panel.
+      hideElement(id="corr_ui")
+      #Show loading screen above main panel while table is computed
       waiter_show(
         id = "corr_main_panel",
         html = spin_loaders(id=2, color = "#555588"),
@@ -2839,6 +2842,8 @@ server <- function(input,output,session){
       #Hide loading screen
       waiter_hide(id = "corr_main_panel")
       waiter_hide(id="corr_sidebar")
+      #Show content in main panel
+      showElement(id="corr_ui")
       
       #Return table for storage in corr_table_content()
       corr_table
