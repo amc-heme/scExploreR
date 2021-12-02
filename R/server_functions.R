@@ -1,4 +1,18 @@
-#Compute_subset_stats: used in correlations and dge tab. 
+#Create Subset ####
+#Takes a Seurat object and returns a subset based on selection criteria.
+#Currently hard-coded to work with specific metadata; will be generalized.
+make_subset <- function(input,sobj){
+  obj_sub <- subset(sobj, 
+                    subset=(clusters %in% input$clusters_selection) & 
+                      (response %in% input$response_selection) & 
+                      (htb %in% input$htb_selection) &
+                      (treatment %in% input$treatment_selection)
+                    )
+  return(obj_sub)
+}
+
+#Compute_subset_stats() ####
+#used in correlations and dge tab. 
 compute_subset_stats <- function(input,output,session,rv,nonzero_threshold){
   #Determine the proportion of cells with nonzero reads for the selected 
   #gene. If it is below the threshold defined at the top of this script,

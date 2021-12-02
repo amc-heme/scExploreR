@@ -847,15 +847,15 @@ server <- function(input,output,session){
                                  }, #End tryCatch error function
                                  #Begin tryCatch code
                                  {
-                                   plots_s_sub <- subset(
-                                     sobj,
-                                     subset =
-                                       (clusters %in% input$plots_clusters_selection) &
-                                       (response %in% input$plots_response_selection) &
-                                       (htb %in% input$plots_htb_selection) &
-                                       (treatment %in% input$plots_treatment_selection)
-                                   )
-                                   
+                                   make_subset(input,sobj)
+#                                   subset(
+#                                     sobj,
+#                                     subset =
+#                                       (clusters %in% input$plots_clusters_selection) &
+#                                       (response %in% input$plots_response_selection) &
+#                                       (htb %in% input$plots_htb_selection) &
+#                                       (treatment %in% input$plots_treatment_selection)
+#                                   )
                                  }
                                  )#End tryCatch
                                   
@@ -1914,12 +1914,6 @@ server <- function(input,output,session){
     label = "DGE Table Content",
     ignoreNULL = FALSE,
     {
-      #Reactive value for identifying a memory error (defined here and reset to 
-      #FALSE each time the dge table code is run)
-      rv$memory_error = FALSE
-      rv$vector_mem_error = FALSE
-      rv$other_error = FALSE
-      
       #Show loading screen above main panel while table is computed (takes about a minute)
       waiter_show(
         id = "dge_main_panel",
@@ -2771,12 +2765,8 @@ server <- function(input,output,session){
           print("Make subset")
           #Form subset based on chosen criteria (store in reactive value so the 
           #subset can be accessed in the scatterplot function)
-          rv$s_sub <- subset(sobj, 
-                          subset=(clusters %in% input$clusters_selection) & 
-                            (response %in% input$response_selection) & 
-                            (htb %in% input$htb_selection) &
-                            (treatment %in% input$treatment_selection)
-          )
+          rv$s_sub <- make_subset(input,sobj)
+
           #Determine if the subset created is a subset (if it is the full data,
           #use different procedures for creating/rendering the table and plots)
           if (n_cells_original!=ncol(rv$s_sub)){
