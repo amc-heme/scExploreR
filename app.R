@@ -847,15 +847,15 @@ server <- function(input,output,session){
                                  }, #End tryCatch error function
                                  #Begin tryCatch code
                                  {
-                                   make_subset(input,sobj)
-#                                   subset(
-#                                     sobj,
-#                                     subset =
-#                                       (clusters %in% input$plots_clusters_selection) &
-#                                       (response %in% input$plots_response_selection) &
-#                                       (htb %in% input$plots_htb_selection) &
-#                                       (treatment %in% input$plots_treatment_selection)
-#                                   )
+                                   #make_subset(input,sobj) #Does not work due to "plots_" prefix on inputs
+                                   subset(
+                                     sobj,
+                                     subset =
+                                       (clusters %in% input$plots_clusters_selection) &
+                                       (response %in% input$plots_response_selection) &
+                                       (htb %in% input$plots_htb_selection) &
+                                       (treatment %in% input$plots_treatment_selection)
+                                   )
                                  }
                                  )#End tryCatch
                                   
