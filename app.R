@@ -381,7 +381,8 @@ plots_tab <- function(){
                                                       #Choose metadata to group violin plot by
                                                       selectInput(inputId = "vln_group_by", 
                                                                   label = "Metadata to group by:",
-                                                                  choices=meta_choices[meta_choices %in% "none" == FALSE], #Remove "none" from selectable options to group.by
+                                                                  #Remove "none" from selectable options to group.by
+                                                                  choices=meta_choices[meta_choices %in% "none" == FALSE], 
                                                                   selected = "clusters"),
                                                       
                                                       #Choose metadata to split violin plot by
@@ -651,8 +652,8 @@ ui <- tagList(
                                    icon = icon("question"),
                                    tagList(tags$p("Help and Background",
                                                   style="color: #888888; 
-                                margin-bottom: 0px; 
-                                font-size: 1.17em;"
+                                                  margin-bottom: 0px;
+                                                  font-size: 1.17em;"
                                    ),
                                    #Guided tour
                                   # actionLink(inputId = "start_intro",
@@ -722,29 +723,6 @@ server <- function(input,output,session){
                        choices = genes,
                        selected = character(0),
                        server = TRUE)
-  
-  #Open Help Dropdown and initialize guided tour
-#  introjs(session,
-#          options = list("nextLabel" = ">",
-#                         "prevLabel" = "<",
-#                         "skipLabel" = "skip",
-#                         "overlayOpacity" = -1
-#                         ),
-#          events = list("onbeforechange" = readCallback("switchTabs")) ##End list
-#          ) #End introjs
-  
-  #Open the intro every time the user clicks the "guided tour" button
-  observeEvent(input$start_intro, {
-    print("Detected link")
-    introjs(session,
-            options = list("nextLabel" = ">",
-                           "prevLabel" = "<",
-                           "skipLabel" = "skip",
-                           "overlayOpacity" = -1
-                           ),
-            events = list("onbeforechange" = readCallback("switchTabs"))
-            )
-  })
   
   ## 2.1. Plots Tab #####
   ### 2.1.1 Define subset for plots #####
@@ -847,7 +825,7 @@ server <- function(input,output,session){
                                  }, #End tryCatch error function
                                  #Begin tryCatch code
                                  {
-                                   #make_subset(input,sobj) #Does not work due to "plots_" prefix on inputs
+                                   #make_subset(input,sobj)
                                    subset(
                                      sobj,
                                      subset =
@@ -1158,9 +1136,9 @@ server <- function(input,output,session){
         ggsave(file, 
                plot=umap_plot_content(), 
                device="png",
-               width=umap_width()*5,
-               height=umap_height()*5,
-               dpi=300,
+               width=umap_width(),
+               height=umap_height(),
+               dpi=72,
                units="px")
       } else {
         ggsave(file, 
@@ -1356,9 +1334,9 @@ server <- function(input,output,session){
         ggsave(file, 
                plot=feature_plot_content(), 
                device="png",
-               width=umap_width()*5,
-               height=umap_height()*5,
-               dpi=300,
+               width=feature_width(),
+               height=feature_height(),
+               dpi=72,
                units="px")
       } else {
         ggsave(file, 
@@ -1458,7 +1436,7 @@ server <- function(input,output,session){
     #If/else if structure: code runs when one or more features are entered.
     #One feature entered: do not need ncol argument
     if (length(input$text_features)==1){
-      #No nol, no split.by
+      #No ncol, no split.by
       if (input$vln_split_by=="none"){
         VlnPlot(plots_subset(), 
                 features = input$text_features,
@@ -1523,9 +1501,9 @@ server <- function(input,output,session){
         ggsave(file, 
                plot=vln_plot_content(), 
                device="png",
-               width=umap_width()*5,
-               height=umap_height()*5,
-               dpi=300,
+               width=vln_width(),
+               height=vln_height(),
+               dpi=72,
                units="px")
       } else {
         ggsave(file, 
@@ -1674,14 +1652,18 @@ server <- function(input,output,session){
         ggsave(file, 
                plot=dot_plot_content(), 
                device="png",
-               width=umap_width()*5,
-               height=umap_height()*5,
-               dpi=300,
-               units="px")
+               width=dot_width(),
+               height=dot_height(),
+               dpi=72,
+               units="px",
+               #Explicitly state white background color (plots were transparent)
+               bg="#FFFFFF")
       } else {
         ggsave(file, 
                plot=dot_plot_content(), 
-               device="png")
+               device="png",
+               #White background
+               bg="#FFFFFF")
       }
     },#End content function
     contentType = "image/png"
