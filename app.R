@@ -1,4 +1,4 @@
-### Load Libraries and Data; Define Variables ###
+### Load Libraries and Data ####
 #Initialize libraries
 library(shiny)
 library(Seurat)
@@ -60,9 +60,50 @@ js_list <- lapply(js_files,includeScript)
 #https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
+# Object Config ####
+#For now, this will be hard-coded. Later, these variables will be defined from
+#a .config file created from the config applet.
+include_numeric_metadata <- TRUE
+numeric_metadata_title <- "Metadata Features"
+
+##Define searchable features and Metadata ####
+#Assay list: created using functions in Object_Specific_Processing.R
+assay_info <- assay_list(
+  #Genes: include even though it is the default assay (it may not be in some objects)
+  assay_entry(assay="RNA",
+              #machine-readable prefix: in some objects, this is capital; 
+              #in others, this is lowercase
+              prefix_machine = "rna_",
+              #no suffix used in the dropdown menu for genes
+              suffix_human = "",
+              #dropdown_title: the name that appears in the dividers in the 
+              #dropdown menu, which groups search results by assay. 
+              dropdown_title = "Genes"),
+  #ADT assay
+  assay_entry(assay = "ADT",
+              prefix_machine = "adt_",
+              suffix_human = "(Surface Protein)",
+              dropdown_title = "Surface Protein Markers"),
+  #Gene signatures assay
+  assay_entry(assay = "SIG", 
+              prefix_machine = "sig_", 
+              suffix_human = " (Gene Signature)",
+              dropdown_title = "Gene Signature Scores")
+)
+
+#Create a list of valid features using the assays defined above
+valid_features <- feature_list_all(sobj,
+                                   assay_list = assay_info,
+                                   #include_numeric_metadata: a boolean variable 
+                                   #that is hard-coded for now and will be 
+                                   #defined in the config file
+                                   numeric_metadata = include_numeric_metadata, 
+                                   #The same is true for numeric_metadata_title
+                                   numeric_metadata_title = numeric_metadata_title)
+
 ##Define searchable features and Metadata ####
 #Gene_expression features
-genes <- rownames(sobj)
+#genes <- rownames(sobj)
 
 ### Define function to build feature lists from arbitrary assays
 feature_list <- function(assay, prefix_machine, suffix_human) {
@@ -81,24 +122,24 @@ feature_list <- function(assay, prefix_machine, suffix_human) {
 #assays <- names(sobj@assays)
 
 ###ADT features
-adt_list <- feature_list("ADT", "adt_", " (Surface Protein)")
+#adt_list <- feature_list("ADT", "adt_", " (Surface Protein)")
 
 ###Gene Signatures
-sig_list <- feature_list("SIG", "sig_", " (Gene Signature)")
+#sig_list <- feature_list("SIG", "sig_", " (Gene Signature)")
 
 #Metadata columns (only numeric columns can be plotted)
-meta_cols <- names(sobj@meta.data)
+#meta_cols <- names(sobj@meta.data)
 
 #Select columns that have numeric or integer values
-numeric_cols <- meta_cols[sapply(meta_cols, FUN=function(x){
-  (class(sobj@meta.data[[x]])=="numeric") || (class(sobj@meta.data[[x]])=="integer")
-  })]
+#numeric_cols <- meta_cols[sapply(meta_cols, FUN=function(x){
+#  (class(sobj@meta.data[[x]])=="numeric") || (class(sobj@meta.data[[x]])=="integer")
+#  })]
 
 #Combine into list
-valid_features <- list(`Genes`=as.list(genes),
-                       `Surface Protein Markers`=adt_list,
-                       `Gene Signature Scores`=sig_list,
-                       `Metadata Features`=as.list(numeric_cols))
+#valid_features <- list(`Genes`=as.list(genes),
+#                       `Surface Protein Markers`=adt_list,
+#                       `Gene Signature Scores`=sig_list,
+#                       `Metadata Features`=as.list(numeric_cols))
 
 #Specify metadata variables to group and split by in drop down menus
 #Choices are specific to the D0/D30 object
@@ -719,8 +760,9 @@ server <- function(input,output,session){
   
   #2.0.3. Render feature choices for feature selection in the correlations tab
   updateSelectizeInput(session,
-                       inputId = "corr_feature_selection", 
-                       choices = genes,
+                       inputId = "corr_feature_selection",
+                       #Include only genes for now
+                       choices = valid_features[["Genes"]],
                        selected = character(0),
                        server = TRUE)
   
