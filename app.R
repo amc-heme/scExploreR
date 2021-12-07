@@ -82,12 +82,15 @@ assay_info <- assay_list(
   #ADT assay
   assay_entry(assay = "ADT",
               prefix_machine = "adt_",
-              suffix_human = "(Surface Protein)",
+              suffix_human = " (Surface Protein)",
               dropdown_title = "Surface Protein Markers"),
+  
   #Gene signatures assay
   assay_entry(assay = "SIG", 
               prefix_machine = "sig_", 
-              suffix_human = " (Gene Signature)",
+              #The signatures do not need a suffix as they are distinct 
+              #from gene names. The dropdown menu title should be sufficient
+              suffix_human = "",
               dropdown_title = "Gene Signature Scores")
 )
 
@@ -1293,10 +1296,17 @@ server <- function(input,output,session){
   #### 2.1.3.5. Generate content for plot (but only if features are entered) ####
   feature_plot_content <- reactive({
     if (length(input$text_features)>0){
-      #If no split.by variable is specified, create a feature plot without the split.by argument
+      #If no split.by variable is specified, create a feature plot without 
+      #the split.by argument
       if (input$feature_split_by=="none"){
         feature_plot <- FeaturePlot(plots_subset(),
                                     features=input$text_features)
+        #Clean up title: this changes the feature names on each plot 
+        #to a human-readable format
+        #Determine number of plots created
+        n_patches <- n_patches(feature_plot)
+        #Iterate through each plot, correcting the title
+        feature_plot <- hr_title(feature_plot,n_patches,assay_info)
       }
       #Otherwise, split by the user-specified variable
       else {
@@ -1475,45 +1485,27 @@ server <- function(input,output,session){
   
   #### 2.1.4.4. Code for content ####
   vln_plot_content <- reactive({
-    #If/else if structure: code runs when one or more features are entered.
-    #One feature entered: do not need ncol argument
-    if (length(input$text_features)==1){
-      #No ncol, no split.by
-      if (input$vln_split_by=="none"){
-        VlnPlot(plots_subset(), 
-                features = input$text_features,
-                group.by = input$vln_group_by) +
-          #Legend position: "right" if a legend is desired, and "none" if not
-          theme(legend.position = if (input$vln_legend==TRUE)"right" else "none")
-      #No ncol, split.by
-      } else {
-        VlnPlot(plots_subset(), 
-                features = input$text_features,
-                group.by = input$vln_group_by,
-                split.by = input$vln_split_by) +
-          #Legend position: "right" if a legend is desired, and "none" if not
-          theme(legend.position = if (input$vln_legend==TRUE)"right" else "none")
-      }
-    #More than one feature entered: use ncol since there are multiple panels
-    } else if (length(input$text_features)>1){
-      #ncol and no split.by
-      if (input$vln_split_by=="none"){
-        VlnPlot(plots_subset(), 
-                features = input$text_features,
-                group.by = input$vln_group_by,
-                ncol=input$vln_ncol) +
-          #Legend position: "right" if a legend is desired, and "none" if not
-          theme(legend.position = if (input$vln_legend==TRUE) "right" else "none")
-      #ncol and split.by
-      } else {
-        VlnPlot(plots_subset(), 
-                features = input$text_features,
-                group.by = input$vln_group_by,
-                split.by = input$vln_split_by,
-                ncol=input$vln_ncol) +
-          #Legend position: "right" if a legend is desired, and "none" if not
-          theme(legend.position = if (input$vln_legend==TRUE) "right" else "none")
-      }
+    if(length(input$text_features>=1)){
+      vln_plot <- VlnPlot(plots_subset(),
+                          features=input$text_features,
+                          group.by = input$vln_group_by,
+                          #Split.by: NULL if user selects "none", otherwise equal to user selection
+                          split.by = if (input$vln_split_by=="none") NULL else input$vln_split_by,
+                          #ncol: NULL if only one feature is entered. If there are multiple features,
+                          #this is equal to what the user specifies
+                          ncol = if (length(input$text_features)==1) NULL else input$vln_ncol
+                          ) +
+                  #Legend position: "right" if a legend is desired, and "none" if not
+                  theme(legend.position = if (input$vln_legend==TRUE) "right" else "none")
+      
+      #Correct titles: change machine-readable name to human-readable name
+      #Determine number of plots created
+      n_patches <- n_patches(vln_plot)
+      #Iterate through each plot, correcting the title
+      vln_plot <- hr_title(vln_plot,n_patches,assay_info)
+      
+      #Return the plot
+      vln_plot
     }
   })
   
