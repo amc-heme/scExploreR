@@ -2,33 +2,7 @@
     overflow-y: auto;
 	max-height: 85vh;
 	}
-	
-/* Stack Overflow Style Scrollbar */ 
-/* (for side panel) */
-.col-sm-4::-webkit-scrollbar{
-	width: 10px;
-	height: 10px;
-	/* Sets color of scrollbar background and rounds edges */
-	background-color: #AAAAAA44;
-	border-radius: 5px;
-	}
-	
-.col-sm-4::-webkit-scrollbar-corner{
-	background-color: transparent;
-	border-color: transparent;
-	}
-	
-/* Scrollbar thumb properties (shows current position) */
-.col-sm-4::-webkit-scrollbar-thumb{
-	border-radius: 10px;
-	background-color: #888888;
-	}
-	
-.col-sm-4::-webkit-scrollbar-track{
-	border-radius: 10px;
-	background-color: transparent;
-	}
-	
+
 /* Main Window */
 .col-sm-8{
 	overflow-y: auto;
@@ -40,28 +14,36 @@
 .spinner-container-main{
 	height: 85vh;
 }
-	
-/* Stack Overflow Style Scrollbar for Main Window */
+
+/* Stack Overflow Style Scrollbar (applies to the main window and the sidebar
+of the main app, and the columns in the config app) */
+.col-sm-4::-webkit-scrollbar
+.col-sm-6::-webkit--scrollbar
 .col-sm-8::-webkit-scrollbar{
-	width: 10px; 
+	width: 10px;
 	height: 10px;
 	/* Sets color of scrollbar background and rounds edges */
 	background-color: #AAAAAA44;
 	border-radius: 5px;
 	}
-	
+
+.col-sm-4::-webkit-scrollbar-corner
+.col-sm-6::-webkit-scrollbar-corner
 .col-sm-8::-webkit-scrollbar-corner{
 	background-color: transparent;
 	border-color: transparent;
 	}
-	
+
 /* Scrollbar thumb properties (shows current position) */
+.col-sm-4::-webkit-scrollbar-thumb
+.col-sm-6::-webkit-scrollbar-thumb
 .col-sm-8::-webkit-scrollbar-thumb{
 	border-radius: 10px;
 	background-color: #888888;
 	}
-	
 
+.col-sm-4::-webkit-scrollbar-track
+.col-sm-6::-webkit-scrollbar-track
 .col-sm-8::-webkit-scrollbar-track{
 	border-radius: 10px;
 	background-color: transparent;

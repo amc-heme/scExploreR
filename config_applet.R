@@ -43,6 +43,10 @@ js_files <- list.files(path = "./www",
 #Create list of style tags for each CSS file
 js_list <- lapply(js_files,includeScript)
 
+#Load object (hard-coded for now but will soon be chosen using a file input)
+sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+#Need a conditional to test if the loaded object is a Seurat object
+
 # Config applet UI ####
 ui <- fluidPage(
   #Place style tags for each CSS file in document
@@ -53,11 +57,71 @@ ui <- fluidPage(
   useShinyjs(),
   #Include scripts for each JavaScript file in document
   js_list,
-  
-)
+  #Main UI
+  tabsetPanel(
+    id="config_choices",
+    type = "pills",
+    tabPanel("Assays",
+             column(width = 6,
+                    class = "left-column-panel",
+                    multiInput(inputId = "select_assays",
+                               label = "Choose assays to include:",
+                               width = "100%",
+                               choices = names(sobj@assays),
+                               options = list(enable_search = FALSE,
+                                              non_selected_header = "Available Assays",
+                                              selected_header = "Selected Assays",
+                                              "hide_empty_groups" = TRUE)
+                               )
+                    ),#End column
+             column(width = 6,
+                    #Dynamic UI for showing assay choices
+                    uiOutput(outputId = "assay_options")
+                    ),
+    tabPanel("Metadata",
+             #Placehoder div
+             div()
+             )
+    )
+  )
+  )
 
 # Config Applet Server Function ####
 server <- function(input, output, session) {
+  #1. Assay Panel
+  #1.1. Update Assay options
+  assay_options_ui <- eventReactive(input$select_assays,
+                                    label = "Update Assay Options UI", 
+                                    ignoreNULL = FALSE,
+                                    {
+                                      ui_card <- function(assay_name){
+                                        ui <- div(
+                                          class="optcard single-space-bottom",
+                                          tags$strong(glue("Options for {assay_name}"),
+                                                      class="large half-space-bottom center"),
+                                          textInput(inputId = glue("{assay_name}_mr"),
+                                                    label= "Enter prefix used to access assay 
+                                                    in Seurat plotting functions",
+                                                    width = "100%"),
+                                          textInput(inputId = glue("{assay_name}_hr"),
+                                                    label="Set label for assay 
+                                                    (will appear in app)",
+                                                    width = "100%"),
+                                          checkboxInput(inputId = glue("{assay_name}_include_label"),
+                                                        label = "Include assay name on plots?")
+                                          )
+                                        return(ui)
+                                      }
+                                      
+                                      #use lapply to create a panel for each assay selected
+                                      panels <- lapply(input$select_assays, function(x) ui_card(x))
+                                      
+                                      print(panels)
+                                      
+                                      tagList(panels)
+                                    })
+  
+  output$assay_options <- renderUI({assay_options_ui()})
   
 }
 
