@@ -3,15 +3,26 @@
   margin-top: .20vh;
 }
 
-.left-column-panel {
+/* Defines the sidebar for the applet */
+.shinysc-sidebar-panel {
   background-color: #E1E1E1;
   border-radius: 8px;
+  /* Defines max height of panel and creates a scrollbar when this is exceeded */
+  overflow-y: auto;
+  max-height: 85vh;
+}
+
+/* Defines the main panel */
+.shinysc-main-panel {
+  overflow-y: auto;
+  overflow-x: auto;
+  max-height: 85vh;
 }
 
 .optcard {
   background-color: #E1E1E1;
   border-radius: 8px;
-  min-height: 100px;
+  min-height: 150px;
   min-width: 250px;
   padding: 0.5em 1em;
   margin-bottom: 1.0em;

@@ -46,6 +46,10 @@ h2, h3 {
   display: block;
 }
 
+.hidden {
+  display: none;
+}
+
 /* Two-column panel */
 .two_column {
 	width: 50%;

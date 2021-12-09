@@ -661,7 +661,7 @@ ui <- tagList(
   useWaiter(),
   #Shinyjs: a Shiny JavaScript extension
   useShinyjs(),
-  #CSS Defined in Header
+  #CSS style: prevents navbar from appearing on top of content 
   tags$head(tags$style(HTML("body{
                             padding-top: 60px;
                             }"))),
@@ -2456,7 +2456,7 @@ server <- function(input,output,session){
   
   #2.2.3.2.4. UI to select subset, for both DGE and marker identification
   dge_subset_selection <- eventReactive(input$dge_group_by,
-                                        label="DGE: Subset Menu",
+                                        label="DGE: Subset Menu UI",
                                         ignoreNULL = FALSE,
                                         {
                                           print("Computing subset menus UI")

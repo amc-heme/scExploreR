@@ -22,6 +22,16 @@ library(ggplot2)
 library(glue)
 library(DT)
 
+
+#Load functions in ./R directory
+#Get list of files
+source_files <- list.files(path = "./R", 
+                           pattern="*.R$", 
+                           full.names=TRUE, 
+                           ignore.case=TRUE)
+#Use source() to import files into R
+sapply(source_files,source)
+
 #Load CSS files for app: CSS files are defined and each file is converted to a
 #<script> tag using includeCSS(). Each tag defined is passed to a list, which is
 #included in the main UI function.
@@ -42,6 +52,8 @@ js_files <- list.files(path = "./www",
                        ignore.case=TRUE)
 #Create list of style tags for each CSS file
 js_list <- lapply(js_files,includeScript)
+
+
 
 #Load object (hard-coded for now but will soon be chosen using a file input)
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
@@ -64,6 +76,7 @@ assay_options_ui <- function(id){
     class="optcard single-space-bottom",
     tags$strong(glue("Options for {id}"),
                 class="large half-space-bottom center"),
+    
     #Human-readable suffix: appears on plots and search entries
     textInput(inputId = ns("hr"),
               label="Set label for assay (will appear as entered in app)",
@@ -73,36 +86,32 @@ assay_options_ui <- function(id){
     #I may put this in the main app instead; it makes more sense to toggle it when making the plots.
     checkboxInput(inputId = ns("include_label"),
                   label = "Include assay name on plots?"),
-    tags$p("(This is usually not required for the default assay in your data)"),
-    #Label entered (for testing purposes only)
-    textOutput(outputId = ns("label_entered"))
+    tags$p("(This is usually not required for the default assay in your data)")
   )
   
   #Add "hidden" shinyjs class to the card to hide each card initially
   ui <- shinyjs::hidden(ui)
-  
+
   return(ui)
 }
 
 ##Server function for processing assay options ####
 assay_options_server <- function(id, assays_selected){
   moduleServer(id, function(input,output,session){
-    #Test if input is being passed correctly to the server
+    #Namespace function
+    ns <- NS(id)
+    
+    #1. Show/hide cards based on user selections
     observeEvent(assays_selected(),
-                 label = "Update Visibility", 
+                 label = "Show/Hide Assay Cards", 
                  ignoreNULL = FALSE,
                  {
-                   print(glue("Assays Selected: {assays_selected()}"))
-                   
                    #If the assay id is on the list of selected assays, 
                    #show the options card.
                    if (id %in% assays_selected()){
-                     print(glue("Assay {id} is selected"))
                      showElement("optcard")
-                     
                    #Otherwise, hide the card.
                    } else {
-                     print(glue("Assay {id} is not selected"))
                      hideElement("optcard")
                    }
                  })
@@ -111,6 +120,145 @@ assay_options_server <- function(id, assays_selected){
   })
 }
 
+#Metadata options module ####
+metadata_options_ui <- function(id){
+  #Namespace function
+  ns <- NS(id)
+  #Determine type of metadata (class of values) for display in column
+  #Must call @meta.data first with arbitrary metadata 
+  #(sobj[[<metadata>]]) will return a dataframe
+  type <- class(unique(sobj@meta.data[[id]]))
+  
+  #Simplify metadata type: "character" and "factor" classes are reported as 
+  #"categorical", while "numeric" and "integer" classes are reported as "numeric"
+  if (type=="character"||type=="factor"){
+    type <- "Categorical"
+  } else if (type=="numeric"||type=="integer"){
+    type <- "Numeric"
+  }
+  #(Other metadata classes may exist)
+  
+  #UI: create an options card for each metadata option selected
+  ui <- div(
+    id=ns("optcard"),
+    class="optcard single-space-bottom",
+    tags$strong(glue("Options for {id}"),
+                class="large center"),
+    
+    #Print the type of metadata beneath the title
+    tags$p(glue("({type})"),class="center half-space-bottom"),
+    
+    #Human-readable suffix: appears on plots and search entries
+    textInput(inputId = ns("hr"),
+              label="Set label for metadata column (will appear as entered in app interface)",
+              width = "100%")
+  )
+  
+  #Add "hidden" shinyjs class to the card to hide each card initially
+  ui <- shinyjs::hidden(ui)
+  
+  return(ui)
+}
+
+metadata_options_server <- function(id, metadata_selected){
+  #Namespace function
+  ns <- NS(id)
+  
+  #1. Show/hide cards based on user selections
+  observeEvent(metadata_selected(),
+               label = "Show/Hide Metadata Cards", 
+               ignoreNULL = FALSE,
+               {
+                 #If the assay id is on the list of selected assays, 
+                 #show the options card.
+                 if (id %in% metadata_selected()){
+                   showElement(ns("optcard"))
+                   #Otherwise, hide the card.
+                 } else {
+                   hideElement(ns("optcard"))
+                 }
+               })
+}
+
+#UI components ####
+##1. UI functions
+#applet_sidebar_panel
+#Creates a sidebarPanel UI object with formatting common to the applet, and 
+#additional classes if specified. Sidebar content is specified to `...`
+applet_sidebar_panel <- function(...,class=NULL){
+  #Use an empty string to define the class if it is not specified
+  if(is.null(class)) class <- ""
+  sidebarPanel(
+    #The use of width=0 allows the width to be specified for different window 
+    #sizes using the class argument (using the width argument will apply the 
+    #style for all screens with at least a "medium" size viewport)
+    width=0,
+    #Column width specifications vary based on viewport size and are given using 
+    #Bootstrap classes (R Studio creates a small window by default on a MacBook pro)
+    #https://getbootstrap.com/docs/3.3/css/#responsive-utilities
+    class = paste0("left-column-panel col-sm-6 col-md-5 col-lg-4 ",class),
+    #Pass content to sidebarPanel
+    tagList(...)
+    )
+}
+
+applet_main_panel <- function(...,class=NULL){
+  #Use an empty string to define the class if it is not specified
+  if(is.null(class)) class <- ""
+  #Use width=0 to define column widths using Bootstrap classes
+  mainPanel(width=0,
+            class = paste0("right-column-panel col-sm-6 col-md-7 col-lg-8 ",class),
+            #Pass content to mainPanel 
+            tagList(...)
+            )
+}
+
+##2. Assays *tab* (not the assay options module) ####
+assay_tab <- function(){
+  sidebarLayout(
+    applet_sidebar_panel(
+      multiInput(inputId = "assays_selected",
+                 label = "Choose assays to include:",
+                 width = "100%",
+                 choices = names(sobj@assays),
+                 options = list(enable_search = FALSE,
+                                non_selected_header = "Available Assays",
+                                selected_header = "Selected Assays",
+                                "hide_empty_groups" = TRUE)
+      )#multiInput
+    ),
+    applet_main_panel(
+      #Create an instance of the assay options UI for all possible assays. Each 
+      #UI creates a "card"; all are hidden at first and are shown when their 
+      #corresponding assay is selected by the user. The "id" argument in lapply 
+      #is the name of the assay.
+      tagList(lapply(names(sobj@assays),function(id) assay_options_ui(id)))
+    )
+  )
+}
+
+#3. Metadata Tab ####
+metadata_tab <- function(){
+  sidebarLayout(
+    applet_sidebar_panel(
+      multiInput(inputId = "metadata_selected",
+                 label = "Choose metadata to include:",
+                 width = "100%",
+                 choices = names(sobj@meta.data),
+                 options = list(enable_search = FALSE,
+                                non_selected_header = "Available Metadata",
+                                selected_header = "Selected Metadata",
+                                "hide_empty_groups" = TRUE)
+                 )
+    ),
+    applet_main_panel(
+      #Create a metadata options "card" for each metadata column in the object
+      #All cards are hidden at first and are displayed when the user selects 
+      #the corresponding column. The "id" argument in lapply is the name of the metadata field.
+      tagList(lapply(names(sobj@meta.data), function(id) metadata_options_ui(id)))
+    )
+  )
+}
 
 # Config applet UI ####
 ui <- fluidPage(
@@ -122,44 +270,25 @@ ui <- fluidPage(
   useShinyjs(),
   #Include scripts for each JavaScript file in document
   js_list,
+  #CSS style: prevents navbar from appearing on top of content 
+  tags$head(tags$style(HTML("body{
+                            padding-top: 60px;
+                            }"))),
   #Main UI
-  tabsetPanel(
-    id="config_choices",
-    type = "pills",
-    tabPanel("Assays",
-             column(width = 6,
-                    class = "left-column-panel",
-                    multiInput(inputId = "assays_selected",
-                               label = "Choose assays to include:",
-                               width = "100%",
-                               choices = names(sobj@assays),
-                               options = list(enable_search = FALSE,
-                                              non_selected_header = "Available Assays",
-                                              selected_header = "Selected Assays",
-                                              "hide_empty_groups" = TRUE)
-                               )
-                    ),#End column
-             column(width = 6,
-                    #Create an instance of the assay options UI for all possible 
-                    #assays. Each UI creates a "card"; all are hidden at first 
-                    #and assays selected by the user are displayed.
-                    tagList(lapply(names(sobj@assays), 
-                           function(id) assay_options_ui(id))),
-                    
-                    #Dynamic UI for showing assay choices
-                    #uiOutput(outputId = "assay_options")
-                    ),
-    tabPanel("Metadata",
-             #Placehoder div
-             div()
+  navbarPage(title = "Object Configuration",
+             windowTitle="Configure Seurat Object",
+             position="fixed-top",
+             tabPanel(title="Assays",
+                      assay_tab()),
+             tabPanel(title = "Metadata",
+                      metadata_tab())
              )
-    )
-  )
-  )
+  )#End fluidPage
 
 # Config Applet Server Function ####
 server <- function(input, output, session) {
   #1. Assay Panel
+  #1.1. Store selected assays as a reactive variable
   assays_selected <- eventReactive(input$assays_selected,
                                    ignoreNULL=FALSE,
                                    {
@@ -175,6 +304,23 @@ server <- function(input, output, session) {
                                            )#end assay_options_server
          )#End lapply
  
+  #2. Metadata Panel
+  #2.1. Store metadata selected as a reactive variable
+  metadata_selected <- eventReactive(input$metadata_selected,
+                                   ignoreNULL=FALSE,
+                                   {
+                                     input$metadata_selected
+                                   })
+  
+  
+  #2.2. Create module server instances for each metadata assay
+  lapply(names(sobj@meta.data), 
+         function(id) metadata_options_server(id,
+                                              #Pass reactive value of metadata selected to server
+                                              metadata_selected = metadata_selected
+         )#end metadata_options_server
+  )#End lapply
+  
 }
 
 shinyApp(ui, server)

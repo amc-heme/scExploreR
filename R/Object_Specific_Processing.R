@@ -1,3 +1,4 @@
+#Assay Processing ####
 #Functions for Processing Object-Specific Data
 #Functions used to create feature list
 assay_entry <- function(assay, prefix_machine, suffix_human="", dropdown_title=assay){
@@ -79,4 +80,11 @@ feature_list_all <- function(sobj,
   return(valid_features)
 }
 
-
+#Metadata Processing ####
+metadata_entry <- function(colname){
+  #Store configuration information for metadata in a list
+  metadata_info <- list()
+  #Colname: name of metadata column as defined in Seurat object
+  metadata_info$colname=colname
+  #
+}
