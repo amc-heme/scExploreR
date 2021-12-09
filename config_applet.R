@@ -95,31 +95,6 @@ assay_options_ui <- function(id){
   return(ui)
 }
 
-##Server function for processing assay options ####
-assay_options_server <- function(id, assays_selected){
-  moduleServer(id, function(input,output,session){
-    #Namespace function
-    ns <- NS(id)
-    
-    #1. Show/hide cards based on user selections
-    observeEvent(assays_selected(),
-                 label = "Show/Hide Assay Cards", 
-                 ignoreNULL = FALSE,
-                 {
-                   #If the assay id is on the list of selected assays, 
-                   #show the options card.
-                   if (id %in% assays_selected()){
-                     showElement("optcard")
-                   #Otherwise, hide the card.
-                   } else {
-                     hideElement("optcard")
-                   }
-                 })
-    
-    output$label_entered <- renderText({glue("input${NS(id,'hr')}: {input$hr}")})
-  })
-}
-
 #Metadata options module ####
 metadata_options_ui <- function(id){
   #Namespace function
@@ -160,25 +135,44 @@ metadata_options_ui <- function(id){
   return(ui)
 }
 
-metadata_options_server <- function(id, metadata_selected){
+#Server Module for field selection options ####
+#Applies to multiple types of selections (assays, metadata, etc.). One instance 
+#of the module is applied for every available selection across each tab.
+#Renders option cards for the variables of assays, metadata, etc. selected by 
+#the user, and processes user selections to create a config file for the main app.
+#id: the id passed to the module
+#categories_selected: a reactive variable describing the variables (assays, metatdata, etc.
+#, selected by the user)
+#options_type: the type of options to create a server function for. Can be one 
+#of "assays" or "metadata"
+#category_name: the name of the individual category that the instance of the
+#module applies to. This is the id by default, and can be changed.
+options_server <- function(id, 
+                           categories_selected, 
+                           options_type=c("assays","metadata"),
+                           category_name=id){
   #Namespace function
   ns <- NS(id)
   
   #1. Show/hide cards based on user selections
-  observeEvent(metadata_selected(),
-               label = "Show/Hide Metadata Cards", 
+  #(Conditionals on non-reactive values such as options_type can be used 
+  #outside of server components)
+  observeEvent(categories_selected(),
+               label = glue("Show/Hide Cards: {options_type}"), 
                ignoreNULL = FALSE,
                {
-                 #If the assay id is on the list of selected assays, 
-                 #show the options card.
-                 if (id %in% metadata_selected()){
+                 #Examine the list of currently selected categories, and check
+                 #if the module's category name is selected.
+                 #If so, show the options card
+                 if (category_name %in% categories_selected()){
                    showElement(ns("optcard"))
-                   #Otherwise, hide the card.
+                   #Otherwise, hide the card
                  } else {
                    hideElement(ns("optcard"))
                  }
                })
 }
+
 
 #UI components ####
 ##1. UI functions
@@ -298,10 +292,10 @@ server <- function(input, output, session) {
   
   #1.1. Create module server instances for each possible assay
   lapply(names(sobj@assays), 
-         function(id) assay_options_server(id,
-                                           #Pass reactive value of assays selected to server
-                                           assays_selected = assays_selected
-                                           )#end assay_options_server
+         function(id) options_server(id = id,
+                                     categories_selected = assays_selected,
+                                     options_type = "assays"
+         )
          )#End lapply
  
   #2. Metadata Panel
@@ -313,12 +307,12 @@ server <- function(input, output, session) {
                                    })
   
   
-  #2.2. Create module server instances for each metadata assay
+  #2.2. Create options server module instances for each metadata assay
   lapply(names(sobj@meta.data), 
-         function(id) metadata_options_server(id,
-                                              #Pass reactive value of metadata selected to server
-                                              metadata_selected = metadata_selected
-         )#end metadata_options_server
+         function(id) options_server(id = id,
+                                     categories_selected = metadata_selected,
+                                     options_type = "metadata"
+                                     )
   )#End lapply
   
 }
