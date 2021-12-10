@@ -9,7 +9,9 @@
   border-radius: 8px;
   /* Defines max height of panel and creates a scrollbar when this is exceeded */
   overflow-y: auto;
-  max-height: 85vh;
+  /* Setting the bottom margin to 0 allows for */
+  max-height: 90vh;
+  margin-bottom: 0px;
 }
 
 /* Defines the main panel */
@@ -23,10 +25,19 @@
   background-color: #E1E1E1;
   border-radius: 8px;
   min-height: 150px;
-  min-width: 250px;
+  width: 380px;
   padding: 0.5em 1em;
   margin-bottom: 1.0em;
   margin-right: 1.0em;
-  max-width: 300px;
   display: inline-block;
+}
+
+/* Make multi-select fill the page */
+.multi-wrapper
+.non-selected-wrapper,
+.multi-wrapper .selected-wrapper {
+  /* Defining hieghts in terms of viewport height didn't work here; don't know why */
+  height: 685px;
+  /* Displays scrollbars only when necessary (default is to display always)*/
+  overflow-y: auto;
 }

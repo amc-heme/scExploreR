@@ -14,6 +14,11 @@ h2, h3 {
   display: block;
 }
 
+/* Small font */
+.small {
+  font-size: 0.85em;
+}
+
 /* Large font*/
 .large {
   font-size: 1.17em;
@@ -69,4 +74,28 @@ h2, h3 {
 .float_right {
 	/* Use this class for the right column */
   float: right;
+}
+
+/* Shiny input containers within a container with this class will have no margin */
+.input-no-margin > .shiny-input-container {
+  margin: 0px;
+}
+
+/* Selector to remove margins from elements within selectize forms */
+.input-no-margin > .shiny-input-container > div > .selectize-control{
+    margin: 0px;
+}
+
+/* inline-containers: sets all containers inside element to inline display */
+.inline-containers > .shiny-input-container {
+  display: inline-block;
+}
+
+.align-containers-top > .shiny-input-container {
+  vertical-align: top;
+}
+
+/* Set height of group name text box for consistency with the group metadata to the right */
+#options_group_name {
+  height: 34px;
 }
