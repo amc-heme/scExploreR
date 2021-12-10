@@ -99,19 +99,25 @@ assay_options_ui <- function(id){
 metadata_options_ui <- function(id){
   #Namespace function
   ns <- NS(id)
-  #Determine type of metadata (class of values) for display in column
-  #Must call @meta.data first with arbitrary metadata 
-  #(sobj[[<metadata>]]) will return a dataframe
-  type <- class(unique(sobj@meta.data[[id]]))
+  #Get unique values of metadata field for display of summary statistics
+  values <- unique(sobj@meta.data[[id]])
+  #Create list of sorted values for display
+  values_sorted <- str_sort(values,numeric=TRUE)
   
-  #Simplify metadata type: "character" and "factor" classes are reported as 
-  #"categorical", while "numeric" and "integer" classes are reported as "numeric"
-  if (type=="character"||type=="factor"){
-    type <- "Categorical"
-  } else if (type=="numeric"||type=="integer"){
-    type <- "Numeric"
+  #Determine type of metadata
+  type <- metadata_type(sobj,id)
+  
+  #Display number of unique values if categorical; display range if numeric
+  if (type=="Categorical"){
+    n_unique <- length(values)
+    metadata_description <- glue("{n_unique} unique values")
+  } else if (type=="Numeric"){
+    metadata_description <- ""
+    #metadata_description <- glue("{range: {min(values)} to {max(values)}, avg {mean(values)}}")
+  } else {
+    #Potential unforseen classes: leave the description blank
+    metadata_description <- ""
   }
-  #(Other metadata classes may exist)
   
   #UI: create an options card for each metadata option selected
   ui <- div(
@@ -120,13 +126,33 @@ metadata_options_ui <- function(id){
     tags$strong(glue("Options for {id}"),
                 class="large center"),
     
-    #Print the type of metadata beneath the title
-    tags$p(glue("({type})"),class="center half-space-bottom"),
+    #Print the type of metadata beneath the title, and a brief description
+    tags$p(glue("({type}, {metadata_description})"),class="center small half-space-bottom"),
+    
+    #If the metadata is categorical and there are 15 values or less, print the values to screen
+    if (type=="Categorical" & length(values)<=15){tags$p(glue("Values: {paste(values_sorted, collapse=', ')}"))} else NULL,
     
     #Human-readable suffix: appears on plots and search entries
     textInput(inputId = ns("hr"),
               label="Set label for metadata column (will appear as entered in app interface)",
-              width = "100%")
+              width = "100%"),
+    
+    #Option to classify metadata into list (ex. group patients by sample conditions)
+    #Only available for categorical metadata columns
+    if(type=="Categorical"){
+      tagList(
+        materialSwitch(inputId =  ns("group_metadata"),
+                     label = "Group metadata into categories?", 
+                     value = FALSE,
+                     right = TRUE,
+                     status = "default"),
+        tags$p("(Choices for possible values in the metadata column will appear in the app)",
+               class="center small")
+        )
+      } else NULL,
+    
+    #Dynamic UI for defining metadata groups
+    uiOutput(outputId = ns("groups_list"))
   )
   
   #Add "hidden" shinyjs class to the card to hide each card initially
@@ -148,35 +174,115 @@ metadata_options_ui <- function(id){
 #category_name: the name of the individual category that the instance of the
 #module applies to. This is the id by default, and can be changed.
 options_server <- function(id, 
+                           sobj,
                            categories_selected, 
                            options_type=c("assays","metadata"),
                            category_name=id){
-  #Namespace function
-  ns <- NS(id)
-  
-  #1. Show/hide cards based on user selections
-  #(Conditionals on non-reactive values such as options_type can be used 
-  #outside of server components)
-  observeEvent(categories_selected(),
-               label = glue("Show/Hide Cards: {options_type}"), 
-               ignoreNULL = FALSE,
-               {
-                 #Examine the list of currently selected categories, and check
-                 #if the module's category name is selected.
-                 #If so, show the options card
-                 if (category_name %in% categories_selected()){
-                   showElement(ns("optcard"))
-                   #Otherwise, hide the card
-                 } else {
-                   hideElement(ns("optcard"))
-                 }
-               })
+  #Initialize module
+  moduleServer(
+    id,
+    function(input, 
+             output,
+             session){
+      
+      #1. Show/hide cards based on user selections
+      #(Conditionals on non-reactive values such as options_type can be used 
+      #outside of server components)
+      observeEvent(categories_selected(),
+                   label = glue("Show/Hide Cards: {options_type}"), 
+                   ignoreNULL = FALSE,
+                   {
+                     #Examine the list of currently selected categories, and check
+                     #if the module's category name is selected.
+                     #If so, show the options card
+                     if (category_name %in% categories_selected()){
+                       showElement("optcard")
+                       #Otherwise, hide the card
+                     } else {
+                       hideElement("optcard")
+                     }
+                   })
+      
+      #2. Metadata-tab specific functions
+      #Determine if metadata field is categorical or numeric
+      if(options_type=="metadata"){
+        type <- metadata_type(sobj,id)
+      }
+      
+      #2.1. Metadata Groups: User Interface to define subgroups within a metadata column
+      #Only perfomed for categorical inputs
+      if(options_type=="metadata"){
+        #Test for type of metadata field after testing to see if the object 
+        #is a metadata entry
+        if(type=="Categorical"){
+          #Define ids for input contianers
+          group_name_input_id <- "options_group_name"
+          members_id <- "options_group_members"
+          add_field_id <- "options_add_field"
+          
+          #2.1.1. Define UI for group selection
+          groups_UI <- eventReactive(input$group_metadata,
+                                     label = "Groups UI",
+                                     ignoreNULL = FALSE,
+                                     {
+                                       #Display the interface when the corresponding 
+                                       #switch is activated
+                                       print(input$group_metadata)
+                                       if (input$group_metadata==TRUE){
+                                         #Inputs are inline. Begin with group name:
+                                         tagList(
+                                           span(
+                                             #inline-containers class is used to change the 
+                                             #display style of all containers within the element
+                                             class="inline-containers input-no-margin 
+                                             align-containers-top",
+                                             textInput(inputId = group_name_input_id,
+                                                       label = NULL,
+                                                       width = "120px",
+                                                       placeholder = "Group Name"),
+                                             selectizeInput(inputId = members_id,
+                                                            label=NULL,
+                                                            #Choices are dynamic and must 
+                                                            #be updated by the server
+                                                            width = "220px",
+                                                            choices = NULL,
+                                                            selected = NULL,
+                                                            options = list(
+                                                              placeholder="Values in Group")
+                                             )
+                                           ), #End span
+                                           div(
+                                             actionButton(inputId = add_field_id,
+                                                          label = "Add Group",
+                                                          width = "100px")
+                                           )
+                                         )#End tagList of input containers
+                                       } 
+                                     })
+          
+          #2.1.2. Populate the selectize input with valid groups
+          observeEvent(input$group_metadata,
+                       label = "Populate Group Selection With Available Metadata",
+                       ignoreNULL = FALSE,
+                       {
+                         #First level: fetch all unique values for the metadata 
+                         #field and list them as available options for the group
+                         updateSelectizeInput(inputId = members_id,
+                                              choices = unique(sobj@meta.data[[id]])
+                         )
+                       }
+          )
+          
+          #2.1.3. Render UI Components
+          output$groups_list <- renderUI({groups_UI()})
+        }
+      }
+    })
 }
 
-
-#UI components ####
-##1. UI functions
-#applet_sidebar_panel
+#Functions ####
+##UI components ####
+###applet_sidebar_panel 
 #Creates a sidebarPanel UI object with formatting common to the applet, and 
 #additional classes if specified. Sidebar content is specified to `...`
 applet_sidebar_panel <- function(...,class=NULL){
@@ -190,7 +296,7 @@ applet_sidebar_panel <- function(...,class=NULL){
     #Column width specifications vary based on viewport size and are given using 
     #Bootstrap classes (R Studio creates a small window by default on a MacBook pro)
     #https://getbootstrap.com/docs/3.3/css/#responsive-utilities
-    class = paste0("left-column-panel col-sm-6 col-md-5 col-lg-4 ",class),
+    class = paste0("shinysc-sidebar-panel col-sm-6 col-md-5 col-lg-4 ",class),
     #Pass content to sidebarPanel
     tagList(...)
     )
@@ -201,24 +307,27 @@ applet_main_panel <- function(...,class=NULL){
   if(is.null(class)) class <- ""
   #Use width=0 to define column widths using Bootstrap classes
   mainPanel(width=0,
-            class = paste0("right-column-panel col-sm-6 col-md-7 col-lg-8 ",class),
+            class = paste0("shinysc-main-panel col-sm-6 col-md-7 col-lg-8 ",class),
             #Pass content to mainPanel 
             tagList(...)
             )
 }
 
-##2. Assays *tab* (not the assay options module) ####
+### Assays *tab* (not the assay options module)
 assay_tab <- function(){
   sidebarLayout(
     applet_sidebar_panel(
-      multiInput(inputId = "assays_selected",
-                 label = "Choose assays to include:",
-                 width = "100%",
-                 choices = names(sobj@assays),
-                 options = list(enable_search = FALSE,
-                                non_selected_header = "Available Assays",
-                                selected_header = "Selected Assays",
-                                "hide_empty_groups" = TRUE)
+      #input-no-margin class: removes margin of input containers within div
+      div(class="input-no-margin",
+          multiInput(inputId = "assays_selected",
+                     label = "Choose assays to include:",
+                     width = "100%",
+                     choices = names(sobj@assays),
+                     options = list(enable_search = FALSE,
+                                    non_selected_header = "Available Assays",
+                                    selected_header = "Selected Assays",
+                                    "hide_empty_groups" = TRUE)
+          )
       )#multiInput
     ),
     applet_main_panel(
@@ -231,19 +340,21 @@ assay_tab <- function(){
   )
 }
 
-#3. Metadata Tab ####
+### Metadata Tab 
 metadata_tab <- function(){
   sidebarLayout(
     applet_sidebar_panel(
-      multiInput(inputId = "metadata_selected",
-                 label = "Choose metadata to include:",
-                 width = "100%",
-                 choices = names(sobj@meta.data),
-                 options = list(enable_search = FALSE,
-                                non_selected_header = "Available Metadata",
-                                selected_header = "Selected Metadata",
-                                "hide_empty_groups" = TRUE)
-                 )
+      div(class="input-no-margin",
+          multiInput(inputId = "metadata_selected",
+                     label = "Choose metadata to include:",
+                     width = "100%",
+                     choices = names(sobj@meta.data),
+                     options = list(enable_search = FALSE,
+                                    non_selected_header = "Available Metadata",
+                                    selected_header = "Selected Metadata",
+                                    "hide_empty_groups" = TRUE)
+                     )
+          )
     ),
     applet_main_panel(
       #Create a metadata options "card" for each metadata column in the object
@@ -252,6 +363,33 @@ metadata_tab <- function(){
       tagList(lapply(names(sobj@meta.data), function(id) metadata_options_ui(id)))
     )
   )
+}
+
+## Server functions ####
+#metadata_type: takes a Seurat object and a metadata field, and returns the 
+#class of the metadata field
+metadata_type <- function(sobj,metadata_field){
+  #Get unique values of metadata field for display of summary statistics
+  values <- unique(sobj@meta.data[[metadata_field]])
+  
+  #Determine type of metadata (class of values) for display in column
+  #Must call @meta.data first with arbitrary metadata 
+  #(sobj[[<metadata>]]) will return a dataframe
+  class <- class(values)
+  
+  #Simplify metadata type: "character" and "factor" classes are reported as 
+  #"categorical", while "numeric" and "integer" classes are reported as "numeric"
+  if (class=="character"||class=="factor"){
+    type <- "Categorical"
+  } else if (class=="numeric"||class=="integer"){
+    type <- "Numeric"
+  } else {
+    #Other metadata classes may exist: warn user for unexpected classes
+    warning(glue("Unexpected class for metadata column {metadata_field}: {class}."))
+    type <- class
+  }
+  
+  return(type)
 }
 
 # Config applet UI ####
@@ -293,6 +431,7 @@ server <- function(input, output, session) {
   #1.1. Create module server instances for each possible assay
   lapply(names(sobj@assays), 
          function(id) options_server(id = id,
+                                     sobj=sobj,
                                      categories_selected = assays_selected,
                                      options_type = "assays"
          )
@@ -310,6 +449,7 @@ server <- function(input, output, session) {
   #2.2. Create options server module instances for each metadata assay
   lapply(names(sobj@meta.data), 
          function(id) options_server(id = id,
+                                     sobj = sobj,
                                      categories_selected = metadata_selected,
                                      options_type = "metadata"
                                      )
