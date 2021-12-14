@@ -25,7 +25,7 @@
   background-color: #E1E1E1;
   border-radius: 8px;
   min-height: 150px;
-  width: 380px;
+  width: 450px;
   padding: 0.5em 1em;
   margin-bottom: 1.0em;
   margin-right: 1.0em;
@@ -40,4 +40,23 @@
   height: 685px;
   /* Displays scrollbars only when necessary (default is to display always)*/
   overflow-y: auto;
+}
+
+/* Class used for the buttons to remove fields when defining
+categories of metadata values */
+.x-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  padding: 0px;
+}
+
+/* Properties for "X" icon within button */
+.x-button > i {
+  /* vertical-align for Font Awesome icons has a default value of 'baseline'
+     which will make elements appear off-center. Setting this property to
+     'middle' will center the icon. */
+  vertical-align: middle;
+  /* Increase size of "X"*/
+  font-size: 19px;
 }

@@ -80,7 +80,7 @@ assay_options_ui <- function(id){
     #Human-readable suffix: appears on plots and search entries
     textInput(inputId = ns("hr"),
               label="Set label for assay (will appear as entered in app)",
-              width = "100%"),
+              width = "380px"),
     #Include assay name on plots: if checked, the label entered will be 
     #displayed on plots and in the feature search results.
     #I may put this in the main app instead; it makes more sense to toggle it when making the plots.
@@ -135,7 +135,7 @@ metadata_options_ui <- function(id){
     #Human-readable suffix: appears on plots and search entries
     textInput(inputId = ns("hr"),
               label="Set label for metadata column (will appear as entered in app interface)",
-              width = "100%"),
+              width = "380px"),
     
     #Option to classify metadata into list (ex. group patients by sample conditions)
     #Only available for categorical metadata columns
@@ -161,6 +161,48 @@ metadata_options_ui <- function(id){
   return(ui)
 }
 
+#Metadata Group Fields Module
+metadata_group_fields_ui <- function(id,remove_button=FALSE){
+  #Namespace function
+  ns <- NS(id)
+  
+  print(glue("Module: id for remove UI button = {ns('remove_module')}"))
+  
+  ui <- span(
+    #inline-containers class is used to change the display style of all 
+    #containers within the element
+    class="inline-containers input-no-margin align-containers-top",
+    #id: used to delete the line if the remove button is clicked
+    #Passing NULL to ns() will make the id equal to the namespace id 
+    #passed to the module 
+    id=glue("{ns(NULL)}"),
+    textInput(inputId = ns("group_name"),
+              label = NULL,
+              width = "120px",
+              placeholder = "Group Name"
+              ),
+    selectizeInput(inputId = ns("group_members"),
+                  label=NULL,
+                  #Choices are dynamic and must be updated by the module server
+                  width = "260px",
+                  choices = NULL,
+                  selected = NULL,
+                  options = list(
+                    placeholder="Values in Group")
+                  ),
+    if(remove_button==TRUE){
+      print(glue("Input id of remove button: {ns('remove_module')}"))
+      actionButton(inputId = ns("remove_module"),
+                   label="",
+                   icon = icon("times"),
+                   class = "x-button" 
+                   )
+    } else NULL
+    )
+  
+  return(ui)
+  }
+
 #Server Module for field selection options ####
 #Applies to multiple types of selections (assays, metadata, etc.). One instance 
 #of the module is applied for every available selection across each tab.
@@ -184,6 +226,9 @@ options_server <- function(id,
     function(input, 
              output,
              session){
+      #Define namespace function for modules and UI elements 
+      #called from within this module
+      ns <- NS(id)
       
       #1. Show/hide cards based on user selections
       #(Conditionals on non-reactive values such as options_type can be used 
@@ -227,56 +272,147 @@ options_server <- function(id,
                                      {
                                        #Display the interface when the corresponding 
                                        #switch is activated
-                                       print(input$group_metadata)
                                        if (input$group_metadata==TRUE){
-                                         #Inputs are inline. Begin with group name:
+                                         #Interface: one instance of the fields 
+                                         #UI, with a button to add more fields 
+                                         #to the interface
                                          tagList(
-                                           span(
-                                             #inline-containers class is used to change the 
-                                             #display style of all containers within the element
-                                             class="inline-containers input-no-margin 
-                                             align-containers-top",
-                                             textInput(inputId = group_name_input_id,
-                                                       label = NULL,
-                                                       width = "120px",
-                                                       placeholder = "Group Name"),
-                                             selectizeInput(inputId = members_id,
-                                                            label=NULL,
-                                                            #Choices are dynamic and must 
-                                                            #be updated by the server
-                                                            width = "220px",
-                                                            choices = NULL,
-                                                            selected = NULL,
-                                                            options = list(
-                                                              placeholder="Values in Group")
-                                             )
-                                           ), #End span
+                                           #Namespace id for module is based on a 
+                                           #numeric id since there are multiple fields. 
+                                           #The id must be called using a namespace 
+                                           #function since this is a nested module
+                                           metadata_group_fields_ui(ns("groups-1")),
+                                           
                                            div(
-                                             actionButton(inputId = add_field_id,
+                                             actionButton(inputId =ns("add_group"),
                                                           label = "Add Group",
                                                           width = "100px")
-                                           )
+                                             )
                                          )#End tagList of input containers
                                        } 
                                      })
           
-          #2.1.2. Populate the selectize input with valid groups
+          #2.1.2. Create a reactive values object with a vector of the unique values 
+          #in the metadata column that can be sorted into groups
+          
+          
+          #2.1.3. After creating the UI for the first group selection field, 
+          #create the corresponding server module
+          observeEvent(groups_UI(),
+                       ignoreInit = TRUE,
+                       {
+                         print("Create server for first field")
+                         metadata_group_fields_server("groups-1")
+                         }
+                       )
+          
+          #2.1.4. Populate the selectize input with valid groups
           observeEvent(input$group_metadata,
                        label = "Populate Group Selection With Available Metadata",
                        ignoreNULL = FALSE,
                        {
+                         #This no longer works now that the UI is modularized
                          #First level: fetch all unique values for the metadata 
                          #field and list them as available options for the group
-                         updateSelectizeInput(inputId = members_id,
-                                              choices = unique(sobj@meta.data[[id]])
-                         )
+                         #updateSelectizeInput(inputId = members_id,
+                         #                    choices = unique(sobj@meta.data[[id]])
+                         #)
                        }
           )
           
-          #2.1.3. Render UI Components
+          #2.1.5. Add additional fields if the "Add Group" button is clicked
+          observeEvent(input$add_group,
+                       label = "Add Field: Metadata Groups Interface",
+                       #When the ns(add-group) button is created or when the 
+                       #options server module is created it will trigger this 
+                       #observer. The ignore* parameters are set to TRUE to make 
+                       #the observer respond only to a click of the button.
+                       ignoreNULL = TRUE,
+                       ignoreInit = TRUE,
+                       {
+                         print(glue("add_ui_triggered for {id}"))
+                         #Use the action button's value to create an id
+                         #Add 1 to the value since the first field uses "1" 
+                         #in its namespace (the first value to be created should 
+                         #have a value of 2 in the namespace id)
+                         #A different implementation is recommended since this could be buggy 
+                         nested_id <- glue("groups-{input$add_group + 1}")
+                         
+                         print(glue("Creating UI for {ns(nested_id)}"))
+                         
+                         #Add module UI
+                         insertUI(selector = glue("#{ns('add_group')}"),
+                                  where = "beforeBegin",
+                                  #Use namespace function (nested module)
+                                  ui = metadata_group_fields_ui(ns(nested_id),
+                                                                remove_button = TRUE)
+                                  )
+                         
+                         #Add module server
+                         print(glue("Creating server for {nested_id}"))
+                         metadata_group_fields_server(nested_id)
+                         
+                         #Add observer for remove button
+                         #The use of glue allows for (two) namespace references in 
+                         #the selector (the selector expects a string)
+                         #The remove-module element in the ui module is manually
+                         #namespaced since it is referenced outside of the module 
+                         #it was created in (this is not ideal)
+#                         observeEvent(input[[glue("{nested_id}-remove_module")]],
+#                                      ignoreNULL=TRUE,
+#                                      {
+#                                        print("observer triggered")
+#                                        #Remove the UI bound to this observer
+#                                        removeUI(selector = glue("#{ns(nested_id)}"))
+#                                        #Todo: remove the input variables 
+#                                        #associated with the module
+#                                      })
+                         
+                       })
+          
+          #2.1.6. Render UI Components
           output$groups_list <- renderUI({groups_UI()})
         }
       }
+    })
+}
+
+#Server module for metadata group fields ####
+metadata_group_fields_server <- function(id){
+  #Initialize module
+  moduleServer(
+    id,
+    function(input, 
+             output,
+             session){
+
+      #debug
+      print(glue("ID used in nested server module: {id}"))
+      
+      #Print value of remove button
+      #glue("remove button: {input$remove_module}")
+      output$remove_status <- renderText({"Test"})
+      
+      #Debug
+      observeEvent(input$remove_module,
+                   ignoreNULL = TRUE,
+                   #The once argument will remove the observer when the code 
+                   #below is ran (the observer should be deleted to optimize 
+                   #performance since the button it connects to will no longer exist)
+                   once = TRUE,
+                   #IgnoreInit is set to True to keep the server code from 
+                   #running when the observer is created
+                   ignoreInit = TRUE,
+                   {
+                     print("module activated")
+                     #id of the target should be equal to the "full" namespaced 
+                     #id of this module (includes all levels of nested modules, 
+                     #and retrieved with session$ns())
+                     removeUI(selector = glue("#{session$ns(NULL)}"))
+                     #Remove shiny input buttons linked to this module 
+                     #to optimize performance
+                     remove_shiny_inputs(id,input)
+                   })
     })
 }
 
