@@ -162,11 +162,9 @@ metadata_options_ui <- function(id){
 }
 
 #Metadata Group Fields Module
-metadata_group_fields_ui <- function(id,remove_button=FALSE){
+metadata_group_fields_ui <- function(id,remove_button=FALSE,temp_choices=NULL){
   #Namespace function
   ns <- NS(id)
-  
-  print(glue("Module: id for remove UI button = {ns('remove_module')}"))
   
   ui <- span(
     #inline-containers class is used to change the display style of all 
@@ -182,22 +180,25 @@ metadata_group_fields_ui <- function(id,remove_button=FALSE){
               placeholder = "Group Name"
               ),
     selectizeInput(inputId = ns("group_members"),
-                  label=NULL,
-                  #Choices are dynamic and must be updated by the module server
-                  width = "260px",
-                  choices = NULL,
-                  selected = NULL,
-                  options = list(
-                    placeholder="Values in Group")
-                  ),
+                   label=NULL,
+                   #Choices are dynamic and must be updated by the module server
+                   width = "260px",
+                   choices = temp_choices,
+                   selected = NULL,
+                   multiple= TRUE,
+                   options = list(
+                     placeholder="Values in Group",
+                     size=10)
+                   ),
     if(remove_button==TRUE){
-      print(glue("Input id of remove button: {ns('remove_module')}"))
       actionButton(inputId = ns("remove_module"),
                    label="",
                    icon = icon("times"),
                    class = "x-button" 
                    )
-    } else NULL
+    } else NULL,
+    #TEMP
+    verbatimTextOutput(outputId = ns("show_group_entries"), placeholder = TRUE)
     )
   
   return(ui)
@@ -226,8 +227,8 @@ options_server <- function(id,
     function(input, 
              output,
              session){
-      #Define namespace function for modules and UI elements 
-      #called from within this module
+      #Define namespace function for UI elements or references to elements that 
+      #are not Shiny inputs or outputs 
       ns <- NS(id)
       
       #1. Show/hide cards based on user selections
@@ -265,6 +266,10 @@ options_server <- function(id,
           members_id <- "options_group_members"
           add_field_id <- "options_add_field"
           
+          #Create a list for storing reactive outputs of group fields modules, 
+          #if they are created. List must be reactive to update values properly
+          group_choices <- list()
+          
           #2.1.1. Define UI for group selection
           groups_UI <- eventReactive(input$group_metadata,
                                      label = "Groups UI",
@@ -279,14 +284,17 @@ options_server <- function(id,
                                          tagList(
                                            #Namespace id for module is based on a 
                                            #numeric id since there are multiple fields. 
-                                           #The id must be called using a namespace 
-                                           #function since this is a nested module
-                                           metadata_group_fields_ui(ns("groups-1")),
+                                           metadata_group_fields_ui(ns("groups-1"),
+                                                                    temp_choices = unique(sobj@meta.data[[category_name]])
+                                                                    ),
                                            
                                            div(
                                              actionButton(inputId =ns("add_group"),
                                                           label = "Add Group",
-                                                          width = "100px")
+                                                          width = "100px"),
+                                             #TEMP: print list of choices entered, to test output
+                                             verbatimTextOutput(outputId = ns("group_choices_list"),
+                                                                placeholder = TRUE)
                                              )
                                          )#End tagList of input containers
                                        } 
@@ -294,33 +302,43 @@ options_server <- function(id,
           
           #2.1.2. Create a reactive values object with a vector of the unique values 
           #in the metadata column that can be sorted into groups
+          #This will be used to populate the choices now and will be updated later
           
+          #For now, this is not reactive. It will eventually be reactive and 
+          #depend on inputs in other metadata fields modules.
+          category_values <- unique(sobj@meta.data[[category_name]]) |> 
+            str_sort(numeric=TRUE)
+            
+            
+#           reactive({
+#            #Use sobj@meta.data to export a character vector or factor 
+#            #instead of a dataframe
+#            choices <- 
+#            return(choices)
+#            })
           
           #2.1.3. After creating the UI for the first group selection field, 
           #create the corresponding server module
-          observeEvent(groups_UI(),
-                       ignoreInit = TRUE,
-                       {
-                         print("Create server for first field")
-                         metadata_group_fields_server("groups-1")
-                         }
-                       )
+#          observeEvent(groups_UI(),
+#                       ignoreInit = TRUE,
+#                       {
+#                         print("Create server for first field")
+                         #Store output of module in list, using the 
+                         #module id as the key
+                         
+                         #
+#                         server_output <- metadata_group_fields_server("groups-1", 
+#                                                      possible_selections = category_values)
+#                         }
+#                       )
+          #Test: run module outside of observeEvent function
+          #group_choices[["groups-1"]]
+          #server_output
+          group_choices[["groups-1"]] <- metadata_group_fields_server("groups-1",
+                                                        possible_selections = category_values)
+
           
-          #2.1.4. Populate the selectize input with valid groups
-          observeEvent(input$group_metadata,
-                       label = "Populate Group Selection With Available Metadata",
-                       ignoreNULL = FALSE,
-                       {
-                         #This no longer works now that the UI is modularized
-                         #First level: fetch all unique values for the metadata 
-                         #field and list them as available options for the group
-                         #updateSelectizeInput(inputId = members_id,
-                         #                    choices = unique(sobj@meta.data[[id]])
-                         #)
-                       }
-          )
-          
-          #2.1.5. Add additional fields if the "Add Group" button is clicked
+          #2.1.4. Add additional fields if the "Add Group" button is clicked
           observeEvent(input$add_group,
                        label = "Add Field: Metadata Groups Interface",
                        #When the ns(add-group) button is created or when the 
@@ -330,70 +348,98 @@ options_server <- function(id,
                        ignoreNULL = TRUE,
                        ignoreInit = TRUE,
                        {
-                         print(glue("add_ui_triggered for {id}"))
                          #Use the action button's value to create an id
                          #Add 1 to the value since the first field uses "1" 
                          #in its namespace (the first value to be created should 
                          #have a value of 2 in the namespace id)
                          #A different implementation is recommended since this could be buggy 
                          nested_id <- glue("groups-{input$add_group + 1}")
-                         
-                         print(glue("Creating UI for {ns(nested_id)}"))
-                         
+                    
                          #Add module UI
+                         #For arguments that reference an element by id that is 
+                         #not a shiny input or output, namespacing must be used
                          insertUI(selector = glue("#{ns('add_group')}"),
                                   where = "beforeBegin",
-                                  #Use namespace function (nested module)
+                                  #Namespacing should also be used to call the 
+                                  #UI components of modules, but not the server component
                                   ui = metadata_group_fields_ui(ns(nested_id),
-                                                                remove_button = TRUE)
+                                                                remove_button = TRUE,
+                                                                temp_choices = unique(sobj@meta.data[[category_name]])
+                                                                )
                                   )
                          
-                         #Add module server
-                         print(glue("Creating server for {nested_id}"))
-                         metadata_group_fields_server(nested_id)
+                         #Add module server and store output in a list, using the 
+                         #module id as the key
+                         group_choices[[nested_id]] <- metadata_group_fields_server(nested_id,
+                                                      possible_selections = category_values)
                          
-                         #Add observer for remove button
-                         #The use of glue allows for (two) namespace references in 
-                         #the selector (the selector expects a string)
-                         #The remove-module element in the ui module is manually
-                         #namespaced since it is referenced outside of the module 
-                         #it was created in (this is not ideal)
-#                         observeEvent(input[[glue("{nested_id}-remove_module")]],
-#                                      ignoreNULL=TRUE,
-#                                      {
-#                                        print("observer triggered")
-#                                        #Remove the UI bound to this observer
-#                                        removeUI(selector = glue("#{ns(nested_id)}"))
-#                                        #Todo: remove the input variables 
-#                                        #associated with the module
-#                                      })
+                         print(group_choices[[nested_id]]())
                          
                        })
           
-          #2.1.6. Render UI Components
+          #2.1.5. Process output from each module
+          #For now this will be printed on the card
+          metadata_groups_list <- eventReactive(group_choices,
+                                         ignoreNULL = FALSE,
+                                         {
+                                           print("Begin eventReactive code")
+                                           print(group_choices)
+                                           #Create a list for storing the values
+                                           groups <- list()
+                                           #For each set of values provided by the group 
+                                           #choices modules and stored in group_choices, 
+                                           #build a new list using the group names 
+                                           #entered and the values in the metadata 
+                                           #column assigned to each group
+                                          
+                                           
+                                           #for (i in 1:length(group_choices)){
+                                          #   print(group_choices[i]())
+                                          #   groups[[i]] <- group_choices[i]()
+                                          # }
+                                           
+                                           print(groups)
+                                           return(groups)
+                                         })
+          
+          #Print results of above operation
+          output$group_choices_list <- renderText({
+            metadata_groups_list()
+          
+            #paste(server_output(), collapse = ", ")
+          })
+
+          
+                    
+          #2.1.6. Render UI components
           output$groups_list <- renderUI({groups_UI()})
+          
         }
       }
     })
 }
 
 #Server module for metadata group fields ####
-metadata_group_fields_server <- function(id){
+#id: id given to this module for namespacing
+#possible selections: a reactive vector of unique values within the 
+#metadata category that can be searched in the selectize inputs in this server
+metadata_group_fields_server <- function(id,
+                                         possible_selections){
   #Initialize module
   moduleServer(
     id,
     function(input, 
              output,
              session){
-
-      #debug
-      print(glue("ID used in nested server module: {id}"))
+      #Update the selectize input for this field with valid entries
+      #For now, this occurs only once when the module is created
+      updateSelectizeInput(session,
+                           #Assuming namespacing is not required
+                           inputId = "group_members",
+                           choices = possible_selections,
+                           selected = NULL)
       
-      #Print value of remove button
-      #glue("remove button: {input$remove_module}")
-      output$remove_status <- renderText({"Test"})
-      
-      #Debug
+      #Code to remove the UI and server instances when the remove button is clicked
       observeEvent(input$remove_module,
                    ignoreNULL = TRUE,
                    #The once argument will remove the observer when the code 
@@ -404,7 +450,6 @@ metadata_group_fields_server <- function(id){
                    #running when the observer is created
                    ignoreInit = TRUE,
                    {
-                     print("module activated")
                      #id of the target should be equal to the "full" namespaced 
                      #id of this module (includes all levels of nested modules, 
                      #and retrieved with session$ns())
@@ -413,6 +458,24 @@ metadata_group_fields_server <- function(id){
                      #to optimize performance
                      remove_shiny_inputs(id,input)
                    })
+      
+      #Store input reactively and return to the options module
+      #temp: print outputs directly to app
+      output$show_group_entries <- renderText({
+        paste(glue("{id}"),
+              glue("group_name: {input$group_name}"),
+              glue("group_members: {paste0(input$group_members, collapse=', ')}"),
+              sep="\n")
+      })
+      
+      return(reactive({input$group_members}))
+      
+  #    return(
+  #      list(
+  #        group_name <- reactive({input$group_name}),
+  #        group_members <- reactive({input$group_members})
+  #        ) #End list
+  #      ) #End return
     })
 }
 

@@ -18,6 +18,7 @@
 .shinysc-main-panel {
   overflow-y: auto;
   overflow-x: auto;
+  min-height: 85vh;
   max-height: 85vh;
 }
 
