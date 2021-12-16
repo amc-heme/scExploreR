@@ -261,14 +261,9 @@ options_server <- function(id,
         #Test for type of metadata field after testing to see if the object 
         #is a metadata entry
         if(type=="Categorical"){
-          #Define ids for input contianers
-          group_name_input_id <- "options_group_name"
-          members_id <- "options_group_members"
-          add_field_id <- "options_add_field"
-          
           #Create a list for storing reactive outputs of group fields modules, 
           #if they are created. List must be reactive to update values properly
-          group_choices <- list()
+          group_choices <- reactiveValues()
           
           #2.1.1. Define UI for group selection
           groups_UI <- eventReactive(input$group_metadata,
@@ -308,35 +303,18 @@ options_server <- function(id,
           #depend on inputs in other metadata fields modules.
           category_values <- unique(sobj@meta.data[[category_name]]) |> 
             str_sort(numeric=TRUE)
-            
-            
-#           reactive({
-#            #Use sobj@meta.data to export a character vector or factor 
-#            #instead of a dataframe
-#            choices <- 
-#            return(choices)
-#            })
           
           #2.1.3. After creating the UI for the first group selection field, 
           #create the corresponding server module
-#          observeEvent(groups_UI(),
-#                       ignoreInit = TRUE,
-#                       {
-#                         print("Create server for first field")
-                         #Store output of module in list, using the 
-                         #module id as the key
-                         
-                         #
-#                         server_output <- metadata_group_fields_server("groups-1", 
-#                                                      possible_selections = category_values)
-#                         }
-#                       )
-          #Test: run module outside of observeEvent function
-          #group_choices[["groups-1"]]
-          #server_output
-          group_choices[["groups-1"]] <- metadata_group_fields_server("groups-1",
+          first_module_output <- metadata_group_fields_server("groups-1",
                                                         possible_selections = category_values)
-
+          #When the output of the module is updated, pass the updated value to  
+          #a reactive values list
+          observeEvent(first_module_output(),
+                       ignoreNULL = FALSE,
+                       {
+                         group_choices[["groups-1"]] <- first_module_output()
+                       })
           
           #2.1.4. Add additional fields if the "Add Group" button is clicked
           observeEvent(input$add_group,
@@ -370,43 +348,43 @@ options_server <- function(id,
                          
                          #Add module server and store output in a list, using the 
                          #module id as the key
-                         group_choices[[nested_id]] <- metadata_group_fields_server(nested_id,
+                         module_output <- metadata_group_fields_server(nested_id,
                                                       possible_selections = category_values)
                          
-                         print(group_choices[[nested_id]]())
-                         
+                         #Test event observer as a means of capturing above output
+                         #The observer is functional
+                         #One observer is created each time the "Add Group" button 
+                         #is clicked. To optimize performance, the observer should 
+                         #be removed when the remove button is clicked
+                         observeEvent(module_output(),
+                                      ignoreNULL = FALSE,
+                                      {
+                                        print("begin")
+                                        print(nested_id)
+                                        print(module_output())
+                                        #group_choices must be updated with 
+                                        #module_output() using an observeEvent 
+                                        #function. The values will not update 
+                                        #properly if assignment is performed
+                                        #outside of this observer 
+                                        group_choices[[nested_id]] <- module_output()
+
+                                        rxv_list <- reactiveValuesToList(group_choices)
+                                        rxv_list <- rxv_list[str_sort(names(rxv_list), 
+                                                                      numeric=TRUE)]
+                                        print(rxv_list)
+                                        
+                                        print("end")
+                                      })
+                        
                        })
-          
-          #2.1.5. Process output from each module
-          #For now this will be printed on the card
-          metadata_groups_list <- eventReactive(group_choices,
-                                         ignoreNULL = FALSE,
-                                         {
-                                           print("Begin eventReactive code")
-                                           print(group_choices)
-                                           #Create a list for storing the values
-                                           groups <- list()
-                                           #For each set of values provided by the group 
-                                           #choices modules and stored in group_choices, 
-                                           #build a new list using the group names 
-                                           #entered and the values in the metadata 
-                                           #column assigned to each group
-                                          
-                                           
-                                           #for (i in 1:length(group_choices)){
-                                          #   print(group_choices[i]())
-                                          #   groups[[i]] <- group_choices[i]()
-                                          # }
-                                           
-                                           print(groups)
-                                           return(groups)
-                                         })
-          
-          #Print results of above operation
-          output$group_choices_list <- renderText({
-            metadata_groups_list()
-          
-            #paste(server_output(), collapse = ", ")
+
+          #Print results of above operation (Test only)
+          output$group_choices_list <- renderPrint({
+            rxv_list <- reactiveValuesToList(group_choices)
+            rxv_list <- rxv_list[str_sort(names(rxv_list), 
+                                          numeric=TRUE)]
+            rxv_list
           })
 
           
@@ -468,14 +446,10 @@ metadata_group_fields_server <- function(id,
               sep="\n")
       })
       
-      return(reactive({input$group_members}))
-      
-  #    return(
-  #      list(
-  #        group_name <- reactive({input$group_name}),
-  #        group_members <- reactive({input$group_members})
-  #        ) #End list
-  #      ) #End return
+      return(reactive({
+        list(`group_name`=input$group_name,
+             `group_members`=input$group_members)
+        }))
     })
 }
 
