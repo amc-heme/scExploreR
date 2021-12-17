@@ -152,10 +152,7 @@ metadata_options_ui <- function(id){
     } else NULL,
     
     #Dynamic UI for defining metadata groups
-    uiOutput(outputId = ns("groups_list")),
-    
-    #TEMP: output to be returned from card
-    verbatimTextOutput(outputId = ns("return_values"), placeholder = TRUE)
+    uiOutput(outputId = ns("groups_list"))
   )
   
   #Add "hidden" shinyjs class to the card to hide each card initially
@@ -294,10 +291,7 @@ options_server <- function(id,
                                            div(
                                              actionButton(inputId =ns("add_group"),
                                                           label = "Add Group",
-                                                          width = "100px"),
-                                             #TEMP: print list of choices entered, to test output
-                                             verbatimTextOutput(outputId = ns("group_choices_list"),
-                                                                placeholder = TRUE)
+                                                          width = "100px")
                                            )
                                          )#End tagList of input containers
                                        } 
@@ -354,8 +348,7 @@ options_server <- function(id,
                                   )
                          )
                          
-                         #Add module server and store output in a list, using the 
-                         #module id as the key
+                         #Add module server and store output 
                          module_output <- metadata_group_fields_server(nested_id,
                                                                        possible_selections = category_values)
                          
@@ -376,18 +369,6 @@ options_server <- function(id,
                                       })
                          
                        })
-          
-          #Print results of above operation (Test only)
-          #Incorporate inputs from the current module as well 
-          output$group_choices_list <- renderPrint({
-            #Group choices (convert to list)
-            rxv_list <- reactive_values_to_sorted_list(group_choices)
-            
-            list(
-              `label`=input$hr,
-              `groups`=rxv_list
-            )
-          })
           
           #2.1.6. Render UI components
           output$groups_list <- renderUI({groups_UI()})
@@ -420,16 +401,10 @@ options_server <- function(id,
           return_list_metadata <- reactive({
             list(`meta_colname`= category_name,
                  `label`= input$hr,
-                 `groups`= group_choices
+                 `groups`= NULL
             )
           })
         }
-
-        #If metadata groups are specified, convert the group_choices 
-        #reactiveValues list to a list with the keys sorted 
-        output$return_values <- renderPrint({
-          return_list_metadata()
-        })
         
         return(return_list_metadata)
         
@@ -681,29 +656,43 @@ server <- function(input, output, session) {
   
   
   #2.2. Create options server module instances for each metadata assay
-  for (id in (names(sobj@meta.data))){
-    #Create module
-    module_output <- options_server(id = id,
-                                    sobj = sobj,
-                                    categories_selected = metadata_selected,
-                                    options_type = "metadata"
-    )
+  #Observe() will updated all_metadata_options each time an input in the options
+  #module or the groups module within the options module is changed.
+  observe({
+    #<<- is required for all_metadata_options to be accessible to other server
+    #code (not sure why)
+    all_metadata_options <<- list()
     
-    #Create observer for module output 
-    observeEvent(module_output(),
-                 ignoreNULL = FALSE,
-                 ignoreInit = TRUE,
-                 {
-                   #When the output is changed, its entry in the list 
-                   #of reactive values is updated
-                   metadata_options_list[[id]] <- module_output()
-                 })
-  }
+    for (id in names(sobj@meta.data)){
+      all_metadata_options[[id]] <<- options_server(id = id,
+                                                   sobj = sobj,
+                                                   categories_selected = metadata_selected,
+                                                   options_type = "metadata"
+      )
+    }
+
+  })
+  
+  #2.3. Filter list of options selected and 
+  all_options_processed <- reactive({
+    #Options list is only processed when metadata columns have been selected
+    if (!is.null(input$metadata_selected)){
+      #Extracts each reactive module output and stores them in a list
+      list <- lapply(all_metadata_options, function(x) x())
+      #Filter list for metadata columns that have been selected by the user
+      return(list[names(list) %in% input$metadata_selected])
+    } else {
+      #Return NULL if no columns are selected
+      return(NULL)
+    }
+  })
+  
   
   #TEMP: print all metadata options
   output$all_variables <- renderPrint({
-    reactives <- reactiveValuesToList(metadata_options_list)
-    print(reactives)
+    #Lapply: fetches each reactive object on the list, prints the result, and
+    #stores all objects in a list
+    all_options_processed()
   })
   
 }
