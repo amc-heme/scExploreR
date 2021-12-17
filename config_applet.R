@@ -91,7 +91,7 @@ assay_options_ui <- function(id){
   
   #Add "hidden" shinyjs class to the card to hide each card initially
   ui <- shinyjs::hidden(ui)
-
+  
   return(ui)
 }
 
@@ -142,17 +142,20 @@ metadata_options_ui <- function(id){
     if(type=="Categorical"){
       tagList(
         materialSwitch(inputId =  ns("group_metadata"),
-                     label = "Group metadata into categories?", 
-                     value = FALSE,
-                     right = TRUE,
-                     status = "default"),
+                       label = "Group metadata into categories?", 
+                       value = FALSE,
+                       right = TRUE,
+                       status = "default"),
         tags$p("(Choices for possible values in the metadata column will appear in the app)",
                class="center small")
-        )
-      } else NULL,
+      )
+    } else NULL,
     
     #Dynamic UI for defining metadata groups
-    uiOutput(outputId = ns("groups_list"))
+    uiOutput(outputId = ns("groups_list")),
+    
+    #TEMP: output to be returned from card
+    verbatimTextOutput(outputId = ns("return_values"), placeholder = TRUE)
   )
   
   #Add "hidden" shinyjs class to the card to hide each card initially
@@ -178,7 +181,7 @@ metadata_group_fields_ui <- function(id,remove_button=FALSE,temp_choices=NULL){
               label = NULL,
               width = "120px",
               placeholder = "Group Name"
-              ),
+    ),
     selectizeInput(inputId = ns("group_members"),
                    label=NULL,
                    #Choices are dynamic and must be updated by the module server
@@ -189,20 +192,18 @@ metadata_group_fields_ui <- function(id,remove_button=FALSE,temp_choices=NULL){
                    options = list(
                      placeholder="Values in Group",
                      size=10)
-                   ),
+    ),
     if(remove_button==TRUE){
       actionButton(inputId = ns("remove_module"),
                    label="",
                    icon = icon("times"),
                    class = "x-button" 
-                   )
-    } else NULL,
-    #TEMP
-    verbatimTextOutput(outputId = ns("show_group_entries"), placeholder = TRUE)
-    )
+      )
+    } else NULL
+  )
   
   return(ui)
-  }
+}
 
 #Server Module for field selection options ####
 #Applies to multiple types of selections (assays, metadata, etc.). One instance 
@@ -230,6 +231,13 @@ options_server <- function(id,
       #Define namespace function for UI elements or references to elements that 
       #are not Shiny inputs or outputs 
       ns <- NS(id)
+      
+      #Initialize output variables
+      #group_choices applies only to metadata variables that are categorical but 
+      #is called for export from this module in all cases: therefore, it must be 
+      #initialized as NULL to avoid issues when returning for modules not meeting 
+      #these conditions.
+      group_choices <- NULL
       
       #1. Show/hide cards based on user selections
       #(Conditionals on non-reactive values such as options_type can be used 
@@ -281,7 +289,7 @@ options_server <- function(id,
                                            #numeric id since there are multiple fields. 
                                            metadata_group_fields_ui(ns("groups-1"),
                                                                     temp_choices = unique(sobj@meta.data[[category_name]])
-                                                                    ),
+                                           ),
                                            
                                            div(
                                              actionButton(inputId =ns("add_group"),
@@ -290,7 +298,7 @@ options_server <- function(id,
                                              #TEMP: print list of choices entered, to test output
                                              verbatimTextOutput(outputId = ns("group_choices_list"),
                                                                 placeholder = TRUE)
-                                             )
+                                           )
                                          )#End tagList of input containers
                                        } 
                                      })
@@ -307,7 +315,7 @@ options_server <- function(id,
           #2.1.3. After creating the UI for the first group selection field, 
           #create the corresponding server module
           first_module_output <- metadata_group_fields_server("groups-1",
-                                                        possible_selections = category_values)
+                                                              possible_selections = category_values)
           #When the output of the module is updated, pass the updated value to  
           #a reactive values list
           observeEvent(first_module_output(),
@@ -332,7 +340,7 @@ options_server <- function(id,
                          #have a value of 2 in the namespace id)
                          #A different implementation is recommended since this could be buggy 
                          nested_id <- glue("groups-{input$add_group + 1}")
-                    
+                         
                          #Add module UI
                          #For arguments that reference an element by id that is 
                          #not a shiny input or output, namespacing must be used
@@ -343,13 +351,13 @@ options_server <- function(id,
                                   ui = metadata_group_fields_ui(ns(nested_id),
                                                                 remove_button = TRUE,
                                                                 temp_choices = unique(sobj@meta.data[[category_name]])
-                                                                )
                                   )
+                         )
                          
                          #Add module server and store output in a list, using the 
                          #module id as the key
                          module_output <- metadata_group_fields_server(nested_id,
-                                                      possible_selections = category_values)
+                                                                       possible_selections = category_values)
                          
                          #Test event observer as a means of capturing above output
                          #The observer is functional
@@ -359,40 +367,87 @@ options_server <- function(id,
                          observeEvent(module_output(),
                                       ignoreNULL = FALSE,
                                       {
-                                        print("begin")
-                                        print(nested_id)
-                                        print(module_output())
                                         #group_choices must be updated with 
                                         #module_output() using an observeEvent 
                                         #function. The values will not update 
                                         #properly if assignment is performed
                                         #outside of this observer 
                                         group_choices[[nested_id]] <- module_output()
-
-                                        rxv_list <- reactiveValuesToList(group_choices)
-                                        rxv_list <- rxv_list[str_sort(names(rxv_list), 
-                                                                      numeric=TRUE)]
-                                        print(rxv_list)
-                                        
-                                        print("end")
                                       })
-                        
+                         
                        })
-
-          #Print results of above operation (Test only)
-          output$group_choices_list <- renderPrint({
-            rxv_list <- reactiveValuesToList(group_choices)
-            rxv_list <- rxv_list[str_sort(names(rxv_list), 
-                                          numeric=TRUE)]
-            rxv_list
-          })
-
           
-                    
+          #Print results of above operation (Test only)
+          #Incorporate inputs from the current module as well 
+          output$group_choices_list <- renderPrint({
+            #Group choices (convert to list)
+            rxv_list <- reactive_values_to_sorted_list(group_choices)
+            
+            list(
+              `label`=input$hr,
+              `groups`=rxv_list
+            )
+          })
+          
           #2.1.6. Render UI components
           output$groups_list <- renderUI({groups_UI()})
           
         }
+      }
+      
+      #3. Returns from Module: 
+      if(options_type=="metadata"){
+        #Return options depend on the type of metadata (Categorical metadata has 
+        #a reactive list of metadata group choices; numeric and other types have 
+        #a non-reactive value of NULL for group_choices)
+        if (type=="Categorical"){
+          #Return metadata-specific variables as a list
+          #Returns 
+          #1. The name of the category (machine-readable and used for the values 
+          #of choices in the app)
+          #2. The user-specified label (human-readable and used for the keys of choices)
+          #3. The metadata groups selected, if specified by the user
+          #Forategorical metadata, convert group_choices to a list with keys sorted
+          return_list_metadata <- reactive({
+            list(`meta_colname`= category_name,
+                 `label`= input$hr,
+                 `groups`= reactive_values_to_sorted_list(group_choices)
+            )
+          })
+          
+          #Numeric metadata and other types: group_choices is NULL
+        } else {
+          return_list_metadata <- reactive({
+            list(`meta_colname`= category_name,
+                 `label`= input$hr,
+                 `groups`= group_choices
+            )
+          })
+        }
+
+        #If metadata groups are specified, convert the group_choices 
+        #reactiveValues list to a list with the keys sorted 
+        output$return_values <- renderPrint({
+          return_list_metadata()
+        })
+        
+        return(return_list_metadata)
+        
+      } else if (options_type=="assays"){
+        #For assays, return
+        #1. Assay: the name of the assay as defined in the Seurat object
+        #2. Key: the prefix to be added to features server-side to search for 
+        #them from the assay
+        #3. Suffix_human: a suffix that is added to the feature in parentheses 
+        #and displayed in the app in dropdown menus and in the titles of plots
+        #4. Dropdown_title: a user-defined label for the assay that will be 
+        #added to all dropdown menus in the app that display features from multiple assays 
+        return(reactive({
+          list(`assay`=category_name,
+               `key`=Key(sobj[[category_name]]),
+               `suffix_human`=if(input$include_label==TRUE) input$hr else "",
+               `dropdown_title`=input$hr)
+        }))
       }
     })
 }
@@ -437,19 +492,11 @@ metadata_group_fields_server <- function(id,
                      remove_shiny_inputs(id,input)
                    })
       
-      #Store input reactively and return to the options module
-      #temp: print outputs directly to app
-      output$show_group_entries <- renderText({
-        paste(glue("{id}"),
-              glue("group_name: {input$group_name}"),
-              glue("group_members: {paste0(input$group_members, collapse=', ')}"),
-              sep="\n")
-      })
-      
+      #Return input to the options module as a reactive list
       return(reactive({
         list(`group_name`=input$group_name,
              `group_members`=input$group_members)
-        }))
+      }))
     })
 }
 
@@ -472,7 +519,7 @@ applet_sidebar_panel <- function(...,class=NULL){
     class = paste0("shinysc-sidebar-panel col-sm-6 col-md-5 col-lg-4 ",class),
     #Pass content to sidebarPanel
     tagList(...)
-    )
+  )
 }
 
 applet_main_panel <- function(...,class=NULL){
@@ -483,7 +530,7 @@ applet_main_panel <- function(...,class=NULL){
             class = paste0("shinysc-main-panel col-sm-6 col-md-7 col-lg-8 ",class),
             #Pass content to mainPanel 
             tagList(...)
-            )
+  )
 }
 
 ### Assays *tab* (not the assay options module)
@@ -526,14 +573,20 @@ metadata_tab <- function(){
                                     non_selected_header = "Available Metadata",
                                     selected_header = "Selected Metadata",
                                     "hide_empty_groups" = TRUE)
-                     )
           )
+      )
     ),
+    
     applet_main_panel(
       #Create a metadata options "card" for each metadata column in the object
       #All cards are hidden at first and are displayed when the user selects 
       #the corresponding column. The "id" argument in lapply is the name of the metadata field.
-      tagList(lapply(names(sobj@meta.data), function(id) metadata_options_ui(id)))
+      tagList(lapply(names(sobj@meta.data), function(id) metadata_options_ui(id)),
+              #TEMP: add an additional card displaying the outputs from all tabs
+              div(class="optcard",
+                  verbatimTextOutput(outputId = "all_variables")
+              )
+      )
     )
   )
 }
@@ -587,11 +640,19 @@ ui <- fluidPage(
                       assay_tab()),
              tabPanel(title = "Metadata",
                       metadata_tab())
-             )
-  )#End fluidPage
+  )
+)#End fluidPage
 
 # Config Applet Server Function ####
 server <- function(input, output, session) {
+  #Initialize Variables
+  #all_options: list of reactiveValues objects used to store full record of user 
+  #selections across all tabs
+  all_options <- list(`assays` <- reactiveValues(),
+                      `metadata`<- reactiveValues())
+  
+  metadata_options_list <- reactiveValues()
+  
   #1. Assay Panel
   #1.1. Store selected assays as a reactive variable
   assays_selected <- eventReactive(input$assays_selected,
@@ -608,25 +669,42 @@ server <- function(input, output, session) {
                                      categories_selected = assays_selected,
                                      options_type = "assays"
          )
-         )#End lapply
- 
+  )#End lapply
+  
   #2. Metadata Panel
   #2.1. Store metadata selected as a reactive variable
   metadata_selected <- eventReactive(input$metadata_selected,
-                                   ignoreNULL=FALSE,
-                                   {
-                                     input$metadata_selected
-                                   })
+                                     ignoreNULL=FALSE,
+                                     {
+                                       input$metadata_selected
+                                     })
   
   
   #2.2. Create options server module instances for each metadata assay
-  lapply(names(sobj@meta.data), 
-         function(id) options_server(id = id,
-                                     sobj = sobj,
-                                     categories_selected = metadata_selected,
-                                     options_type = "metadata"
-                                     )
-  )#End lapply
+  for (id in (names(sobj@meta.data))){
+    #Create module
+    module_output <- options_server(id = id,
+                                    sobj = sobj,
+                                    categories_selected = metadata_selected,
+                                    options_type = "metadata"
+    )
+    
+    #Create observer for module output 
+    observeEvent(module_output(),
+                 ignoreNULL = FALSE,
+                 ignoreInit = TRUE,
+                 {
+                   #When the output is changed, its entry in the list 
+                   #of reactive values is updated
+                   metadata_options_list[[id]] <- module_output()
+                 })
+  }
+  
+  #TEMP: print all metadata options
+  output$all_variables <- renderPrint({
+    reactives <- reactiveValuesToList(metadata_options_list)
+    print(reactives)
+  })
   
 }
 
