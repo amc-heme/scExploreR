@@ -59,7 +59,104 @@ js_list <- lapply(js_files,includeScript)
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 #Need a conditional to test if the loaded object is a Seurat object
 
-#Assay options module ####
+#Overview####
+#
+#Section A: Functions for UI and Server Components
+#Section B: Modules
+#Section C: Main UI and Server Function
+
+#Section A: Functions #### 
+##A.1. UI Functions ####
+###applet_sidebar_panel 
+#Creates a sidebarPanel UI object with formatting common to the applet, and 
+#additional classes if specified. Sidebar content is specified to `...`
+applet_sidebar_panel <- function(...,class=NULL){
+  #Use an empty string to define the class if it is not specified
+  if(is.null(class)) class <- ""
+  sidebarPanel(
+    #The use of width=0 allows the width to be specified for different window 
+    #sizes using the class argument (using the width argument will apply the 
+    #style for all screens with at least a "medium" size viewport)
+    width=0,
+    #Column width specifications vary based on viewport size and are given using 
+    #Bootstrap classes (R Studio creates a "small" window by default on a MacBook
+    #pro) https://getbootstrap.com/docs/3.3/css/#responsive-utilities
+    class = paste0("shinysc-sidebar-panel col-sm-6 col-md-5 col-lg-4 ",class),
+    #Pass content to sidebarPanel
+    tagList(...)
+  )
+}
+
+applet_main_panel <- function(...,class=NULL){
+  #Use an empty string to define the class if it is not specified
+  if(is.null(class)) class <- ""
+  #Use width=0 to define column widths using Bootstrap classes
+  mainPanel(width=0,
+            class = paste0("shinysc-main-panel col-sm-6 col-md-7 col-lg-8 ",class),
+            #Pass content to mainPanel 
+            tagList(...)
+  )
+}
+
+##A.2 Server Functions ####
+#metadata_type: takes a Seurat object and a metadata field, and returns the 
+#class of the metadata field
+metadata_type <- function(sobj,metadata_field){
+  #Get unique values of metadata field for display of summary statistics
+  values <- unique(sobj@meta.data[[metadata_field]])
+  
+  #Determine type of metadata (class of values) for display in column
+  #Must call @meta.data first with arbitrary metadata 
+  #(sobj[[<metadata>]]) will return a dataframe
+  class <- class(values)
+  
+  #Simplify metadata type: "character" and "factor" classes are reported as 
+  #"categorical", while "numeric" and "integer" classes are reported as "numeric"
+  if (class=="character"||class=="factor"){
+    type <- "Categorical"
+  } else if (class=="numeric"||class=="integer"){
+    type <- "Numeric"
+  } else {
+    #Other metadata classes may exist: warn user for unexpected classes
+    warning(glue("Unexpected class for metadata column {metadata_field}: {class}."))
+    type <- class
+  }
+  
+  return(type)
+}
+
+#Section B: Modules ####
+#The UI and the server components of each module are displayed
+#The level of the module is the number of parent modules it has, including the
+#main server function. A module created within a module, which is itself created
+#within the main server has a level of 2.
+
+##B.1 Options Module (first level) ####
+#id: the namespace id given to this module. In the config app, this is either 
+#the assay name or the metadata type.
+#Type: the type of metadata. This can be either "assays" or "metadata", and is
+#used to show the relevant options based on the type.
+options_ui <- function(id,
+                       type=c("assays","metadata"),
+                       category_name=id){
+  #NS(id): namespace function, defined here and called for every input ID. One
+  #namespace is used for each instance of the options module and is defined by
+  #the id; use of namespaces allows for the same input id to be used in 
+  #different modules without namespace collisions.
+  ns <- NS(id)
+  
+  #Metadata-specific calculations used to define UI for each metadata type
+  #Get unique values of metadata field for display of summary statistics
+  values <- unique(sobj@meta.data[[id]])
+  #Create list of sorted values for display
+  values_sorted <- str_sort(values,numeric=TRUE)
+  #Determine type of metadata
+  type <- metadata_type(sobj,id)
+
+}
+
+
+## Assay options module ####
 ##UI####
 #The "id" argument will be equal to the assay name 
 #Problems could result if assay names are not unique. This seems unlikely but 
@@ -86,7 +183,10 @@ assay_options_ui <- function(id){
     #I may put this in the main app instead; it makes more sense to toggle it when making the plots.
     checkboxInput(inputId = ns("include_label"),
                   label = "Include assay name on plots?"),
-    tags$p("(This is usually not required for the default assay in your data)")
+    tags$p("(This is usually not required for the default assay in your data)"),
+    
+    #Temp: text output to display assay options selected
+    verbatimTextOutput(outputId = ns("assay_return"))
   )
   
   #Add "hidden" shinyjs class to the card to hide each card initially
@@ -99,11 +199,11 @@ assay_options_ui <- function(id){
 metadata_options_ui <- function(id){
   #Namespace function
   ns <- NS(id)
+  
   #Get unique values of metadata field for display of summary statistics
   values <- unique(sobj@meta.data[[id]])
   #Create list of sorted values for display
   values_sorted <- str_sort(values,numeric=TRUE)
-  
   #Determine type of metadata
   type <- metadata_type(sobj,id)
   
@@ -417,12 +517,18 @@ options_server <- function(id,
         #and displayed in the app in dropdown menus and in the titles of plots
         #4. Dropdown_title: a user-defined label for the assay that will be 
         #added to all dropdown menus in the app that display features from multiple assays 
-        return(reactive({
+        return_list_assays <- reactive({
           list(`assay`=category_name,
                `key`=Key(sobj[[category_name]]),
                `suffix_human`=if(input$include_label==TRUE) input$hr else "",
                `dropdown_title`=input$hr)
-        }))
+        })
+        
+        output$assay_return <- renderPrint({
+          return_list_assays()
+        })
+        
+        return(return_list_assays)
       }
     })
 }
@@ -452,7 +558,8 @@ metadata_group_fields_server <- function(id,
                    ignoreNULL = TRUE,
                    #The once argument will remove the observer when the code 
                    #below is ran (the observer should be deleted to optimize 
-                   #performance since the button it connects to will no longer exist)
+                   #performance since the button it connects to will no longer
+                   #exist)
                    once = TRUE,
                    #IgnoreInit is set to True to keep the server code from 
                    #running when the observer is created
@@ -475,40 +582,10 @@ metadata_group_fields_server <- function(id,
     })
 }
 
-#Functions ####
-##UI components ####
-###applet_sidebar_panel 
-#Creates a sidebarPanel UI object with formatting common to the applet, and 
-#additional classes if specified. Sidebar content is specified to `...`
-applet_sidebar_panel <- function(...,class=NULL){
-  #Use an empty string to define the class if it is not specified
-  if(is.null(class)) class <- ""
-  sidebarPanel(
-    #The use of width=0 allows the width to be specified for different window 
-    #sizes using the class argument (using the width argument will apply the 
-    #style for all screens with at least a "medium" size viewport)
-    width=0,
-    #Column width specifications vary based on viewport size and are given using 
-    #Bootstrap classes (R Studio creates a small window by default on a MacBook pro)
-    #https://getbootstrap.com/docs/3.3/css/#responsive-utilities
-    class = paste0("shinysc-sidebar-panel col-sm-6 col-md-5 col-lg-4 ",class),
-    #Pass content to sidebarPanel
-    tagList(...)
-  )
-}
-
-applet_main_panel <- function(...,class=NULL){
-  #Use an empty string to define the class if it is not specified
-  if(is.null(class)) class <- ""
-  #Use width=0 to define column widths using Bootstrap classes
-  mainPanel(width=0,
-            class = paste0("shinysc-main-panel col-sm-6 col-md-7 col-lg-8 ",class),
-            #Pass content to mainPanel 
-            tagList(...)
-  )
-}
-
-### Assays *tab* (not the assay options module)
+# Section C: Main UI and Server Functions ####
+##C.1 Tabs in Main UI ####
+### Assays Tab 
+#(not the assay options module)
 assay_tab <- function(){
   sidebarLayout(
     applet_sidebar_panel(
@@ -530,12 +607,18 @@ assay_tab <- function(){
       #UI creates a "card"; all are hidden at first and are shown when their 
       #corresponding assay is selected by the user. The "id" argument in lapply 
       #is the name of the assay.
-      tagList(lapply(names(sobj@assays),function(id) assay_options_ui(id)))
+      tagList(
+        lapply(names(sobj@assays),function(id) assay_options_ui(id)),
+        #TEMP: add an additional card displaying the outputs from all tabs
+        div(class="optcard",
+            verbatimTextOutput(outputId = "assay_options")
+        ) #Ene TEMP
+      )
     )
   )
 }
 
-### Metadata Tab 
+###Metadata Tab
 metadata_tab <- function(){
   sidebarLayout(
     applet_sidebar_panel(
@@ -566,34 +649,7 @@ metadata_tab <- function(){
   )
 }
 
-## Server functions ####
-#metadata_type: takes a Seurat object and a metadata field, and returns the 
-#class of the metadata field
-metadata_type <- function(sobj,metadata_field){
-  #Get unique values of metadata field for display of summary statistics
-  values <- unique(sobj@meta.data[[metadata_field]])
-  
-  #Determine type of metadata (class of values) for display in column
-  #Must call @meta.data first with arbitrary metadata 
-  #(sobj[[<metadata>]]) will return a dataframe
-  class <- class(values)
-  
-  #Simplify metadata type: "character" and "factor" classes are reported as 
-  #"categorical", while "numeric" and "integer" classes are reported as "numeric"
-  if (class=="character"||class=="factor"){
-    type <- "Categorical"
-  } else if (class=="numeric"||class=="integer"){
-    type <- "Numeric"
-  } else {
-    #Other metadata classes may exist: warn user for unexpected classes
-    warning(glue("Unexpected class for metadata column {metadata_field}: {class}."))
-    type <- class
-  }
-  
-  return(type)
-}
-
-# Config applet UI ####
+##C.2 Main UI ####
 ui <- fluidPage(
   #Place style tags for each CSS file in document
   css_list,
@@ -611,6 +667,7 @@ ui <- fluidPage(
   navbarPage(title = "Object Configuration",
              windowTitle="Configure Seurat Object",
              position="fixed-top",
+             #Tabs are displayed below
              tabPanel(title="Assays",
                       assay_tab()),
              tabPanel(title = "Metadata",
@@ -618,15 +675,11 @@ ui <- fluidPage(
   )
 )#End fluidPage
 
-# Config Applet Server Function ####
+##C.3 Main Server Function ####
 server <- function(input, output, session) {
   #Initialize Variables
-  #all_options: list of reactiveValues objects used to store full record of user 
-  #selections across all tabs
-  all_options <- list(`assays` <- reactiveValues(),
-                      `metadata`<- reactiveValues())
-  
-  metadata_options_list <- reactiveValues()
+  #all_options: list used to store full record of user selections across all tabs
+  all_options <- list()
   
   #1. Assay Panel
   #1.1. Store selected assays as a reactive variable
@@ -638,13 +691,45 @@ server <- function(input, output, session) {
   
   
   #1.1. Create module server instances for each possible assay
-  lapply(names(sobj@assays), 
-         function(id) options_server(id = id,
-                                     sobj=sobj,
-                                     categories_selected = assays_selected,
-                                     options_type = "assays"
-         )
-  )#End lapply
+  #Observe is used to reactively update outputs when inputs in the module and
+  #its sub-modules are changed
+  observe({
+    #<<- is required for all_assay_options to be accessible to other server
+    #code (not sure why)
+    all_assay_options <<- list()
+    
+    #Create an assay options module for each assay in the object 
+    for (id in names(sobj@assays)){
+      #Must also use <<- here
+      all_assay_options[[id]] <<- options_server(id = id,
+                                                sobj=sobj,
+                                                categories_selected = assays_selected,
+                                                options_type = "assays"
+      )
+    }
+  })
+  
+  #1.2. Filter list of options module outputs and combine into a single 
+  #reactive object, which is added to the all_options list. 
+  all_options$assays <- reactive({
+    #Options list is only processed when metadata columns have been selected
+    if (!is.null(input$assays_selected)){
+      #Extracts each reactive module output and stores them in a list
+      list <- lapply(all_assay_options, function(x) x())
+      #Filter list for metadata columns that have been selected by the user
+      return(list[names(list) %in% input$assays_selected])
+    } else {
+      #Return NULL if no columns are selected
+      return(NULL)
+    }
+  })
+  
+  #Temp: print assay options to screen
+  output$assay_options <- renderPrint({
+    #Lapply: fetches each reactive object on the list, prints the result, and
+    #stores all objects in a list
+    all_options$assays()
+  })
   
   #2. Metadata Panel
   #2.1. Store metadata selected as a reactive variable
@@ -656,8 +741,7 @@ server <- function(input, output, session) {
   
   
   #2.2. Create options server module instances for each metadata assay
-  #Observe() will updated all_metadata_options each time an input in the options
-  #module or the groups module within the options module is changed.
+  #Use observe() for reactive updates of module output
   observe({
     #<<- is required for all_metadata_options to be accessible to other server
     #code (not sure why)
@@ -673,8 +757,9 @@ server <- function(input, output, session) {
 
   })
   
-  #2.3. Filter list of options selected and 
-  all_options_processed <- reactive({
+  #2.3. Filter list of options selected and combine the individual reactive
+  #outputs from each module into a single reactive list 
+  all_options$metadata <- reactive({
     #Options list is only processed when metadata columns have been selected
     if (!is.null(input$metadata_selected)){
       #Extracts each reactive module output and stores them in a list
@@ -692,7 +777,7 @@ server <- function(input, output, session) {
   output$all_variables <- renderPrint({
     #Lapply: fetches each reactive object on the list, prints the result, and
     #stores all objects in a list
-    all_options_processed()
+    all_options$metadata()
   })
   
 }
