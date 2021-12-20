@@ -66,7 +66,7 @@ sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 #Section C: Main UI and Server Function
 
 #Section A: Functions #### 
-##A.1. UI Functions ####
+##A.1 UI Functions ####
 ###applet_sidebar_panel 
 #Creates a sidebarPanel UI object with formatting common to the applet, and 
 #additional classes if specified. Sidebar content is specified to `...`
@@ -132,12 +132,13 @@ metadata_type <- function(sobj,metadata_field){
 #within the main server has a level of 2.
 
 ##B.1 Options Module (first level) ####
+###Options Module UI
 #id: the namespace id given to this module. In the config app, this is either 
 #the assay name or the metadata type.
-#Type: the type of metadata. This can be either "assays" or "metadata", and is
-#used to show the relevant options based on the type.
+#Optcard_type: the type of data to display options for. This can be either "assays" 
+#or "metadata", and is used to show the relevant options based on the type.
 options_ui <- function(id,
-                       type=c("assays","metadata"),
+                       optcard_type=c("assays","metadata"),
                        category_name=id){
   #NS(id): namespace function, defined here and called for every input ID. One
   #namespace is used for each instance of the options module and is defined by
@@ -145,168 +146,105 @@ options_ui <- function(id,
   #different modules without namespace collisions.
   ns <- NS(id)
   
+  #1. Calculations for options UI
   #Metadata-specific calculations used to define UI for each metadata type
-  #Get unique values of metadata field for display of summary statistics
-  values <- unique(sobj@meta.data[[id]])
-  #Create list of sorted values for display
-  values_sorted <- str_sort(values,numeric=TRUE)
-  #Determine type of metadata
-  type <- metadata_type(sobj,id)
-
-}
-
-
-## Assay options module ####
-##UI####
-#The "id" argument will be equal to the assay name 
-#Problems could result if assay names are not unique. This seems unlikely but 
-#needs to be handled if it were to occur. 
-assay_options_ui <- function(id){
-  #NS(id): namespace function, defined here and called for every input ID. All 
-  #inputs created with the namespace function will be created within the namespace 
-  #defined by id. Using multiple namespaces allows the inputs to have the same 
-  #id in different instances of the module without collisions
-  ns <- NS(id)
-  #UI created for each assay
-  ui <- div(
-    id=ns("optcard"),
-    class="optcard single-space-bottom",
-    tags$strong(glue("Options for {id}"),
-                class="large half-space-bottom center"),
+  if(optcard_type=="metadata"){
+    #Get unique values of metadata field for display of summary statistics
+    values <- unique(sobj@meta.data[[category_name]])
+    #Create list of sorted values for display
+    values_sorted <- str_sort(values,numeric=TRUE)
+    #Determine type of metadata
+    metadata_type <- metadata_type(sobj,category_name)
     
-    #Human-readable suffix: appears on plots and search entries
-    textInput(inputId = ns("hr"),
-              label="Set label for assay (will appear as entered in app)",
-              width = "380px"),
-    #Include assay name on plots: if checked, the label entered will be 
-    #displayed on plots and in the feature search results.
-    #I may put this in the main app instead; it makes more sense to toggle it when making the plots.
-    checkboxInput(inputId = ns("include_label"),
-                  label = "Include assay name on plots?"),
-    tags$p("(This is usually not required for the default assay in your data)"),
-    
-    #Temp: text output to display assay options selected
-    verbatimTextOutput(outputId = ns("assay_return"))
-  )
-  
-  #Add "hidden" shinyjs class to the card to hide each card initially
-  ui <- shinyjs::hidden(ui)
-  
-  return(ui)
-}
-
-#Metadata options module ####
-metadata_options_ui <- function(id){
-  #Namespace function
-  ns <- NS(id)
-  
-  #Get unique values of metadata field for display of summary statistics
-  values <- unique(sobj@meta.data[[id]])
-  #Create list of sorted values for display
-  values_sorted <- str_sort(values,numeric=TRUE)
-  #Determine type of metadata
-  type <- metadata_type(sobj,id)
-  
-  #Display number of unique values if categorical; display range if numeric
-  if (type=="Categorical"){
-    n_unique <- length(values)
-    metadata_description <- glue("{n_unique} unique values")
-  } else if (type=="Numeric"){
-    metadata_description <- ""
-    #metadata_description <- glue("{range: {min(values)} to {max(values)}, avg {mean(values)}}")
-  } else {
-    #Potential unforseen classes: leave the description blank
-    metadata_description <- ""
+    #Metadata description
+    #Display number of unique values if categorical; display range if numeric
+    if (metadata_type=="Categorical"){
+      n_unique <- length(values)
+      metadata_description <- glue("{n_unique} unique values")
+    } else if (metadata_type=="Numeric"){
+      metadata_description <- ""
+      #metadata_description <- glue("{range: {min(values)} to {max(values)}, avg {mean(values)}}")
+    } else {
+      #Potential unforseen metadata types: leave the description blank
+      metadata_description <- ""
+    }
   }
   
-  #UI: create an options card for each metadata option selected
-  ui <- div(
-    id=ns("optcard"),
-    class="optcard single-space-bottom",
-    tags$strong(glue("Options for {id}"),
-                class="large center"),
+  #2. Create UI for options card
+  #Assays UI
+  if(optcard_type=="assays"){
+    ui <- div(
+      id=ns("optcard"),
+      class="optcard single-space-bottom",
+      tags$strong(glue("Options for {category_name}"),
+                  class="large half-space-bottom center"),
+      
+      #Human-readable suffix: appears on plots and search entries
+      textInput(inputId = ns("hr"),
+                label="Set label for assay (will appear as entered in app)",
+                width = "380px"),
+      #Include assay name on plots: if checked, the label entered will be 
+      #displayed on plots and in the feature search results.
+      #I may put this in the main app instead; it makes more sense to toggle it when making the plots.
+      checkboxInput(inputId = ns("include_label"),
+                    label = "Include assay name on plots?"),
+      tags$p("(This is usually not required for the default assay in your data)")
+    )
     
-    #Print the type of metadata beneath the title, and a brief description
-    tags$p(glue("({type}, {metadata_description})"),class="center small half-space-bottom"),
-    
-    #If the metadata is categorical and there are 15 values or less, print the values to screen
-    if (type=="Categorical" & length(values)<=15){tags$p(glue("Values: {paste(values_sorted, collapse=', ')}"))} else NULL,
-    
-    #Human-readable suffix: appears on plots and search entries
-    textInput(inputId = ns("hr"),
-              label="Set label for metadata column (will appear as entered in app interface)",
-              width = "380px"),
-    
-    #Option to classify metadata into list (ex. group patients by sample conditions)
-    #Only available for categorical metadata columns
-    if(type=="Categorical"){
-      tagList(
-        materialSwitch(inputId =  ns("group_metadata"),
-                       label = "Group metadata into categories?", 
-                       value = FALSE,
-                       right = TRUE,
-                       status = "default"),
-        tags$p("(Choices for possible values in the metadata column will appear in the app)",
-               class="center small")
-      )
-    } else NULL,
-    
-    #Dynamic UI for defining metadata groups
-    uiOutput(outputId = ns("groups_list"))
-  )
+    #Metadata UI
+  } else if (optcard_type=="metadata"){
+    ui <- div(
+      id=ns("optcard"),
+      class="optcard single-space-bottom",
+      tags$strong(glue("Options for {category_name}"),
+                  class="large center"),
+      
+      #Print the type of metadata beneath the title, and a brief description
+      tags$p(glue("({metadata_type}, {metadata_description})"), 
+             class="center small half-space-bottom"),
+      
+      #If the metadata is categorical and there are 15 values or less, print the values to screen
+      if (metadata_type=="Categorical" & length(values)<=15){
+        tags$p(glue("Values: {paste(values_sorted, collapse=', ')}"))
+        } else NULL,
+      
+      #Human-readable suffix: appears on plots and search entries
+      textInput(inputId = ns("hr"),
+                label="Set label for metadata column (will appear as entered in app interface)",
+                width = "380px"),
+      
+      #Option to classify metadata into list (ex. group patients by sample conditions)
+      #Only available for categorical metadata columns
+      if(metadata_type=="Categorical"){
+        tagList(
+          materialSwitch(inputId =  ns("group_metadata"),
+                         label = "Group metadata into categories?", 
+                         value = FALSE,
+                         right = TRUE,
+                         status = "default"),
+          tags$p("(Choices for possible values in the metadata column will appear in the app)",
+                 class="center small")
+        )
+      } else NULL,
+      
+      #Dynamic UI for defining metadata groups
+      uiOutput(outputId = ns("groups_list"))
+    )
+  }
   
-  #Add "hidden" shinyjs class to the card to hide each card initially
+  #3. Add "hidden" shinyjs class to the card to hide each card initially
   ui <- shinyjs::hidden(ui)
   
   return(ui)
 }
 
-#Metadata Group Fields Module
-metadata_group_fields_ui <- function(id,remove_button=FALSE,temp_choices=NULL){
-  #Namespace function
-  ns <- NS(id)
-  
-  ui <- span(
-    #inline-containers class is used to change the display style of all 
-    #containers within the element
-    class="inline-containers input-no-margin align-containers-top",
-    #id: used to delete the line if the remove button is clicked
-    #Passing NULL to ns() will make the id equal to the namespace id 
-    #passed to the module 
-    id=glue("{ns(NULL)}"),
-    textInput(inputId = ns("group_name"),
-              label = NULL,
-              width = "120px",
-              placeholder = "Group Name"
-    ),
-    selectizeInput(inputId = ns("group_members"),
-                   label=NULL,
-                   #Choices are dynamic and must be updated by the module server
-                   width = "260px",
-                   choices = temp_choices,
-                   selected = NULL,
-                   multiple= TRUE,
-                   options = list(
-                     placeholder="Values in Group",
-                     size=10)
-    ),
-    if(remove_button==TRUE){
-      actionButton(inputId = ns("remove_module"),
-                   label="",
-                   icon = icon("times"),
-                   class = "x-button" 
-      )
-    } else NULL
-  )
-  
-  return(ui)
-}
-
-#Server Module for field selection options ####
-#Applies to multiple types of selections (assays, metadata, etc.). One instance 
-#of the module is applied for every available selection across each tab.
+###Options module server
 #Renders option cards for the variables of assays, metadata, etc. selected by 
 #the user, and processes user selections to create a config file for the main app.
+#Applies to multiple types of selections (assays, metadata, etc.). One instance 
+#of the module is created for every available selection across each tab.
+
+#Arguments
 #id: the id passed to the module
 #categories_selected: a reactive variable describing the variables (assays, metatdata, etc.
 #, selected by the user)
@@ -524,16 +462,54 @@ options_server <- function(id,
                `dropdown_title`=input$hr)
         })
         
-        output$assay_return <- renderPrint({
-          return_list_assays()
-        })
-        
         return(return_list_assays)
       }
     })
 }
 
-#Server module for metadata group fields ####
+##B.2 Metadata Groups Module (second level)####
+###Module UI
+metadata_group_fields_ui <- function(id,remove_button=FALSE,temp_choices=NULL){
+  #Namespace function
+  ns <- NS(id)
+  
+  ui <- span(
+    #inline-containers class is used to change the display style of all 
+    #containers within the element
+    class="inline-containers input-no-margin align-containers-top",
+    #id: used to delete the line if the remove button is clicked
+    #Passing NULL to ns() will make the id equal to the namespace id 
+    #passed to the module 
+    id=glue("{ns(NULL)}"),
+    textInput(inputId = ns("group_name"),
+              label = NULL,
+              width = "120px",
+              placeholder = "Group Name"
+    ),
+    selectizeInput(inputId = ns("group_members"),
+                   label=NULL,
+                   #Choices are dynamic and must be updated by the module server
+                   width = "260px",
+                   choices = temp_choices,
+                   selected = NULL,
+                   multiple= TRUE,
+                   options = list(
+                     placeholder="Values in Group",
+                     size=10)
+    ),
+    if(remove_button==TRUE){
+      actionButton(inputId = ns("remove_module"),
+                   label="",
+                   icon = icon("times"),
+                   class = "x-button" 
+      )
+    } else NULL
+  )
+  
+  return(ui)
+}
+
+###Module Server
 #id: id given to this module for namespacing
 #possible selections: a reactive vector of unique values within the 
 #metadata category that can be searched in the selectize inputs in this server
@@ -608,11 +584,14 @@ assay_tab <- function(){
       #corresponding assay is selected by the user. The "id" argument in lapply 
       #is the name of the assay.
       tagList(
-        lapply(names(sobj@assays),function(id) assay_options_ui(id)),
+        lapply(names(sobj@assays),
+               function(assay) options_ui(id=assay,
+                                          optcard_type = "assays")
+               ),
         #TEMP: add an additional card displaying the outputs from all tabs
         div(class="optcard",
             verbatimTextOutput(outputId = "assay_options")
-        ) #Ene TEMP
+        ) #End TEMP
       )
     )
   )
@@ -639,7 +618,10 @@ metadata_tab <- function(){
       #Create a metadata options "card" for each metadata column in the object
       #All cards are hidden at first and are displayed when the user selects 
       #the corresponding column. The "id" argument in lapply is the name of the metadata field.
-      tagList(lapply(names(sobj@meta.data), function(id) metadata_options_ui(id)),
+      tagList(lapply(names(sobj@meta.data), 
+                     function(colname) options_ui(id=colname, 
+                                                  optcard_type = "metadata")
+                     ),
               #TEMP: add an additional card displaying the outputs from all tabs
               div(class="optcard",
                   verbatimTextOutput(outputId = "all_variables")
