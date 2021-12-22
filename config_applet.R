@@ -9,6 +9,7 @@ library(shinydashboard)
 library(waiter)
 library(shinycssloaders)
 library(shinyjs)
+library(shinyFeedback)
 
 #Reactlog (for debugging)
 library(reactlog)
@@ -154,7 +155,7 @@ options_ui <- function(id,
     #Create list of sorted values for display
     values_sorted <- str_sort(values,numeric=TRUE)
     #Determine type of metadata
-    metadata_type <- metadata_type(sobj,category_name)
+    metadata_type <- metadata_type(sobj, category_name)
     
     #Metadata description
     #Display number of unique values if categorical; display range if numeric
@@ -304,9 +305,11 @@ options_server <- function(id,
         #Test for type of metadata field after testing to see if the object 
         #is a metadata entry
         if(type=="Categorical"){
-          #Create a list for storing reactive outputs of group fields modules, 
-          #if they are created. List must be reactive to update values properly
-          group_choices <- reactiveValues()
+          #Create a list for storing reactive outputs of group fields modules
+          group_choices <- list()
+          #Use makeReactiveBinding to get the list to update when group fields 
+          #inputs are changed
+          makeReactiveBinding("group_choices")
           
           #2.1.1. Define UI for group selection
           groups_UI <- eventReactive(input$group_metadata,
@@ -346,19 +349,21 @@ options_server <- function(id,
           
           #2.1.3. After creating the UI for the first group selection field, 
           #create the corresponding server module
-          first_module_output <- metadata_group_fields_server("groups-1",
-                                                              possible_selections = category_values)
-          #When the output of the module is updated, pass the updated value to  
-          #a reactive values list
-          observeEvent(first_module_output(),
-                       ignoreNULL = FALSE,
-                       {
-                         group_choices[["groups-1"]] <- first_module_output()
-                       })
+          module_output <- metadata_group_fields_server("groups-1",
+                                         possible_selections = category_values)
+          
+          #Use observe() to reactively update group_choices with the module output
+          observe(
+            label=glue("observer for {category_name}-groups-1"),
+            {
+            #The superassignment operator <<- is used to update group_choices
+            #outside of the scope of the observe() function
+            group_choices[["groups-1"]] <<- module_output()
+          })
           
           #2.1.4. Add additional fields if the "Add Group" button is clicked
           observeEvent(input$add_group,
-                       label = "Add Field: Metadata Groups Interface",
+                       label = "{category_name}: add Field Button",
                        #When the ns(add-group) button is created or when the 
                        #options server module is created it will trigger this 
                        #observer. The ignore* parameters are set to TRUE to make 
@@ -370,7 +375,8 @@ options_server <- function(id,
                          #Add 1 to the value since the first field uses "1" 
                          #in its namespace (the first value to be created should 
                          #have a value of 2 in the namespace id)
-                         #A different implementation is recommended since this could be buggy 
+                         #A different implementation is recommended since 
+                         #this could be buggy 
                          nested_id <- glue("groups-{input$add_group + 1}")
                          
                          #Add module UI
@@ -379,33 +385,28 @@ options_server <- function(id,
                          insertUI(selector = glue("#{ns('add_group')}"),
                                   where = "beforeBegin",
                                   #Namespacing should also be used to call the 
-                                  #UI components of modules, but not the server component
+                                  #UI components of modules, but not 
+                                  #the server component
                                   ui = metadata_group_fields_ui(ns(nested_id),
                                                                 remove_button = TRUE,
-                                                                temp_choices = unique(sobj@meta.data[[category_name]])
+                                                                temp_choices = str_sort(
+                                                                  unique(
+                                                                    sobj@meta.data[[category_name]]
+                                                                    ),
+                                                                  numeric=TRUE
+                                                                  )
                                   )
                          )
                          
-                         #Add module server and store output 
+                         #Add module server instance
                          module_output <- metadata_group_fields_server(nested_id,
                                                                        possible_selections = category_values)
-                         
-                         #Test event observer as a means of capturing above output
-                         #The observer is functional
-                         #One observer is created each time the "Add Group" button 
-                         #is clicked. To optimize performance, the observer should 
-                         #be removed when the remove button is clicked
-                         observeEvent(module_output(),
-                                      ignoreNULL = FALSE,
-                                      {
-                                        #group_choices must be updated with 
-                                        #module_output() using an observeEvent 
-                                        #function. The values will not update 
-                                        #properly if assignment is performed
-                                        #outside of this observer 
-                                        group_choices[[nested_id]] <- module_output()
-                                      })
-                         
+                         #Store output in group_choices and use observe() to 
+                         #reactively update group_choices when the output changes
+                         observe(label=glue("Observer for {category_name}-{nested_id}"),
+                                 {
+                                   group_choices[[nested_id]] <<- module_output()
+                                 })
                        })
           
           #2.1.6. Render UI components
@@ -426,11 +427,12 @@ options_server <- function(id,
           #of choices in the app)
           #2. The user-specified label (human-readable and used for the keys of choices)
           #3. The metadata groups selected, if specified by the user
-          #Forategorical metadata, convert group_choices to a list with keys sorted
           return_list_metadata <- reactive({
             list(`meta_colname`= category_name,
                  `label`= input$hr,
-                 `groups`= reactive_values_to_sorted_list(group_choices)
+                 #Uses the process_group_choices function to remove values 
+                 #representing deleted modules
+                 `groups`= process_group_choices(group_choices)
             )
           })
           
@@ -523,11 +525,18 @@ metadata_group_fields_server <- function(id,
              session){
       #Update the selectize input for this field with valid entries
       #For now, this occurs only once when the module is created
-      updateSelectizeInput(session,
-                           #Assuming namespacing is not required
-                           inputId = "group_members",
-                           choices = possible_selections,
-                           selected = NULL)
+      #With the latest updates to the code structure, updateSelectizeInput is 
+      #running each time an entry is made in the metadata group, which erases input
+      #updateSelectizeInput(session,
+      #                     #Assuming namespacing is not required
+      #                     inputId = "group_members",
+      #                     choices = str_sort(possible_selections,numeric=TRUE))
+      
+      #Deleted: returned to parent modules to notifiy if output has been deleted
+      #when the remove button is clicked, this is set to TRUE 
+      deleted <- FALSE
+      #Ensures value is reactively updated when the remove button is clicked
+      makeReactiveBinding("deleted")
       
       #Code to remove the UI and server instances when the remove button is clicked
       observeEvent(input$remove_module,
@@ -541,19 +550,24 @@ metadata_group_fields_server <- function(id,
                    #running when the observer is created
                    ignoreInit = TRUE,
                    {
+                     print(glue("{session$ns(NULL)}: delete button"))
                      #id of the target should be equal to the "full" namespaced 
                      #id of this module (includes all levels of nested modules, 
                      #and retrieved with session$ns())
                      removeUI(selector = glue("#{session$ns(NULL)}"))
-                     #Remove shiny input buttons linked to this module 
+                     #Remove shiny input bindings linked to this module 
                      #to optimize performance
                      remove_shiny_inputs(id,input)
+                     #Notify parent modules that the field has been deleted 
+                     print("set deleted to TRUE")
+                     deleted <<- TRUE
                    })
       
       #Return input to the options module as a reactive list
-      return(reactive({
+      return(reactive(label = glue("Return from {session$ns(NULL)}"),{
         list(`group_name`=input$group_name,
-             `group_members`=input$group_members)
+             `group_members`=input$group_members,
+             `deleted`=deleted)
       }))
     })
 }
@@ -649,6 +663,7 @@ ui <- fluidPage(
   navbarPage(title = "Object Configuration",
              windowTitle="Configure Seurat Object",
              position="fixed-top",
+             id="navbar",
              #Tabs are displayed below
              tabPanel(title="Assays",
                       assay_tab()),
@@ -731,9 +746,9 @@ server <- function(input, output, session) {
     
     for (id in names(sobj@meta.data)){
       all_metadata_options[[id]] <<- options_server(id = id,
-                                                   sobj = sobj,
-                                                   categories_selected = metadata_selected,
-                                                   options_type = "metadata"
+                                                    sobj = sobj,
+                                                    categories_selected = metadata_selected,
+                                                    options_type = "metadata"
       )
     }
 
