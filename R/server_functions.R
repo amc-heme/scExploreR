@@ -108,6 +108,8 @@ compute_correlation <- function(input,
     #Arrange in descending order by correlation coefficient
     arrange(desc(.data[[coeff_colname]]))
   
+  print(head(table,5))
+  
   return(table)
 }
 

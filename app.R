@@ -66,6 +66,9 @@ js_list <- lapply(js_files,includeScript)
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
 # Object Config ####
+#Load config file
+config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
+
 #For now, this will be hard-coded. Later, these variables will be defined from
 #a .config file created from the config applet.
 include_numeric_metadata <- TRUE
@@ -149,14 +152,36 @@ feature_list <- function(assay, prefix_machine, suffix_human) {
 #                       `Gene Signature Scores`=sig_list,
 #                       `Metadata Features`=as.list(numeric_cols))
 
+#Metadata variables to group and split by in drop down menus
+
+
 #Specify metadata variables to group and split by in drop down menus
+#meta_choices: a named vector with name-value pairs for the display name of the 
+#metadata category and the key used to access the category in the Seurat Object
+
+#Construct from config file
+#Base vector: contains the "none" option
+meta_choices <- c("None"="none")
+#Iteratively populate vector using entries in the metadata section of the config file 
+for (key in names(config$metadata)){
+  #Use setNames from the stats package to add a new name-value pair to the vector
+  meta_choices <- setNames(
+    #Add `meta_colname` to vector
+    object = c(meta_choices, 
+               config$metadata[[key]]$meta_colname),
+    #Add `label` to the vector as a name
+    nm = c(names(meta_choices),
+           config$metadata[[key]]$label)
+  )
+}
+
 #Choices are specific to the D0/D30 object
-meta_choices <- c("None"="none",
-                  "Clusters"="clusters",
-                  "Response"="response",
-                  "Response (Additional Detail)"="best_response",
-                  "Timepoint (Approximate)"="treatment",
-                  "Patient ID"="htb")
+#meta_choices <- c("None"="none",
+#                  "Clusters"="clusters",
+#                  "Response"="response",
+#                  "Response (Additional Detail)"="best_response",
+#                  "Timepoint (Approximate)"="treatment",
+#                  "Patient ID"="htb")
 
 ##Plots tab ####
 #Store UMAP Dimensions of full object
