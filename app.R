@@ -40,7 +40,7 @@ sapply(source_files,source)
 #included in the main UI function.
 #Get list of .css files in www/ directory
 css_files <- list.files(path = "./www", 
-                          pattern="*.css$", 
+                          pattern=".*\\.css", 
                           full.names=TRUE, 
                           ignore.case=TRUE)
 #Create list of style tags for each CSS file

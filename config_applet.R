@@ -704,9 +704,17 @@ ui <- fluidPage(
                   )#End tagList
   ), #End Help Button
   #Button to create/export config file
-  actionButton(inputId = "export_selections",
-               label = "Export Configuration",
-               class="float_right"),
+  downloadButton(outputId = "export_selections",
+                 label="Export Configuration",
+                 class = "float_right",
+                 icon = NULL),
+  
+  #May be more appropriate to use an action button later for more advanced 
+  #behavior (save config file and direct user back to app)
+  #actionButton(inputId = "export_selections",
+  #             label = "Export Configuration",
+  #             class="float_right"),
+  
   #Include scripts for each JavaScript file in document
   #This is added last to delay running of scripts until the elements to be 
   #moved by scripts are created
@@ -816,9 +824,19 @@ server <- function(input, output, session) {
   output$all_variables <- renderPrint({
     #Lapply: fetches each reactive object on the list, prints the result, and
     #stores all objects in a list
-    all_options$metadata()
+    all_options
   })
   
+  #3. Config File Download Handler
+  output$export_selections <- downloadHandler(
+    filename = "config.rds",
+    content=function(file){
+      #Extract each reactive output from the options module and store in a list
+      all_options_list <- lapply(all_options, function(x) x()) 
+      #Download above object as .rds 
+      saveRDS(object = all_options_list,
+              file = file)
+    })
 }
 
 shinyApp(ui, server)
