@@ -437,9 +437,13 @@ options_server <- function(id,
           return_list_metadata <- reactive({
             list(`meta_colname`= category_name,
                  `label`= input$hr,
-                 #Uses the process_group_choices function to remove values 
-                 #representing deleted modules
-                 `groups`= process_group_choices(group_choices)
+                 #groups: defined if the switch to group metadata is turned on, 
+                 #and set to NULL otherwise.
+                 `groups`= if(input$group_metadata==TRUE){
+                   #Uses the process_group_choices function to remove values 
+                   #representing deleted modules
+                   process_group_choices(group_choices)
+                   } else NULL
             )
           })
           
