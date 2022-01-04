@@ -44,14 +44,21 @@ css_files <- list.files(path = "./www",
 #Create list of style tags for each CSS file
 css_list <- lapply(css_files,includeCSS)
 
-#Load Javasctipt files for app: find all .js files in www/ directory and create
-#a list of script() tags using includeScript().
-#Get list of .js files in www/ directory
-js_files <- list.files(path = "./www", 
-                       pattern="*.js$", 
+#Load Javascript files for app: find all .js files that apply to the applet and 
+#create a list of script() tags using includeScript().
+#Files to include: all files in www/applet_js/ directory, and the collapsible_panel.js 
+#file in the www/ directory (www/button_wizzard.js must be excluded since it 
+#conflicts with 'applet_navbar_wizzard' in the www/applet_js/ directory)
+js_files <- list.files(path = "./www/applet_js", 
+                       #Use regex to search for files ending in .js (double 
+                       #backslash used to escape '.' character)
+                       pattern=".*\\.js", 
                        full.names=TRUE, 
                        ignore.case=TRUE)
-#Create list of style tags for each CSS file
+#Add www/collapsible_panel.js file to list
+js_files <- c(js_files,"./www/collapsible_panel.js")
+
+#Create list of style tags for each CSS file 
 js_list <- lapply(js_files,includeScript)
 
 
@@ -247,7 +254,7 @@ options_ui <- function(id,
 
 #Arguments
 #id: the id passed to the module
-#categories_selected: a reactive variable describing the variables (assays, metatdata, etc.
+#categories_selected: a reactive variable describing the variables (assays, metadata, etc.
 #, selected by the user)
 #options_type: the type of options to create a server function for. Can be one 
 #of "assays" or "metadata"
@@ -647,18 +654,12 @@ metadata_tab <- function(){
 
 ##C.2 Main UI ####
 ui <- fluidPage(
-  #Place style tags for each CSS file in document
-  css_list,
   #Waiter UI: spinners
   useWaiter(),
   #Shinyjs: a Shiny JavaScript extension
   useShinyjs(),
-  #Include scripts for each JavaScript file in document
-  js_list,
   #CSS style: prevents navbar from appearing on top of content 
-  tags$head(tags$style(HTML("body{
-                            padding-top: 60px;
-                            }"))),
+  #tags$head(tags$style(HTML(""))),
   #Main UI
   navbarPage(title = "Object Configuration",
              windowTitle="Configure Seurat Object",
@@ -669,7 +670,49 @@ ui <- fluidPage(
                       assay_tab()),
              tabPanel(title = "Metadata",
                       metadata_tab())
-  )
+  ),
+  #Elements below will be moved to the navbar using JavaScript
+  #Help button
+  dropdownButton(inputId = "help",
+                 status="info",
+                 right=TRUE,
+                 label = "",
+                 size="sm",
+                 icon = icon("question"),
+                 tagList(
+                   tags$p(
+                     "Help and Background",
+                     style="color: #888888; 
+                     margin-bottom: 0px;
+                     font-size: 1.17em;"
+                     ),
+                   
+                   #Tutorial Document
+                  # tags$a("Tutorial Vignette",
+                  #        href="Shiny_Vignette.html",
+                  #        class="blue_hover",
+                  #        target="_blank", #Opens link in new tab
+                  #        rel="noopener noreferrer" 
+                  # ),#End tutorial document link
+                 
+                   #File issue on github
+                   tags$a("Report a Bug",
+                          href="https://github.com/amc-heme/DataExploreShiny/issues",
+                          class="blue_hover",
+                          target="_blank", #Opens link in new tab
+                          rel="noopener noreferrer")
+                  )#End tagList
+  ), #End Help Button
+  #Button to create/export config file
+  actionButton(inputId = "export_selections",
+               label = "Export Configuration",
+               class="float_right"),
+  #Include scripts for each JavaScript file in document
+  #This is added last to delay running of scripts until the elements to be 
+  #moved by scripts are created
+  js_list,
+  #Apply CSS files (placed last so elements created by scripts can be stylized)
+  css_list
 )#End fluidPage
 
 ##C.3 Main Server Function ####
@@ -768,7 +811,6 @@ server <- function(input, output, session) {
       return(NULL)
     }
   })
-  
   
   #TEMP: print all metadata options
   output$all_variables <- renderPrint({

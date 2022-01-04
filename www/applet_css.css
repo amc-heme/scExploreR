@@ -30,7 +30,7 @@
   padding: 0.5em 1em;
   margin-bottom: 1.0em;
   margin-right: 1.0em;
-  display: inline-block;
+  display: block;
 }
 
 /* Make multi-select fill the page */
@@ -60,4 +60,27 @@ categories of metadata values */
   vertical-align: middle;
   /* Increase size of "X"*/
   font-size: 19px;
+}
+
+/* Export Configuration Button */
+#export_selections {
+  background-color: #ED872D;
+  color: #FFFFFF;
+  border-color: #ED872D;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* config_export_div: container created to hold the export configuration button */
+#config_export_div {
+    display: inline-block;
+    margin-right: 20px;
+    margin-top: 7.5px;
+    height: 35px;
+}
+
+/* Add additional margin to help button for consistency with the margin around
+   the export configuration button */
+#help_button_container{
+  margin-right: 5px;
 }

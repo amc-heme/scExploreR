@@ -50,9 +50,14 @@ css_list <- lapply(css_files,includeCSS)
 #a list of script() tags using includeScript().
 #Get list of .js files in www/ directory
 js_files <- list.files(path = "./www", 
-                        pattern="*.js$", 
-                        full.names=TRUE, 
-                        ignore.case=TRUE)
+                       #Regex: uses \\. to select for files ending in ".js".
+                       #Pattern arguments require double backslashes for eacape 
+                       #characters to work (R and regex use the same string 
+                       #character)
+                       pattern=".*\\.js", 
+                       full.names=TRUE, 
+                       ignore.case=TRUE,
+                       include.dirs = FALSE)
 #Create list of style tags for each CSS file
 js_list <- lapply(js_files,includeScript)
 
@@ -663,9 +668,9 @@ ui <- tagList(
   #Shinyjs: a Shiny JavaScript extension
   useShinyjs(),
   #CSS style: prevents navbar from appearing on top of content 
-  tags$head(tags$style(HTML("body{
-                            padding-top: 60px;
-                            }"))),
+  #tags$head(tags$style(HTML("body{
+  #                          padding-top: 60px;
+  #                          }"))),
   #CSS and JS for collapsible panel
   navbarPage("Shiny scExplorer",
              windowTitle="Shiny scExplorer",
@@ -731,7 +736,7 @@ ui <- tagList(
                     )#End Help Button
                     )#End introBox2
            ),#End introBox 1
-  #Include list of scripts build from .js files in www/ directory
+  #Include list of scripts built from .js files in www/ directory
   js_list
 )
 

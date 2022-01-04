@@ -1,5 +1,21 @@
 /* Formatting for text and other elements */
 
+/* Body: padding on top responds to media width. When the window is smaller than
+   a 'medium' bootstrap window (width <768px), the navbar becomes vertical, causing
+   the navbar tabs and icons to appear on top of content. For now, this will be
+   fixed by increasing the margin of the page body, but a solution that responds
+   to the new height of the navbar would be ideal. */
+@media (max-width:768px){
+  body{
+    padding-top: 220px;
+  }
+}
+@media (min-width: 769px){
+  body{
+    padding-top: 60px;
+  }
+}
+
 /* Adjust margins of headers */
 h2, h3 {
   margin-top: 10px !important;
