@@ -13,7 +13,21 @@ make_subset <- function(input,sobj){
 
 #Compute_subset_stats() ####
 #used in correlations and dge tab. 
-compute_subset_stats <- function(input,output,session,rv,nonzero_threshold){
+#Arguments
+#session: session in which to display nofitications, if they apply
+#rv: list of reactive values created in app.
+#gene_selected: a reactive value providing the current gene selected by the user,
+#with the "rna_" prefix removed. The prefix is removed in the main app code 
+#in section 2.3.1.
+#nonzero_threshold: non-reactive numeric value hard-coded in app. Defines the 
+#minimum acceptable proportion of cells with nonzero reads for the gene selected. 
+#If the proportion is below the threshold, a notification appears warning the 
+#user that the results may be inaccurate.
+compute_subset_stats <- function(session,
+                                 rv,
+                                 gene_selected,
+                                 nonzero_threshold
+                                 ){
   #Determine the proportion of cells with nonzero reads for the selected 
   #gene. If it is below the threshold defined at the top of this script,
   #return a warning to the user.
@@ -21,7 +35,7 @@ compute_subset_stats <- function(input,output,session,rv,nonzero_threshold){
   #Cells in subset
   rv$n_cells <- length(Cells(rv$s_sub))
   #Cells with nonzero reads
-  rv$n_nonzero <- sum(rv$s_sub@assays$RNA@counts[input$corr_feature_selection,] != 0)
+  rv$n_nonzero <- sum(rv$s_sub@assays$RNA@counts[gene_selected(),] != 0)
   #Proportion of nonzero reads
   rv$prop_nonzero <- rv$n_nonzero/rv$n_cells
   #Store as a percentage (format to show at least two digits after decimal 
@@ -81,11 +95,22 @@ render_statistics <- function(input,output,session,rv){
 #Takes the gene selection via input and the Seurat object via object, and 
 #computes a correlation table for the selected gene in the Seurat object
 #The column names for the table may be specified via the colnames argument
-compute_correlation <- function(input,
+
+#Arguments
+#gene_selected: a reactive value providing the current gene selected by the user,
+#with the "rna_" prefix removed.
+#object: the Seurat object for which to compute the correlation. May be a 
+#subset or the full object.
+#colnames: a character vector that should have exactly two elements. The first 
+#element will be column name for the feature, and the second will be the column 
+#name for the correlation coefficient. The column names will display as entered 
+#in the downloaded table (but not in the table in the app since this is defined 
+#in the DT table header).
+compute_correlation <- function(gene_selected,
                                 object,
                                 colnames=c("Feature","Correlation_Coefficient")
                                 ){
-  #Determine the feature and coefficient colnames from the two element colnames list
+  #Determine the feature and coefficient colnames from the two-element colnames list
   feature_colname <- colnames[1]
   coeff_colname <- colnames[2]
   
@@ -93,7 +118,7 @@ compute_correlation <- function(input,
   mat <- t(as.matrix(object@assays$RNA@data))
   
   #Compute correlation between selected feature and others
-  table <- cor(mat[,input$corr_feature_selection],mat) |> 
+  table <- cor(mat[,gene_selected()],mat) |> 
     #Code returns coefficients for each feature in rows (want columns) 
     t() |> 
     #Convert matrix to tibble using enframe()
@@ -104,7 +129,7 @@ compute_correlation <- function(input,
     #respectively, in the new tibble.
     enframe(name = feature_colname,value = coeff_colname) |> 
     #Filter out selected feature
-    filter(.data[[feature_colname]] != input$corr_feature_selection) |> 
+    filter(.data[[feature_colname]] != gene_selected()) |> 
     #Arrange in descending order by correlation coefficient
     arrange(desc(.data[[coeff_colname]]))
   

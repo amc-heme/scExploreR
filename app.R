@@ -2094,7 +2094,11 @@ server <- function(input,output,session){
           print("Subset Stats")
           ###Subset Stats
           #Subset stats
-          #compute_subset_stats(input,output,session,rv,nonzero_threshold)
+          #compute_subset_stats(session,
+          #                     rv,
+          #                     gene_selected = corr_gene_selected,
+          #                     nonzero_threshold = nonzero_threshold
+          #                     )
             
           #Cells in subset
           rv$dge_n_cells <-
@@ -2691,12 +2695,28 @@ server <- function(input,output,session){
 
   
   ## 2.3. Correlations Tab #####
+  #HARD CODING: Entire correlations tab only supports the RNA assay.
+  
+  ### 2.3.1 Process Feature Selection Input ####
+  #Creates a reactive value for the selected feature for proper processing in 
+  #downstream functions such as compute_correlation()
+  corr_gene_selected <- eventReactive(input$corr_feature_selection,
+                                         ignoreNULL = FALSE,
+                                         label="Correlations Tab: Process Selected Feature",
+                                         {
+                                           #HARD CODING: remove "rna_" prefix 
+                                           #from feature entered. Currently specific 
+                                           #to RNA assay in this Seurat object
+                                           return(sub("rna_","",input$corr_feature_selection))
+                                         })
   
   ### 2.3.1 Reactive dropdown menu for patient ####
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
   #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized)
   #Running of code at startup is disabled with "ignoreInit=TRUE"
-  observeEvent(c(input$response_selection, input$treatment_selection),ignoreInit = TRUE,label="Reactive Patient Dropdown",{ 
+  observeEvent(c(input$response_selection, input$treatment_selection),
+               ignoreInit = TRUE,
+               label="Reactive Patient Dropdown",{ 
     #Show a spinner while the valid patient ID's are calculated
     waiter_show(
       id = "corr_sidebar",
@@ -2752,7 +2772,7 @@ server <- function(input,output,session){
                                       {
 
     # Only run the correlation table code if a feature has been specified
-    if (input$corr_feature_selection != ""){
+    if (corr_gene_selected() != ""){
       #Hide the main screen UI while calculations are performed
       #Selector argument: a jQuery selector. The .find() method will hide all 
       #elements contained within corr_main_panel.
@@ -2804,7 +2824,10 @@ server <- function(input,output,session){
           #Determine the proportion of cells with nonzero reads for the selected 
           #gene. If it is below the threshold defined at the top of this script,
           #return a warning to the user.
-          compute_subset_stats(input,output,session,rv,nonzero_threshold)
+          compute_subset_stats(session,
+                               rv,
+                               gene_selected = corr_gene_selected,
+                               nonzero_threshold = nonzero_threshold)
           
           #Compute correlations
           #If a subset has been selected, correlation coefficients between the 
@@ -2813,12 +2836,12 @@ server <- function(input,output,session){
           #correlation coefficients will only be computed for the full data.
           if (rv$corr_is_subset==TRUE){
             #Subset is selected: compute both tables and merge
-            table_full <- compute_correlation(input,
+            table_full <- compute_correlation(gene_selected = corr_gene_selected,
                                               object = sobj,
                                               colnames=c("Feature","Correlation_Global")
                                               )
             
-            table_subset <- compute_correlation(input,
+            table_subset <- compute_correlation(gene_selected = corr_gene_selected,
                                                 object = rv$s_sub,
                                                 colnames=c("Feature","Correlation_Subset")
                                                 )
@@ -2830,10 +2853,10 @@ server <- function(input,output,session){
             
           }else{
             #A subset is not present: compute the table for the subset
-            corr_table <- compute_correlation(input,
-                                         object = rv$s_sub,
-                                         colnames=c("Feature","Correlation_Subset")
-                                         )
+            corr_table <- compute_correlation(gene_selected = corr_gene_selected,
+                                              object = rv$s_sub,
+                                              colnames=c("Feature","Correlation_Subset")
+                                              )
           }
           
           #Return corr_table to eventReactive() function
@@ -2940,7 +2963,7 @@ server <- function(input,output,session){
                            {
     print("Correlation UI Function")
     #UI: if the feature selection menu is empty (default state at initialization), prompt user to enter features
-    if (input$corr_feature_selection == ""){
+    if (corr_gene_selected() == ""){
       tags$h3("Enter a feature and press submit to view correlated features. You may also specify restriction criteria using the dropdown menus.")
     }
     #After a feature is applied and the submit button is pressed, display the table
@@ -2964,7 +2987,7 @@ server <- function(input,output,session){
       
       #UI to display 
       tagList(
-        tags$h2(glue("Genes correlated with {input$corr_feature_selection} in Subset"), class="center"),
+        tags$h2(glue("Genes correlated with {corr_gene_selected()} in Subset"), class="center"),
         #Restriction criteria section
         tags$h3("Selected Restriction Criteria", class="center"),
         #Make each input criteria appear inline
@@ -2977,7 +3000,7 @@ server <- function(input,output,session){
         tags$h3("Quality Statistics for Gene and Subset", class="center"),
         tagList(div("(Subset created based on defined restriction criteria)"),
             div(tags$strong("Number of cells in subset: "),textOutput(outputId = "print_n_cells", inline = TRUE)),
-            div(tags$strong(glue("Cells with non-zero reads for {input$corr_feature_selection}:")),textOutput(outputId = "print_nonzero", inline = TRUE))
+            div(tags$strong(glue("Cells with non-zero reads for {corr_gene_selected()}:")),textOutput(outputId = "print_nonzero", inline = TRUE))
             ),
         
         #Correlations table and plots
@@ -3161,12 +3184,12 @@ server <- function(input,output,session){
                                     #Take action only if a row is selected
                                     if (corr_rows_selected()==TRUE){
                                       #Record gene name of row selected
+                                      #gene_two <- reactive(as.character(corr_table_content()[row_idx,1]))
                                       rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
         
                                       #Make and store scatterplot
-                                      print(glue("For scatterplot: input$corr_feature_selection: {input$corr_feature_selection}"))
                                       FeatureScatter(rv$s_sub, 
-                                                     feature1 = input$corr_feature_selection, 
+                                                     feature1 = corr_gene_selected(), 
                                                      feature2 = rv$gene_selected,
                                                      #group.by and split.by according to user input
                                                      group.by = input$corr_scatter_group_by)
@@ -3188,7 +3211,7 @@ server <- function(input,output,session){
                                            #Make and store scatterplot 
                                            #Use full object
                                            FeatureScatter(sobj, 
-                                                          feature1 = input$corr_feature_selection, 
+                                                          feature1 = corr_gene_selected(), 
                                                           feature2 = rv$gene_selected,
                                                           #group.by and split.by according to user input
                                                           group.by = input$corr_scatter_group_by)
@@ -3243,7 +3266,7 @@ server <- function(input,output,session){
   #Correlations Table
   output$corr_download_table <- downloadHandler(
     filename=function(){
-      glue("Corr_table_{input$corr_feature_selection}.csv")
+      glue("Corr_table_{corr_gene_selected()}.csv")
     },
     content=function(file){
       write.csv(corr_table_content(),
@@ -3256,7 +3279,7 @@ server <- function(input,output,session){
   #Scatterplot (for selected subset)
   output$corr_download_scatter_subset <- downloadHandler(
     filename=function(){
-      glue("Corr_scatter_{input$corr_feature_selection}-vs-{rv$gene_selected}_subset.png")
+      glue("Corr_scatter_{corr_gene_selected()}-vs-{rv$gene_selected}_subset.png")
     },
     content=function(file){
       ggsave(file, 
