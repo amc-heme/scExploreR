@@ -3184,13 +3184,17 @@ server <- function(input,output,session){
                                     #Take action only if a row is selected
                                     if (corr_rows_selected()==TRUE){
                                       #Record gene name of row selected
-                                      #gene_two <- reactive(as.character(corr_table_content()[row_idx,1]))
-                                      rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
+                                      #Superassignment ensures value is 
+                                      #Accessible elsewhere in app
+                                      corr_gene_two <<- reactive({
+                                        as.character(corr_table_content()[row_idx,1])
+                                        })
+                                      #rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
         
                                       #Make and store scatterplot
                                       FeatureScatter(rv$s_sub, 
                                                      feature1 = corr_gene_selected(), 
-                                                     feature2 = rv$gene_selected,
+                                                     feature2 = corr_gene_two(),
                                                      #group.by and split.by according to user input
                                                      group.by = input$corr_scatter_group_by)
                                       }
@@ -3206,13 +3210,17 @@ server <- function(input,output,session){
                                          #Take action only if a row is selected 
                                          if (corr_rows_selected()==TRUE){
                                            #Record gene name of row selected
-                                           rv$gene_selected <- as.character(corr_table_content()[row_idx,1])
+                                           #Superassignment ensures value is 
+                                           #Accessible elsewhere in app
+                                           corr_gene_two <<- reactive({
+                                             as.character(corr_table_content()[row_idx,1])
+                                             })
                                            
                                            #Make and store scatterplot 
                                            #Use full object
                                            FeatureScatter(sobj, 
                                                           feature1 = corr_gene_selected(), 
-                                                          feature2 = rv$gene_selected,
+                                                          feature2 = corr_gene_two(),
                                                           #group.by and split.by according to user input
                                                           group.by = input$corr_scatter_group_by)
                                          }
@@ -3279,7 +3287,7 @@ server <- function(input,output,session){
   #Scatterplot (for selected subset)
   output$corr_download_scatter_subset <- downloadHandler(
     filename=function(){
-      glue("Corr_scatter_{corr_gene_selected()}-vs-{rv$gene_selected}_subset.png")
+      glue("Corr_scatter_{corr_gene_selected()}-vs-{corr_gene_two()}_subset.png")
     },
     content=function(file){
       ggsave(file, 
@@ -3293,7 +3301,7 @@ server <- function(input,output,session){
   #Scatterplot (for full data)
   output$corr_download_scatter_global <- downloadHandler(
     filename=function(){
-      glue("Corr_scatter_{input$corr_feature_selection}-vs-{rv$gene_selected}_global.png")
+      glue("Corr_scatter_{corr_gene_selected()}-vs-{corr_gene_two()}_global.png")
     },
     content=function(file){
       ggsave(file, 
