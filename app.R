@@ -209,7 +209,7 @@ for (category in names(config$metadata)){
   #If the metadata category is a factor, convert to a vector with levels() to 
   #avoid integers appearing in place of the unique values themselves
   if(class(unique_metadata[[category]])=="factor"){
-    unique_metadata[[category]] <- levels(unique_metadata)
+    unique_metadata[[category]] <- levels(unique_metadata[[category]])
   }
 }
 
@@ -404,7 +404,11 @@ plots_tab <- function(){
                                              div(tags$strong("Patients: "),
                                                  textOutput(outputId = "plots_selected_htb", inline = TRUE))
                                          ),
-                                         subset_menus(input_prefix = "plots",choices=choices),
+                                         #Generate subset menus using the 
+                                         #config file and unique_metadata
+                                         subset_menus(unique_metadata,
+                                                      metadata_config = config$metadata, 
+                                                      input_prefix = "plots_"),
                                          actionButton(inputId = "plots_subset_submit",
                                                       label="Apply Subset")
                                          )
@@ -650,40 +654,12 @@ corr_tab <- function(){
                            choices = NULL,
                            selected = character(0),
                            options = list("placeholder"="Enter gene name")),
-            pickerInput(inputId = "clusters_selection",
-                        label = "Restrict by Cluster",
-                        choices = clusters,
-                        selected = clusters,
-                        multiple = TRUE,
-                        options = list(
-                          "selected-text-format" = "count > 5",
-                          #Define max options to show at a time to keep menu from being cut off
-                          "size" = 10, 
-                          "actions-box"=TRUE)),
-            pickerInput(inputId = "response_selection",
-                        label = "Restrict by Response",
-                        choices = responses,
-                        selected = responses,
-                        multiple = TRUE),
-            pickerInput(inputId="treatment_selection",
-                        label = "Restrict by Timepoint (approximate)",
-                        choices = treatments,
-                        selected = treatments, 
-                        multiple = TRUE,
-                        options = list(
-                          "selected-text-format" = "count > 3",
-                          "actions-box"=TRUE
-                        )),
-            pickerInput(inputId = "htb_selection",
-                        label = "Restrict by Patient",
-                        choices = patients_categories,
-                        selected = patients, 
-                        multiple = TRUE,
-                        options = list(
-                          "selected-text-format" = "count > 3",
-                          "size" = 10, 
-                          "actions-box"=TRUE
-                        )),
+            #Create subset menus using config file and unique_metadata
+            subset_menus(unique_metadata,
+                         metadata_config = config$metadata,
+                         #The correlation tab does not use a prefix (won't 
+                         #matter once subset code is modularized)
+                         input_prefix = ""),
             actionButton(inputId = "corr_submit",
                          label = "Submit",
                          #Display inline with download button when it appears
@@ -2531,11 +2507,9 @@ server <- function(input,output,session){
                                           
                                           #Use the subset_menus function to create the
                                           #subset dropdowns UI
-                                          subset_menus(input_prefix = "dge",
-                                                       #Choices is a list defined at 
-                                                       #Startup
-                                                       choices = choices,
-                                                       menus = menu_categories)
+                                          subset_menus(unique_metadata,
+                                                       metadata_config = config$metadata,
+                                                       input_prefix = "dge_")
                                         })
   #### 2.2.3.3. Download Buttons for Table and Plots ####
   dge_downloads_ui <-
