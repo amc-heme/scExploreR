@@ -87,6 +87,7 @@ assay_info <- assay_list(
               #dropdown_title: the name that appears in the dividers in the 
               #dropdown menu, which groups search results by assay. 
               dropdown_title = "Genes"),
+  
   #ADT assay
   assay_entry(assay = "ADT",
               prefix_machine = "adt_",
@@ -163,15 +164,15 @@ feature_list <- function(assay, prefix_machine, suffix_human) {
 #Base vector: contains the "none" option
 meta_choices <- c("None"="none")
 #Iteratively populate vector using entries in the metadata section of the config file 
-for (key in names(config$metadata)){
+for (category in names(config$metadata)){
   #Use setNames from the stats package to add a new name-value pair to the vector
   meta_choices <- setNames(
     #Add `meta_colname` to vector
     object = c(meta_choices, 
-               config$metadata[[key]]$meta_colname),
+               config$metadata[[category]]$meta_colname),
     #Add `label` to the vector as a name
     nm = c(names(meta_choices),
-           config$metadata[[key]]$label)
+           config$metadata[[category]]$label)
   )
 }
 
