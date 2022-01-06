@@ -197,7 +197,22 @@ ylim_orig <- layer_scales(umap_orig)$y$range$range
 #Store number of cells: used to determine if it is a subset
 n_cells_original <- ncol(sobj)
 
-##Correlations tab: define valid metadata selections ####
+##Define Valid Metadata Selections####
+#The unique values for each metadata category listed in the config file will be 
+#stored as vectors in a list 
+unique_metadata <- list()
+#Store unique values for each metadata category entered
+for (category in names(config$metadata)){
+  #Use sobj@meta.data[[category]] instead of sobj[[category]] to return a vector
+  unique_metadata[[category]] <- unique(sobj@meta.data[[category]])
+  #If the metadata category is a factor, convert to a vector with levels() to 
+  #avoid integers appearing in place of the unique values themselves
+  if(class(unique_metadata[[category]])=="factor"){
+    unique_metadata[[category]] <- levels(unique_metadata)
+  }
+}
+
+
 #Clusters dropdown
 clusters <- levels(unique(sobj$clusters)) 
 
@@ -226,7 +241,8 @@ choices <- list("clusters"=clusters,
            "patients"=patients,
            "patients_categories"=patients_categories)
 
-#Non-zero proportion threshold: if the proportion of cells for a gene is below this threshold, return a warning to the user.
+#Non-zero proportion threshold: if the proportion of cells for a gene is below 
+#this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
 #Error Handling: define possible errors ####
@@ -234,38 +250,49 @@ nonzero_threshold <- 0.10
 #The error_handler() function is executed in a tryCatch() statement and checks
 #the error message returned against a list of errors.
 ## List of errors for subset operations ####
-subset_error_list<- list(add_error_notification(message="cannot allocate vector of size",
-                                                notification_ui=icon_notification_ui_2(icon_name = "skull-crossbones",
-                                                                                       tagList(
-                                                                                         "Memory Error: RAM is insufficient for analyzing the specified subset. Please narrow down the subset scope using the restriction criteria to the left, and feel free to", 
-                                                                                         github_link(display_text = "let us know"),
-                                                                                         " ",#Space after link
-                                                                                         "if you repeatedly recieve this error.")#End tagList
-                                                ),#End icon_notification_ui
-                                                notification_id = "mem_error"
-),#End add_error_notification
-
-#Error 2: Vector memory exhausted
-add_error_notification(message="vector memory exhausted",
-                       notification_ui=icon_notification_ui_2(icon_name = "skull-crossbones",
-                                                              "Error: vector memory exhausted. If this issue persists, please ",
-                                                              github_link("contact us"),
-                                                              " with a screenshot of the response criteria selected. For now, narrowing down the subset criteria may resolve the error."
-                       ),#End icon_notification_ui
-                       notification_id = "vector_mem_error"
+subset_error_list<- list(
+  add_error_notification(
+    message="cannot allocate vector of size",
+    notification_ui=icon_notification_ui_2(
+      icon_name = "skull-crossbones",
+      tagList(
+        "Memory Error: RAM is insufficient for analyzing the specified subset. 
+        Please narrow down the subset scope using the restriction criteria to 
+        the left, and feel free to", 
+        github_link(display_text = "let us know"),
+        " ",#Space after link
+        "if you repeatedly recieve this error.")#End tagList
+      ),#End icon_notification_ui
+    notification_id = "mem_error"
+    ),#End add_error_notification
+  
+  #Error 2: Vector memory exhausted
+  add_error_notification(
+    message="vector memory exhausted",
+    notification_ui=icon_notification_ui_2(
+      icon_name = "skull-crossbones",
+      "Error: vector memory exhausted. If this issue persists, please ",
+      github_link("contact us"),
+      " with a screenshot of the response criteria selected. For now, narrowing 
+      down the subset criteria may resolve the error."
+      ),#End icon_notification_ui
+    notification_id = "vector_mem_error"
 ),
 
 #Error 3: No Cells in Subset
-add_error_notification(message = "No cells found",
-                       icon_notification_ui_2(
-                         icon_name = "skull-crossbones",
-                         "No cells were found matching the defined subset criteria. Please check the subset dropdowns for mutually exclusive selections. If you recieve this error for combinations that should be valid, please",
-                         github_link("let us know"),
-                         #Period at end of link
-                         "."
-                       ),#End icon_notification_ui
-                       notification_id = "no_cells_found"
-)#End add_error_notification
+add_error_notification(
+  message = "No cells found",
+  icon_notification_ui_2(
+    icon_name = "skull-crossbones",
+    "No cells were found matching the defined subset criteria. Please check the 
+    subset dropdowns for mutually exclusive selections. If you recieve this error 
+    for combinations that should be valid, please",
+    github_link("let us know"),
+    #Period at end of link
+    "."
+    ),#End icon_notification_ui
+  notification_id = "no_cells_found"
+  )#End add_error_notification
 )#End list of error definitions (subset_errors)
 
 # Table of Contents #####

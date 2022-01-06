@@ -16,6 +16,7 @@ z-index: 999;
 #plots_subset_stats {
   margin-bottom: 1em;
 }
+
 /* CSS properties for DGE cells by class output */
 /* consider generalizing to verbatimtextoutput blocks*/
 #dge_print_n_by_class{
