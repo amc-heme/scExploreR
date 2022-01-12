@@ -101,9 +101,11 @@ compute_correlation <- function(gene_selected,
   feature_colname <- colnames[1]
   coeff_colname <- colnames[2]
   
+  print("compute_correlation: form matrix")
   #Form matrix from the Seurat object (either subset or full data)
   mat <- t(as.matrix(object@assays$RNA@data))
   
+  print("compute_correlation: compute table")
   #Compute correlation between selected feature and others
   table <- cor(mat[,gene_selected()],mat) |> 
     #Code returns coefficients for each feature in rows (want columns) 
@@ -120,8 +122,7 @@ compute_correlation <- function(gene_selected,
     #Arrange in descending order by correlation coefficient
     arrange(desc(.data[[coeff_colname]]))
   
-  print(head(table,5))
-  
+  print("compute_correlation: return table")
   return(table)
 }
 
