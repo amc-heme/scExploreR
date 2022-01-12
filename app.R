@@ -29,9 +29,22 @@ library(presto)
 #Load functions in ./R directory
 #Get list of files
 source_files <- list.files(path = "./R", 
-                          pattern="*.R$", 
-                          full.names=TRUE, 
-                          ignore.case=TRUE)
+                           #Pattern, any set of characters, followed by ".R"
+                           #Period is double escaped
+                           pattern=".*\\.R", 
+                           full.names=TRUE, 
+                           ignore.case=TRUE)
+
+#Load .R files in modules directory
+source_files <- c(source_files, 
+                  list.files(path = "./Modules", 
+                             #Pattern, any set of characters, followed by ".R"
+                             #Period is double escaped
+                             pattern=".*\\.R", 
+                             full.names=TRUE, 
+                             ignore.case=TRUE)
+                  )
+
 #Use source() to import files into R
 sapply(source_files,source)
 
@@ -324,7 +337,7 @@ add_error_notification(
 #The user interface is a series of pages; each page is stored in a function for improved readability of code.
 
 ### 1.1. Plots Tab ###
-plots_tab <- function(){
+plots_tab <- function(unique_metadata,config){
   fluidPage(
     #Sidebar layout: consists of a side panel and a main panel
     sidebarLayout(
@@ -406,13 +419,19 @@ plots_tab <- function(){
                                          ),
                                          #Generate subset menus using the 
                                          #config file and unique_metadata
-                                         subset_menus(unique_metadata,
-                                                      metadata_config = config$metadata, 
-                                                      input_prefix = "plots_"),
+                                         
+                                         #subset_selections module
+                                         subset_selections_ui("plots_subset",
+                                                              unique_metadata,
+                                                              metadata_config=config$metadata),
                                          actionButton(inputId = "plots_subset_submit",
                                                       label="Apply Subset")
                                          )
                           ),#End 1.1.1.3
+                   
+                   #TEMP: text output for subset selections
+                   verbatimTextOutput(outputId = "plots_subsets_return",
+                                      placeholder = TRUE),
                    
                    ### Plot Specific Options ###
                    #### 1.1.1.4. Options specific to UMAP ####
@@ -425,25 +444,25 @@ plots_tab <- function(){
                                                       selectInput(inputId = "umap_group_by", 
                                                                   label = "Metadata to Group by:",
                                                                   #Remove "none" from selectable options to group by
-                                                                  choices=meta_choices[!meta_choices %in% "none"], 
+                                                                  choices= meta_choices[!meta_choices %in% "none"], 
                                                                   selected = "clusters"),
                                                       #Choose metadata to split UMAP by
                                                       selectInput(inputId = "umap_split_by", 
                                                                   label = "Metadata to Split By:",
-                                                                  choices=meta_choices,  
+                                                                  choices= meta_choices,  
                                                                   selected = "none"),
                                                       #If split by is specified, control number 
                                                       #of columns with a slider
                                                       uiOutput(outputId = "umap_ncol_slider"),
                                                       #Checkbox: add or remove labels 
                                                       #(labels on by default)
-                                                      checkboxInput(inputId = "umap_label",
-                                                                    label="Label Groups",
-                                                                    value=TRUE),
+                                                      checkboxInput(inputId ="umap_label",
+                                                                    label = "Label Groups",
+                                                                    value = TRUE),
                                                       #Checkbox to add or remove Legend
-                                                      checkboxInput(inputId="umap_legend",
-                                                                    label="Include Legend",
-                                                                    value=TRUE),
+                                                      checkboxInput(inputId = "umap_legend",
+                                                                    label = "Include Legend",
+                                                                    value = TRUE),
                                                       #If plotting a subset: checkbox to use 
                                                       #original dimensions 
                                                       uiOutput(outputId="umap_limits_checkbox"),
@@ -591,7 +610,7 @@ plots_tab <- function(){
 }#End 1.1.
 
 ## 1.2 Tables Tab ####
-tables_tab <- function(){
+tables_tab <- function(unique_metadata,config){
   fluidPage(
     sidebarLayout(
       #1.2.1. Options Panel
@@ -637,7 +656,8 @@ tables_tab <- function(){
 }#End 1.2.
 
 ## 1.3 Correlation Tab ####
-corr_tab <- function(){
+#Requires an argument to import the config file from the global environment
+corr_tab <- function(unique_metadata,config){
   fluidPage(
     sidebarLayout(
       #1.3.1. Options Panel
@@ -654,12 +674,17 @@ corr_tab <- function(){
                            choices = NULL,
                            selected = character(0),
                            options = list("placeholder"="Enter gene name")),
-            #Create subset menus using config file and unique_metadata
-            subset_menus(unique_metadata,
-                         metadata_config = config$metadata,
-                         #The correlation tab does not use a prefix (won't 
-                         #matter once subset code is modularized)
-                         input_prefix = ""),
+            #Module for subset selections
+            subset_selections_ui(id="corr_subset",
+                                 unique_metadata = unique_metadata,
+                                 metadata_config = config$metadata),
+            #subset_menus(unique_metadata,
+            #             metadata_config = config$metadata,
+            #             #Make menus for all metadata categories in the config file
+            #             menu_categories=names(config$metadata),
+            #             #The correlation tab does not use a prefix (this argument won't 
+            #             #matter once subset code is modularized)
+            #             input_prefix = ""),
             actionButton(inputId = "corr_submit",
                          label = "Submit",
                          #Display inline with download button when it appears
@@ -705,11 +730,11 @@ ui <- tagList(
              windowTitle="Shiny scExplorer",
              position="fixed-top",
              tabPanel("Plots",
-                      plots_tab()),
+                      plots_tab(unique_metadata,config)),
              tabPanel("DE Tables",
-                      tables_tab()),
+                      tables_tab(unique_metadata,config)),
              tabPanel("Gene Correlations",
-                      corr_tab())
+                      corr_tab(unique_metadata,config))
              ),#End navbarPage()
   #Help button - Creates a Dropdown menu when clicked
   #Button should appear in the upper right hand corner of the navbar menu
@@ -805,8 +830,16 @@ server <- function(input,output,session){
                        server = TRUE)
   
   ## 2.1. Plots Tab #####
-  ### 2.1.1 Define subset for plots #####
-  #2.1.1.1. Update choices in subset selection menu based on user selections
+  ### 2.1.1 Subset for Plots Tab #####
+  #2.1.1.1. Module server to process user selections and report to other modules
+  plots_subset_selections <- subset_selections_server("plots_subset",
+                                                      metadata_config = config$metadata)
+  
+  output$plots_subsets_return <- renderPrint({
+    plots_subset_selections()
+  })
+  
+  #2.1.1.2. Update choices in subset selection menu based on user selections
   #Update patients menu based on entries in 'response' or 'treatment' (timepoint)
   observeEvent(c(input$plots_response_selection,input$plots_treatment_selection),
                ignoreNULL = FALSE,
@@ -857,7 +890,7 @@ server <- function(input,output,session){
                  waiter_hide("plots_subset_panel")
                })
   
-  # 2.1.1.2. Construct subset after "Apply Subset" button is clicked
+  # 2.1.1.3. Construct subset after "Apply Subset" button is clicked
   plots_subset <- eventReactive(input$plots_subset_submit,
                                 ignoreNULL=FALSE,
                                 label = "Plots Subset", 
@@ -890,7 +923,7 @@ server <- function(input,output,session){
                                     #but I currently don't know any other way to 
                                     #catch this error type)
                                     error_handler(session,
-                                                  cnd_message=cnd$message,
+                                                  cnd_message = cnd$message,
                                                   #Uses a list of 
                                                   #subset-specific errors 
                                                   error_list = subset_error_list,
@@ -905,15 +938,21 @@ server <- function(input,output,session){
                                  }, #End tryCatch error function
                                  #Begin tryCatch code
                                  {
-                                   #make_subset(input,sobj)
-                                   subset(
-                                     sobj,
-                                     subset =
-                                       (clusters %in% input$plots_clusters_selection) &
-                                       (response %in% input$plots_response_selection) &
-                                       (htb %in% input$plots_htb_selection) &
-                                       (treatment %in% input$plots_treatment_selection)
-                                   )
+                                   #Use subsetting function with the output of the 
+                                   #subset selections module as `criteria_list`.
+                                   plots_s_sub <-
+                                     make_subset(
+                                       sobj,
+                                       criteria_list = plots_subset_selections
+                                       )
+                                  # subset(
+                                  #   sobj,
+                                  #   subset =
+                                  #     (clusters %in% input$plots_clusters_selection) &
+                                  #     (response %in% input$plots_response_selection) &
+                                  #     (htb %in% input$plots_htb_selection) &
+                                  #     (treatment %in% input$plots_treatment_selection)
+                                  # )
                                  }
                                  )#End tryCatch
                                   
@@ -921,7 +960,6 @@ server <- function(input,output,session){
                                   waiter_hide("plots_main_panel")
                                   
                                   #Return subset to the eventReactive variable
-                                  print("about to request plots_s_sub")
                                   plots_s_sub
                                 })
   
@@ -1937,9 +1975,10 @@ server <- function(input,output,session){
     {
       #Define valid choices for group 2 (excludes the choice currently
       #selected for group 1)
-      new_choices<- rv$dge_group_choices[rv$dge_group_choices!=input$dge_group_1]  |> 
-      #Sort choices
-      str_sort(numeric=TRUE)
+      new_choices<- 
+        rv$dge_group_choices[rv$dge_group_choices!=input$dge_group_1]  |>
+        #Sort choices
+        str_sort(numeric=TRUE)
       
       updateSelectInput(
         session,
@@ -2006,7 +2045,6 @@ server <- function(input,output,session){
           #Form subset based on chosen criteria
           #Store in reactive variable so it can be accessed by 
           #UMAP eventReactive() function
-          print("Computing Subset")
           
           ## Pick the appropriate input variables bases on the group_by selection
           ## Not clear why the listing and unlisting is required for a character vector
@@ -2118,7 +2156,6 @@ server <- function(input,output,session){
 
           }
           
-          print("Subset Stats")
           ###Subset Stats
           #Subset stats
           #compute_subset_stats(session,
@@ -2172,8 +2209,7 @@ server <- function(input,output,session){
           #and store in reactive variable
           rv$dge_n_by_class<-paste(n_list,collapse = "\n")
           #\n is the separator (will be read by verbatimTextOutput())
-          
-          print("Presto")
+        
           #Run Presto
           dge_table <-
             #Run presto on the subsetted object and indicated metadata slot
@@ -2192,7 +2228,6 @@ server <- function(input,output,session){
         }
       )#End tryCatch
       
-      print("Code to hide waiter")
       #Hide loading screen
       waiter_hide(id = "dge_main_panel")
       waiter_hide(id = "dge_sidebar")
@@ -2207,7 +2242,6 @@ server <- function(input,output,session){
                                   label = "DGE DT Generation",
                                   ignoreNULL=FALSE, 
                                   {
-                                    print("Output as DT")
     datatable(
       dge_table_content(),
       class = "compact stripe cell-border hover",
@@ -2351,10 +2385,11 @@ server <- function(input,output,session){
             selectInput(inputId = "dge_group_by",
                         label = "Choose metadata to use for marker identification:",
                         #Remove "none" and "best_response" from selectable options to group by
-                        choices = meta_choices[!meta_choices %in% c("none", "best_response")],
+                        choices = meta_choices[!meta_choices %in% "none"],
                         #At startup, marker selection is ran with clusters as the
                         #group by variable.
-                        selected="clusters"),
+                        selected="clusters"
+                        ),#End selectInput
             #Choice of classes to include in marker identification 
             #Based on group_by selection above
             uiOutput(outputId = "dge_marker_selection"),
@@ -2369,10 +2404,10 @@ server <- function(input,output,session){
             selectInput(inputId = "dge_group_by",
                         label = "Choose metadata to use for differential gene expression:",
                         #Remove "none" and "best_response" from selectable options to group by
-                        choices = meta_choices[!meta_choices %in% c("none", "best_response")],
+                        choices = meta_choices[!meta_choices %in% "none"],
                         #Clusters is selected by default
                         selected = "clusters"
-            ),#End selectInput
+                        ),#End selectInput
             #Choice of groups to compare: depends on what metadata type is selected
             uiOutput(outputId = "dge_group_selection"),
             #Subset choices: also depends on user selection
@@ -2398,7 +2433,8 @@ server <- function(input,output,session){
                                            #updated to exclude the selection in
                                            #group 1
                                            rv$dge_group_choices = sobj@meta.data |>
-                                             #Get unique values for the metadata type entered
+                                             #Get unique values for the metadata 
+                                             #type entered
                                              select(.data[[input$dge_group_by]]) |> 
                                              unique() |>
                                              #Convert to vector
@@ -2498,19 +2534,23 @@ server <- function(input,output,session){
                                         label="DGE: Subset Menu UI",
                                         ignoreNULL = FALSE,
                                         {
-                                          print("Computing subset menus UI")
-                                          #Subset menus: one menu for each metadata 
-                                          #category that can be selected for the group
-                                          #by variable, minus the current selected 
-                                          #category
-                                          menu_categories <- meta_choices[!meta_choices %in% c("none", "best_response", input$dge_group_by)]
+                                          #Build subset menus for all metadata 
+                                          #categories in meta_choices, except for 
+                                          #the category selected in input$dge_group_by
+                                          menu_categories <- 
+                                            meta_choices[!meta_choices %in% 
+                                                           c("none", input$dge_group_by)]
                                           
                                           #Use the subset_menus function to create the
                                           #subset dropdowns UI
                                           subset_menus(unique_metadata,
                                                        metadata_config = config$metadata,
+                                                       #Creates menus for the 
+                                                       #catgories defined above
+                                                       menu_categories=menu_categories,
                                                        input_prefix = "dge_")
                                         })
+  
   #### 2.2.3.3. Download Buttons for Table and Plots ####
   dge_downloads_ui <-
     eventReactive(
@@ -2735,7 +2775,12 @@ server <- function(input,output,session){
                                            return(sub("rna_","",input$corr_feature_selection))
                                          })
   
-  ### 2.3.1 Reactive dropdown menu for patient ####
+  ### 2.3.2. Process Subset Selections Input ####
+  #Module to record selections made in for subsetting based on metadata categories
+  corr_subset_selections <- subset_selections_server(id = "corr_subset",
+                                                     metadata_config = config$metadata)
+  
+  ### 2.3.3 Reactive dropdown menu for patient ####
   #Since patients fall into either the sensitive or resistant category, the patients dropdown will need to be updated to keep the user from choosing invalid combinations.
   #Menu will be updated in the future when variables such as treatment and time after diagnosis are added (ignoreInit prevents this from happening when app is initialized)
   #Running of code at startup is disabled with "ignoreInit=TRUE"
@@ -2750,7 +2795,7 @@ server <- function(input,output,session){
       hide_on_render = FALSE #Gives manual control of showing/hiding spinner
     )
     
-    #Corr dplyr subset ####
+    ####Corr dplyr subset ####
     #Filter object for treatment and response selections, and find valid patients
     valid_patients <- sobj@meta.data |> 
       filter(
@@ -2785,9 +2830,9 @@ server <- function(input,output,session){
     waiter_hide(id = "corr_sidebar")
   })
  
-  ### 2.3.2. Correlation table for selected feature and restriction criteria ####
+  ### 2.3.4. Correlation table for selected feature and restriction criteria ####
   #Table updates only when the "Submit" button is clicked
-  #### 2.3.2.1. Compute table content ####
+  #### 2.3.4.1. Compute table content ####
   #The table in this function is accessed by the download handler,
   #and converted to DT format in 2.3.2.2. for display in app
   corr_table_content <- eventReactive(input$corr_submit,
@@ -2834,8 +2879,9 @@ server <- function(input,output,session){
           print("Make subset")
           #Form subset based on chosen criteria (store in reactive value so the 
           #subset can be accessed in the scatterplot function)
-          rv$s_sub <- make_subset(input,sobj)
-
+          rv$s_sub <- make_subset(sobj,
+                                  criteria_list = corr_subset_selections) 
+          
           #Determine if the subset created is a subset (if it is the full data,
           #use different procedures for creating/rendering the table and plots)
           if (n_cells_original!=ncol(rv$s_sub)){
@@ -2912,7 +2958,7 @@ server <- function(input,output,session){
     }
   })
   
-  #### 2.3.2.2. Store table in DT format for display in app ####
+  #### 2.3.4.2. Store table in DT format for display in app ####
   corr_DT_content <- eventReactive(c(input$corr_submit,rv$corr_is_subset),
                                    label = "Corr DT Content",
                                    ignoreNULL = FALSE,
@@ -2979,8 +3025,8 @@ server <- function(input,output,session){
                                                     digits=5)
                                    })
   
-  ### 2.3.3. Correlations UI ####
-  #### 2.3.3.1 Main UI ####
+  ### 2.3.5. Correlations UI ####
+  #### 2.3.5.1 Main UI ####
   #IgnoreNULL set to false to get UI to render at start up
   corr_ui <- eventReactive(input$corr_submit, 
                            label = "Correlation Main UI (Define Content)",
@@ -3049,7 +3095,7 @@ server <- function(input,output,session){
       }
   })
   
-  #### 2.3.3.2. Correlations scatterplot UI ####
+  #### 2.3.5.2. Correlations scatterplot UI ####
   #Computed separately from main UI since it responds to a different user input (clicking table)
   corr_scatter_ui <- eventReactive(c(input$corr_table_rows_selected,rv$corr_is_subset),
                                       label="Correlation Scatterplot UI",
@@ -3085,7 +3131,7 @@ server <- function(input,output,session){
                                         }
                                      })
   
-  #### 2.3.3.3. UI for customizing the scatterplot ####
+  #### 2.3.5.3. UI for customizing the scatterplot ####
   #This appears in the sidebar and displays a list of options used for customizing
   #the scatterplot
   corr_scatter_options <- eventReactive(c(input$corr_table_rows_selected, rv$corr_is_subset),
@@ -3143,7 +3189,7 @@ server <- function(input,output,session){
                                           } #End if statement
                                         })
   
-  #### 2.3.3.4. Download Button for Table ####
+  #### 2.3.5.4. Download Button for Table ####
   corr_downloads_ui <- eventReactive(c(input$submit,input$corr_table_rows_selected),
                                      label="Correlation Table Download Button UI",
                                      ignoreNULL = FALSE, 
@@ -3166,7 +3212,7 @@ server <- function(input,output,session){
                                        } #End else
                                      })
   
-  ### 2.3.4. Server Value for Rows Selected from Table ####
+  ### 2.3.6. Server Value for Rows Selected from Table ####
   #Becuase input$corr_table_rows_selected is NULL before the table is clicked,
   #An error flickers where the correlation plots are before displaying the plots,
   #giving the user the impression that an error has occurred. 
@@ -3192,8 +3238,8 @@ server <- function(input,output,session){
                })
   
   
-  ### 2.3.5. Plot of feature selected from table ####
-  #### 2.3.5.1. Correlation scatterplot for subset
+  ### 2.3.7. Plot of feature selected from table ####
+  #### 2.3.7.1. Correlation scatterplot for subset
   #Row index of user selection from table is stored in input$corr_table_rows_selected.
   #Reactive variable responds to input$corr_table_rows_selected and rv$corr_table_rows_selected
   #input$corr_table_rows_selected is the index of the row selected, while
@@ -3225,7 +3271,7 @@ server <- function(input,output,session){
                                       }
                                     })
   
-  #### 2.3.5.2. Correlation plot for full data
+  #### 2.3.7.2. Correlation plot for full data
   corr_scatter_global <- eventReactive(c(input$corr_table_rows_selected, 
                                          corr_rows_selected(),
                                          input$corr_scatter_group_by), 
@@ -3251,7 +3297,7 @@ server <- function(input,output,session){
                                          }
                                        })
   
-  ### 2.3.6. Render Correlation UI, table, scatterplot, and statistics ####
+  ### 2.3.8. Render Correlation UI, table, scatterplot, and statistics ####
   #Main UI
   output$corr_ui <- renderUI({
     corr_ui()
@@ -3295,7 +3341,7 @@ server <- function(input,output,session){
                  render_statistics(input,output,session,rv)
                })
   
-  ### 2.3.7. Download Handlers ####
+  ### 2.3.9. Download Handlers ####
   #Correlations Table
   output$corr_download_table <- downloadHandler(
     filename=function(){
