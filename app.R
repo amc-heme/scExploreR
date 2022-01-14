@@ -264,7 +264,7 @@ nonzero_threshold <- 0.10
 #The error_handler() function is executed in a tryCatch() statement and checks
 #the error message returned against a list of errors.
 ## List of errors for subset operations ####
-subset_error_list<- list(
+error_list <- list(
   add_error_notification(
     message="cannot allocate vector of size",
     notification_ui=icon_notification_ui_2(
@@ -690,7 +690,7 @@ ui <- tagList(
                       corr_tab_ui(
                         id = "corr",
                         unique_metadata = unique_metadata,
-                        config = config)
+                        metadata_config = config$metadata)
                       )
              ),#End navbarPage()
   #Help button - Creates a Dropdown menu when clicked
@@ -875,7 +875,7 @@ server <- function(input,output,session){
                                                   cnd_message = cnd$message,
                                                   #Uses a list of 
                                                   #subset-specific errors 
-                                                  error_list = subset_error_list,
+                                                  error_list = error_list,
                                                   #Id prefix for the 
                                                   #notification elements
                                                   id_prefix = "plots")
@@ -1979,7 +1979,7 @@ server <- function(input,output,session){
                         cnd_message=cnd$message,
                         #The error handling function uses a list 
                         #of subset-specific errors 
-                        error_list = subset_error_list,
+                        error_list = error_list,
                         #Id prefix for notification elements
                         id_prefix = "dge")
           
@@ -2106,13 +2106,6 @@ server <- function(input,output,session){
           }
           
           ###Subset Stats
-          #Subset stats
-          #compute_subset_stats(session,
-          #                     rv,
-          #                     gene_selected = corr_gene_selected,
-          #                     nonzero_threshold = nonzero_threshold
-          #                     )
-            
           #Cells in subset
           rv$dge_n_cells <-
             length(Cells(rv$dge_s_sub))
@@ -2711,12 +2704,12 @@ server <- function(input,output,session){
   #Call corr_tab_server module
   corr_tab_server(id = "corr",
                   sobj = sobj,
-                  config = config,
+                  metadata_config = config$metadata,
                   n_cells_original = n_cells_original, 
                   nonzero_threshold = nonzero_threshold, 
                   meta_choices = meta_choices,
                   valid_features = valid_features,
-                  subset_error_list = subset_error_list)
+                  error_list = error_list)
 }
 
 # Run the application 

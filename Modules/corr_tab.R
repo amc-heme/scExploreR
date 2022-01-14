@@ -5,7 +5,7 @@
 #id: ID to use for module elements. Should be equal to "corr".
 corr_tab_ui <- function(id,
                         unique_metadata,
-                        config){
+                        metadata_config){
   #Namespace function: prevents conflicts with inputs/outputs defined in other modules 
   ns <- NS(id)
   
@@ -25,10 +25,11 @@ corr_tab_ui <- function(id,
                            choices = NULL,
                            selected = character(0),
                            options = list("placeholder"="Enter gene name")),
-            #Module for subset selections
+            #Module for subset selections              
             subset_selections_ui(id = ns("subset_selections"),
                                  unique_metadata = unique_metadata,
-                                 metadata_config = config$metadata),
+                                 metadata_config = metadata_config),
+            #Submit button
             actionButton(inputId = ns("submit"),
                          label = "Submit",
                          #Display inline with download button when it appears
@@ -63,7 +64,7 @@ corr_tab_ui <- function(id,
 #id: Used to match server function to ui function. "corr" is the recommended 
 #value to use
 #sobj: The Seurat Object defined in the main server function
-#config: the config file imported in the main server function
+#metadata_config: metadata section of the config file imported in the main server function
 #n_cells_original: number of cells in full Seurat object. Calculated in main 
 #server function.
 #nonzero_threshold: the minimum acceptable proportion of cells with nonzero reads 
@@ -74,17 +75,17 @@ corr_tab_ui <- function(id,
 #is defined in the main server function.
 #valid features: a list giving the valid features that can be selected from each
 #assay. This is generated from the config file in the main server function
-#subset_error_list: a list of error messages to print custom notifications for, 
+#error_list: a list of error messages to print custom notifications for, 
 #if they are encountered while the correlations table is being calculated. This 
 #is defined in the main server function.
 corr_tab_server <- function(id,
                             sobj,
-                            config,
+                            metadata_config,
                             n_cells_original,
                             nonzero_threshold,
                             meta_choices,
                             valid_features,
-                            subset_error_list){
+                            error_list){
 
   #Function to initialize module server
   moduleServer(id,
@@ -95,17 +96,12 @@ corr_tab_server <- function(id,
                  
                  #Reactive values: will be deleted and re-implemented in near future
                  rv <- reactiveValues()
-                 #For correlations tab: report number of cells in a subset, number of cells 
-                 #where a gene is detected, and the proportion of detected cells
-                 rv$n_cells <- 0
-                 rv$n_nonzero <- 0
-                 rv$prop_nonzero <- 0
                  #rv$corr_is_subset: determines how correlations are computed. 
                  #When rv$corr_is_subset is TRUE, correlations are computed for 
                  #the subset and the full dataset, and when it is FALSE, 
                  #correlations are computed only for the full dataset. 
                  rv$corr_is_subset <- FALSE
-                 
+
                  #Correlations Tab Server ###
                  #HARD CODING: Entire correlations tab only supports the RNA assay.
                  
@@ -139,7 +135,7 @@ corr_tab_server <- function(id,
                  #Module to record selections made in for subsetting based on metadata categories
                  subset_selections <- 
                    subset_selections_server(id = "subset_selections",
-                                            metadata_config = config$metadata)
+                                            metadata_config = metadata_config)
                  
                  # 3. Reactive dropdown menu for patient ####
                  #TODO: add a more generalized form of this in the subset selections ui
@@ -226,7 +222,7 @@ corr_tab_server <- function(id,
                                        )
                                      
                                      #Error handling: the code in this block must 
-                                     #be handled with tryCatch() tocapture errors 
+                                     #be handled with tryCatch() to capture errors 
                                      #that may arise from selecting subsets with 
                                      #zero cells, or from memory limitations that 
                                      #may be reached with larger datasets.
@@ -240,7 +236,7 @@ corr_tab_server <- function(id,
                                            session, 
                                            cnd_message = cnd$message,
                                            #Uses a list of subset-specific errors 
-                                           error_list = subset_error_list,
+                                           error_list = error_list,
                                            #Id prefix for notification elements
                                            id_prefix = "plots"
                                            )
@@ -254,11 +250,11 @@ corr_tab_server <- function(id,
                                        {
                                          print("corr table: make subset")
                                          #Form subset based on chosen criteria 
-                                         #(store in reactive value so the subset 
-                                         #can be accessed in the scatterplot function)
-                                         rv$s_sub <- 
+                                         #Store in reactive variable
+                                         obj_sub <<- reactive({
                                            make_subset(sobj,
                                                        criteria_list = subset_selections) 
+                                         })
                                          
                                          #Determine if the subset created is a 
                                          #subset (if it is the full data, use 
@@ -268,8 +264,9 @@ corr_tab_server <- function(id,
                                          if (n_cells_original!=ncol(rv$s_sub)){
                                            rv$corr_is_subset <- TRUE
                                            } else {
-                                             rv$corr_is_subset <- FALSE
-                                             }
+                                             return(FALSE)
+                                           }
+                                         })
                                          
                                          ###Subset Stats
                                          #Determine the proportion of cells with 
@@ -277,11 +274,15 @@ corr_tab_server <- function(id,
                                          #If it is below the threshold defined 
                                          #at the top of this script return a 
                                          #warning to the user.
-                                         print("corr table: subset stats")
-                                         compute_subset_stats(session,
-                                                              rv,
-                                                              gene_selected = corr_main_gene,
-                                                              nonzero_threshold = nonzero_threshold)
+                                         print("corr table: subset stats module")
+                                         subset_stats_server(
+                                           id="stats",
+                                           tab="corr",
+                                           subset=obj_sub,
+                                           gene_selected=corr_main_gene,
+                                           subset_selections=subset_selections,
+                                           nonzero_threshold=nonzero_threshold
+                                           )
                                          
                                          #Compute correlations
                                          #If a subset has been selected, correlation 
@@ -292,7 +293,7 @@ corr_tab_server <- function(id,
                                          #selected, correlation coefficients will 
                                          #only be computed for the full data.
                                          
-                                         if (rv$corr_is_subset==TRUE){
+                                         if (corr_is_subset()==TRUE){
                                            print("corr table: compute for full data")
                                            #Subset is selected: compute both 
                                            #tables and merge
@@ -309,7 +310,7 @@ corr_tab_server <- function(id,
                                            table_subset <- 
                                              compute_correlation(
                                                gene_selected = corr_main_gene,
-                                               object = rv$s_sub,
+                                               object = obj_sub,
                                                colnames = 
                                                  c("Feature",
                                                    "Correlation_Subset")
@@ -339,7 +340,7 @@ corr_tab_server <- function(id,
                                              corr_table <- 
                                                compute_correlation(
                                                  gene_selected = corr_main_gene,
-                                                 object = rv$s_sub,
+                                                 object = obj_sub,
                                                  colnames = c("Feature","Correlation_Subset")
                                                )
                                              print("corr table: recieved table from compute_correlation")
@@ -372,7 +373,7 @@ corr_tab_server <- function(id,
                                  ignoreNULL = FALSE,
                                  {
                                    #Define header for datatable using HTML
-                                   if(rv$corr_is_subset==TRUE){
+                                   if(corr_is_subset()==TRUE){
                                      #If a subset is selected, the header will 
                                      #have three columns for the feature, the 
                                      #global correlation coefficients, and the 
@@ -432,7 +433,7 @@ corr_tab_server <- function(id,
                                      #will be columns 2 and 3; if not, 
                                      #this will be column 2.
                                      formatSignif(
-                                       columns = if(rv$corr_is_subset==TRUE) c(2,3) else 2,
+                                       columns = if(corr_is_subset()==TRUE) c(2,3) else 2,
                                        digits = 5
                                        )
                                    })
@@ -485,58 +486,24 @@ corr_tab_server <- function(id,
                                               #UI to display 
                                               tagList(
                                                 tags$h2(
-                                                  glue("Genes correlated with {corr_main_gene()} in Subset"), 
+                                                  glue("Correlation Analysis for
+                                                       {corr_main_gene()}"), 
                                                   class="center"),
-                                                #Restriction criteria section
-                                                tags$h3(
-                                                  "Selected Restriction Criteria", 
-                                                  class="center"),
-                                                #Make each input criteria appear inline
-                                                tagList(
-                                                  div(
-                                                    tags$strong("Clusters: "),
-                                                    textOutput(
-                                                      outputId = ns("selected_clusters"),
-                                                      inline = TRUE
-                                                      )
-                                                    ),
-                                                  div(
-                                                    tags$strong("Response criteria: "),
-                                                    textOutput(
-                                                      outputId = ns("selected_response"), 
-                                                      inline = TRUE
-                                                      )
-                                                    ),
-                                                  div(
-                                                    tags$strong("Patients: "),
-                                                    textOutput(
-                                                      outputId = ns("selected_htb"), 
-                                                      inline = TRUE)
-                                                    )
-                                                ),
                                                 
-                                                #Statistics section
-                                                tags$h3("Quality Statistics for Gene and Subset", 
-                                                        class="center"),
-                                                tagList(
-                                                  div("(Subset created based on defined restriction criteria)"),
-                                                  div(
-                                                    tags$strong("Number of cells in subset: "),
-                                                    textOutput(
-                                                      outputId = ns("print_n_cells"), 
-                                                      inline = TRUE
-                                                      )
-                                                    ),
-                                                  div(
-                                                    tags$strong(
-                                                      glue("Cells with non-zero reads for {corr_main_gene()}:")
-                                                      ),
-                                                    textOutput(
-                                                      outputId = ns("print_nonzero"), 
-                                                      inline = TRUE
-                                                      )
-                                                    )
-                                                ),
+                                                #Subset stats module UI
+                                                #Prints output containers and text
+                                                #to report the metadata included 
+                                                #in the subset and the amount
+                                                #of nonzero reads for that gene
+                                                #in the subset
+                                                subset_stats_ui(
+                                                  #Use namespacing for module 
+                                                  #UI components
+                                                  id = ns("stats"),
+                                                  tab = "corr",
+                                                  metadata_config = metadata_config,
+                                                  gene_selected = corr_main_gene,
+                                                  subset_selections = subset_selections),
                                                 
                                                 #Correlations table and plots
                                                 tags$h3("Correlated Genes", 
@@ -577,7 +544,7 @@ corr_tab_server <- function(id,
                  #different user input (clicking table)
                  scatterplot_ui <- 
                    eventReactive(c(input$corr_table_rows_selected,
-                                   rv$corr_is_subset),
+                                   corr_is_subset()),
                                  label="Correlation Scatterplot UI",
                                  ignoreNULL = FALSE,
                                  {
@@ -585,7 +552,7 @@ corr_tab_server <- function(id,
                                    if (length(input$corr_table_rows_selected)>0){
                                      #If a subset is selected, display two plots: 
                                      #one for the subset and one for the full data.
-                                     if (rv$corr_is_subset==TRUE){
+                                     if (corr_is_subset()==TRUE){
                                        tagList(
                                          tags$strong("Scatterplot for Subset",
                                                      class = "center single-space-bottom"),
@@ -619,7 +586,7 @@ corr_tab_server <- function(id,
                  #the scatterplot
                  scatter_options <- 
                    eventReactive(c(input$corr_table_rows_selected, 
-                                   rv$corr_is_subset),
+                                   corr_is_subset()),
                                  label="Corr. Scatterplot Options UI",
                                  ignoreNULL = FALSE,
                                  {
@@ -644,7 +611,7 @@ corr_tab_server <- function(id,
                                        #Download button for scatterplot (subset)
                                        
                                        #Displays only if a subset is selected
-                                       if(rv$corr_is_subset==TRUE){
+                                       if(corr_is_subset()==TRUE){
                                          downloadButton(
                                            outputId = ns("download_scatter_subset"),
                                            label = "Download Scatterplot (Subset)",
@@ -659,7 +626,7 @@ corr_tab_server <- function(id,
                                          outputId = ns("download_scatter_global"),
                                          #Label changes based on whether 
                                          #a subset is selected
-                                         label = if(rv$corr_is_subset==TRUE){
+                                         label = if(corr_is_subset()==TRUE){
                                            "Download Scatterplot (Full Data)"
                                          } else {
                                            "Download Scatterplot"},
@@ -667,7 +634,7 @@ corr_tab_server <- function(id,
                                          #space-top class: adds space before button 
                                          #this is only needed when a subset is 
                                          #selected and there are two buttons
-                                         class = if(rv$corr_is_subset==TRUE){
+                                         class = if(corr_is_subset()==TRUE){
                                            "space-top"
                                          } else NULL,
                                          icon = icon("poll")
@@ -736,9 +703,9 @@ corr_tab_server <- function(id,
                  #Computes a scatterplot for a secondary gene selected by the 
                  #user from the correlations table.
                  #Row index of user selection from table is stored in 
-                 #input$corr_table_rows_selected. eventReactive responds to 
+                 #input$corr_table_rows_selected. eventReactive responds to
                  #input$corr_table_rows_selected and rv$corr_table_rows_selected
-                 #input$corr_table_rows_selected is the index of the row selected, 
+                 #input$corr_table_rows_selected is the index of the row selected,
                  #while rows_selected() is the boolean generated in 2.3.4. rows_selected() 
                  #prevents the code from running when the user has de-selected values 
                  subset_scatterplot <- 
@@ -758,7 +725,7 @@ corr_tab_server <- function(id,
                            })
                          
                          #Make and store scatterplot
-                         FeatureScatter(rv$s_sub, 
+                         FeatureScatter(obj_sub(), 
                                         feature1 = corr_main_gene(),
                                         feature2 = corr_secondary_gene(),
                                         #group.by and split.by 
