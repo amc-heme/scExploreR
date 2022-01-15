@@ -226,7 +226,6 @@ for (category in names(config$metadata)){
   }
 }
 
-
 #Clusters dropdown
 clusters <- levels(unique(sobj$clusters)) 
 
@@ -655,12 +654,6 @@ tables_tab <- function(unique_metadata,config){
   )#End fluidPage
 }#End 1.2.
 
-## 1.3 Correlation Tab ####
-#Requires an argument to import the config file from the global environment
-corr_tab <- function(unique_metadata,config){
-  
-}#End 1.3.
-
 # Main UI ####
 # Navigation panel and references to tabs
 ui <- tagList(
@@ -782,6 +775,7 @@ server <- function(input,output,session){
   ### 2.1.1 Subset for Plots Tab #####
   #2.1.1.1. Module server to process user selections and report to other modules
   plots_subset_selections <- subset_selections_server("plots_subset",
+                                                      unique_metadata = unique_metadata,
                                                       metadata_config = config$metadata)
   
   output$plots_subsets_return <- renderPrint({
@@ -2700,11 +2694,11 @@ server <- function(input,output,session){
     contentType = "text/csv"
   )#End downloadHandler 
 
-  ## 2.3. Correlations Tab Module ####
-  #Call corr_tab_server module
+  ## 2.3. Correlations Tab Server Module ####
   corr_tab_server(id = "corr",
                   sobj = sobj,
                   metadata_config = config$metadata,
+                  unique_metadata = unique_metadata,
                   n_cells_original = n_cells_original, 
                   nonzero_threshold = nonzero_threshold, 
                   meta_choices = meta_choices,

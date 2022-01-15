@@ -148,12 +148,19 @@ subset_menus <- function(unique_metadata,
 
 ### Icon Notification Function
 #Defines the HTML to be printed within a notification box. The function takes the name of a Font Awesome icon and a message as input, and will display the icon and the message inline.
-icon_notification_ui <- function(icon_name,message){
-  span(
-    #Icon (inline and enlarged)
-    icon(icon_name, style="display: inline-block; font-size: 1.7em;"),
-    #Message (inline with icon, font slightly enlarged)
+icon_notification_ui <- function(message,icon_name=NULL){
+  if (!is.null(icon_name)){
+    #Create ui with message and icon if the icon is defined
+    span(
+      #Icon (inline and enlarged)
+      icon(icon_name, style="display: inline-block; font-size: 1.7em;"),
+      #Message (inline with icon, font slightly enlarged)
+      span(message,style="font-size: 1.17em;")
+    )
+  } else {
+    #Create ui with just a message if icon==NULL
     span(message,style="font-size: 1.17em;")
-  )
+  }
+  
 }
 ###

@@ -4,7 +4,8 @@
 #arguments
 #id: namespace to use for this module. Reccomended id is "<tab_name>_subset_menus".
 #unique_metadata: a list of the unique metadata values for each of the metadata 
-#categories listed in the config file. This is generated in the app at startup.
+#categories listed in the config file. This is generated in the main server function 
+#at startup.
 #metadata_config: the metadata section of the config file. This does not need to
 #be specified if the config list is stored as "config" in the global environment.
 subset_selections_ui <- function(id,
@@ -55,6 +56,12 @@ subset_selections_ui <- function(id,
     menus <- tagList(menus,menu_tag)
   }
   
+  #Last element: a reset button that will appear when subset menus are filtered 
+  #to remove criteria that are mutually exclusive with current selections
+  menus <- tagList(menus,
+                   uiOutput(outputId = ns("reset_filter_button"))
+  )
+  
   #Return list of menu tags
   return(menus)
 }
@@ -65,14 +72,17 @@ subset_selections_ui <- function(id,
 #metadata_config: the metadata section of the config file. This does not need to
 #be specified if the config list is stored as "config" in the global environment.
 subset_selections_server <- function(id,
+                                     unique_metadata,
                                      metadata_config=config$metadata){
   #Initialize module 
   moduleServer(
     id,
     #Server function for module: uses a separate set of input/output variables 
     function(input,output,session){
-      print("begin subset selections server")
-      #1. Store all input values from the UI as a reactive list
+      #Server namespace function: used for UI elements rendered in server
+      ns <- session$ns
+      
+      #1. Store all input values from the UI as a reactive list ----------------
       selections <- reactive({
         #Store selections for each input in the UI (one menu is created for each
         #metadata category in the config file)
@@ -87,7 +97,68 @@ subset_selections_server <- function(id,
         return(selections_list)
         })
       
-      #2. For later: filter menus in UI based on selections
+      #2. UI for Filtering Selection Menus -------------------------------------
+      #Subset menus will be filtered for 
+      #2.1. filters_applied: a boolean that is TRUE when a subset has been 
+      #filtered (this may be changed as the filter code is developed)
+      filters_applied <- eventReactive(selections(),
+                                       ignoreNULL = FALSE,
+                                       {
+                                         #Check if selections() is shorter than 
+                                         #the original list of choices used to 
+                                         #generate the menus. 
+                                         not_equal <- 
+                                           !(setequal(
+                                             unlist(unique_metadata),
+                                             unlist(selections())
+                                             ))
+                                         
+                                         #If selections is shorter (not_equal==
+                                         #TRUE), return TRUE, and vice versa 
+                                         if (not_equal==TRUE){
+                                           return(TRUE)
+                                         } else {
+                                           return(FALSE)
+                                         }
+                                       })
+      
+      #2.2. Create UI for "Reset Filter button"
+      #Button is needed after filtering is applied to reset selections 
+      reset_filter_ui <- eventReactive(filters_applied(),
+                                       ignoreNULL = FALSE,
+                                       {
+                                         if (filters_applied() == TRUE){
+                                           #Display reset button if filters have been applied 
+                                           actionButton(inputId = ns("reset_filter"),
+                                                        label = "Reset Filters",
+                                                        icon = icon("times-circle")
+                                                        )
+                                           #Do not display anything otherwise
+                                         } else NULL
+                                       })
+      
+      #Render UI for reset button
+      output$reset_filter_button <- renderUI({
+        reset_filter_ui()
+      })
+      
+      #3. For later: filter menus in UI based on selections --------------------
+      #Create an observer for each menu created in (1.)
+      lapply(
+        X = isolate(names(selections())),
+        FUN = function(category){
+          observeEvent(input[[glue("{category}_selection")]],
+                       ignoreNULL = FALSE,
+                       ignoreInit = TRUE,
+                       {
+                         #TEMP: display notification to verify the observer is responding correctly
+                         showNotification(
+                           icon_notification_ui(
+                             message=glue("change observed: {category}")
+                           )
+                         )
+                       }) #End observeEvent
+        }) #End lapply
       
       #Return the reactive list of selections 
       return(selections)

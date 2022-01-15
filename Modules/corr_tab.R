@@ -3,6 +3,10 @@
 #corr_tab_ui
 #arguments
 #id: ID to use for module elements. Should be equal to "corr".
+#unique_metadata: a list of the unique metadata values for each of the metadata 
+#categories listed in the config file. This is generated in the main server function 
+#at startup.
+#metadata_config: the metadata section of the config file imported in the main server function
 corr_tab_ui <- function(id,
                         unique_metadata,
                         metadata_config){
@@ -65,6 +69,9 @@ corr_tab_ui <- function(id,
 #value to use
 #sobj: The Seurat Object defined in the main server function
 #metadata_config: metadata section of the config file imported in the main server function
+#unique_metadata: a list of the unique metadata values for each of the metadata 
+#categories listed in the config file. This is generated in the main server function 
+#at startup.
 #n_cells_original: number of cells in full Seurat object. Calculated in main 
 #server function.
 #nonzero_threshold: the minimum acceptable proportion of cells with nonzero reads 
@@ -81,6 +88,7 @@ corr_tab_ui <- function(id,
 corr_tab_server <- function(id,
                             sobj,
                             metadata_config,
+                            unique_metadata,
                             n_cells_original,
                             nonzero_threshold,
                             meta_choices,
@@ -133,10 +141,14 @@ corr_tab_server <- function(id,
                                    })
                  
                  ## 2.2. Inputs in subset selections menus ####
-                 #Module to record selections made in for subsetting based on metadata categories
+                 #Module to record selections made in for subsetting based on 
+                 #metadata categories
                  subset_selections <- 
-                   subset_selections_server(id = "subset_selections",
-                                            metadata_config = metadata_config)
+                   subset_selections_server(
+                     id = "subset_selections",
+                     unique_metadata = unique_metadata,
+                     metadata_config = metadata_config
+                     )
                  
                  ## 2.3. Process Submit button input ####
                  #Pass value of action button to nested modules to control reactivity
@@ -434,101 +446,99 @@ corr_tab_server <- function(id,
                  # 5. Correlations UI ------------------------------------------
                  ## 5.1. Main Panel UI ####
                  #IgnoreNULL set to false to get UI to render at start up
-                 main_panel_ui <- eventReactive(submit_button(), 
-                                          label = "Correlation Main UI (Define Content)",
-                                          ignoreNULL = FALSE, 
-                                          {
-                                            #UI: if the feature selection menu 
-                                            #is empty (default state at initialization), 
-                                            #prompt user to enter features
-                                            if (corr_main_gene() == ""){
-                                              tags$h3("Enter a feature and press 
-                                                      submit to view correlated 
-                                                      features. You may also specify 
-                                                      restriction criteria using the 
-                                                      dropdown menus.")
-                                              #After a feature is applied and the 
-                                              #submit button is pressed, display the table
-                                            } else {
-                                              #Display the loading screen (screen 
-                                              #will show until the end of the 
-                                              #corr_table_content calculation is reached).
-                                              waiter_show(
-                                                id = ns("main_panel"),
-                                                html = spin_loaders(id=2, 
-                                                                    color = "#555588"),
-                                                color = "#FFFFFF",
-                                                #Gives manual control of showing/hiding spinner
-                                                hide_on_render = FALSE 
-                                              )
-                                              
-                                              #Also display spinner over the 
-                                              #options menu to keep user from being 
-                                              #able to click download buttons before 
-                                              #content is ready
-                                              waiter_show(
-                                                id = ns("sidebar"),
-                                                html = spin_loaders(id=2, 
-                                                                    color = "#555588"),
-                                                color = "#B1B1B188",
-                                                #Gives manual control of showing/hiding spinner
-                                                hide_on_render = FALSE 
-                                              )
-                                              
-                                              #UI to display 
-                                              tagList(
-                                                tags$h2(
-                                                  glue("Correlation Analysis for
-                                                       {corr_main_gene()}"), 
-                                                  class="center"),
-                                                
-                                                #Subset stats module UI
-                                                #Prints output containers and text
-                                                #to report the metadata included 
-                                                #in the subset and the amount
-                                                #of nonzero reads for that gene
-                                                #in the subset
-                                                subset_stats_ui(
-                                                  #Use namespacing for module UI instance
-                                                  id = ns("stats"),
-                                                  tab = "corr",
-                                                  metadata_config = metadata_config,
-                                                  subset_selections = subset_selections,
-                                                  gene_selected = corr_main_gene),
-                                                
-                                                #Correlations table and plots
-                                                tags$h3("Correlated Genes", 
-                                                        class="center"),
-                                                
-                                                #Table: rendered inline 
-                                                div(
-                                                  class="two-column",
-                                                  style="width: 40%; float: left;",
-                                                  tags$strong(
-                                                    "Correlation Table", 
-                                                    class="center single-space-bottom"
-                                                    ),
-                                                  #Use a DT data table
-                                                  DTOutput(
-                                                    outputId = ns("corr_table")
-                                                    )
-                                                ),
-                                                
-                                                #Scatterplot: only appears after 
-                                                #the user makes a selection on 
-                                                #the table
-                                                div(
-                                                  class="two-column",
-                                                  style="width: 60%; float: right;",
-                                                  #UI for scatterplot rendered in 
-                                                  #separate eventReactive function
-                                                  uiOutput(
-                                                    outputId = ns("scatterplot_ui")
-                                                    )
-                                                )
-                                              )#End tagList
-                                            }
-                                          })
+                 main_panel_ui <- 
+                   eventReactive(submit_button(), 
+                                 label = "Correlation Main UI (Define Content)",
+                                 ignoreNULL = FALSE, 
+                                 {
+                                   #UI: if the feature selection menu 
+                                   #is empty (default state at initialization),
+                                   #prompt user to enter features
+                                   if (corr_main_gene() == ""){
+                                   tags$h3("Enter a feature and press submit to 
+                                           view correlated features. You may also 
+                                           specify restriction criteria using the 
+                                           dropdown menus.")
+                                     #After a feature is applied and the 
+                                     #submit button is pressed, display the table
+                                     } else {
+                                       #Display the loading screen (screen 
+                                       #will show until the end of the 
+                                       #corr_table_content calculation is reached).
+                                       waiter_show(
+                                         id = ns("main_panel"),
+                                         html = spin_loaders(id=2, 
+                                                             color = "#555588"),
+                                         color = "#FFFFFF",
+                                         #Gives manual control of showing/hiding spinner
+                                         hide_on_render = FALSE
+                                         )
+                                       
+                                       #Also display spinner over the options 
+                                       #menu to keep user from being able to click 
+                                       #download buttons before content is ready
+                                       waiter_show(
+                                         id = ns("sidebar"),
+                                         html = spin_loaders(id=2, 
+                                                             color = "#555588"),
+                                         color = "#B1B1B188",
+                                         #Gives manual control of showing/hiding spinner
+                                         hide_on_render = FALSE 
+                                         )
+                                       
+                                       #UI to display 
+                                       tagList(
+                                         tags$h2(
+                                         glue("Correlation Analysis for
+                                              {corr_main_gene()}"), 
+                                         class="center"),
+                                         
+                                         #Subset stats module UI
+                                         #Prints output containers and text to 
+                                         #report the metadata includedin the 
+                                         #subset and the amount of nonzero reads 
+                                         #for that gene in the subset
+                                         subset_stats_ui(
+                                           #Use namespacing for module UI instance
+                                           id = ns("stats"),
+                                           tab = "corr",
+                                           metadata_config = metadata_config,
+                                           subset_selections = subset_selections,
+                                           gene_selected = corr_main_gene
+                                           ),
+                                         
+                                         #Correlations table and plots
+                                         tags$h3("Correlated Genes", 
+                                                 class="center"),
+                                         
+                                         #Table: rendered inline 
+                                         div(
+                                           class="two-column",
+                                           style="width: 40%; float: left;",
+                                           tags$strong(
+                                             "Correlation Table", 
+                                             class="center single-space-bottom"
+                                             ),
+                                           #Use a DT data table
+                                           DTOutput(
+                                             outputId = ns("corr_table")
+                                             )
+                                           ),
+                                         
+                                         #Scatterplot: only appears after the 
+                                         #user makes a selection on the table
+                                         div(
+                                           class="two-column",
+                                           style="width: 60%; float: right;",
+                                           #UI for scatterplot rendered in 
+                                           #separate eventReactive function
+                                           uiOutput(
+                                             outputId = ns("scatterplot_ui")
+                                             )
+                                           )
+                                         )#End tagList
+                                       }
+                                   })
                  
                  ## 5.2. Correlations scatterplot UI ####
                  #Computed separately from main UI since it responds to a 
