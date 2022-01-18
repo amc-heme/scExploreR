@@ -775,6 +775,7 @@ server <- function(input,output,session){
   ### 2.1.1 Subset for Plots Tab #####
   #2.1.1.1. Module server to process user selections and report to other modules
   plots_subset_selections <- subset_selections_server("plots_subset",
+                                                      sobj = sobj,
                                                       unique_metadata = unique_metadata,
                                                       metadata_config = config$metadata)
   

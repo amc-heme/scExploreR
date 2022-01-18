@@ -46,7 +46,7 @@ subset_selections_ui <- function(id,
         #when more than 5 values are selected
         "selected-text-format" = "count > 5",
         #Define max options to show at a time to keep menu from being cut off
-        "size" = 10, 
+        "size" = 7, 
         #Add "select all" and "deselect all" buttons
         "actions-box"=TRUE
       )
@@ -69,9 +69,11 @@ subset_selections_ui <- function(id,
 #Server function
 #Arguments
 #id: the namespace to use for the module. UI-server function pairs should use the same id.
+#sobj: The Seurat Object defined in the main server function
 #metadata_config: the metadata section of the config file. This does not need to
 #be specified if the config list is stored as "config" in the global environment.
 subset_selections_server <- function(id,
+                                     sobj,
                                      unique_metadata,
                                      metadata_config=config$metadata){
   #Initialize module 
@@ -143,22 +145,129 @@ subset_selections_server <- function(id,
       })
       
       #3. For later: filter menus in UI based on selections --------------------
+
+      #Approach A
       #Create an observer for each menu created in (1.)
+      
+      #Define metadata categories to loop through (based on names of selections,
+      #which stay constant regardless of which options are selected)
+      all_categories <- isolate(names(selections()))
+      
+      #Use lapply to build observers
       lapply(
-        X = isolate(names(selections())),
-        FUN = function(category){
-          observeEvent(input[[glue("{category}_selection")]],
+        X = all_categories,
+        FUN = function(current_category){
+          observeEvent(input[[glue("{current_category}_selection")]],
                        ignoreNULL = FALSE,
                        ignoreInit = TRUE,
                        {
-                         #TEMP: display notification to verify the observer is responding correctly
+                         #TEMP: display notification to verify the observer 
+                         #is responding correctly
                          showNotification(
                            icon_notification_ui(
-                             message=glue("change observed: {category}")
+                             message=glue("change observed: {current_category}")
                            )
                          )
+                         #also print console message
+                         print(glue("change observed: {current_category}"))
+                         
+                         #When the observer is triggered, change all other menus 
+                         #based on the selections chosen
+                         #Define values of other categories
+                         other_categories <- 
+                           all_categories[!all_categories %in% current_category] 
+                         
+                         #For each other category, update the picker inputs based 
+                         #on the values selected in the current menu (current category)
+                         for (other_category in other_categories){
+                           #Generate list of valid choices for the category
+                           valid_choices <- sobj@meta.data |> 
+                             #Filter object for selections made in current category
+                             filter(
+                               .data[[current_category]] %in% 
+                                 input[[glue("{current_category}_selection")]]
+                               ) |> 
+                             #Select the column for the *other* category
+                             select(.data[[other_category]]) |> 
+                             #Fetch unique values
+                             unique() |> 
+                             #Convert to character vector (must use both unlist() 
+                             #and as.character() to get correct values for 
+                             #categories that are factors)
+                             unlist() |> 
+                             as.character()
+                           
+                           print(glue("Compatible options for {other_category}"))
+                           print(valid_choices)
+                           
+                           #If the category has groups defined in the config file, 
+                           #sort the valid values into those groups
+                           group_info <- metadata_config[[other_category]]$groups
+                           
+                           if(!is.null(group_info)){
+                             #Use group_metadata_choices() function to do this
+                             choices_list <- 
+                               group_metadata_choices(group_info,valid_choices)
+                             
+                             print(glue("List of values for {other_category}"))
+                             print(choices_list)
+                           } else {
+                             #If there is no group info for the category, do not
+                             #group choices into a list
+                             choices_list <- NULL
+                           }
+                           
+                           #Update picker input with valid choices
+                           print(glue("Update menu for {other_category}"))
+                           updatePickerInput(session,
+                                             inputId = glue("{other_category}_selection"),
+                                             #Choices: use the list of group 
+                                             #choices if it is defined
+                                             choices = 
+                                               if (!is.null(choices_list)) {
+                                                 choices_list
+                                               } else {
+                                                   valid_choices
+                                                 },
+                                             selected = valid_choices,
+                                             options = 
+                                               list(
+                                               "selected-text-format" = "count > 5",
+                                               "actions-box"=TRUE
+                                               )
+                                             )
+                         }
+                         
+                         
                        }) #End observeEvent
         }) #End lapply
+      
+      #Approach B: one observer, pointed to slections() instead of individual menus
+      # observeEvent(selections(),
+      #              ignoreNULL = FALSE,
+      #              ignoreInit = TRUE,
+      #              {
+      #                #Temp: console message
+      #                print("Change observed")
+      #                
+      #                #Filter Seurat object for valid options in all of the selections
+      #                valid_table <- sobj@meta.data |> 
+      #                  #Filter object for selections made in current category
+      #                  filter(
+      #                    .data[[current_category]] %in% 
+      #                      input[[glue("{current_category}_selection")]]
+      #                  ) |> 
+      #                  #Select the column for the *other* category
+      #                  select(.data[[other_category]]) |> 
+      #                  #Fetch unique values
+      #                  unique() |> 
+      #                  #Convert to character vector (must use both unlist() 
+      #                  #and as.character() to get correct values for 
+      #                  #categories that are factors)
+      #                  unlist() |> 
+      #                  as.character()
+      #                
+      #              })
       
       #Return the reactive list of selections 
       return(selections)

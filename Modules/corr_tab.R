@@ -146,6 +146,7 @@ corr_tab_server <- function(id,
                  subset_selections <- 
                    subset_selections_server(
                      id = "subset_selections",
+                     sobj=sobj,
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config
                      )
