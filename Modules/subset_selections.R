@@ -15,66 +15,58 @@ subset_selections_ui <- function(id,
   #Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
   
-  #UI for plots and correlations tab
-  if (tab %in% c("plots","corr")){
-    #Create a list for storing the Shiny tags from each menu 
-    menus<-tagList()
-    
-    for(category in names(metadata_config)){
-      #Create menu for the current category
-      menu_tag <- pickerInput(
-        #input_prefix: will become unnecessary once the subset menus are placed 
-        #within a module
-        inputId=ns(glue("{category}_selection")),
-        #label: uses the label defined for the category in the config file
-        label=glue("Restrict by {metadata_config[[category]]$label}"),
-        #choices: filled using the unique_metadata list
-        #If the metadata category has defined groups, sort choices into a named 
-        #list based on the groups. This will show choices divided by group in 
-        #the pickerInput menu.
-        choices= if(!is.null(metadata_config[[category]]$groups)){
-          #Use group_metadata_choices() to generate list
-          group_metadata_choices(
-            group_info=metadata_config[[category]]$groups,
-            choices = unique_metadata[[category]]
-          )
-        } else {
-          #If groups are not defined, use the vector of choices from unique_metadata
-          unique_metadata[[category]]
-        },
-        #selected: all choices selected by default
-        selected=unique_metadata[[category]],
-        multiple=TRUE,
-        #Options for pickerInput
-        options=list(
-          #Display number of items selected instead of their names 
-          #when more than 5 values are selected
-          "selected-text-format" = "count > 5",
-          #Define max options to show at a time to keep menu from being cut off
-          "size" = 7, 
-          #Add "select all" and "deselect all" buttons
-          "actions-box"=TRUE
+  #Create a list for storing the Shiny tags from each menu 
+  menus<-tagList()
+  
+  for(category in names(metadata_config)){
+    #Create menu for the current category
+    menu_tag <- pickerInput(
+      #input_prefix: will become unnecessary once the subset menus are placed 
+      #within a module
+      inputId=ns(glue("{category}_selection")),
+      #label: uses the label defined for the category in the config file
+      label=glue("Restrict by {metadata_config[[category]]$label}"),
+      #choices: filled using the unique_metadata list
+      #If the metadata category has defined groups, sort choices into a named 
+      #list based on the groups. This will show choices divided by group in 
+      #the pickerInput menu.
+      choices= if(!is.null(metadata_config[[category]]$groups)){
+        #Use group_metadata_choices() to generate list
+        group_metadata_choices(
+          group_info=metadata_config[[category]]$groups,
+          choices = unique_metadata[[category]]
         )
-      )#End pickerInput
-      
-      #Append tag to list using tagList (append() will modify the HTML of the tag)
-      menus <- tagList(menus,menu_tag)
-    }
+      } else {
+        #If groups are not defined, use the vector of choices from unique_metadata
+        unique_metadata[[category]]
+      },
+      #selected: all choices selected by default
+      selected=unique_metadata[[category]],
+      multiple=TRUE,
+      #Options for pickerInput
+      options=list(
+        #Display number of items selected instead of their names 
+        #when more than 5 values are selected
+        "selected-text-format" = "count > 5",
+        #Define max options to show at a time to keep menu from being cut off
+        "size" = 7, 
+        #Add "select all" and "deselect all" buttons
+        "actions-box"=TRUE
+      )
+    )#End pickerInput
     
-    #Last element: a reset button that will appear when subset menus are filtered 
-    #to remove criteria that are mutually exclusive with current selections
-    menus <- tagList(menus,
-                     uiOutput(outputId = ns("reset_filter_button"))
-    )
-    
-    #Return list of menu tags
-    return(menus)
-
-  } else if (tab=="dge") {
-    #DGE tab: UI is dynamically generated
-    uiOutput(outputId = ns("selections_ui"))
+    #Append tag to list using tagList (append() will modify the HTML of the tag)
+    menus <- tagList(menus,menu_tag)
   }
   
+  #Last element: a reset button that will appear when subset menus are filtered 
+  #to remove criteria that are mutually exclusive with current selections
+  menus <- tagList(menus,
+                   uiOutput(outputId = ns("reset_filter_button"))
+  )
+  
+  #Return list of menu tags
+  return(menus)
 }
 
 #Server function
@@ -83,11 +75,15 @@ subset_selections_ui <- function(id,
 #sobj: The Seurat Object defined in the main server function
 #metadata_config: the metadata section of the config file. This does not need to
 #be specified if the config list is stored as "config" in the global environment.
+#dge_mode:  a reactive variable giving the chosen mode for differential expression 
+#analysis (marker selection or differential expression analysis). only applies 
+#when tab=="dge".
 subset_selections_server <- function(id,
                                      sobj,
                                      unique_metadata,
                                      tab = c("plots", "dge", "corr"),
-                                     metadata_config = config$metadata){
+                                     metadata_config = config$metadata,
+                                     dge_mode = NULL){
   #Initialize module 
   moduleServer(
     id,
@@ -95,14 +91,6 @@ subset_selections_server <- function(id,
     function(input,output,session){
       #Server namespace function: used for UI elements rendered in server
       ns <- session$ns
-      
-      #0. Dynamic UI Components (DGE tab only) ---------------------------------
-      dge_selections_ui <- reactive({
-        
-      })
-      
-      
-      #Render UI
       
       #1. Store all input values from the UI as a reactive list ----------------
       #Use either the module UI (plots and correlation tabs) or the dynamic UI 

@@ -62,10 +62,28 @@ dge_tab_ui <- function(id,
 
 
 #dge_tab_server
-dge_tab_server <- function(id){
+dge_tab_server <- function(id,
+                           sobj,
+                           metadata_config,
+                           unique_metadata,
+                           meta_choices){
   moduleServer(id,
                function(input,output,session){
-                 ## 2.2. DGE Tab #####
+                 #1. Process dge_mode selection --------------------------------
+                 #The value of input$dge_mode is stored as a reactive variable 
+                 #and will be passed to the subset selections server module
+                 dge_mode <- reactive({
+                   input$mode
+                 })
+                 
+                 #2. Subset Selections Module server ---------------------------
+                 #The subset_selections module will display selections for 
+                 #choosing the metadata category to use for marker identification 
+                 #of differential expression, and selecting which values from each 
+                 #of the other categories to include in the analysis. The output 
+                 #for the module will be used in subsetting.
+                 
+                 
                  ### 2.2.1. Reactive dropdown menus ####
                  #### 2.2.1.1. Reactive dropdown menu for patient ####
                  # The code in this section is duplicated from section 2.3.1, 
@@ -535,18 +553,20 @@ dge_tab_server <- function(id){
                  )
                  
                  #### 2.2.2.2. DGE table, as DT for viewing ####
-                 dge_DT_content <- eventReactive(input$dge_submit, 
-                                                 label = "DGE DT Generation",
-                                                 ignoreNULL=FALSE, 
-                                                 {
-                                                   datatable(
-                                                     dge_table_content(),
-                                                     class = "compact stripe cell-border hover",
-                                                     selection = "none",
-                                                     filter = "top",
-                                                     rownames = FALSE
-                                                   ) %>%
-                                                     formatSignif(3:8, 5) # This is more than enough - 3 is probably fine
+                 dge_DT_content <- 
+                   eventReactive(input$dge_submit, 
+                                 label = "DGE DT Generation",
+                                 ignoreNULL=FALSE, 
+                                 {
+                                   datatable(
+                                     dge_table_content(),
+                                     class = "compact stripe cell-border hover",
+                                     selection = "none",
+                                     filter = "top",
+                                     rownames = FALSE
+                                     ) %>%
+                                     #Use 5 sig figs (3 or more is sufficient)
+                                     formatSignif(3:8, 5) 
                                                  })
                  
                  ### 2.2.3. DGE UI Components ####
