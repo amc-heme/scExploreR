@@ -32,7 +32,6 @@ corr_tab_ui <- function(id,
             #Module for subset selections              
             subset_selections_ui(id = ns("subset_selections"),
                                  unique_metadata = unique_metadata,
-                                 tab = "corr",
                                  metadata_config = metadata_config),
             #Submit button
             actionButton(inputId = ns("submit"),
@@ -148,7 +147,6 @@ corr_tab_server <- function(id,
                    subset_selections_server(
                      id = "subset_selections",
                      sobj=sobj,
-                     tab = "corr",
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config
                      )

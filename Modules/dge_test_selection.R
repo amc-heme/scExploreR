@@ -4,7 +4,8 @@
 #differential gene expression.
 
 dge_test_selection_ui <- function(id,
-                             dge_mode=c("mode_dge","mode_marker")
+                             dge_mode=c("mode_dge","mode_marker"),
+                             meta_choices
                              ){
   #Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -36,13 +37,12 @@ dge_test_selection_ui <- function(id,
   
   #2. Selection of marker classes for group by variable, or groups if mode==dge
   #(dynamically updated based on group_by choice)
-  classes_menu <- uiOutput(outputId = "test_classes")
+  classes_menu <- uiOutput(outputId = ns("test_classes"))
   
   #Combine elements above into tagList and return for display in app
   ui <- tagList(
     group_by_menu,
-    classes_menu,
-    subset_menus
+    classes_menu
   )
 }
 
@@ -55,42 +55,36 @@ dge_test_selection_ui <- function(id,
 #dge_mode: The chosen mode for differential expression analysis (marker selection 
 #or differential expression). 
 dge_test_selection_server <- function(id,
-                                 sobj,
-                                 unique_metadata,
-                                 metadata_config,
-                                 meta_choices,
-                                 dge_mode){
+                                      sobj,
+                                      unique_metadata,
+                                      metadata_config,
+                                      meta_choices,
+                                      dge_mode){
   moduleServer(id,
                function(input,output,session){
+                 
+                 print("test_selection_server initialized")
+                 
+                 #Namespace function: for dynamic UI
+                 ns <- session$ns
                  
                  #1. Process group_by choice -----------------------------------
                  group_by_category <- reactive({
                    input$group_by
                  })
-                 
-                 #Subset_menu_categories (may or may not be used)
-                 #Menus are created based on the metadata category specified for 
-                 #the group_by argument. The current group_by menu is tracked, and 
-                 #all categories that are not the curreny group_by menu are 
-                 #recorded in this variable.
-                 subset_menu_categories <- reactive({
-                   all_categories <- names(metadata_config)
-                   #Return all metadata categories except for the current group by selection
-                   all_categories[!all_categories %in% input$group_by]
-                 })
-                 
+
                  #2. Determine unique values for the group by category ---------
                  #Will be options for marker classes or groups in DGE). This 
                  #process will be the same regardless of whether marker 
                  #selection or differential gene expression is the chosen test
                  group_choices <- 
-                   eventReactive(input$group_by,
+                   eventReactive(group_by_category(),
                                  ignoreNULL = FALSE,
-                                 ignoreInit = TRUE,
                                  {
+                                   print("Calculate group_choices")
                                    sobj@meta.data |>
                                      #Get unique values for the group by category
-                                     select(.data[[input$group_by]]) |> 
+                                     select(.data[[group_by_category()]]) |> 
                                      unique() |>
                                      #Convert to vector
                                      unlist() |> 
@@ -108,11 +102,11 @@ dge_test_selection_server <- function(id,
                    #UI updates after group choices are computed 
                    #(may need to change this)
                    eventReactive(
-                     group_choices(),
+                     group_by_category(),
                      ignoreNULL = FALSE,
-                     ignoreInit = TRUE,
                      {
-                       if (dge_mode=="dge"){
+                       print("Calculate test_classes")
+                       if (dge_mode=="mode_dge") {
                          #DGE mode: display menus to select two classes from the 
                          #metadata category chosen as the group_by variable. 
                          #This can be expanded to include groups based on 
@@ -138,7 +132,7 @@ dge_test_selection_server <- function(id,
                                )
                              )
                            )#End tagList
-                       } else if (dge_mode=="marker"){
+                       } else if (dge_mode=="mode_marker") {
                          #Marker mode: display menu to choose values from the 
                          #group by metadata category to include as classes in 
                          #marker identification. 
@@ -173,6 +167,8 @@ dge_test_selection_server <- function(id,
                              "actions-box"=TRUE
                              )
                            ) #End pickerInput
+                       } else {
+                           stop("Unsupported value for dge_mode")
                          }
                        })
                  
@@ -185,36 +181,27 @@ dge_test_selection_server <- function(id,
                  #Lower priority, add later
                  
                  #5. Process Test Selections -----------------------------------
-                 #Record selections for 
-                 if (dge_mode == "dge"){
-                   #For dge: record two classes selected
-                   group_1 <- input$group_1
-                   group_2 <- input$group_2
-                 } else if (dge_mode == "marker"){
-                   #For marker identification: record classes selected
-                   classes_selected <- input$marker_class_selection
-                 }
-                 
-                 #Processes the selections for the group by variable, and either 
+                 #Processes the selections for the group by variable, and either
                  #group or marker selections depending on the mode of DGE selected.
                  selections <- reactive({
                    #Store selections in a list
                    selections <- list()
                    #Record the group by variable
                    selections$group_by <- group_by_category()
-                   
-                   if (dge_mode == "dge"){
+
+                   if (dge_mode == "mode_dge"){
                      #For dge: record two classes selected
-                     #Parentheses at end: immediately extracts value from reactive 
+                     #Parentheses at end: immediately extracts value from reactive
                      #context for storage in list (list is reactive, which is sufficient)
                      selections$group_1 <- reactive({input$group_1})()
                      selections$group_2 <- input$group_2
-                   } else if (dge_mode == "marker"){
+                   } else if (dge_mode == "mode_marker"){
                      #For marker identification: record classes selected
-                     selections$classes_selected <- reactive({input$marker_class_selection})()
+                     selections$classes_selected <-
+                       reactive({input$marker_class_selection})()
                    }
                  })
-                 
+
                  #Return selections info from module
                  return(selections)
                })

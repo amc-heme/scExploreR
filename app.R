@@ -1094,7 +1094,7 @@ server <- function(input,output,session){
     layers <- list(
       #Element A 
       #Legend position: "right" if a legend is desired, and "none" if not
-      theme(legend.position = if (input$umap_legend==TRUE)"right" else "none"),
+      theme(legend.position = if (input$umap_legend==TRUE) "right" else "none"),
       
       #B-C. Axis limits: use limits from full dataset if specified
       #Element B
@@ -1691,8 +1691,12 @@ server <- function(input,output,session){
     contentType = "image/png"
   ) #End downloadHandler function
   
-  ## 2.2. DGE Tab Server Module #####
-  
+  ## 2.2. DGE Tab Server Module ####
+  dge_tab_server(id = "dge",
+                 sobj = sobj,
+                 metadata_config = config$metadata,
+                 unique_metadata = unique_metadata,
+                 meta_choices = meta_choices)
   
   ## 2.3. Correlations Tab Server Module ####
   corr_tab_server(id = "corr",

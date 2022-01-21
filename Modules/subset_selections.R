@@ -10,8 +10,7 @@
 #be specified if the config list is stored as "config" in the global environment.
 subset_selections_ui <- function(id,
                                  unique_metadata,
-                                 tab = c("plots", "dge", "corr"),
-                                 metadata_config=config$metadata){
+                                 metadata_config){
   #Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
   
@@ -75,15 +74,11 @@ subset_selections_ui <- function(id,
 #sobj: The Seurat Object defined in the main server function
 #metadata_config: the metadata section of the config file. This does not need to
 #be specified if the config list is stored as "config" in the global environment.
-#dge_mode:  a reactive variable giving the chosen mode for differential expression 
-#analysis (marker selection or differential expression analysis). only applies 
-#when tab=="dge".
+
 subset_selections_server <- function(id,
                                      sobj,
                                      unique_metadata,
-                                     tab = c("plots", "dge", "corr"),
-                                     metadata_config = config$metadata,
-                                     dge_mode = NULL){
+                                     metadata_config = config$metadata){
   #Initialize module 
   moduleServer(
     id,
@@ -93,8 +88,6 @@ subset_selections_server <- function(id,
       ns <- session$ns
       
       #1. Store all input values from the UI as a reactive list ----------------
-      #Use either the module UI (plots and correlation tabs) or the dynamic UI 
-      #(DGE Tab)
       selections <- reactive({
         #Store selections for each input in the UI (one menu is created for each
         #metadata category in the config file)
