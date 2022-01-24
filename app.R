@@ -46,7 +46,7 @@ source_files <- c(source_files,
                   )
 
 #Use source() to import files into R
-sapply(source_files,source)
+sapply(source_files, source)
 
 #Load CSS files for app: CSS files are defined and each file is converted to a
 #<script> tag using includeCSS(). Each tag defined is passed to a list, which is
