@@ -54,7 +54,10 @@ dge_tab_ui <- function(id,
         div(id = ns("main_panel"), 
             class = "spinner-container-main",
             #TEMP: verbatimTextOutput container for displaying 
+            "Test Selection Output",
             verbatimTextOutput(outputId = ns("test_selection_output")),
+            "Subset Selection Output",
+            verbatimTextOutput(outputId = ns("subset_selection_output")),
             #Div added to contain Waiter spinner (forces the spinner to 
             #cover the full main panel)
             uiOutput(outputId = ns("main_panel_ui"))
@@ -96,17 +99,41 @@ dge_tab_server <- function(id,
                      )
                  
                  #2. Process Subset Selection Options --------------------------
-                 subset_selections <- 
-                   subset_selections_server(
-                     id = "subset_selections",
-                     sobj = sobj,
-                     unique_metadata = unique_metadata,
-                     metadata_config = metadata_config
-                   )
+                 ##2.1. Process group_by category from test_selections
+                 #The metadata chosen as the group by category in the test 
+                 #selections menu must be hidden from the subset selections 
+                 #inputs, since the subset must be equal to the classes or 
+                 #groups chosen, which are already selected by the user in the
+                 #test selections module. 
+                 group_by_category <- 
+                   eventReactive(test_selections(),
+                                 label = "DGE Tab: Process Group by Selection",
+                                 {
+                                   test_selections()$group_by
+                                 })
+                 
+                 ##2.2. Call subset_selections module
+                 #Use observer so subset_selections module reacts to the 
+                 #selected group by variable 
+                 observe({
+                   subset_selections <<- 
+                     subset_selections_server(
+                       id = "subset_selections",
+                       sobj = sobj,
+                       unique_metadata = unique_metadata,
+                       metadata_config = metadata_config,
+                       hide_menu = group_by_category
+                     )
+                 })
+                 
               
                  #TEMP: display outputs of test selection server
                  output$test_selection_output <- renderPrint({
                    test_selections()
+                 })
+                 
+                 output$subset_selection_output <- renderPrint({
+                   subset_selections()
                  })
                  
                  #3. DGE table for selected metadata and restriction criteria ----

@@ -74,11 +74,13 @@ subset_selections_ui <- function(id,
 #sobj: The Seurat Object defined in the main server function
 #metadata_config: the metadata section of the config file. This does not need to
 #be specified if the config list is stored as "config" in the global environment.
-
+#hide_menu (optional): a string or character vector giving the name(s) of metadata
+#categories for which to hide menus in the subset selection interface.
 subset_selections_server <- function(id,
                                      sobj,
                                      unique_metadata,
-                                     metadata_config = config$metadata){
+                                     metadata_config = config$metadata,
+                                     hide_menu = NULL){
   #Initialize module 
   moduleServer(
     id,
@@ -98,6 +100,17 @@ subset_selections_server <- function(id,
         
         #Add categories from metadata file to list names
         names(selections_list) <- names(metadata_config)
+        
+        #If hide_menu is provided and is a reactive, remove all hidden menus from 
+        #the selections output
+        #is.reactive() is used as a conditional to keep app from crashing when 
+        #hide_menu is NULL or not a reactive variable
+        if (!is.null(hide_menu) && is.reactive(hide_menu)){
+          #Remove any categories from the selections list that are also 
+          #in hide_menu
+          selections_list <- 
+            selections_list[!names(selections_list) %in% hide_menu()]
+        }
         
         return(selections_list)
         })
@@ -272,7 +285,48 @@ subset_selections_server <- function(id,
       #                
       #              })
       
-      
+      #4. Hide menus, if specified by the user. --------------------------------
+      #hide_menu is an optional argument that is NULL in modules where it is not
+      #specified. Since hide_menu is intended to be reactive, observers that use 
+      #it will crash the app when NULL values are passed to them.
+      if (is.reactive(hide_menu)){
+        observeEvent(hide_menu(),
+                     label = "Subset Selections: Hide Menu",
+                     #This observer must not be ran when hide_menu is equal to 
+                     #NULL. In this case, the value will not be reactive and the 
+                     #app will crash
+                     ignoreNULL = TRUE,
+                     {
+                       print("Hide menu type")
+                       print(class(hide_menu))
+                       print("Is reactive")
+                       print(is.reactive(hide_menu))
+                       print("Value")
+                       print(hide_menu())
+                       
+                       #Only hide menus if hide_menu is not equal to NULL
+                       if (!is.null(hide_menu()) && length(hide_menu()) > 0){
+                         #Hide all menus specified in hide_menus (may be a single menu
+                         #or multiple menus)
+                         for (menu_category in hide_menu()){
+                           print(glue("Hiding menu for {menu_category}"))
+                           print(glue("Target id: {ns(glue('{menu_category}_selection'))}"))
+                           hideElement(id = ns(glue("{menu_category}_selection")), 
+                                       #Disables automatic namespacing (for 
+                                       #consistency in code)
+                                       asis = TRUE)
+                         }
+                         #Show all menus in the module that are not in the hide_menu vector
+                         for (category in names(metadata_config)){
+                           if (!category %in% hide_menu()){
+                             print(glue("Showing menu for {category}"))
+                             showElement(id = ns(glue("{category}_selection")),
+                                         asis = TRUE)
+                           }
+                         }
+                       }
+                     })
+      }
       
       #Return the reactive list of selections 
       return(selections)
