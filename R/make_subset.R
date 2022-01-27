@@ -25,12 +25,18 @@ make_subset <- function(sobj, criteria_list){
   #Begin with empty string
   subset_str <-""
   
+  #If the criteria list passed to the function is a reactive expression, unpack 
+  #it into a non-reactive variable
+  if (is.reactive(criteria_list)){
+    criteria_list <- criteria_list()
+  }
+  
   #Loop through criteria defined in criteria_list 
   #Construct subset syntax for each input (indexing is used to allow a different 
   #format to be used for the last criterion)
-  for (i in 1:length(criteria_list())){
+  for (i in 1:length(criteria_list)){
     #Get the metadata category associated with the current index (name of criteria_list[[i]])
-    category <- names(criteria_list())[i]
+    category <- names(criteria_list)[i]
     
     #Each criterion is enclosed in parentheses and will evaluate to TRUE for the 
     #cells with metadata matching the criterion. When multiple criteria are used, 
@@ -39,12 +45,12 @@ make_subset <- function(sobj, criteria_list){
     #search for cells where all criteria apply. 
     
     #Construct criterion for the current category 
-    if (i<length(criteria_list())){
+    if (i < length(criteria_list)){
       #For all entries except for the last: add "&" after the criterion
-      criterion <- glue("({category} %in% {vector_code(criteria_list()[[i]])}) & ")
+      criterion <- glue("({category} %in% {vector_code(criteria_list[[i]])}) & ")
       #Do not use "&" for last criterion, or if there is only one criterion
-    } else if (i==length(criteria_list())){
-      criterion <- glue("({category} %in% {vector_code(criteria_list()[[i]])})")
+    } else if (i == length(criteria_list)){
+      criterion <- glue("({category} %in% {vector_code(criteria_list[[i]])})")
     }
     
     #Add the criterion to the subset string

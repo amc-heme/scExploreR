@@ -58,6 +58,8 @@ dge_tab_ui <- function(id,
             verbatimTextOutput(outputId = ns("test_selection_output")),
             "Subset Selection Output",
             verbatimTextOutput(outputId = ns("subset_selection_output")),
+            "Subset information:",
+            verbatimTextOutput(outputId = ns("subset_info_output")),
             #Div added to contain Waiter spinner (forces the spinner to 
             #cover the full main panel)
             uiOutput(outputId = ns("main_panel_ui"))
@@ -78,16 +80,7 @@ dge_tab_server <- function(id,
                function(input,output,session){
                  #Namespace function: for dynamic UI and modules
                  ns <- session$ns
-                 
-                 #0. Process dge_mode selection --------------------------------
-                 #The value of input$dge_mode is stored as a reactive variable 
-                 #and will be passed to the subset selections server module
-                 # dge_mode <- reactive(label = "dge_mode",
-                 #                      {
-                 #                        print("Change observed in dge_mode")
-                 #                        return(input$mode)
-                 #                        })
-                 
+
                  #1. Process Selections for DGE Test ---------------------------
                  test_selections <- 
                    dge_test_selection_server(
@@ -111,8 +104,8 @@ dge_tab_server <- function(id,
                                  {
                                    test_selections()$group_by
                                  })
-                 
-                 ##2.2. Call subset_selections module
+
+                 ##2.3. Call subset_selections module
                  #Use observer so subset_selections module reacts to the 
                  #selected group by variable 
                  observe({
@@ -123,8 +116,8 @@ dge_tab_server <- function(id,
                        unique_metadata = unique_metadata,
                        metadata_config = metadata_config,
                        hide_menu = group_by_category
-                     )
-                 })
+                       )
+                   })
                  
               
                  #TEMP: display outputs of test selection server
@@ -137,378 +130,464 @@ dge_tab_server <- function(id,
                  })
                  
                  #3. DGE table for selected metadata and restriction criteria ----
+                 ##3.1. Process Submit button input
+                 #Pass value of action button to nested modules to control reactivity
+                 submit_button <- reactive({input$submit})
+                 
+                 ##3.2. Define subset criteria
+                 #Combines outputs from test selection and subset selection 
+                 #modules. The subset criteria are used both in the 
+                 #make_subset() function and the subset stats module (the 
+                 #latter of which is designed to take a reactive variable
+                 #as input)
+                 dge_subset_criteria <- 
+                   eventReactive(
+                     submit_button(),
+                     label = "DGE: Subset Criteria",
+                     ignoreNULL = FALSE,
+                     #Errors occur when this is run at startup
+                     ignoreInit = TRUE,
+                     {
+                       print("3.2 Process subset criteria")
+                       #Retrieve information from test_selections
+                       #Category
+                       group_by_category <- test_selections()$group_by
+                       #Chosen groups/classes (store in a vector)
+                       if (test_selections()$dge_mode == "mode_dge"){
+                         #For DGE mode: set the vector of choices equal to the 
+                         #selections for the two groups
+                         choices <- 
+                           c(test_selections()$group_1, 
+                             test_selections()$group_2)
+                       } else if (test_selections()$dge_mode == "mode_marker"){
+                         #Marker identification: use vector of selected classes
+                         choices <- test_selections()$classes_selected 
+                       }
+                       
+                       #Retrieve list of subset selections 
+                       #Must unpack from reactive to avoid modifying the reactive
+                       #with the test_selections data above
+                       subset_criteria <- subset_selections()
+                       #Append test_selections information to selections list 
+                       subset_criteria[[group_by_category]] <- choices
+                       
+                       return(subset_criteria)
+                     })
+                 
+                 ##3.3. Form subset
+                 subset <- eventReactive(
+                   dge_subset_criteria(),
+                   label = "DGE: Subset",
+                   ignoreNULL = FALSE,
+                   #Do not run on startup
+                   #ignoreInit = TRUE,
+                   {
+                     print("3.3 make subset")
+                     #Create subset from selections and return
+                     subset <- make_subset(sobj = sobj,
+                                           criteria_list = dge_subset_criteria())
+                     return(subset)
+                   })
+                 
+                 ##3.4. Compute subset stats
+                 observeEvent(
+                   subset(),
+                   label = "DGE: Subset Stats",
+                   ignoreNULL = FALSE,
+                   #Do not run at startup
+                   #ignoreInit = TRUE,
+                   {
+                     print("3.4 subset stats")
+                     #Initiate subset_stats server
+                     subset_stats_server(
+                       id = "subset_stats",
+                       tab = "dge",
+                       subset = subset,
+                       #Pass dge_subset_criteria() to this argument instead of 
+                       #subset_selections() (dge_subset_criteria() includes 
+                       #the group by category)
+                       subset_selections = dge_subset_criteria,
+                       submit_button = submit_button,
+                       group_by_category = group_by_category
+                       )
+                   }
+                 )
+                 
+                 #TEMP: print information on subset to screen
+                 output$subset_info_output <- renderPrint({
+                   subset()
+                   })
+                 
+                 ##3.5. Run Presto
+                 observeEvent(
+                   subset(),
+                   ignoreNULL = FALSE,
+                   #Do not run at startup
+                   #ignoreInit = TRUE,
+                   {
+                     print("3.5 Run Presto")
+                     print(subset())
+                     
+                   }
+                 )
+                 
+                 #Old Implementation
                  #Table updates only when the "Update" button is clicked
                  #### 2.1. Store table content as reactive value ####
                  #The tibble generated here is converted to a DT in 2.2.2.2. for viewing, and
                  #Is passed to the download handler when the "download table" button is clicked.
-                 dge_table_content <- eventReactive(
-                   input$submit,
-                   label = "DGE Table Content",
-                   ignoreNULL = FALSE,
-                   {
-                     #Show loading screen above main panel while table is computed (takes about a minute)
-                     waiter_show(
-                       id = "dge_main_panel",
-                       html = spin_loaders(id = 2, color = "#555588"),
-                       color = "#FFFFFF",
-                       hide_on_render = FALSE #Gives manual control of showing/hiding spinner
-                     )
-                     
-                     #Error handling: errors are frequent in this script, often 
-                     #due to memory limitations, and they will result in the 
-                     #spinner not disappearing from the main window since 
-                     #waiter_hide() exists at the end this code block. Therefore, 
-                     #the code in this block must be handled with tryCatch() to 
-                     #capture errors. This error handling code has been duplicated
-                     #verbatim from section 2.3.2.1 - likely isn't necessary here;
-                     #should be removed if warranted by testing.
-                     dge_table <- tryCatch(
-                       #If an error is caught: attempt to determine type of 
-                       #error by inspecting message text with grepl (not recommended, 
-                       #but I currently don't know any other way to catch this error type)
-                       error = function(cnd) {
-                         #Use error_handler function to display notifications to the 
-                         #user based on the error message
-                         error_handler(session,
-                                       cnd_message=cnd$message,
-                                       #The error handling function uses a list 
-                                       #of subset-specific errors 
-                                       error_list = error_list,
-                                       #Id prefix for notification elements
-                                       id_prefix = "dge")
-                         
-                         #Return nothing if an error occurs
-                         dge_table <-
-                           NULL 
-                         return(dge_table)
-                       },
-                       #End error function
-                       #Begin tryCatch code
-                       {
-                         #Form subset based on chosen criteria
-                         #Store in reactive variable so it can be accessed by 
-                         #UMAP eventReactive() function
-                         
-                         ## Pick the appropriate input variables bases on the group_by selection
-                         ## Not clear why the listing and unlisting is required for a character vector
-                         dge_clusters_int = unlist(ifelse(
-                           input$dge_group_by == "clusters",
-                           list(input$dge_clusters_selection_group),
-                           list(input$dge_clusters_selection)
-                         ))
-                         
-                         dge_response_int = unlist(ifelse(
-                           input$dge_group_by == "response",
-                           list(input$dge_response_selection_group),
-                           list(input$dge_response_selection)
-                         ))
-                         
-                         dge_htb_int = unlist(ifelse(
-                           input$dge_group_by == "htb",
-                           list(input$dge_htb_selection_group),
-                           list(input$dge_htb_selection)
-                         ))
-                         
-                         dge_treatment_int = unlist(ifelse(
-                           input$dge_group_by == "treatment",
-                           list(input$dge_treatment_selection_group),
-                           list(input$dge_treatment_selection)
-                         ))
-                         
-                         #Subset method depends on whether marker identification or
-                         #dge is selected
-                         if (input$dge_mode=="mode_marker"){
-                           #Marker identification: create subset based on the subset 
-                           #dropdown menus, and include the group_by metadata in the 
-                           #subset. The group_by dropdown is named reactively according
-                           #to user choice, such that its id matches one of the four below. 
-                           rv$dge_s_sub <- subset(
-                             sobj,
-                             subset =
-                               (clusters %in% dge_clusters_int) &
-                               (response %in% dge_response_int) &
-                               (htb %in% dge_htb_int) &
-                               (treatment %in% dge_treatment_int)
-                           )#End subset
-                         } else {
-                           #For DGE, define subset conditionally based on the group by
-                           #variable selection (VERY messy, but works for now)
-                           if (input$dge_group_by=="clusters"){
-                             #Subset will use the subset criteria chosen, as well as the two
-                             #classes chosen for the group by variable 
-                             
-                             #Create a vector with the two classes chosen for DGE
-                             clusters_selected_vector <- c(input$dge_group_1, input$dge_group_2)
-                             
-                             #Subset as usual for all variables except for the group by variable
-                             rv$dge_s_sub <- subset(
-                               sobj,
-                               subset =
-                                 #Use the vector above for the group_by_variable
-                                 (clusters %in% clusters_selected_vector) &
-                                 (response %in% dge_response_int) &
-                                 (htb %in% dge_htb_int) &
-                                 (treatment %in% dge_treatment_int)
-                             )#End subset
-                             
-                           } else if (input$dge_group_by=="response"){
-                             #Create a vector with the two response classes chosen for DGE
-                             response_selected_vector <- c(input$dge_group_1, input$dge_group_2)
-                             
-                             #Subset as usual for all variables except for response
-                             rv$dge_s_sub <- subset(
-                               sobj,
-                               subset =
-                                 #Use the vector above for the group_by_variable
-                                 (clusters %in% dge_clusters_int) &
-                                 (response %in% response_selected_vector) &
-                                 (htb %in% dge_htb_int) &
-                                 (treatment %in% dge_treatment_int)
-                             )#End subset
-                             
-                           } else if (input$dge_group_by=="htb"){
-                             #Create a vector with the two htb classes chosen for DGE
-                             htb_selected_vector <- c(input$dge_group_1, input$dge_group_2)
-                             
-                             #Subset as usual for all variables except for htb
-                             rv$dge_s_sub <- subset(
-                               sobj,
-                               subset =
-                                 #Use the vector above for the group_by_variable
-                                 (clusters %in% dge_clusters_int) &
-                                 (response %in% dge_response_int) &
-                                 (htb %in% htb_selected_vector) &
-                                 (treatment %in% dge_treatment_int)
-                             )#End subset
-                             
-                           } else if (input$dge_group_by=="treatment"){
-                             #Create a vector with the two treatment (timepoint) classes chosen for DGE
-                             treatment_selected_vector <- c(input$dge_group_1, input$dge_group_2)
-                             
-                             #Subset as usual for all variables except for treatment
-                             rv$dge_s_sub <- subset(
-                               sobj,
-                               subset =
-                                 #Use the vector above for the group_by_variable
-                                 (clusters %in% dge_clusters_int) &
-                                 (response %in% dge_response_int) &
-                                 (htb %in% dge_htb_int) &
-                                 (treatment %in% treatment_selected_vector)
-                             )#End subset
-                           }
-                           
-                         }
-                         
-                         ###Subset Stats
-                         #Cells in subset
-                         rv$dge_n_cells <-
-                           length(Cells(rv$dge_s_sub))
-                         
-                         ## DGE-specific Stats
-                         #Number of classes in selection
-                         rv$dge_n_classes <- length(unique(rv$dge_s_sub@meta.data[,input$dge_group_by]))
-                         #Mode selection
-                         rv$dge_mode <- ifelse(
-                           rv$dge_n_classes == 2,
-                           paste0(
-                             "Differential Expression (",
-                             unique(rv$dge_s_sub@meta.data[, input$dge_group_by])[1],
-                             " vs. ",
-                             unique(rv$dge_s_sub@meta.data[, input$dge_group_by])[2],
-                             ")"
-                           ),
-                           paste0("Marker Identification (", rv$dge_n_classes, " classes)")
-                         )
-                         
-                         print("n_by_class")
-                         #Cells per class
-                         #Calculate number of cells per class using metadata table of subset
-                         n_by_class <- rv$dge_s_sub@meta.data |>
-                           #Group by the specified metadata variable (.data and double braces 
-                           #used so group_by can properly interpret the character vector input)
-                           group_by(.data[[input$dge_group_by]]) |> 
-                           summarise(n=n()) #Calculate number of cells per group 
-                         
-                         #Print class names and cell counts per class
-                         #Convert class names and cell counts from tibble to character vector 
-                         #Class names in first column of tibble
-                         class_names <- as.character(n_by_class[[1]]) 
-                         #Cell counts are in second column of tibble
-                         n_cells <- n_by_class[[2]]
-                         
-                         #Build list of classes and the number of cells in each
-                         n_list=list()
-                         for (i in 1:nrow(n_by_class)){
-                           n_list[[i]]<-glue("{class_names[i]}: {n_cells[i]}")
-                         }
-                         #Collapse list of class/count pairs into a string, 
-                         #and store in reactive variable
-                         rv$dge_n_by_class<-paste(n_list,collapse = "\n")
-                         #\n is the separator (will be read by verbatimTextOutput())
-                         
-                         #Run Presto
-                         dge_table <-
-                           #Run presto on the subsetted object and indicated metadata slot
-                           wilcoxauc(rv$dge_s_sub, group_by = input$dge_group_by) %>% 
-                           #Explicitly coerce to tibble
-                           as_tibble() %>%  
-                           #remove stat and auc from the output table
-                           select(-c(statistic, auc)) %>%  
-                           #Using magrittr pipes here because the following statement 
-                           #doesn't work with base R pipes
-                           #remove negative logFCs if box is checked
-                           {if (input$dge_pos) filter(., logFC > 0) else .} %>%
-                           #Arrange in ascending order for padj, pval (lower values are more
-                           #"significant"). Ascending order is used for the log fold-change
-                           arrange(padj, pval, desc(abs(logFC))) 
-                       }
-                     )#End tryCatch
-                     
-                     #Hide loading screen
-                     waiter_hide(id = "dge_main_panel")
-                     waiter_hide(id = "dge_sidebar")
-                     
-                     #Return table for storage in dge_table_content()
-                     dge_table
-                   }
-                 )
+                 
+                 # dge_table_content <- eventReactive(
+                 #   input$submit,
+                 #   label = "DGE Table Content",
+                 #   ignoreNULL = FALSE,
+                 #   {
+                 #     #Show loading screen above main panel while table is computed (takes about a minute)
+                 #     waiter_show(
+                 #       id = "dge_main_panel",
+                 #       html = spin_loaders(id = 2, color = "#555588"),
+                 #       color = "#FFFFFF",
+                 #       hide_on_render = FALSE #Gives manual control of showing/hiding spinner
+                 #     )
+                 #     
+                 #     #Error handling: errors are frequent in this script, often 
+                 #     #due to memory limitations, and they will result in the 
+                 #     #spinner not disappearing from the main window since 
+                 #     #waiter_hide() exists at the end this code block. Therefore, 
+                 #     #the code in this block must be handled with tryCatch() to 
+                 #     #capture errors. This error handling code has been duplicated
+                 #     #verbatim from section 2.3.2.1 - likely isn't necessary here;
+                 #     #should be removed if warranted by testing.
+                 #     dge_table <- tryCatch(
+                 #       #If an error is caught: attempt to determine type of 
+                 #       #error by inspecting message text with grepl (not recommended, 
+                 #       #but I currently don't know any other way to catch this error type)
+                 #       error = function(cnd) {
+                 #         #Use error_handler function to display notifications to the 
+                 #         #user based on the error message
+                 #         error_handler(session,
+                 #                       cnd_message=cnd$message,
+                 #                       #The error handling function uses a list 
+                 #                       #of subset-specific errors 
+                 #                       error_list = error_list,
+                 #                       #Id prefix for notification elements
+                 #                       id_prefix = "dge")
+                 #         
+                 #         #Return nothing if an error occurs
+                 #         dge_table <-
+                 #           NULL 
+                 #         return(dge_table)
+                 #       },
+                 #       #End error function
+                 #       #Begin tryCatch code
+                 #       {
+                 #         #Form subset based on chosen criteria
+                 #         #Store in reactive variable so it can be accessed by 
+                 #         #UMAP eventReactive() function
+                 #         
+                 #         ## Pick the appropriate input variables bases on the group_by selection
+                 #         ## Not clear why the listing and unlisting is required for a character vector
+                 #         dge_clusters_int = unlist(ifelse(
+                 #           input$dge_group_by == "clusters",
+                 #           list(input$dge_clusters_selection_group),
+                 #           list(input$dge_clusters_selection)
+                 #         ))
+                 #         
+                 #         dge_response_int = unlist(ifelse(
+                 #           input$dge_group_by == "response",
+                 #           list(input$dge_response_selection_group),
+                 #           list(input$dge_response_selection)
+                 #         ))
+                 #         
+                 #         dge_htb_int = unlist(ifelse(
+                 #           input$dge_group_by == "htb",
+                 #           list(input$dge_htb_selection_group),
+                 #           list(input$dge_htb_selection)
+                 #         ))
+                 #         
+                 #         dge_treatment_int = unlist(ifelse(
+                 #           input$dge_group_by == "treatment",
+                 #           list(input$dge_treatment_selection_group),
+                 #           list(input$dge_treatment_selection)
+                 #         ))
+                 #         
+                 #         #Subset method depends on whether marker identification or
+                 #         #dge is selected
+                 #         if (input$dge_mode=="mode_marker"){
+                 #           #Marker identification: create subset based on the subset 
+                 #           #dropdown menus, and include the group_by metadata in the 
+                 #           #subset. The group_by dropdown is named reactively according
+                 #           #to user choice, such that its id matches one of the four below. 
+                 #           rv$dge_s_sub <- subset(
+                 #             sobj,
+                 #             subset =
+                 #               (clusters %in% dge_clusters_int) &
+                 #               (response %in% dge_response_int) &
+                 #               (htb %in% dge_htb_int) &
+                 #               (treatment %in% dge_treatment_int)
+                 #           )#End subset
+                 #         } else {
+                 #           #For DGE, define subset conditionally based on the group by
+                 #           #variable selection (VERY messy, but works for now)
+                 #           if (input$dge_group_by=="clusters"){
+                 #             #Subset will use the subset criteria chosen, as well as the two
+                 #             #classes chosen for the group by variable 
+                 #             
+                 #             #Create a vector with the two classes chosen for DGE
+                 #             clusters_selected_vector <- c(input$dge_group_1, input$dge_group_2)
+                 #             
+                 #             #Subset as usual for all variables except for the group by variable
+                 #             rv$dge_s_sub <- subset(
+                 #               sobj,
+                 #               subset =
+                 #                 #Use the vector above for the group_by_variable
+                 #                 (clusters %in% clusters_selected_vector) &
+                 #                 (response %in% dge_response_int) &
+                 #                 (htb %in% dge_htb_int) &
+                 #                 (treatment %in% dge_treatment_int)
+                 #             )#End subset
+                 #             
+                 #           } else if (input$dge_group_by=="response"){
+                 #             #Create a vector with the two response classes chosen for DGE
+                 #             response_selected_vector <- c(input$dge_group_1, input$dge_group_2)
+                 #             
+                 #             #Subset as usual for all variables except for response
+                 #             rv$dge_s_sub <- subset(
+                 #               sobj,
+                 #               subset =
+                 #                 #Use the vector above for the group_by_variable
+                 #                 (clusters %in% dge_clusters_int) &
+                 #                 (response %in% response_selected_vector) &
+                 #                 (htb %in% dge_htb_int) &
+                 #                 (treatment %in% dge_treatment_int)
+                 #             )#End subset
+                 #             
+                 #           } else if (input$dge_group_by=="htb"){
+                 #             #Create a vector with the two htb classes chosen for DGE
+                 #             htb_selected_vector <- c(input$dge_group_1, input$dge_group_2)
+                 #             
+                 #             #Subset as usual for all variables except for htb
+                 #             rv$dge_s_sub <- subset(
+                 #               sobj,
+                 #               subset =
+                 #                 #Use the vector above for the group_by_variable
+                 #                 (clusters %in% dge_clusters_int) &
+                 #                 (response %in% dge_response_int) &
+                 #                 (htb %in% htb_selected_vector) &
+                 #                 (treatment %in% dge_treatment_int)
+                 #             )#End subset
+                 #             
+                 #           } else if (input$dge_group_by=="treatment"){
+                 #             #Create a vector with the two treatment (timepoint) classes chosen for DGE
+                 #             treatment_selected_vector <- c(input$dge_group_1, input$dge_group_2)
+                 #             
+                 #             #Subset as usual for all variables except for treatment
+                 #             rv$dge_s_sub <- subset(
+                 #               sobj,
+                 #               subset =
+                 #                 #Use the vector above for the group_by_variable
+                 #                 (clusters %in% dge_clusters_int) &
+                 #                 (response %in% dge_response_int) &
+                 #                 (htb %in% dge_htb_int) &
+                 #                 (treatment %in% treatment_selected_vector)
+                 #             )#End subset
+                 #           }
+                 #           
+                 #         }
+                 #         
+                 #         ###Subset Stats
+                 #         #Cells in subset
+                 #         rv$dge_n_cells <-
+                 #           length(Cells(rv$dge_s_sub))
+                 #         
+                 #         ## DGE-specific Stats
+                 #         #Number of classes in selection
+                 #         rv$dge_n_classes <- length(unique(rv$dge_s_sub@meta.data[,input$dge_group_by]))
+                 #         #Mode selection
+                 #         rv$dge_mode <- ifelse(
+                 #           rv$dge_n_classes == 2,
+                 #           paste0(
+                 #             "Differential Expression (",
+                 #             unique(rv$dge_s_sub@meta.data[, input$dge_group_by])[1],
+                 #             " vs. ",
+                 #             unique(rv$dge_s_sub@meta.data[, input$dge_group_by])[2],
+                 #             ")"
+                 #           ),
+                 #           paste0("Marker Identification (", rv$dge_n_classes, " classes)")
+                 #         )
+                 #         
+                 #         print("n_by_class")
+                 #         #Cells per class
+                 #         #Calculate number of cells per class using metadata table of subset
+                 #         n_by_class <- rv$dge_s_sub@meta.data |>
+                 #           #Group by the specified metadata variable (.data and double braces 
+                 #           #used so group_by can properly interpret the character vector input)
+                 #           group_by(.data[[input$dge_group_by]]) |> 
+                 #           summarise(n=n()) #Calculate number of cells per group 
+                 #         
+                 #         #Print class names and cell counts per class
+                 #         #Convert class names and cell counts from tibble to character vector 
+                 #         #Class names in first column of tibble
+                 #         class_names <- as.character(n_by_class[[1]])
+                 #         #Cell counts are in second column of tibble
+                 #         n_cells <- n_by_class[[2]]
+                 #         
+                 #         #Build list of classes and the number of cells in each
+                 #         n_list=list()
+                 #         for (i in 1:nrow(n_by_class)){
+                 #           n_list[[i]]<-glue("{class_names[i]}: {n_cells[i]}")
+                 #         }
+                 #         #Collapse list of class/count pairs into a string, 
+                 #         #and store in reactive variable
+                 #         rv$dge_n_by_class<-paste(n_list,collapse = "\n")
+                 #         #\n is the separator (will be read by verbatimTextOutput())
+                 #         
+                 #         #Run Presto
+                 #         dge_table <-
+                 #           #Run presto on the subsetted object and indicated metadata slot
+                 #           wilcoxauc(rv$dge_s_sub, group_by = input$dge_group_by) %>% 
+                 #           #Explicitly coerce to tibble
+                 #           as_tibble() %>%  
+                 #           #remove stat and auc from the output table
+                 #           select(-c(statistic, auc)) %>%  
+                 #           #Using magrittr pipes here because the following statement 
+                 #           #doesn't work with base R pipes
+                 #           #remove negative logFCs if box is checked
+                 #           {if (input$dge_pos) filter(., logFC > 0) else .} %>%
+                 #           #Arrange in ascending order for padj, pval (lower values are more
+                 #           #"significant"). Ascending order is used for the log fold-change
+                 #           arrange(padj, pval, desc(abs(logFC))) 
+                 #       }
+                 #     )#End tryCatch
+                 #     
+                 #     #Hide loading screen
+                 #     waiter_hide(id = "dge_main_panel")
+                 #     waiter_hide(id = "dge_sidebar")
+                 #     
+                 #     #Return table for storage in dge_table_content()
+                 #     dge_table
+                 #   }
+                 # )
                  
                  #### 2.2. DGE table, as DT for viewing ####
-                 dge_DT_content <- 
-                   eventReactive(input$submit, 
-                                 label = "DGE DT Generation",
-                                 ignoreNULL=FALSE, 
-                                 {
-                                   datatable(
-                                     dge_table_content(),
-                                     class = "compact stripe cell-border hover",
-                                     selection = "none",
-                                     filter = "top",
-                                     rownames = FALSE
-                                     ) %>%
-                                     #Use 5 sig figs (3 or more is sufficient)
-                                     formatSignif(3:8, 5) 
-                                                 })
+                 # dge_DT_content <- 
+                 #   eventReactive(input$submit, 
+                 #                 label = "DGE DT Generation",
+                 #                 ignoreNULL=FALSE, 
+                 #                 {
+                 #                   datatable(
+                 #                     dge_table_content(),
+                 #                     class = "compact stripe cell-border hover",
+                 #                     selection = "none",
+                 #                     filter = "top",
+                 #                     rownames = FALSE
+                 #                     ) %>%
+                 #                     #Use 5 sig figs (3 or more is sufficient)
+                 #                     formatSignif(3:8, 5) 
+                 #                                 })
                  
                  # 4. Dynamic UI for Main Panel --------------------------------
-                 dge_ui <- eventReactive(input$submit,
-                                         label = "DGE Main UI (Define Content)",
-                                         ignoreInit=TRUE,
-                                         ignoreNULL = FALSE, 
-                                         {
-                                           print("DGE UI Function")
-                                           waiter_show(
-                                             id = "dge_main_panel",
-                                             html = spin_loaders(
-                                               id = 2, 
-                                               color = "#555588"
-                                               ),
-                                             color = "#FFFFFF",
-                                             #Gives manual control of 
-                                             #showing/hiding spinner
-                                             hide_on_render = FALSE 
-                                           )
-                                           
-                                           #Also display spinner over the options menu to keep user from being able to click download buttons before content is ready
-                                           waiter_show(
-                                             id = "dge_sidebar",
-                                             html = spin_loaders(id = 2, color = "#555588"),
-                                             color = "#B1B1B188",
-                                             hide_on_render = FALSE #Gives manual control of showing/hiding spinner
-                                           )
-                                           
-                                           #UI to display
-                                           div(
-                                             tags$h2(
-                                               glue(
-                                                 "Differential Expression/Marker Genes by {input$dge_group_by} in Subset"
-                                               ),
-                                               class="center"
+                 dge_ui <- 
+                   eventReactive(
+                     input$submit,
+                     label = "DGE Main UI (Define Content)",
+                     #Do not render main UI at startup
+                     ignoreInit=TRUE,
+                     ignoreNULL = FALSE,
+                     {
+                       print("DGE UI Function")
+                       waiter_show(
+                         id = "dge_main_panel",
+                         html = spin_loaders(id = 2,
+                                             color = "#555588"
                                              ),
-                                             #Table Metadata section
-                                             tags$h3("Test Summary", class="center"),
-                                             #Make each input criteria appear inline
-                                             div(
-                                               div(
-                                                 tags$strong("Test selected", class="x-large inline-block"),
-                                                 textOutput(outputId = "dge_print_mode", inline=FALSE)
-                                               ),
-                                               tags$strong("Subset Used for Test", class="x-large inline-block space-top"),
-                                               div(
-                                                 tags$strong("Clusters: "),
-                                                 textOutput(outputId = "dge_selected_clusters", inline = TRUE)
-                                               ),
-                                               div(
-                                                 tags$strong("Response criteria: "),
-                                                 textOutput(outputId = "dge_selected_response", inline = TRUE)
-                                               ),
-                                               div(
-                                                 tags$strong("Timepoints (approximate): "),
-                                                 textOutput(outputId = "dge_selected_treatment", inline = TRUE)
-                                               ),
-                                               div(
-                                                 tags$strong("Patients: "),
-                                                 textOutput(outputId = "dge_selected_htb", inline = TRUE)
-                                               ),
-                                               div(
-                                                 tags$strong("Number of cells in subset: ",
-                                                             class="space-top inline-block"),
-                                                 textOutput(outputId = "dge_print_n_cells", inline = TRUE)
-                                               ),
-                                               div(
-                                                 tags$strong("Number of cells per class: "),
-                                                 verbatimTextOutput(outputId = "dge_print_n_by_class") 
-                                               )
-                                               
-                                             ),
-                                             
-                                             #Correlations table and plots
-                                             tags$h3("DGE Table", class="center"),
-                                             #Add table container
-                                             div(#Use a DT data table
-                                               DTOutput(outputId = "dge_table")),
-                                             
-                                             #UMAP plot
-                                             #Label: depends on mode
-                                             #The conditional below is passed as an argument 
-                                             #To the div() function to generate the HTML for the
-                                             #DGE UI. hasName() is used to avoid errors arising
-                                             #From the rv$dge_n_classes not yet existing
-                                             #This happens at startup when the UI is computed 
-                                             #Before the table, where rv$dge_n_classes is undefined.
-                                             if(hasName(rv,"dge_n_classes")){
-                                               #Title for differential gene expression mode
-                                               if (rv$dge_n_classes == 2){
-                                                 tags$h3("UMAP of groups being compared")
-                                               }else{
-                                                 #Title for marker identification mode
-                                                 tagList(
-                                                   #Center text
-                                                   tags$h3("UMAP by class", 
-                                                           class="center"),
-                                                   tags$p("(Markers are computed for each group shown)", 
-                                                          class="center")
-                                                 )
-                                               }
-                                             } else {
-                                               #This conditional will be run at startup.
-                                               #The default is to compute markers for each cluster,
-                                               #so the text for marker identification will be shown.
-                                               tagList(
-                                                 #Center text
-                                                 tags$h3("UMAP by class",
-                                                         class="center"),
-                                                 tags$p("(Markers are computed for each group shown)", 
-                                                        class="center")
-                                               )
-                                             }, #This comma is very important (conditional is an argument)
-                                             
-                                             #UMAP container
-                                             plotOutput(outputId = "dge_umap",
-                                                        height = "600px")
-                                             
-                                           )#End UI div
-                                         })
+                         color = "#FFFFFF",
+                         #Gives manual control of showing/hiding spinner
+                         hide_on_render = FALSE
+                         )
+                       
+                       #Also display spinner over the options menu to keep user 
+                       #from being able to click download buttons before 
+                       #content is ready
+                       waiter_show(
+                         id = "dge_sidebar",
+                         html = spin_loaders(id = 2, color = "#555588"),
+                         color = "#B1B1B188",
+                         #Gives manual control of showing/hiding spinner
+                         hide_on_render = FALSE 
+                         )
+                       
+                       #User-defined label for group-by variable (for printing 
+                       #in UI below)
+                       group_by_label <- 
+                         metadata_config[[test_selections()$group_by]]$label
+                       
+                       #UI to display
+                       tagList(
+                         tags$h2(
+                           glue("Differential Expression/Marker Genes by 
+                                {group_by_label} in Subset"),
+                           class="center"
+                         ),
+                         tags$h3("Test Summary", class="center"),
+                         #Subset Stats Module for showing summary stats
+                         subset_stats_ui(
+                           id = ns("subset_stats"),
+                           tab = "dge",
+                           metadata_config = metadata_config,
+                           #Pass dge_subset_criteria() to this argument instead 
+                           #of subset_selections() (dge_subset_criteria() 
+                           #includes the group by category) 
+                           subset_selections = dge_subset_criteria
+                         ),
+                         #DGE Table (uses DT data table)
+                         tags$h3("DGE Table", class="center"),
+                         #Output container for table
+                         DTOutput(outputId = "dge_table"),
+                         
+                         #UMAP plot
+                         #Label: depends on mode
+                         
+                         #The conditional below is passed as an argument
+                         #To the div() function to generate the HTML for the
+                         #DGE UI. hasName() is used to avoid errors arising
+                         #From the rv$dge_n_classes not yet existing
+                         #This happens at startup when the UI is computed
+                         #Before the table, where rv$dge_n_classes is undefined.
+                         
+                         #rv$dge_n_classes no longer exists. Must re-implement this
+                         # if(hasName(rv,"dge_n_classes")){
+                         #   #Title for differential gene expression mode
+                         #   if (rv$dge_n_classes == 2){
+                         #     tags$h3("UMAP of groups being compared")
+                         #   }else{
+                         #     #Title for marker identification mode
+                         #     tagList(
+                         #       #Center text
+                         #       tags$h3("UMAP by class",
+                         #               class="center"),
+                         #       tags$p("(Markers are computed for each group shown)",
+                         #              class="center")
+                         #     )
+                         #   }
+                         # } else {
+                         #   #This conditional will be run at startup.
+                         #   #The default is to compute markers for each cluster,
+                         #   #so the text for marker identification will be shown.
+                         #   tagList(
+                         #     #Center text
+                         #     tags$h3("UMAP by class",
+                         #             class="center"),
+                         #     tags$p("(Markers are computed for each group shown)",
+                         #            class="center")
+                         #   )
+                         # }, #This comma is very important (conditional is an argument)
+                         
+                         #UMAP container
+                         plotOutput(outputId = "dge_umap",
+                                    height = "600px")
+                         )#End tagList
+                       })
                  
                  #### 2.2.3.2. Conditional Dropdown Menus ####
                  #display based on whether DGE or marker identification is selected
@@ -657,7 +736,7 @@ dge_tab_server <- function(id,
                  
                  #7. Render DGE UI, table, and statistics ----------------------
                  #Main UI
-                 output$main_ui <- renderUI({
+                 output$main_panel_ui <- renderUI({
                    dge_ui()
                  })
                  
