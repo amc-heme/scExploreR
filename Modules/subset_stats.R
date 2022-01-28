@@ -55,7 +55,9 @@ subset_stats_ui <- function(id,
         ),
       div(
         tags$strong("Number of cells per class: "),
-        verbatimTextOutput(outputId = ns("n_by_class"))
+        verbatimTextOutput(outputId = ns("n_by_class")),
+        #Applies CSS from www/other.css to verbatimTextOutput
+        class="n_by_class_style"
         )
       )#End tagList
       
@@ -318,5 +320,18 @@ subset_stats_server <- function(id,
                             }) #End renderText
                         })
                  
-               })
+                 #4. Return Stats from Server ----------------------------------
+                 #For dge tab: return n_cells, classes, and n_classes
+                 if (tab=="dge"){
+                   return(
+                     reactive({
+                       list(
+                         `n_cells` = n_cells(),
+                         `classes` = classes(),
+                         `n_classes` = n_classes()
+                         )
+                       })
+                     )
+                   } #Currently no need to return values for correlations tab
+                 })
 }
