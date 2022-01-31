@@ -34,13 +34,16 @@ dge_tab_ui <- function(id,
             #Menus to choose subset (placed within collapsible panel)
             collapsible_panel(
               inputId = ns("subset_selections"), 
-              label = "Subset options", 
+              label = "Subset Options", 
               active = TRUE, 
               {
                 subset_selections_ui(id=ns("subset_selections"),
                                      unique_metadata = unique_metadata,
                                      metadata_config = metadata_config)
                 }),
+            
+            #UMAP options panel (conditional UI)
+            uiOutput(outputId = ns("umap_options")),
             
             #Checkbox to return positive markers only (shown for both modes)
             checkboxInput(inputId = ns("pos"),
@@ -212,8 +215,8 @@ dge_tab_server <- function(id,
                          id = "subset_stats",
                          tab = "dge",
                          subset = subset,
-                         #Pass dge_subset_criteria() to this argument instead of 
-                         #subset_selections() (dge_subset_criteria() includes 
+                         #Pass dge_subset_criteria() to this argument instead of
+                         #subset_selections() (dge_subset_criteria() includes
                          #the group by category)
                          subset_selections = dge_subset_criteria,
                          submit_button = submit_button,
@@ -228,7 +231,8 @@ dge_tab_server <- function(id,
                  ## 3.5. Run Presto
                  dge_table_content <- 
                    eventReactive(
-                     subset(),
+                     #subset(),
+                     subset_stats(),
                      label = "DGE: Run Presto",
                      ignoreNULL = FALSE,
                      {
@@ -308,10 +312,8 @@ dge_tab_server <- function(id,
                          subset(),
                          #Split by thgroup by category
                          split.by = group_by_category(),
-                         #group by cluster 
-                         #(HARD CODED)
-                         #For generalization: give user choice for group.by
-                         group.by = "clusters",
+                         #Group by variable set in UMAP options panel
+                         group.by = input$umap_group_by,
                          ncol=ncol
                          )
                        
@@ -330,8 +332,8 @@ dge_tab_server <- function(id,
                      submit_button(),
                      label = "DGE Main UI (Define Content)",
                      #Do not render main UI at startup to avoid errors
-                     ignoreInit=TRUE,
-                     ignoreNULL = FALSE,
+                     #ignoreInit=TRUE,
+                     #ignoreNULL = FALSE,
                      {
                        print("4. DGE Main UI")
                        #Spinner for main panel
@@ -445,10 +447,51 @@ dge_tab_server <- function(id,
                      }
                    )
                  
-                 # 6. Render DGE UI, table, and UMAP ---------------------------
+                 # 6. Dynamic UI: Options Panel for UMAP -----------------------
+                 umap_options <-
+                   eventReactive(
+                     dge_umap(),
+                     label = "DGE: UMAP Options Panel",
+                     ignoreNULL = FALSE,
+                     {
+                       print("class of dge_umap: {class(dge_umap())}")
+                       #Display options panel after the umap is created 
+                       #Test: dge_umap is of class 'ggplot'
+                       if ("ggplot" %in% class(dge_umap())){
+                         collapsible_panel(
+                           inputId = ns("umap_options_panel"),
+                           label = "UMAP Options",
+                           active = TRUE,
+                           #group.by selection
+                           selectInput(
+                             inputId = ns("umap_group_by"),
+                             label = "Metadata to Group by:",
+                             #Remove "none" from selectable 
+                             #options to group by
+                             choices=
+                               meta_choices[!meta_choices %in% "none"], 
+                             #First category in meta_choices is selected 
+                             #by default
+                             selected = 
+                               meta_choices[!meta_choices %in% "none"][1]
+                             )
+                           )
+                       } else {
+                         #Return nothing unless the UMAP is created
+                         NULL
+                       }
+                     }
+                   )
+                 
+                 # 7. Render DGE UI, table, and UMAP ---------------------------
                  #Main UI
                  output$main_panel_ui <- renderUI({
                    dge_ui()
+                 })
+                 
+                 #Options panel for UMAP
+                 output$umap_options <- renderUI({
+                   umap_options()
                  })
                  
                  #Download buttons
@@ -480,7 +523,7 @@ dge_tab_server <- function(id,
                  #   subset_stats()
                  # })
                  
-                 # 7. Download Handler for DGE Table ---------------------------
+                 # 8. Download Handler for DGE Table ---------------------------
                  output$dge_download_table <- downloadHandler(
                    filename = function() {
                      glue("DGE_table_{input$dge_group_by}.csv")
