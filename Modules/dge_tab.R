@@ -156,7 +156,6 @@ dge_tab_server <- function(id,
                    eventReactive(
                      submit_button(),
                      label = "DGE: Subset Criteria",
-                     ignoreNULL = FALSE,
                      #All reactives in 3. must run at startup for output to be
                      #properly generated (endless spinner results otherwise)
                      ignoreInit = FALSE,
@@ -264,6 +263,7 @@ dge_tab_server <- function(id,
                      label = "DGE: DT Generation",
                      ignoreNULL=FALSE,
                      {
+                       print("3.6. Make DT Table")
                        datatable(
                          dge_table_content(),
                          class = "compact stripe cell-border hover",
@@ -278,11 +278,11 @@ dge_tab_server <- function(id,
                  ## 3.7. UMAP of DE Selected Groups 
                  dge_umap <- 
                    eventReactive(
-                     subset(), 
+                     dge_DT_content(), 
                      ignoreNULL = FALSE,
                      label="DGE: UMAP", 
                      {
-                       print("DGE UMAP")
+                       print("3.7. DGE UMAP")
                        #ncol_argument: number of columns
                        #Based on number of classes being analyzed in the subset. 
                        #Access with double brackets returns a dataframe.
@@ -452,10 +452,12 @@ dge_tab_server <- function(id,
                    eventReactive(
                      dge_umap(),
                      label = "DGE: UMAP Options Panel",
-                     ignoreNULL = FALSE,
+                     #ignoreNULL = FALSE,
                      {
+                       print("dge_umap")
+                       print(dge_umap())
                        print("class of dge_umap: {class(dge_umap())}")
-                       #Display options panel after the umap is created 
+                       #Display options panel after the umap is created
                        #Test: dge_umap is of class 'ggplot'
                        if ("ggplot" %in% class(dge_umap())){
                          collapsible_panel(
@@ -466,13 +468,13 @@ dge_tab_server <- function(id,
                            selectInput(
                              inputId = ns("umap_group_by"),
                              label = "Metadata to Group by:",
-                             #Remove "none" from selectable 
+                             #Remove "none" from selectable
                              #options to group by
                              choices=
-                               meta_choices[!meta_choices %in% "none"], 
-                             #First category in meta_choices is selected 
+                               meta_choices[!meta_choices %in% "none"],
+                             #First category in meta_choices is selected
                              #by default
-                             selected = 
+                             selected =
                                meta_choices[!meta_choices %in% "none"][1]
                              )
                            )
