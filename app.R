@@ -209,6 +209,7 @@ xlim_orig <- layer_scales(umap_orig)$x$range$range
 ylim_orig <- layer_scales(umap_orig)$y$range$range
 
 #Store number of cells: used to determine if it is a subset
+#TODO: does this apply to non-CITEseq datasets?
 n_cells_original <- ncol(sobj)
 
 ##Define Valid Metadata Selections####
@@ -434,6 +435,29 @@ plots_tab <- function(unique_metadata,config){
                    
                    ### Plot Specific Options ###
                    #### 1.1.1.4. Options specific to UMAP ####
+                   #TEMP: test plot_selections module UI
+                   conditionalPanel(
+                     condition = "input.make_umap==true",
+                     collapsible_panel(
+                       inputId="plots_umap_collapsible",
+                       label="UMAP Specific Options",
+                       active=TRUE,
+                       plot_selections_ui(
+                         id = "UMAP",
+                         meta_choices = meta_choices,
+                         plot_label = "UMAP",
+                         group_by =          TRUE,
+                         split_by =          TRUE,
+                         ncol_slider =       TRUE,
+                         label_checkbox =    TRUE,
+                         legend_checkbox =   TRUE,
+                         limits_checkbox =   TRUE,
+                         manual_dimensions = TRUE,
+                         download_button =   TRUE
+                         )
+                       )
+                     ),
+                   
                    #Panel will display if UMAP is checked
                    conditionalPanel(condition = "input.make_umap==true",
                                     collapsible_panel(inputId="plots_umap_collapsible",
@@ -743,6 +767,16 @@ server <- function(input,output,session){
                        server = TRUE)
   
   ## 2.1. Plots Tab #####
+  #TEMP: plots selections module. Put in plots_tab module when testing complete
+  plot_selections_server(id = "umap",
+                         subset = plots_subset(), #Reactive
+                         subset_submit_button = reactive({input$plots_subset_submit}), #Reactive
+                         collapsible_panel = reactive({input$plots_umap_collapsible}), #Reactive
+                         plot_label = "UMAP", #Non-reactive
+                         n_cells_original = n_cells_original #Non-reactive
+                         )
+  
+  
   ### 2.1.1 Subset for Plots Tab #####
   #2.1.1.1. Module server to process user selections and report to other modules
   plots_subset_selections <- subset_selections_server("plots_subset",
@@ -1127,7 +1161,7 @@ server <- function(input,output,session){
     umap_plot
   })
   
-  #### 2.1.2.7. Render UI Components ###
+  #### 2.1.2.7. Render UI Components ####
   output$umap_slot <- renderUI({
     umap_UI()
     })
