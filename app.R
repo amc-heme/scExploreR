@@ -443,7 +443,7 @@ plots_tab <- function(unique_metadata,config){
                        label="UMAP Specific Options",
                        active=TRUE,
                        plot_selections_ui(
-                         id = "UMAP",
+                         id = "umap",
                          meta_choices = meta_choices,
                          plot_label = "UMAP",
                          group_by =          TRUE,
@@ -769,13 +769,12 @@ server <- function(input,output,session){
   ## 2.1. Plots Tab #####
   #TEMP: plots selections module. Put in plots_tab module when testing complete
   plot_selections_server(id = "umap",
-                         subset = plots_subset(), #Reactive
+                         subset = plots_subset, #Reactive
                          subset_submit_button = reactive({input$plots_subset_submit}), #Reactive
                          collapsible_panel = reactive({input$plots_umap_collapsible}), #Reactive
                          plot_label = "UMAP", #Non-reactive
                          n_cells_original = n_cells_original #Non-reactive
                          )
-  
   
   ### 2.1.1 Subset for Plots Tab #####
   #2.1.1.1. Module server to process user selections and report to other modules
