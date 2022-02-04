@@ -806,7 +806,8 @@ plots_tab_server <- function(id){
                      #Use full object if is_subset is FALSE, and use the subset otherwise
                      umap_plot <- DimPlot(plots_subset(),
                                           group.by = input$umap_group_by,
-                                          label = input$umap_label, #TRUE if "label groups" is checked, FALSE otherwise
+                                          #TRUE if "label groups" is checked, FALSE otherwise
+                                          label = input$umap_label, 
                                           reduction = "umap") 
                    } else {
                      #UMAP with split.by defined and no special subset

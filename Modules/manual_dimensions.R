@@ -137,42 +137,34 @@ manual_dimensions_server <- function(id,
                  #Listen for changes in either the slider or the text box and 
                  #store the value for the slider (this will be equal to the text 
                  #box after the reactives in 1. run)
-                 width <- eventReactive(
-                   c(input$width, 
-                     input$width_text),
-                   {
+                 width <- reactive({
+                   if (input$manual_dim == TRUE){
+                     #If the manual dimensions checkbox is checked, store the 
+                     #width from input
                      input$width
-                   })
+                   } else {
+                     #Otherwise, output NULL for the width argument
+                     NULL
+                     }
+                 })
                  
-                 height <- eventReactive(
-                   c(input$height, 
-                     input$height_text),
-                   {
+                 height <- reactive({
+                   if (input$manual_dim == TRUE){
+                     #If the manual dimensions checkbox is checked, store the 
+                     #height from input
                      input$height
-                   })
+                   } else {
+                     #Otherwise, output NULL for the height argument
+                     NULL
+                   }
+                 })
                  
                  #4. Return Selections for Height and Width --------------------
-                 eventReactive(
-                   input$manual_dim,
-                   label = "{id}: Return Values",
-                   {
-                     if (input$manual_dim == TRUE){
-                       #Return a list of reactives using output processed in 3.
-                       return(
-                         list(
-                           `width` = reactive({width()}),
-                           `height` = reactive({height()})
-                         )
-                       )
-                     } else {
-                       #Otherwise, return a list of NULL elements
-                       return(
-                         list(
-                           `width` = reactive({NULL}),
-                           `height` = reactive({NULL})
-                         )
-                       )
-                       }
-                   })
+                 return(
+                   list(
+                     `width` = reactive({width()}),
+                     `height` = reactive({height()})
+                     )
+                   )
              })
 }

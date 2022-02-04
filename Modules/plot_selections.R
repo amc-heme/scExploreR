@@ -94,9 +94,7 @@ plot_selections_ui <- function(id,
     
     #TEMP: Print outputs
     "Manual Dimensions Output",
-    verbatimTextOutput(outputId = ns("manual_dim_output")),
-    
-    verbatimTextOutput(outputId = ns("truthy_output")),
+    verbatimTextOutput(outputId = ns("manual_dim_output"), placeholder=TRUE),
     
     verbatimTextOutput(outputId = ns("selections_output"))
     )
@@ -111,17 +109,23 @@ plot_selections_server <- function(id,
                                    collapsible_panel, #Reactive
                                    plot_label, #Non-reactive
                                    n_cells_original, #Non-reactive
-                                   manual_dimensions = TRUE #Non-reactive
+                                   manual_dimensions = TRUE, #Non-reactive
+                                   plot_type = c("umap",
+                                                 "feature",
+                                                 "violin",
+                                                 "dot"), #Non-reactive
+                                   xlim_orig, #Non-reactive
+                                   ylim_orig #Non-reactive
                                    ){
   moduleServer(id,
                function(input,output,session){
                  #Server namespace function: for dynamic UI and modules
                  ns <- session$ns
                  
-                 #1. Manual Dimensions Module Server ---------------------------
+                 # 1. Manual Dimensions Module Server --------------------------
                  manual_dim <- manual_dimensions_server(id = "manual_dim")
                  
-                 #1. Record plot options 
+                 # 2. Record plot options --------------------------------------
                  group_by <- reactive({
                    req(input$group_by)
                    input$group_by
@@ -195,31 +199,8 @@ plot_selections_server <- function(id,
                    )
                  })
                  
-                 #TEMP: "truthy" test to automatically 
-                 #Idea is similar to shiny::req(), but I don't want to stop 
-                 #downstream execution (what req() does by default)
-                 output$truthy_output <- renderPrint({
-                   print(glue("group_by: {isTruthy(input$group_by)}"))
-                   print(glue("split_by: {isTruthy(input$split_by)}"))
-                   print(glue("label: {isTruthy(input$label)}"))
-                   print(glue("legend: {isTruthy(input$legend)}"))
-                   print(glue("label: {isTruthy(input$ncol)}"))
-                   print(glue("limits: {isTruthy(input$original_limits)}"))
-                   print(glue("collapsible panel: {isTruthy(collapsible_panel())}"))
-                   print(glue("nonsense: {isTruthy(input$xyz)}"))
-                   print("\n hasName outputs")
-                   print(glue("hasName (nonsense): {hasName(input,'xyz')}"))
-                   print(glue("hasName (group_by): {hasName(input,'group_by')}"))
-                   print(glue("split_by: {hasName(input,'split_by')}"))
-                   print(glue("ncol: {hasName(input,'ncol')}"))
-                   print(glue("label: {hasName(input,'label')}"))
-                   print(glue("legend: {hasName(input,'legend')}"))
-                   print(glue("limits: {hasName(input,'original_limits')}"))
-                   print(glue("collapsible panel: {!is.null(collapsible_panel())}"))
-                 })
-                 
                  output$selections_output <- renderPrint({
-                   plots_selections()
+                   plots_selections
                  })
               
                  # print_manual_dim <- reactive({
@@ -230,10 +211,41 @@ plot_selections_server <- function(id,
                  # })
                  
                  output$manual_dim_output <- renderPrint({
-                   manual_dim
+                   print(names(manual_dim))
+                   print(is.null(manual_dim$width()))
+                   print(glue("width: {manual_dim$width()}"))
+                   print(glue("height: {manual_dim$height()}"))
+                   print_reactive_list(manual_dim)
                    })
                  
-                 #2. Conditional UI
+                 # 3. Determine if a subset has been used  ----------------------
+                 # This variable will be a boolean used in downstream 
+                 # computations
+                 is_subset <- eventReactive(
+                   subset(),
+                   ignoreNULL = FALSE,
+                   {
+                     #Throw an error if the subset does not exist or is NULL
+                     validate(
+                       need(
+                         subset(),
+                         message = "subset is NULL"
+                         )
+                     )
+                     
+                     #Compute number of cells in subset
+                     n_cells_subset <- 
+                       subset() |> 
+                       Cells() |> 
+                       length()
+                     
+                     # Test if the number of cells in the subset differs from 
+                     # the number of cells in the original object. If this 
+                     # conditional is TRUE, then the object read is a subset
+                     n_cells_original != n_cells_subset()
+                 })
+                 
+                 # 3. Conditional UI -------------------------------------------
                  #2.1. ncol slider: appears when split_by != "none"
                  ncol_slider <-
                    eventReactive(
@@ -291,12 +303,7 @@ plot_selections_server <- function(id,
                        #Checkbox will only appear when a subset is selected. 
                        #The presence of a subset will be tested by observing 
                        #the number of cells in the subset
-                       n_cells_subset <- 
-                         subset() |> 
-                         Cells() |> 
-                         length()
-                       
-                       if (n_cells_original != n_cells_subset) {
+                       if (is_subset()) {
                          checkboxInput(
                            inputId = ns("original_limits"),
                            label = "Use Original Axes Limits",
@@ -318,14 +325,17 @@ plot_selections_server <- function(id,
                    limits_checkbox()
                  })
                  
-                 #3. Return values from server
+                 # 4. Construct Plot -------------------------------------------
+                 # Plot created based on the type specified when this server 
+                 # function is called
+                 if (plot_type == "umap"){} else if (plot_type == "feature") {
+                   
+                 } else if (plot_type == "violin") {
+                   
+                 } else if (plot_type == "dot") {
+                   
+                 }
                  
-                 # return_list <- 
-                 #   reactive({
-                 #     list(
-                 #       if(group_by()){}
-                 #         )
-                 #     })
                  
                  })
   }
