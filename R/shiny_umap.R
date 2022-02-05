@@ -1,4 +1,21 @@
-shiny_umap <- function(subset, #Reactive
+#shiny_umap
+
+#Accepts inputs from plots_selections module and outputs a Seurat DimPlot from 
+#the Seurat object passed to it. 
+
+# object: a Seurat object. This can be either the full object or a subset.
+# group_by: user specified group_by metadata category
+# split_by: user specified split_by metadata category
+# show_label: user choice as to whether labels should be shown on the plot
+# show_legend: user choice as to whether a legend should be shown
+# ncol: number of columns, as specified by user
+# is_subset: reactive boolean value stating whether the object is a subset
+# original_limits: user choice as to whether original axes limits should be used
+# xlim_orig: the original x limits for the plot, computed from the full object at 
+# app startup
+# ylim_orig: the original y limits for the umap, computed from full object at 
+# app startup
+shiny_umap <- function(object, #Reactive
                        group_by, #Reactive
                        split_by, #Reactive
                        show_label, #Reactive
@@ -14,7 +31,7 @@ shiny_umap <- function(subset, #Reactive
     #validate will keep plot code from running if the subset 
     #is NULL (no cells in subset)
     validate(
-      need(subset(),
+      need(object(),
            #No message displayed (a notification is already 
            #displayed) (*was displayed*)
            message = "")
@@ -22,11 +39,9 @@ shiny_umap <- function(subset, #Reactive
   
   #Produce a single UMAP plot if no features to split by are specified
   if (split_by() == "none"){
-    #Use full object if is_subset is FALSE, and use the 
-    #subset otherwise
     umap_plot <- 
       DimPlot(
-        subset(),
+        object(),
         group.by = group_by(),
         #TRUE if "label groups" is checked, FALSE otherwise
         label = show_label(), 
@@ -37,7 +52,7 @@ shiny_umap <- function(subset, #Reactive
     #UMAP with split.by defined and no special subset
     umap_plot <- 
       DimPlot(
-        subset(),
+        object(),
         group.by = group_by(),
         split.by = split_by() ,
         label = show_label(),

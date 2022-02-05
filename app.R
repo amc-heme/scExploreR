@@ -444,6 +444,7 @@ plots_tab <- function(unique_metadata,config){
                        active=TRUE,
                        plot_selections_ui(
                          id = "umap",
+                         ui_component = "options",
                          meta_choices = meta_choices,
                          plot_label = "UMAP",
                          group_by =          TRUE,
@@ -610,6 +611,11 @@ plots_tab <- function(unique_metadata,config){
             class="spinner-container-main",
             #Panels for plots: display if checkboxes corresponding to each type are checked
             #1.1.2.1. UMAP plot panel
+            plot_selections_ui(
+              id = "umap",
+              ui_component = "plot"
+              ),
+            
             conditionalPanel(condition = "input.make_umap==true",
                              uiOutput(outputId = "umap_slot")),
             
@@ -769,11 +775,15 @@ server <- function(input,output,session){
   ## 2.1. Plots Tab #####
   #TEMP: plots selections module. Put in plots_tab module when testing complete
   plot_selections_server(id = "umap",
-                         subset = plots_subset, #Reactive
-                         subset_submit_button = reactive({input$plots_subset_submit}), #Reactive
-                         collapsible_panel = reactive({input$plots_umap_collapsible}), #Reactive
+                         object = plots_subset, #Reactive
+                         #plot_switch: uses the input$make_umap switch
+                         plot_switch = reactive({input$make_umap}),
                          plot_label = "UMAP", #Non-reactive
-                         n_cells_original = n_cells_original #Non-reactive
+                         n_cells_original = n_cells_original, #Non-reactive
+                         #Instructs server on which plot function to run 
+                         plot_type = "dimplot",
+                         xlim_orig = xlim_orig,
+                         ylim_orig = ylim_orig
                          )
   
   ### 2.1.1 Subset for Plots Tab #####

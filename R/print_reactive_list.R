@@ -1,27 +1,16 @@
-#print_reactive_list
-#Takes a list of reactive values, and extracts the reactive content from each 
-#element in the list
-#Used to print the values in the reactive list to console or to a renderPrint
-#statement
+# print_reactive_list
+# Takes a list of reactive values, and extracts the reactive content from each 
+# element in the list
+# Used to print the values in the reactive list to console or to a renderPrint
+# statement
+
+# The input must be a *list of reactive values* as opposed to a *reactive list 
+# of values*
 print_reactive_list <- function(reactive_list){
-  print_list <- list()
-  
-  #Loop through each key in the reactive list (names of each list item)
-  for (item in names(reactive_list)){
-    #Reconstruction of list: call the reactive content for each item and store 
-    #under the item's key
-    reactive_item <- reactive_list[[item]]()
-    
-    if (!is.null(reactive_item)){
-      print_list[[item]] <- reactive_item
-    } else {
-      #If the reactive item is NULL, add the character "NULL" to the list
-      #Adding literal NULL will remove the item from the list
-      print_list[[item]] <- "NULL"
-    }
-    
-  }
-  
-  #Return reconstructed list
- return(print_list)
+  #Extract each reactive value individually and add to list for printing
+  print_list <- lapply(reactive_list, function(x){x()})
+  #Set the names of the new list equal to those of the reactive list
+  names(print_list) <- names(reactive_list)
+  # Return new list
+  return(print_list)
 }

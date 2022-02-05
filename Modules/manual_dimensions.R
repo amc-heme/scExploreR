@@ -115,7 +115,7 @@ manual_dimensions_server <- function(id,
                    {
                      updateSearchInput(
                        session, 
-                       inputId = ns("height_text"), 
+                       inputId = "height_text", 
                        value = input$height, 
                        trigger = TRUE
                        )
@@ -128,7 +128,7 @@ manual_dimensions_server <- function(id,
                    {
                      updateSliderInput(
                        session, 
-                       inputId = ns("height"), 
+                       inputId = "height", 
                        value=input$height_text
                        )
                      })
@@ -139,6 +139,7 @@ manual_dimensions_server <- function(id,
                  #box after the reactives in 1. run)
                  width <- reactive({
                    if (input$manual_dim == TRUE){
+                     req(input$width)
                      #If the manual dimensions checkbox is checked, store the 
                      #width from input
                      input$width
@@ -150,6 +151,7 @@ manual_dimensions_server <- function(id,
                  
                  height <- reactive({
                    if (input$manual_dim == TRUE){
+                     req(input$height)
                      #If the manual dimensions checkbox is checked, store the 
                      #height from input
                      input$height
