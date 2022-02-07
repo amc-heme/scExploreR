@@ -200,56 +200,62 @@ dge_tab_server <- function(id,
                    })
                  
                  ## 3.4. Compute subset stats
-                 subset_stats <- 
-                   eventReactive(
-                     subset(),
-                     label = "DGE: Subset Stats",
-                     ignoreNULL = FALSE,
-                     #Do not run at startup
-                     #ignoreInit = TRUE,
-                     {
-                       print("3.4 subset stats")
-                       #Initiate subset_stats server and store output
-                       stats <- subset_stats_server(
-                         id = "subset_stats",
-                         tab = "dge",
-                         subset = subset,
-                         #Pass dge_subset_criteria() to this argument instead of
-                         #subset_selections() (dge_subset_criteria() includes
-                         #the group by category)
-                         subset_selections = dge_subset_criteria,
-                         submit_button = submit_button,
-                         group_by_category = group_by_category
-                         )
-                       
-                       #Return computed stats from the server module
-                       return(stats())
-                   }
-                 )
+                 # subset_stats <- 
+                 #   eventReactive(
+                 #     subset(),
+                 #     label = "DGE: Subset Stats",
+                 #     ignoreNULL = FALSE,
+                 #     #Do not run at startup
+                 #     #ignoreInit = TRUE,
+                 #     {
+                 #       print("3.4 subset stats")
+                 #       #Initiate subset_stats server and store output
+                 #      
+                 #       
+                 #       #Return computed stats from the server module
+                 #       return(stats())
+                 #   }
+                 # )
+                 
+                 subset_stats <-
+                   subset_stats_server(
+                     id = "subset_stats",
+                     tab = "dge",
+                     subset = subset,
+                     # Pass dge_subset_criteria() to this argument instead of
+                     # subset_selections() (dge_subset_criteria() includes
+                     # the group by category)
+                     subset_selections = dge_subset_criteria,
+                     submit_button = submit_button,
+                     group_by_category = group_by_category
+                    )
                  
                  ## 3.5. Run Presto
                  dge_table_content <- 
                    eventReactive(
-                     #subset(),
-                     subset_stats(),
+                      subset(),
+                     # Chose the first reactive variable in the subset stats list
+                     # (all are updated simultaneously, and it is desired for 
+                     # presto to run after stats are computed)
+                     #subset_stats$n_cells(),
                      label = "DGE: Run Presto",
                      ignoreNULL = FALSE,
                      {
                        print("3.5 Run Presto")
                        dge_table <-
-                         #Run presto on the subset, using the group by category
+                         # Run presto on the subset, using the group by category
                          wilcoxauc(subset(), group_by = group_by_category()) %>%
-                         #Explicitly coerce to tibble
+                         # Explicitly coerce to tibble
                          as_tibble() %>%
-                         #remove stat and auc from the output table
+                         # remove stat and auc from the output table
                          select(-c(statistic, auc)) %>%
-                         #Using magrittr pipes here because the following 
-                         #statement doesn't work with base R pipes
-                         #remove negative logFCs if box is checked
+                         # Using magrittr pipes here because the following 
+                         # statement doesn't work with base R pipes
+                         # remove negative logFCs if box is checked
                          {if (input$pos) filter(., logFC > 0) else .} %>%
-                         #Arrange in ascending order for padj, pval (lower 
-                         #values are more "significant"). Ascending order is 
-                         #used for the log fold-change
+                         # Arrange in ascending order for padj, pval (lower 
+                         # values are more "significant"). Ascending order is 
+                         # used for the log fold-change
                          arrange(padj, pval, desc(abs(logFC)))
                      
                      return(dge_table)
@@ -397,9 +403,9 @@ dge_tab_server <- function(id,
                          #Title for plot
                          #Depends on mode, tested through n_classes()
                          #Make sure n_classes is defined to avoid errors
-                         if (!is.null(subset_stats()$n_classes)){
+                         if (!is.null(subset_stats$n_classes())){
                            #Use different titles based on the test used
-                           if(subset_stats()$n_classes == 2){
+                           if(subset_stats$n_classes() == 2){
                              #Title for differential gene expression
                              tags$h3("UMAP of groups being compared",
                                      class="center")

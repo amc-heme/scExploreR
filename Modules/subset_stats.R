@@ -309,33 +309,37 @@ subset_stats_server <- function(id,
                  ## 3.5. Summary of unique metadata in subset (both tabs)
                  #Create an output for each metadata category used in creation 
                  #of the subset
-                 lapply(X = names(subset_selections()), 
-                        FUN = function(category){
-                          output[[glue("selected_{category}")]] <-
-                            renderText({
-                              isolate(
-                                #Display unique values appearing in the subset 
-                                #for the category
-                                unique(subset()@meta.data[[category]]) |> 
-                                  #Sort unique values alphanumerically
-                                  #May add support for custom order later
-                                  str_sort(numeric=TRUE) |> 
-                                  vector_to_text()
+                 observeEvent(
+                   submit_button(),
+                   label="Subset Stats: Unique Metadata by Category",
+                   {
+                   lapply(X = names(subset_selections()), 
+                          FUN = function(category){
+                            output[[glue("selected_{category}")]] <-
+                              renderText({
+                                isolate(
+                                  #Display unique values appearing in the subset 
+                                  #for the category
+                                  unique(subset()@meta.data[[category]]) |> 
+                                    #Sort unique values alphanumerically
+                                    #May add support for custom order later
+                                    str_sort(numeric=TRUE) |> 
+                                    vector_to_text()
                                 ) #End isolate
-                            }) #End renderText
-                        })
+                              }) #End renderText
+                          })
+                 })
                  
                  #4. Return Stats from Server ----------------------------------
                  #For dge tab: return n_cells, classes, and n_classes
+                 #Return a list of reactives, as opposed to a reactive list
                  if (tab=="dge"){
                    return(
-                     reactive({
-                       list(
-                         `n_cells` = n_cells(),
-                         `classes` = classes(),
-                         `n_classes` = n_classes()
-                         )
-                       })
+                     list(
+                       `n_cells` = reactive({n_cells()}),
+                       `classes` = reactive({classes()}),
+                       `n_classes` = reactive({n_classes()})
+                       )
                      )
                    } #Currently no need to return values for correlations tab
                  })
