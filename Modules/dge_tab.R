@@ -87,6 +87,10 @@ dge_tab_ui <- function(id,
 dge_tab_server <- function(id,
                            sobj,
                            metadata_config,
+                           # This will replace metadata_config at some point
+                           # (It is derived from the config file and is the only
+                           # information used)
+                           meta_categories,
                            unique_metadata,
                            meta_choices){
   moduleServer(id,
@@ -94,11 +98,36 @@ dge_tab_server <- function(id,
                  #Namespace function: for dynamic UI and modules
                  ns <- session$ns
                  
-                 #This will become TRUE when the subset button is pressed at 
-                 #least once
-                 # submit_pressed <- reactive({FALSE})
-                 #submit_pressed <- FALSE
-
+                 # This will become TRUE when the subset button is pressed at 
+                 # least once
+                 #  submit_pressed <- reactive({FALSE})
+                 # submit_pressed <- FALSE
+                  
+                 # Create spinners to display during computation in dge tab
+                  
+                 # Spinner for options panel
+                 # Keeps user from being able to press download buttons
+                 # before content is ready
+                 sidebar_spinner <- 
+                   Waiter$new(
+                     id = ns("sidebar"),
+                     html = spin_loaders(id = 2, color = "#555588"),
+                     color = "#B1B1B188",
+                     #Gives manual control of showing/hiding spinner
+                     hide_on_render = FALSE
+                     )
+                 
+                 #Spinner for main panel
+                 #Displays until hidden at the end of computation
+                 main_spinner <-
+                   Waiter$new(
+                     id = ns("main_panel"),
+                     html = spin_loaders(id = 2,color = "#555588"),
+                     color = "#FFFFFF",
+                     #Gives manual control of showing/hiding spinner
+                     hide_on_render = FALSE
+                     )
+                 
                  #1. Process Selections for DGE Test ---------------------------
                  test_selections <- 
                    dge_test_selection_server(
@@ -146,6 +175,26 @@ dge_tab_server <- function(id,
                    input$submit
                  })
                  
+                 #Show spinner: runs after submit button is pressed
+                 show_spinner <-
+                   eventReactive(
+                     submit_button(),
+                     label = "DGE: Show Spinner",
+                     {
+                       #Hide the main panel UI while calculations are performed
+                       print(glue("hiding {ns('main_panel_ui')}"))
+                       hideElement(id=ns("main_panel_ui"))
+                       
+                       #Display spinners
+                       sidebar_spinner$show()
+                       main_spinner$show()
+                       
+                       # Return the value of submit_button() 
+                       # This makes this eventReactive change each time it is
+                       # ran, triggering the next reactive in the series
+                       submit_button()
+                     })
+                 
                  ## 3.2. Define subset criteria
                  #Combines outputs from test selection and subset selection 
                  #modules. The subset criteria are used both in the 
@@ -154,7 +203,7 @@ dge_tab_server <- function(id,
                  #as input)
                  dge_subset_criteria <- 
                    eventReactive(
-                     submit_button(),
+                     show_spinner(),
                      label = "DGE: Subset Criteria",
                      #All reactives in 3. must run at startup for output to be
                      #properly generated (endless spinner results otherwise)
@@ -194,8 +243,12 @@ dge_tab_server <- function(id,
                    {
                      print("3.3 make subset")
                      #Create subset from selections and return
-                     subset <- make_subset(sobj = sobj,
-                                           criteria_list = dge_subset_criteria())
+                     subset <- 
+                       make_subset(
+                         sobj = sobj,
+                         criteria_list = dge_subset_criteria()
+                         )
+                     
                      return(subset)
                    })
                  
@@ -222,22 +275,19 @@ dge_tab_server <- function(id,
                      id = "subset_stats",
                      tab = "dge",
                      subset = subset,
-                     # Pass dge_subset_criteria() to this argument instead of
-                     # subset_selections() (dge_subset_criteria() includes
-                     # the group by category)
-                     subset_selections = dge_subset_criteria,
-                     submit_button = submit_button,
+                     meta_categories = meta_categories,
+                     event_expr = subset,
                      group_by_category = group_by_category
                     )
                  
                  ## 3.5. Run Presto
                  dge_table_content <- 
                    eventReactive(
-                      subset(),
+                      #subset(),
                      # Chose the first reactive variable in the subset stats list
                      # (all are updated simultaneously, and it is desired for 
                      # presto to run after stats are computed)
-                     #subset_stats$n_cells(),
+                     subset_stats$n_cells(),
                      label = "DGE: Run Presto",
                      ignoreNULL = FALSE,
                      {
@@ -323,50 +373,20 @@ dge_tab_server <- function(id,
                          ncol=ncol
                          )
                        
-                       #Hide loading screen
-                       #UMAP is last time-intensive object calculated
-                       #after submit button is pressed 
-                       waiter_hide(id = ns("main_panel"))
-                       waiter_hide(id = ns("sidebar"))
-                       
-                       return(umap)
+                       umap
                        })
                  
                  # 4. Dynamic UI for Main Panel --------------------------------
                  dge_ui <- 
                    eventReactive(
-                     submit_button(),
+                     #UI now renders once all computations are complete
+                     dge_umap(),
                      label = "DGE Main UI (Define Content)",
                      #Do not render main UI at startup to avoid errors
                      #ignoreInit=TRUE,
                      #ignoreNULL = FALSE,
                      {
                        print("4. DGE Main UI")
-                       #Spinner for main panel
-                       #Displays until the UMAP is calculated (last reactive
-                       #computed after subset button is clicked)
-                       waiter_show(
-                         id = ns("main_panel"),
-                         html = spin_loaders(
-                           id = 2,
-                           color = "#555588"
-                         ),
-                         color = "#FFFFFF",
-                         #Gives manual control of showing/hiding spinner
-                         hide_on_render = FALSE
-                       )
-
-                       #Spinner for options panel
-                       #Keeps user from being able to press download buttons
-                       #before content is ready
-                       waiter_show(
-                         id = ns("sidebar"),
-                         html = spin_loaders(id = 2, color = "#555588"),
-                         color = "#B1B1B188",
-                         #Gives manual control of showing/hiding spinner
-                         hide_on_render = FALSE
-                       )
-
                        #User-defined label for group-by variable (for printing
                        #in UI below)
                        #TODO: make sure this updates when a different group
@@ -491,30 +511,46 @@ dge_tab_server <- function(id,
                      }
                    )
                  
-                 # 7. Render DGE UI, table, and UMAP ---------------------------
+                 # 7. Gather Outputs -------------------------------------------
+                 #Gather outputs from previous tabs to control reactivity
+                 outputs <- 
+                   eventReactive(
+                     dge_ui(),
+                     label = "DGE: Gather outputs",
+                     {
+                       list(
+                         `dge_ui` = dge_ui(),
+                         `umap_options` = umap_options(),
+                         `dge_downloads_ui` = dge_downloads_ui(),
+                         `dge_table_content` = dge_DT_content(),
+                         `dge_umap` = dge_umap()
+                       )
+                     })
+                 
+                 # 9. Render DGE UI, table, and UMAP ---------------------------
                  #Main UI
                  output$main_panel_ui <- renderUI({
-                   dge_ui()
+                   outputs()$dge_ui
                  })
                  
                  #Options panel for UMAP
                  output$umap_options <- renderUI({
-                   umap_options()
+                   outputs()$umap_options
                  })
                  
                  #Download buttons
                  output$downloads_ui <- renderUI({
-                   dge_downloads_ui()
+                   outputs()$dge_downloads_ui
                  })
                  
                  #Table
                  output$table <- renderDT({
-                   dge_DT_content()
+                   outputs()$dge_table_content
                  })
                  
                  #UMAP plot
                  output$umap <- renderPlot({
-                   dge_umap()
+                   outputs()$dge_umap
                  })
                  
                  #During development: render outputs of reactive variables in tab
@@ -531,7 +567,22 @@ dge_tab_server <- function(id,
                  #   subset_stats()
                  # })
                  
-                 # 8. Download Handler for DGE Table ---------------------------
+                 # 8. Hide Spinners --------------------------------------------
+                 #Placement after outputs should cause this to run after outputs
+                 #have rendered
+                 observeEvent(
+                   outputs(),
+                   label = "DGE: Hide Spinner",
+                   {
+                     #Show UI
+                     showElement(id = ns("main_panel_ui"))
+                     #Hide spinners
+                     sidebar_spinner$hide()
+                     main_spinner$hide()
+                   }
+                 )
+                 
+                 # 10. Download Handler for DGE Table ---------------------------
                  output$dge_download_table <- downloadHandler(
                    filename = function() {
                      glue("DGE_table_{input$dge_group_by}.csv")

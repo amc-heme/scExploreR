@@ -88,6 +88,10 @@ corr_tab_ui <- function(id,
 corr_tab_server <- function(id,
                             sobj,
                             metadata_config,
+                            # This will replace metadata_config at some point
+                            # (It is derived from the config file and is the 
+                            # only information used)
+                            meta_categories,
                             unique_metadata,
                             n_cells_original,
                             nonzero_threshold,
@@ -292,8 +296,8 @@ corr_tab_server <- function(id,
                                            id = "stats",
                                            tab = "corr",
                                            subset = obj_sub,
-                                           subset_selections = subset_selections,
-                                           submit_button = submit_button,
+                                           meta_categories = meta_categories,
+                                           event_expr = submit_button,
                                            gene_selected = corr_main_gene,
                                            nonzero_threshold = nonzero_threshold
                                            )
