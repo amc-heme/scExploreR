@@ -338,7 +338,7 @@ dge_tab_server <- function(id,
                    eventReactive(
                      c(dge_DT_content(), input$umap_group_by), 
                      ignoreNULL = FALSE,
-                     label="DGE: UMAP", 
+                     label = "DGE: UMAP", 
                      {
                        print("3.7. DGE UMAP")
                        #ncol_argument: number of columns
@@ -372,7 +372,7 @@ dge_tab_server <- function(id,
                          split.by = group_by_category(),
                          #Group by variable set in UMAP options panel
                          group.by = input$umap_group_by,
-                         ncol=ncol
+                         ncol = ncol
                          )
                        
                        umap

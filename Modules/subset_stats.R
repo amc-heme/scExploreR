@@ -310,13 +310,13 @@ subset_stats_server <- function(id,
                  output$n_cells <- renderText({
                    #Use isolate to keep values from updating before the submit 
                    #button is pressed
-                   isolate(n_cells())
+                   n_cells()
                  })
                  
                  ## 3.2 Cells with nonzero reads (correlations tab only)
                  if (tab == "corr"){
                    output$n_nonzero_and_percent <- renderText({
-                     isolate(glue("{n_nonzero()} ({percent_nonzero()}%)"))
+                     glue("{n_nonzero()} ({percent_nonzero()}%)")
                    })
                  }
                  
@@ -324,12 +324,12 @@ subset_stats_server <- function(id,
                  if (tab == "dge"){
                    ## 3.3 Print description of test selected
                    output$print_mode <- renderText({
-                     isolate(mode_description())
+                     mode_description()
                    })
                    
                    ## 3.4 Print number of cells by class
                    output$n_by_class <- renderText({
-                     isolate(n_by_class())
+                     n_by_class()
                    })
                  }
                  
