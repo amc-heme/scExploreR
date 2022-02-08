@@ -334,7 +334,7 @@ dge_tab_server <- function(id,
                  ## 3.7. UMAP of DE Selected Groups 
                  dge_umap <- 
                    eventReactive(
-                     dge_DT_content(), 
+                     c(dge_DT_content(), input$umap_group_by), 
                      ignoreNULL = FALSE,
                      label="DGE: UMAP", 
                      {
@@ -380,7 +380,7 @@ dge_tab_server <- function(id,
                  dge_ui <- 
                    eventReactive(
                      #UI now renders once all computations are complete
-                     dge_umap(),
+                     subset(),
                      label = "DGE Main UI (Define Content)",
                      #Do not render main UI at startup to avoid errors
                      #ignoreInit=TRUE,
@@ -476,7 +476,7 @@ dge_tab_server <- function(id,
                  # 6. Dynamic UI: Options Panel for UMAP -----------------------
                  umap_options <-
                    eventReactive(
-                     dge_umap(),
+                     subset(),
                      label = "DGE: UMAP Options Panel",
                      #ignoreNULL = FALSE,
                      {
@@ -511,46 +511,30 @@ dge_tab_server <- function(id,
                      }
                    )
                  
-                 # 7. Gather Outputs -------------------------------------------
-                 #Gather outputs from previous tabs to control reactivity
-                 outputs <- 
-                   eventReactive(
-                     dge_ui(),
-                     label = "DGE: Gather outputs",
-                     {
-                       list(
-                         `dge_ui` = dge_ui(),
-                         `umap_options` = umap_options(),
-                         `dge_downloads_ui` = dge_downloads_ui(),
-                         `dge_table_content` = dge_DT_content(),
-                         `dge_umap` = dge_umap()
-                       )
-                     })
-                 
-                 # 9. Render DGE UI, table, and UMAP ---------------------------
+                 # 7. Render DGE UI, table, and UMAP ---------------------------
                  #Main UI
                  output$main_panel_ui <- renderUI({
-                   outputs()$dge_ui
+                   dge_ui()
                  })
                  
                  #Options panel for UMAP
                  output$umap_options <- renderUI({
-                   outputs()$umap_options
+                   umap_options()
                  })
                  
                  #Download buttons
                  output$downloads_ui <- renderUI({
-                   outputs()$dge_downloads_ui
+                   dge_downloads_ui()
                  })
                  
                  #Table
                  output$table <- renderDT({
-                   outputs()$dge_table_content
+                   dge_DT_content()
                  })
                  
                  #UMAP plot
                  output$umap <- renderPlot({
-                   outputs()$dge_umap
+                   dge_umap()
                  })
                  
                  #During development: render outputs of reactive variables in tab
@@ -568,10 +552,9 @@ dge_tab_server <- function(id,
                  # })
                  
                  # 8. Hide Spinners --------------------------------------------
-                 #Placement after outputs should cause this to run after outputs
-                 #have rendered
+                 #Placement 
                  observeEvent(
-                   outputs(),
+                   umap_options(),
                    label = "DGE: Hide Spinner",
                    {
                      #Show UI
@@ -582,7 +565,7 @@ dge_tab_server <- function(id,
                    }
                  )
                  
-                 # 10. Download Handler for DGE Table ---------------------------
+                 # 9. Download Handler for DGE Table ---------------------------
                  output$dge_download_table <- downloadHandler(
                    filename = function() {
                      glue("DGE_table_{input$dge_group_by}.csv")

@@ -1686,7 +1686,7 @@ server <- function(input,output,session){
                                          width = dot_width(), 
                                          height= dot_height())
     } else {
-      #Use automatic dimensions (no width or height specifed) if box is unchecked
+      #Use automatic dimensions (no width or height specified) if box is unchecked
       output$dot_slot_plot <- renderPlot({dot_plot_content()})
     }
   })
