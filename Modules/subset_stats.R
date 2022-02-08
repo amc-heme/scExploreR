@@ -1,19 +1,20 @@
-#Subset stats module
-
-#subset_stats_ui
-#Arguments
-#id: The id to use for the namespace created for this module.
-#tab: String giving the tab this module applies to. This should be either "dge" or "corr".
-#metadata_config: the metadata sub-list defined within the config list 
-#subset_selections: A reactive list giving the metadata values included in the subset.
-#gene_selected: In the corr tab, the gene selected by the user for computation.
+# Subset stats module
+ 
+# subset_stats_ui
+# Arguments
+# id: The id to use for the namespace created for this module.
+# tab: String giving the tab this module applies to. This should be either "dge" or "corr".
+# metadata_config: the metadata sub-list defined within the config list 
+# meta_categories: a vector of all metadata categories included in the config file
+# gene_selected: In the corr tab, the gene selected by the user for computation.
 subset_stats_ui <- function(id,
                             tab=c("dge","corr"),
                             metadata_config,
+                            meta_categories,
                             subset_selections,
                             gene_selected=NULL
                             ){
-  #Namespace function: prevents conflicts with inputs/outputs defined in other modules
+  # Namespace function: prevents conflicts with inputs/outputs defined in other modules
   ns <- NS(id)
   
   if (tab=="dge"){
@@ -25,17 +26,17 @@ subset_stats_ui <- function(id,
         textOutput(outputId = ns("print_mode"), 
                    inline=FALSE)
         ),
-      #Metadata-specific subset statistics
+      # Metadata-specific subset statistics
       tags$strong("Subset Used for Test", 
                   class="x-large inline-block space-top"),
-      #Unique values from each metadata category included in the current subset
-      #One container is created for each category in the subset using lapply.
-      #Unique values for each category will display inline with labels
+      # Loop through the metadata categories read on app startup
+      # One container is created for each category in the subset using lapply.
+      # Unique values for each category will display inline with labels
       lapply(
-        X = names(subset_selections()),
-        #Category is looped through by lapply
-        #metadata_config and ns are "constants" that must be passed as 
-        #additional arguments to lapply 
+        X = meta_categories,
+        # Category is looped through by lapply
+        # metadata_config and ns are "constants" that must be passed as 
+        # additional arguments to lapply 
         FUN = function(category,metadata_config,ns){
           subset_stats_metadata_output(
             category = category,
@@ -43,10 +44,10 @@ subset_stats_ui <- function(id,
             ns = ns
             )
           },
-        #Constants
+        # Constants
         metadata_config,
         ns),
-      #General subset statistics
+      # General subset statistics
       div(
         tags$strong("Number of cells in subset: ",
                     class="space-top inline-block"),
@@ -56,57 +57,57 @@ subset_stats_ui <- function(id,
       div(
         tags$strong("Number of cells per class: "),
         verbatimTextOutput(outputId = ns("n_by_class")),
-        #Applies CSS from www/other.css to verbatimTextOutput
+        # Applies CSS from www/other.css to verbatimTextOutput
         class="n_by_class_style"
         )
-      )#End tagList
+      )# End tagList
       
   } else if (tab=="corr"){
-    #UI for stats in correlations tab
+    # UI for stats in correlations tab
     ui <- tagList(
       tags$strong("Subset Summary and Quality Statistics", 
                   class="x-large inline-block space-top"),
-      #Restriction criteria
-      #Create outputs for each subset menu
+      # Restriction criteria
+      # Create outputs for each subset menu
       lapply(
-        #Loop through the category names associated with subset criteria
-        X = names(subset_selections()), 
+        # Loop through the metadata categories read on app startup
+        X = meta_categories, 
         FUN = function(category, metadata_config){
-          #Get label for the metadata category used in the current subset selection 
-          #menu, defined in config file
+          # Get label for the metadata category used in the current subset selection 
+          # menu, defined in config file
           label<- metadata_config[[category]]$label
         
-          #Return HTML
-          #Use of div creates a new line between each entry
+          # Return HTML
+          # Use of div creates a new line between each entry
           div(
             tags$strong(glue("{label}:")),
-            #Text output to report values in selected category found in the subset
+            # Text output to report values in selected category found in the subset
             textOutput(
-              #Output ID: uses the category name 
+              # Output ID: uses the category name 
               outputId = ns(glue("selected_{category}")),
               inline=TRUE)
             )
           },
-        #metadata_config must be passed to the function above after it is 
-        #defined (see ... argument in ?lapply)
+        # metadata_config must be passed to the function above after it is 
+        # defined (see ... argument in ?lapply)
         metadata_config
-        ), #End lapply
+        ), # End lapply
       
-      #Number of cells in subset
+      # Number of cells in subset
       div(
         tags$strong("Number of cells in subset: ",
                       class="space-top inline-block"),
         textOutput(outputId = ns("n_cells"), inline = TRUE)
         ),
       
-      #Number and percentage of cells with nonzero reads for the selected gene
+      # Number and percentage of cells with nonzero reads for the selected gene
       div(
         tags$strong(glue("Cells with non-zero reads for {gene_selected()}:")),
         textOutput(outputId = ns("n_nonzero_and_percent"), inline = TRUE)
         )
-      )#End tagList
+      )# End tagList
     
-    #Return UI from module to the parent UI 
+    # Return UI from module to the parent UI 
     return(ui)
   }
   

@@ -10,7 +10,9 @@
 #main server function
 dge_tab_ui <- function(id,
                        unique_metadata,
-                       metadata_config){
+                       metadata_config,
+                       meta_categories
+                       ){
   #Namespace function: prevents conflicts with 
   #inputs/outputs defined in other modules 
   ns <- NS(id)
@@ -410,6 +412,7 @@ dge_tab_server <- function(id,
                            #Pass dge_subset_criteria() to this argument instead
                            #of subset_selections() (dge_subset_criteria()
                            #includes the group by category)
+                           meta_categories = meta_categories,
                            subset_selections = dge_subset_criteria
                          ),
                          #DGE Table (uses DT data table)

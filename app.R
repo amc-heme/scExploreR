@@ -659,7 +659,8 @@ ui <- tagList(
                       dge_tab_ui(
                         id = "dge",
                         unique_metadata = unique_metadata,
-                        metadata_config = config$metadata
+                        metadata_config = config$metadata,
+                        meta_categories = meta_categories
                         )
                       ),
              tabPanel("Gene Correlations",
