@@ -172,7 +172,7 @@ plot_selections_server <- function(id,
                      }),
                      
                      # Number of columns in multi-panel plot
-                     # Special condtional used 
+                     # Special conditional used 
                      # input$ncol will still have a value if input$split by is 
                      # changed from a metadata category to "none" 
                      `ncol` = reactive({
@@ -207,6 +207,7 @@ plot_selections_server <- function(id,
                  # This variable will be a boolean used in downstream 
                  # computations
                  is_subset <- eventReactive(
+                   label = glue("{plot_label}: Test if Object is a Subset"),
                    object(),
                    ignoreNULL = FALSE,
                    {
@@ -230,8 +231,9 @@ plot_selections_server <- function(id,
                      n_cells_original != n_cells_subset
                  })
                  
-                 # 3. Conditional UI -------------------------------------------
-                 # 2.1. ncol slider: appears when split_by != "none"
+                 # 4. Conditional UI -------------------------------------------
+                 ## 4.1. ncol slider ####
+                 # appears when split_by != "none"
                  ncol_slider <-
                    eventReactive(
                      c(plot_selections$split_by(),
@@ -277,10 +279,10 @@ plot_selections_server <- function(id,
                          } # End else
                      })
                  
-                 # 2.2. Checkbox to Specify Original Axis Limits
+                 ## 4.2. Checkbox to Specify Original Axis Limits ####
                  limits_checkbox <-
                    reactive(
-                     label = glue("{plot_label} Limits UI"),
+                     label = glue("{plot_label}: Limits UI"),
                      {
                      # Checkbox will only appear when a subset is selected.
                      # The presence of a subset will be tested by observing
@@ -299,19 +301,40 @@ plot_selections_server <- function(id,
 
                        })
                  
-                 # 2.3. Dynamic UI for plot output
+                 ## 4.3. Dynamic UI for plot output ####
                  plot_output_ui <- 
                    reactive(
-                     label = glue("{plot_label} Plot Output UI"),
+                     label = glue("{plot_label}: Plot Output UI"),
                      {
                        # UI only computes if the switch for the plot is enabled  
                        req(plot_switch())
                        
-                       plotOutput(outputId = ns("plot"))
-                     }
-                   )
+                       # If manual dimensions are specified, they must be 
+                       # specified here. If they are only given to renderPlot,
+                       # the plot will overlap with other elements on the page 
+                       # if its dimensions are changed with the manual 
+                       # dimensions inputs.
+                       if (
+                         (!is.null(manual_dim$width())) && 
+                         (!is.null(manual_dim$height()))
+                       ){
+                         # If manual dimensions are specified, pass the values
+                         # specified by the user to plotOutput
+                         plotOutput(
+                           outputId = ns("plot"),
+                           width = manual_dim$width(),
+                           height = manual_dim$height()
+                           )
+                         } else {
+                           # Otherwise, call plotOutput without defining 
+                           # width and height
+                           plotOutput(
+                             outputId = ns("plot")
+                             )
+                           }
+                     })
                  
-                 # 2.4. Render Dynamic UI
+                 ## 4.4. Render Dynamic UI ####
                  output$ncol_slider <- renderUI({
                    ncol_slider()
                  })
@@ -324,7 +347,8 @@ plot_selections_server <- function(id,
                    plot_output_ui()
                  })
                  
-                 # 4. Construct Plot -------------------------------------------
+                 # 5. Plot -----------------------------------------------------
+                 ## 5.1 Construct Plot ####
                  # Plot created based on the type specified when this server 
                  # function is called
                  if (plot_type == "dimplot"){
@@ -351,34 +375,12 @@ plot_selections_server <- function(id,
 
                  }
                  
-                 # 5. Output plot ----------------------------------------------
-                 # Output the plot computed in 4. to the element defined in the
-                 # plot_output instance of the plot selections module UI
-                 # plot_args <- reactive({
-                 #   list(
-                 #     plot(),
-                 #     if (!is.null)
-                 #   )
-                 # })
-                 
-                 observe({
-                   #Test of manual dimensions are defined (!= NULL)
-                   if (
-                     (!is.null(manual_dim$width())) && 
-                     (!is.null(manual_dim$height()))
-                   ){
-                     output$plot <- renderPlot(
-                       plot(),
-                       width = reactive({manual_dim$width()}),
-                       height = reactive({manual_dim$height()})
-                     )
-                   } else {
-                     #Use default height and width if manual dimensions are not
-                     #defined
-                     output$plot <- renderPlot(
-                       plot()
-                     )
-                   }
+                 ## 5.2 Render plot ####
+                 # Height and width arguments are left undefined
+                 # If undefined, they will use the values from plotOutput, which
+                 # respond to the manual dimensions inputs.
+                 output$plot <- renderPlot({
+                   plot()
                  })
                    
                  })
