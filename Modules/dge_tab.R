@@ -238,21 +238,22 @@ dge_tab_server <- function(id,
                      })
                  
                  ## 3.3. Form subset
-                 subset <- eventReactive(
-                   dge_subset_criteria(),
-                   label = "DGE: Subset",
-                   ignoreNULL = FALSE,
-                   {
-                     print("3.3 make subset")
-                     #Create subset from selections and return
-                     subset <- 
-                       make_subset(
-                         sobj = sobj,
-                         criteria_list = dge_subset_criteria()
-                         )
-                     
-                     return(subset)
-                   })
+                 subset <- 
+                   eventReactive(
+                     dge_subset_criteria(),
+                     label = "DGE: Subset",
+                     ignoreNULL = FALSE,
+                     {
+                       print("3.3 make subset")
+                       #Create subset from selections and return
+                       subset <- 
+                         make_subset(
+                           sobj = sobj,
+                           criteria_list = dge_subset_criteria()
+                           )
+                       
+                       return(subset)
+                       })
                  
                  ## 3.4. Compute subset stats
                  # subset_stats <- 
