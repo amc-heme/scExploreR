@@ -254,7 +254,6 @@ manual_dimensions_server <- function(id,
                    label = glue("{id}: Process Width Selection"),
                    {
                      if (input$manual_dim == TRUE){
-                       req(input$width)
                        # If the manual dimensions checkbox is checked, store the 
                        # width from input
                        input$width
@@ -268,7 +267,6 @@ manual_dimensions_server <- function(id,
                    label = glue("{id}: Process Height Selection"),
                    {
                    if (input$manual_dim == TRUE){
-                     req(input$height)
                      # If the manual dimensions checkbox is checked, store the 
                      # height from input
                      input$height

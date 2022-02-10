@@ -159,14 +159,14 @@ plot_selections_server <- function(id,
                    list(
                      # Group_by
                      `group_by` = reactive({
-                       if(hasName(input,"group_by")){
+                       if("group_by" %in% isolate(names(input))){
                          input$group_by
                          } else NULL
                        }),
                      
                      # Split_by
                      `split_by` = reactive({
-                       if(hasName(input,"split_by")){
+                       if("split_by" %in% isolate(names(input))){
                          input$split_by
                          } else NULL
                      }),
@@ -183,21 +183,21 @@ plot_selections_server <- function(id,
                      
                      # Include legend
                      `legend` = reactive({
-                       if(hasName(input,"legend")){
+                       if("legend" %in% isolate(names(input))){
                          input$legend
                        } else NULL
                      }),
                      
                      # Label groups
                      `label` = reactive({
-                       if(hasName(input,"label")){
+                       if("label" %in% isolate(names(input))){
                          input$label
                        } else NULL
                      }),
                      
                      # Original axes limits
                      `limits` = reactive({
-                       if(hasName(input,"original_limits")){
+                       if("original_limits" %in% isolate(names(input))){
                          input$original_limits
                        } else NULL
                      })
@@ -352,7 +352,9 @@ plot_selections_server <- function(id,
                  # Plot created based on the type specified when this server 
                  # function is called
                  if (plot_type == "dimplot"){
-                   plot <- reactive({
+                   plot <- reactive(
+                     label = glue("{plot_label}: Create Plot"),
+                     {
                      # Create a UMAP plot using shiny_umap()
                      shiny_umap(
                        object = object,
