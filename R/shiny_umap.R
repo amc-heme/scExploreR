@@ -27,14 +27,15 @@ shiny_umap <- function(object, #Reactive
                        ylim_orig #Non-reactive
                       ){
   
-  umap_plot_content <- 
-    #validate will keep plot code from running if the subset 
-    #is NULL (no cells in subset)
-    validate(
-      need(object(),
-           #No message displayed (a notification is already 
-           #displayed) (*was displayed*)
-           message = "")
+  #validate will keep plot code from running if the subset 
+  #is NULL (no cells in subset)
+  validate(
+    need(
+      object(),
+      #No message displayed (a notification is already 
+      #displayed) (*was displayed*)
+      message = ""
+      )
     )
   
   #Produce a single UMAP plot if no features to split by are specified
@@ -47,7 +48,7 @@ shiny_umap <- function(object, #Reactive
         label = show_label(), 
         #TODO: reduction is hard coded as umap. This should be changed 
         reduction = "umap"
-      ) 
+        ) 
   } else {
     #UMAP with split.by defined and no special subset
     umap_plot <- 
@@ -58,7 +59,7 @@ shiny_umap <- function(object, #Reactive
         label = show_label(),
         ncol = ncol(),
         reduction = "umap"
-      ) 
+        ) 
   }
   
   #Modify plot after creation with ggplot layers according 

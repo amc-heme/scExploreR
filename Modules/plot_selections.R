@@ -133,13 +133,16 @@ plot_selections_server <- function(id,
                                    plot_switch, #Reactive
                                    plot_label, #Non-reactive
                                    n_cells_original, #Non-reactive
+                                   features_entered = NULL, #Reactive 
                                    manual_dimensions = TRUE, #Non-reactive
                                    plot_type = c("dimplot",
                                                  "feature",
                                                  "violin",
                                                  "dot"), #Non-reactive
                                    xlim_orig = NULL, #Non-reactive
-                                   ylim_orig = NULL #Non-reactive
+                                   ylim_orig = NULL, #Non-reactive
+                                   #Currently only needed for feature plots
+                                   assay_info = NULL #Non-reactive
                                    ){
   moduleServer(id,
                function(input,output,session){
@@ -302,37 +305,85 @@ plot_selections_server <- function(id,
                        })
                  
                  ## 4.3. Dynamic UI for plot output ####
-                 plot_output_ui <- 
-                   reactive(
-                     label = glue("{plot_label}: Plot Output UI"),
-                     {
-                       # UI only computes if the switch for the plot is enabled  
-                       req(plot_switch())
-                       
-                       # If manual dimensions are specified, they must be 
-                       # specified here. If they are only given to renderPlot,
-                       # the plot will overlap with other elements on the page 
-                       # if its dimensions are changed with the manual 
-                       # dimensions inputs.
-                       if (
-                         (!is.null(manual_dim$width())) && 
-                         (!is.null(manual_dim$height()))
-                       ){
-                         # If manual dimensions are specified, pass the values
-                         # specified by the user to plotOutput
-                         plotOutput(
-                           outputId = ns("plot"),
-                           width = manual_dim$width(),
-                           height = manual_dim$height()
+                 # UMAP UI is slightly different than other plots because it 
+                 # does not depend on features being entered (other plots 
+                 # instruct user to enter features if none are chosen)
+                 if (plot_type == "dimplot"){
+                   plot_output_ui <- 
+                     reactive(
+                       label = glue("{plot_label}: Plot Output UI"),
+                       {
+                         # UI only computes if the switch for the plot is enabled  
+                         req(plot_switch())
+                         
+                         # If manual dimensions are specified, they must be 
+                         # specified here. If they are only given to renderPlot,
+                         # the plot will overlap with other elements on the page 
+                         # if its dimensions are changed with the manual 
+                         # dimensions inputs.
+                         if (
+                           (!is.null(manual_dim$width())) && 
+                           (!is.null(manual_dim$height()))
+                         ){
+                           # If manual dimensions are specified, pass the values
+                           # specified by the user to plotOutput
+                           plotOutput(
+                             outputId = ns("plot"),
+                             width = manual_dim$width(),
+                             height = manual_dim$height()
                            )
                          } else {
                            # Otherwise, call plotOutput without defining 
                            # width and height
                            plotOutput(
                              outputId = ns("plot")
+                           )
+                         }
+                       })
+                 } else {
+                   # UI for all other plot types 
+                   plot_output_ui <- 
+                     reactive(
+                       label = glue("{plot_label}: Plot Output UI"),
+                       {
+                         # UI only computes if the switch for the plot is enabled  
+                         req(plot_switch())
+                         
+                         # Test if features have been entered
+                         if (length(features_entered())==0){
+                           # If no features are entered, generate a message 
+                           # instructing the user to enter features.
+                           tags$h3(
+                             "Please enter a feature to view plot.", 
+                             style="margin-bottom: 10em;"
+                             )
+                         } else {
+                           # Display UI as normal if features are entered
+                           
+                           # Second conditional: check if manual dimensions are
+                           # specified
+                           if (
+                             (!is.null(manual_dim$width())) && 
+                             (!is.null(manual_dim$height()))
+                           ){
+                             # If manual dimensions are specified, pass the values
+                             # specified by the user to plotOutput
+                             plotOutput(
+                               outputId = ns("plot"),
+                               width = manual_dim$width(),
+                               height = manual_dim$height()
+                             )
+                           } else {
+                             # Otherwise, call plotOutput without defining 
+                             # width and height
+                             plotOutput(
+                               outputId = ns("plot")
                              )
                            }
-                     })
+                         }
+                       })
+                 }
+                 
                  
                  ## 4.4. Render Dynamic UI ####
                  output$ncol_slider <- renderUI({
@@ -370,6 +421,20 @@ plot_selections_server <- function(id,
                      )
                    })
                  } else if (plot_type == "feature") {
+                   plot <- reactive(
+                     shiny_feature(
+                       object = object,
+                       features_entered = features_entered, 
+                       split_by = plot_selections$split_by,
+                       show_label = plot_selections$label,
+                       show_legend = plot_selections$legend,
+                       is_subset = is_subset,
+                       original_limits = plot_selections$limits,
+                       assay_info = assay_info,
+                       xlim_orig = xlim_orig,
+                       ylim_orig = ylim_orig
+                     )
+                   )
 
                  } else if (plot_type == "violin") {
 

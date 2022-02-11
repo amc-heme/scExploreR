@@ -439,7 +439,7 @@ plots_tab <- function(unique_metadata,config){
                    conditionalPanel(
                      condition = "input.make_umap==true",
                      collapsible_panel(
-                       inputId="plots_umap_collapsible",
+                       inputId="plots_umap_collapsible_copy",
                        label="UMAP Specific Options",
                        active=TRUE,
                        plot_selections_ui(
@@ -498,6 +498,29 @@ plots_tab <- function(unique_metadata,config){
                                     ),#End 1.1.1.4.
                    
                    #### 1.1.1.5. Options specific to feature plot ####
+                   conditionalPanel(
+                     condition = "input.make_feature==true",
+                     collapsible_panel(
+                       inputId="plots_feature_collapsible_copy",
+                       label="Feature Plot Specific Options",
+                       active = FALSE,
+                       plot_selections_ui(
+                         id = "feature",
+                         ui_component = "options",
+                         meta_choices = meta_choices,
+                         plot_label = "Feature",
+                         group_by =          FALSE,
+                         split_by =          TRUE,
+                         ncol_slider =       FALSE,
+                         label_checkbox =    FALSE,
+                         legend_checkbox =   TRUE,
+                         limits_checkbox =   TRUE,
+                         manual_dimensions = TRUE,
+                         download_button =   TRUE
+                       )
+                     )
+                   ),
+                   
                    conditionalPanel(condition = "input.make_feature==true",
                                     collapsible_panel(inputId="plots_feature_collapsible",
                                                       label = "Feature Plot Specific Options",
@@ -621,6 +644,11 @@ plots_tab <- function(unique_metadata,config){
             
             #1.1.2.2. Panel for feature plot 
             #Will be a message or a plot, depending on whether features have been entered
+            plot_selections_ui(
+              id = "feature",
+              ui_component = "plot"
+            ),
+            
             conditionalPanel(condition = "input.make_feature==true",
                              uiOutput(outputId = "feature_slot")),
             
@@ -773,7 +801,8 @@ server <- function(input,output,session){
                        server = TRUE)
   
   ## 2.1. Plots Tab #####
-  #TEMP: plots selections module. Put in plots_tab module when testing complete
+  #TEMP: plots selections modules. Put in plots_tab module when testing complete
+  #UMAP
   plot_selections_server(id = "umap",
                          object = plots_subset, #Reactive
                          #plot_switch: uses the input$make_umap switch
@@ -785,6 +814,20 @@ server <- function(input,output,session){
                          xlim_orig = xlim_orig,
                          ylim_orig = ylim_orig
                          )
+  #Feature Plot
+  plot_selections_server(id = "feature",
+                         object = plots_subset, #Reactive
+                         #plot_switch: uses the input$make_feature switch
+                         plot_switch = reactive({input$make_feature}),
+                         features_entered = reactive({input$text_features}),
+                         plot_label = "Feature Plot", #Non-reactive
+                         n_cells_original = n_cells_original, #Non-reactive
+                         #Instructs server on which plot function to run 
+                         plot_type = "feature",
+                         xlim_orig = xlim_orig,
+                         ylim_orig = ylim_orig,
+                         assay_info = assay_info
+  )
   
   ### 2.1.1 Subset for Plots Tab #####
   #2.1.1.1. Module server to process user selections and report to other modules
