@@ -440,7 +440,7 @@ plots_tab <- function(unique_metadata,config){
                      condition = "input.make_umap==true",
                      collapsible_panel(
                        inputId="plots_umap_collapsible_copy",
-                       label="UMAP Specific Options",
+                       label="UMAP Specific Options (Modular)",
                        active=TRUE,
                        plot_selections_ui(
                          id = "umap",
@@ -502,13 +502,13 @@ plots_tab <- function(unique_metadata,config){
                      condition = "input.make_feature==true",
                      collapsible_panel(
                        inputId="plots_feature_collapsible_copy",
-                       label="Feature Plot Specific Options",
+                       label="Feature Plot Specific Options (Modular)",
                        active = FALSE,
                        plot_selections_ui(
                          id = "feature",
                          ui_component = "options",
                          meta_choices = meta_choices,
-                         plot_label = "Feature",
+                         plot_label = "Feature Plot",
                          group_by =          FALSE,
                          split_by =          TRUE,
                          ncol_slider =       FALSE,
@@ -547,6 +547,30 @@ plots_tab <- function(unique_metadata,config){
                                     ),#End 1.1.1.5
                    
                    #### 1.1.1.6. Options specific to violin plot ####
+                   #TEMP: test plot_selections module UI
+                   conditionalPanel(
+                     condition = "input.make_vln==true",
+                     collapsible_panel(
+                       inputId = "plots_vln_collapsible_copy",
+                       label = "Violin Plot Specific Options (Modular)",
+                       active = FALSE,
+                       plot_selections_ui(
+                         id = "violin",
+                         ui_component = "options",
+                         meta_choices = meta_choices,
+                         plot_label = "Violin Plot",
+                         group_by =          TRUE,
+                         split_by =          TRUE,
+                         ncol_slider =       TRUE,
+                         label_checkbox =    FALSE,
+                         legend_checkbox =   TRUE,
+                         limits_checkbox =   FALSE,
+                         manual_dimensions = TRUE,
+                         download_button =   TRUE
+                       )
+                     )
+                   ),
+                   
                    conditionalPanel(condition = "input.make_vln==true",
                                     collapsible_panel(inputId="plots_vln_collapsible",
                                                       label = "Violin Plot Specific Options",
@@ -643,7 +667,8 @@ plots_tab <- function(unique_metadata,config){
                              uiOutput(outputId = "umap_slot")),
             
             #1.1.2.2. Panel for feature plot 
-            #Will be a message or a plot, depending on whether features have been entered
+            #Will be a message or a plot, depending on whether features 
+            #have been entered
             plot_selections_ui(
               id = "feature",
               ui_component = "plot"
@@ -654,8 +679,15 @@ plots_tab <- function(unique_metadata,config){
             
             #1.1.2.3. Panel for violin plot
             #UI displayed will vary based on the entry into the feature text box
+            plot_selections_ui(
+              id = "violin",
+              ui_component = "plot"
+            ),
+            
             conditionalPanel(condition="input.make_vln==true",
                              uiOutput(outputId = "vln_slot")), 
+            
+            
             
             #1.1.2.4. Dot plot panel
             conditionalPanel(condition = "input.make_dot==true",
@@ -824,8 +856,19 @@ server <- function(input,output,session){
                          n_cells_original = n_cells_original, #Non-reactive
                          #Instructs server on which plot function to run 
                          plot_type = "feature",
-                         xlim_orig = xlim_orig,
-                         ylim_orig = ylim_orig,
+                         assay_info = assay_info
+  )
+  
+  #Violin Plot
+  plot_selections_server(id = "violin",
+                         object = plots_subset, #Reactive
+                         #plot_switch: uses the input$make_vln switch
+                         plot_switch = reactive({input$make_vln}),
+                         features_entered = reactive({input$text_features}),
+                         plot_label = "Violin Plot", #Non-reactive
+                         n_cells_original = n_cells_original, #Non-reactive
+                         #Instructs server on which plot function to run 
+                         plot_type = "violin",
                          assay_info = assay_info
   )
   
@@ -1524,7 +1567,7 @@ server <- function(input,output,session){
       }
       
       #Create/update slider input
-      ui<- sliderInput(inputId = "vln_ncol",
+      ui <- sliderInput(inputId = "vln_ncol",
                   label = "Number of columns: ",
                   min = 1,
                   max = length(input$text_features), #Max value: equal to the number of features entered

@@ -236,52 +236,93 @@ plot_selections_server <- function(id,
                  
                  # 4. Conditional UI -------------------------------------------
                  ## 4.1. ncol slider ####
-                 # appears when split_by != "none"
-                 ncol_slider <-
-                   eventReactive(
-                     c(plot_selections$split_by(),
-                       object()
+                 # Conditions under which ncol slider appear differ based on 
+                 # plot type
+                 if (plot_type == "dimplot"){
+                   # UMAP plots: appears when split_by != "none"
+                   ncol_slider <-
+                     eventReactive(
+                       c(plot_selections$split_by(),
+                         object()
                        ),
-                     ignoreNULL = TRUE,
-                     {
-                       #Do not render when split_by is "none"
-                       if (plot_selections$split_by() == "none"){
-                         NULL
-                       } else {
-                         # Number of panels: used to set bounds of ncol slider
-                         # Number of panels is equal to the number of unique
-                         # values for the chosen metadata category
-                         n_panel <-
-                           object()@meta.data[[plot_selections$split_by()]] |>
-                           unique() |>
-                           length()
-
-                         # Determine default value for ncol
-                         # For less than four panels, this is equal to the
-                         # number of panels.
-                         if (n_panel < 4){
-                           default_col <- n_panel
-                           # For 4 or more panels, the default value is 2
+                       label = glue("{plot_label}: Make ncol Slider"),
+                       ignoreNULL = TRUE,
+                       {
+                         #Do not render when split_by is "none"
+                         if (plot_selections$split_by() == "none"){
+                           NULL
                          } else {
-                           default_col <- 2
-                         }
-
-                         # Create slider input
-                         sliderInput(
-                           inputId = ns("ncol"),
-                           label = "Number of Columns: ",
-                           min = 1,
-                           # Max value: equal to the number of levels
-                           #in the given variable
-                           max = n_panel,
-                           # Only allow integer values
-                           step = 1,
-                           ticks = FALSE,
-                           value = default_col
+                           # Number of panels: used to set bounds of ncol slider
+                           # Number of panels is equal to the number of unique
+                           # values for the chosen metadata category
+                           n_panel <-
+                             object()@meta.data[[plot_selections$split_by()]] |>
+                             unique() |>
+                             length()
+                           
+                           # Determine default value for ncol
+                           # For less than four panels, this is equal to the
+                           # number of panels.
+                           if (n_panel < 4){
+                             default_col <- n_panel
+                             # For 4 or more panels, the default value is 2
+                           } else {
+                             default_col <- 2
+                           }
+                           
+                           # Create slider input
+                           sliderInput(
+                             inputId = ns("ncol"),
+                             label = "Number of Columns: ",
+                             min = 1,
+                             # Max value: equal to the number of levels
+                             # in the given variable
+                             max = n_panel,
+                             # Only allow integer values
+                             step = 1,
+                             ticks = FALSE,
+                             value = default_col
                            )
                          } # End else
-                     })
-                 
+                       })
+                   
+                 } else if (plot_type == "violin"){
+                   # Violin plots: appears when multiple features are entered
+                   ncol_slider <-
+                     eventReactive(
+                       features_entered(),
+                       label = glue("{plot_label}: Make ncol Slider"),
+                       ignoreNULL = TRUE,
+                       {
+                         # Number of panels equals number of features for violin 
+                         # plots. Slider is needed only when more than one 
+                         # feature is entered
+                         if(length(features_entered()) > 1){
+                           # Default number of columns: equal to the number of
+                           # panels if there are less than four, otherwise equal 
+                           # to two
+                           if (length(features_entered())<4){
+                             default_col <- length(features_entered())
+                           } else {
+                             default_col <- 2
+                           }
+                           
+                           # Create/update slider input
+                           sliderInput(
+                             inputId = ns("ncol"),
+                             label = "Number of columns: ",
+                             min = 1,
+                             #Max value: equal to the number of features entered
+                             max = length(features_entered()),
+                             #Only allow integer values
+                             step = 1, 
+                             ticks = FALSE,
+                             value = default_col
+                             )
+                         } else NULL
+                       })
+                 }
+    
                  ## 4.2. Checkbox to Specify Original Axis Limits ####
                  limits_checkbox <-
                    reactive(
@@ -353,8 +394,14 @@ plot_selections_server <- function(id,
                          if (length(features_entered())==0){
                            # If no features are entered, generate a message 
                            # instructing the user to enter features.
+                           # The string passed to plot_label should make sense
+                           # when written on it's own (i.e. 'violin plot' 
+                           # instead of 'violin')
                            tags$h3(
-                             "Please enter a feature to view plot.", 
+                             glue(
+                               "Please enter a feature to view 
+                               {tolower(plot_label)}."
+                               ), 
                              style="margin-bottom: 10em;"
                              )
                          } else {
@@ -422,22 +469,40 @@ plot_selections_server <- function(id,
                    })
                  } else if (plot_type == "feature") {
                    plot <- reactive(
-                     shiny_feature(
-                       object = object,
-                       features_entered = features_entered, 
-                       split_by = plot_selections$split_by,
-                       show_label = plot_selections$label,
-                       show_legend = plot_selections$legend,
-                       is_subset = is_subset,
-                       original_limits = plot_selections$limits,
-                       assay_info = assay_info,
-                       xlim_orig = xlim_orig,
-                       ylim_orig = ylim_orig
-                     )
-                   )
-
+                     label = glue("{plot_label}: Create Plot"),
+                     {
+                       #Feature plot using arguments relevant to shiny_feature()
+                       shiny_feature(
+                         object = object,
+                         features_entered = features_entered, 
+                         split_by = plot_selections$split_by,
+                         show_label = plot_selections$label,
+                         show_legend = plot_selections$legend,
+                         is_subset = is_subset,
+                         original_limits = plot_selections$limits,
+                         assay_info = assay_info,
+                         xlim_orig = xlim_orig,
+                         ylim_orig = ylim_orig
+                         )
+                       })
                  } else if (plot_type == "violin") {
-
+                   plot <- reactive(
+                     label = glue("{plot_label}: Create Plot"),
+                     {
+                       #Violin plot using arguments relevant to shiny_vln()
+                       shiny_vln(
+                         object = object,
+                         features_entered = features_entered, 
+                         group_by = plot_selections$group_by,
+                         split_by = plot_selections$split_by,
+                         show_label = plot_selections$label,
+                         show_legend = plot_selections$legend,
+                         ncol = plot_selections$ncol,
+                         assay_info = assay_info,
+                         xlim_orig = xlim_orig,
+                         ylim_orig = ylim_orig
+                       )
+                     })
                  } else if (plot_type == "dot") {
 
                  }

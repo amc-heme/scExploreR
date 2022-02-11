@@ -28,6 +28,7 @@ shiny_feature <- function(object, #Reactive
                        xlim_orig, #Non-reactive
                        ylim_orig #Non-reactive
 ){
+  #At least one feature must be entered to avoid errors when computing plot
   if (length(features_entered()) > 0){
     #validate will keep plot code from running if the subset 
     #is NULL (no cells in subset)
