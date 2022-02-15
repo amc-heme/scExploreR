@@ -903,8 +903,8 @@ server <- function(input,output,session){
     object = plots_subset, #Reactive
     #plot_switch: uses the input$make_vln switch
     plot_switch = reactive({input$make_vln}),
-    features_entered = reactive({input$text_features}),
     plot_label = "Violin Plot", #Non-reactive
+    features_entered = reactive({input$text_features}),
     #Instructs server on which plot function to run 
     plot_type = "violin",
     assay_info = assay_info

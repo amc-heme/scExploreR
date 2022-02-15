@@ -84,7 +84,7 @@ plot_selections_ui <- function(id,
       # Checkbox to specify original axes limits
       if (limits_checkbox == TRUE){
         # Dynamic UI: displays when a subset is selected
-        uiOutput(outputId=ns("limits_checkbox"))
+        uiOutput(outputId = ns("limits_checkbox"))
       } else NULL,
       
       # UI for user control of plot dimensions
@@ -95,48 +95,53 @@ plot_selections_ui <- function(id,
       
       # UI to request use of separate features for plot
       if (separate_features == TRUE){
+        # Store namespaced ID of use separate features check box
+        # for facilitated entry in condionalPanel element
+        sep_id <- ns("use_separate_features")
+        
         tagList(
           # Checkbox to use separate features
           checkboxInput(
-            inputId = ns("use_separate_features"),
+            inputId = sep_id,
             label = glue("Use separate features for {tolower(plot_label)}"), 
             value = FALSE
             ),
           
-          uiOutput(outputId = ns("separate_features_ui"))
+          # uiOutput(outputId = ns("separate_features_ui"))
           
           # Use conditional panel (rendering UI will reset the text entry)
-          # conditionalPanel(
-          #   condition = glue("input.{ns(use_separate_features)}==true"),
-          #   # Text Entry Element
-          #   tagList(
-          #     # Label
-          #     tags$p(
-          #       tags$strong(
-          #         "Enter features (specific to this plot):"
-          #       )
-          #     ),
-          #     
-          #     # Selectize input for separate features
-          #     div(
-          #       style =
-          #         "vertical-align: top; margin-bottom: 0px;",
-          #       selectizeInput(
-          #         inputId = ns("separate_features"),
-          #         multiple = TRUE,
-          #         label = NULL,
-          #         choices = NULL,
-          #         selected = NULL,
-          #         # Add remove button to inputs
-          #         options = 
-          #           list(
-          #             'plugins' = list('remove_button'),
-          #             'create' = FALSE
-          #             )
-          #         )
-          #       )
-          #     )
-          #   )
+          conditionalPanel(
+            condition = glue("input['{sep_id}'] == true"),
+            # Text Entry Element
+            tagList(
+              # Label
+              tags$p(
+                HTML(
+                  glue("<strong> Enter features <br> 
+                       (specific to {tolower(plot_label)}): </strong>")
+                  )
+                ),
+              
+              # Selectize input for separate features
+              div(
+                style =
+                  "vertical-align: top; margin-bottom: 0px;",
+                selectizeInput(
+                  inputId = ns("separate_features"),
+                  multiple = TRUE,
+                  label = NULL,
+                  choices = NULL,
+                  selected = NULL,
+                  # Add remove button to inputs
+                  options =
+                    list(
+                      'plugins' = list('remove_button'),
+                      'create' = FALSE
+                    )
+                  )
+                )
+              )
+            )
           )
       } else NULL,
       
@@ -637,16 +642,18 @@ plot_selections_server <- function(id,
                      {
                        # At least one feature must be entered for the observer
                        # to respond
-                       req(features_entered()) 
+                       #req(features_entered()) 
+                       
+                       print("Background update (modular)")
 
                        if (input$use_separate_features == FALSE){
-                         print("Background update (modular)")
+                         print("if (input$use_separate_features == FALSE)")
                          print("features_entered:")
                          print(features_entered())
                          
                          updateSelectizeInput(
                            session,
-                           inputId = ns("separate_features"),
+                           inputId = "separate_features",
                            choices = valid_features,
                            selected = features_entered(),
                            server = TRUE
@@ -694,7 +701,40 @@ plot_selections_server <- function(id,
                  }
                  
                  # 6. Plot -----------------------------------------------------
-                 ## 6.1 Construct Plot ####
+                 ## 6.1 Define Features to use (all plots except UMAP)
+                 # Uses either the general feature entry (features_entered()),
+                 # or the separate features text entry depending on whether
+                 # separate features are used in the module and whether the 
+                 # checkbox to use them is selected.
+                 if (plot_type != "dimplot"){
+                   features <-
+                     reactive(
+                       label = glue("{plot_label}: Features for Plot"),            
+                       {
+                         print("Conditionals in features argument")
+                         # Test for separate_features_server first
+                         # input$use_separate_features does not exist if 
+                         # separate_features_server == FALSE
+                         if (separate_features_server == TRUE){
+                           # If separate features are used in this module,
+                           # input them if the user checks the box to use
+                           # them 
+                           if(input$use_separate_features == TRUE){
+                             #Use separate features
+                             input$separate_features
+                           } else if (input$use_separate_features == FALSE){
+                             #Use general features
+                             features_entered()
+                           }
+                         } else if (separate_features_server == FALSE){
+                           # Otherwise, pass features_entered() to 
+                           # shiny_dot() (general features)
+                           features_entered()
+                         }
+                       })
+                 }
+                 
+                 ## 6.2 Construct Plot ####
                  # Plot created based on the type specified when this server 
                  # function is called
                  if (plot_type == "dimplot"){
@@ -755,11 +795,12 @@ plot_selections_server <- function(id,
                      {
                        shiny_dot(
                          object = object,
-                         features_entered = features_entered, 
-                         use_separate_features = 
-                           reactive({input$use_separate_features}),
-                         separate_features = 
-                           reactive({input$separate_features}),
+                         # Features argument: uses value returned by reactive
+                         features = features,
+                         # use_separate_features = 
+                         #   reactive({input$use_separate_features}),
+                         # separate_features = 
+                         #   reactive({input$separate_features}),
                          group_by = plot_selections$group_by,
                          show_legend = plot_selections$legend
                          )
