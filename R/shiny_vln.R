@@ -5,29 +5,21 @@
 
 # object: a Seurat object. This can be either the full object or a subset.
 # features_entered: a character vector giving the features entered by the user.
+# group_by: user specified group_by metadata category
 # split_by: user specified split_by metadata category
-# show_label: user choice as to whether labels should be shown on the plot
 # show_legend: user choice as to whether a legend should be shown
 # ncol: number of columns, as specified by user
 # is_subset: reactive boolean value stating whether the object is a subset
-# original_limits: user choice as to whether original axes limits should be used
 # assay_info: contains information on the assays included. 
 # TODO: update assay_info and dependent functions using config file
-# xlim_orig: the original x limits for the plot, computed from the full object at 
-# app startup
-# ylim_orig: the original y limits for the umap, computed from full object at 
-# app startup
 shiny_vln <- function(
   object, #Reactive
   features_entered, #Reactive
   group_by, #Reactive
   split_by, #Reactive
-  show_label, #Reactive
   show_legend, #Reactive
   ncol, #Reactive
-  assay_info, #Non-reactive
-  xlim_orig, #Non-reactive
-  ylim_orig #Non-reactive
+  assay_info #Non-reactive
 ){
   #At least one feature must be entered to avoid errors when computing plot
   if (length(features_entered()) > 0){

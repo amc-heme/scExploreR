@@ -19,6 +19,7 @@ plot_selections_ui <- function(id,
                                legend_checkbox =    FALSE,
                                limits_checkbox =    FALSE,
                                manual_dimensions =  FALSE,
+                               separate_features =  FALSE,
                                download_button =    FALSE
                                ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
@@ -92,12 +93,59 @@ plot_selections_ui <- function(id,
         manual_dimensions_ui(id = ns("manual_dim"))
       } else NULL,
       
+      # UI to request use of separate features for plot
+      if (separate_features == TRUE){
+        tagList(
+          # Checkbox to use separate features
+          checkboxInput(
+            inputId = ns("use_separate_features"),
+            label = glue("Use separate features for {tolower(plot_label)}"), 
+            value = FALSE
+            ),
+          
+          uiOutput(outputId = ns("separate_features_ui"))
+          
+          # Use conditional panel (rendering UI will reset the text entry)
+          # conditionalPanel(
+          #   condition = glue("input.{ns(use_separate_features)}==true"),
+          #   # Text Entry Element
+          #   tagList(
+          #     # Label
+          #     tags$p(
+          #       tags$strong(
+          #         "Enter features (specific to this plot):"
+          #       )
+          #     ),
+          #     
+          #     # Selectize input for separate features
+          #     div(
+          #       style =
+          #         "vertical-align: top; margin-bottom: 0px;",
+          #       selectizeInput(
+          #         inputId = ns("separate_features"),
+          #         multiple = TRUE,
+          #         label = NULL,
+          #         choices = NULL,
+          #         selected = NULL,
+          #         # Add remove button to inputs
+          #         options = 
+          #           list(
+          #             'plugins' = list('remove_button'),
+          #             'create' = FALSE
+          #             )
+          #         )
+          #       )
+          #     )
+          #   )
+          )
+      } else NULL,
+      
       # UI for download button
       if (download_button == TRUE){
         downloadButton(
           outputId = ns("download"), 
           label=glue("Download {plot_label}")
-        )
+          )
       } else NULL,
       
       #TEMP
@@ -128,6 +176,10 @@ plot_selections_ui <- function(id,
 # xlim_orig: the x limits of the dimplot of the full Seurat object (before a
 # subset is created). This only applies to dimplots and feature plots.
 # ylim_orig: the y limits of the dimplot of the full Seurat object.
+# assay_info: list of assay information generated in main server at startup
+# separate_features_separate: a boolean giving whether server code to process 
+# separate features (features specific to the plot created by this module) 
+# should be ran
 plot_selections_server <- function(id,
                                    object, #Reactive
                                    plot_switch, #Reactive
@@ -139,10 +191,12 @@ plot_selections_server <- function(id,
                                                  "feature",
                                                  "violin",
                                                  "dot"), #Non-reactive
+                                   valid_features = NULL, #Non-reactive
                                    xlim_orig = NULL, #Non-reactive
                                    ylim_orig = NULL, #Non-reactive
                                    #Currently only needed for feature plots
-                                   assay_info = NULL #Non-reactive
+                                   assay_info = NULL, #Non-reactive
+                                   separate_features_server =  FALSE #Non-reactive
                                    ){
   moduleServer(id,
                function(input,output,session){
@@ -301,7 +355,7 @@ plot_selections_server <- function(id,
                            # Default number of columns: equal to the number of
                            # panels if there are less than four, otherwise equal 
                            # to two
-                           if (length(features_entered())<4){
+                           if (length(features_entered()) < 4){
                              default_col <- length(features_entered())
                            } else {
                              default_col <- 2
@@ -336,7 +390,7 @@ plot_selections_server <- function(id,
                          inputId = ns("original_limits"),
                          label = "Use Original Axes Limits",
                          value = FALSE
-                       )
+                         )
                      } else {
                        # Display nothing when the number of cells are equal
                        # between the subset and the full dataset
@@ -345,11 +399,51 @@ plot_selections_server <- function(id,
 
                        })
                  
-                 ## 4.3. Dynamic UI for plot output ####
-                 # UMAP UI is slightly different than other plots because it 
-                 # does not depend on features being entered (other plots 
-                 # instruct user to enter features if none are chosen)
-                 if (plot_type == "dimplot"){
+                 ## 4.3. Separate feature entry ####
+                 # separate_features_ui <- 
+                 #   eventReactive(
+                 #     input$use_separate_features,
+                 #     label = glue("{plot_label}: Separate Features UI"),
+                 #     {
+                 #       if (input$use_separate_features == TRUE){
+                 #         tagList(
+                 #           #Label
+                 #           tags$p(
+                 #             tags$strong(
+                 #               "Enter features (specific to this plot):"
+                 #             )
+                 #           ),
+                 #           
+                 #           # Selectize input for separate features
+                 #           div(
+                 #             style =
+                 #               "vertical-align: top; margin-bottom: 0px;",
+                 #             selectizeInput(
+                 #               inputId = ns("separate_features"),
+                 #               multiple = TRUE,
+                 #               label = NULL,
+                 #               choices = NULL,
+                 #               selected = NULL,
+                 #               # Add remove button to inputs
+                 #               options = 
+                 #                 list(
+                 #                   'plugins' = list('remove_button'),
+                 #                   'create' = FALSE
+                 #                 )
+                 #             )
+                 #           )
+                 #         )
+                 #       } else NULL
+                 #     })
+                 
+                 ## 4.4. Dynamic UI for plot output ####
+                 # UI display depends on the plot type and whether the plot 
+                 # has a separate features option
+                 if (
+                   plot_type == "dimplot"
+                   ){
+                   # UI for dimplots (separate features are not possible for 
+                   # this type)
                    plot_output_ui <- 
                      reactive(
                        label = glue("{plot_label}: Plot Output UI"),
@@ -381,8 +475,12 @@ plot_selections_server <- function(id,
                            )
                          }
                        })
-                 } else {
-                   # UI for all other plot types 
+                 } else if (
+                   plot_type!="dimplot" &
+                   separate_features_server == FALSE
+                   ){
+                   # UI for all other plot types that do not have a separate
+                   # features option
                    plot_output_ui <- 
                      reactive(
                        label = glue("{plot_label}: Plot Output UI"),
@@ -429,24 +527,174 @@ plot_selections_server <- function(id,
                            }
                          }
                        })
+                 } else if (
+                   plot_type != "dimplot" &
+                   separate_features_server == TRUE
+                 ){
+                   # Reactive to use for plots other than dimplots with a 
+                   # separate features option
+                   plot_output_ui <- 
+                     reactive(
+                       label = glue("{plot_label}: Plot Output UI"),
+                       {
+                         # UI only computes if the switch for the plot is enabled  
+                         req(plot_switch())
+                         
+                         # Display either the plot or a message depending on 
+                         # whether features have been entered and whether 
+                         # the use of separate features is indicated
+                         if (
+                           input$use_separate_features == FALSE &
+                           length(features_entered()) == 0
+                           ){
+                           # If no features are entered, generate a message 
+                           # instructing the user to enter features.
+                           tags$h3(
+                             glue(
+                               "Please enter a feature to view 
+                               {tolower(plot_label)}."
+                             ), 
+                             style="margin-bottom: 10em;"
+                           )
+                         } else if (
+                           input$use_separate_features == TRUE &
+                           length(input$separate_features) == 0
+                         ){
+                           # Screen to display when separate features are 
+                           # desired, but none are entered
+                           tags$h3(
+                             glue(
+                               'Please specify at least one 
+                               {tolower(plot_label)} specific feature to view 
+                               plot. To use the same features as for other 
+                               plots, please uncheck "use separate features".'
+                             ), 
+                             style="margin-bottom: 10em;"
+                             )
+                         } else {
+                           # Display UI as normal if features are entered
+                           
+                           # Second conditional: check if manual dimensions are
+                           # specified
+                           if (
+                             (!is.null(manual_dim$width())) && 
+                             (!is.null(manual_dim$height()))
+                           ){
+                             # If manual dimensions are specified, pass the values
+                             # specified by the user to plotOutput
+                             plotOutput(
+                               outputId = ns("plot"),
+                               width = manual_dim$width(),
+                               height = manual_dim$height()
+                             )
+                           } else {
+                             # Otherwise, call plotOutput without defining 
+                             # width and height
+                             plotOutput(
+                               outputId = ns("plot")
+                             )
+                           }
+                         }
+                       })
                  }
                  
-                 
-                 ## 4.4. Render Dynamic UI ####
-                 output$ncol_slider <- renderUI({
-                   ncol_slider()
-                 })
+                 ## 4.5. Render Dynamic UI ####
+                 output$ncol_slider <- 
+                   renderUI({
+                     ncol_slider()
+                     })
 
-                 output$limits_checkbox <- renderUI({
-                   limits_checkbox()
-                 })
+                 output$limits_checkbox <- 
+                   renderUI({
+                     limits_checkbox()
+                     })
                  
-                 output$plot_output_ui <- renderUI({
-                   plot_output_ui()
-                 })
+                 output$plot_output_ui <- 
+                   renderUI({
+                     plot_output_ui()
+                     })
                  
-                 # 5. Plot -----------------------------------------------------
-                 ## 5.1 Construct Plot ####
+                 # output$separate_features_ui <- 
+                 #   renderUI({
+                 #     separate_features_ui()
+                 #   })
+                 
+                 # 5. Separate Features Entry: Dynamic Update ------------------
+                 # Observers for separate features only update for server 
+                 # instances where features_entered
+                 if (separate_features_server ==  TRUE){
+                   ## 5.1 Update Separate Features in Background ####
+                   # Before the checkbox to select separate features is checked, 
+                   # update the text entry in the background so it is synced
+                   # when it appears after the box is checked. 
+                   # This process ensures the features are instantly available in
+                   # the separate features text box when the checkbox is checked
+                   observeEvent(
+                     features_entered(),
+                     label = 
+                       glue("{plot_label}: Update Separate 
+                            Features Text Entry"),
+                     {
+                       # At least one feature must be entered for the observer
+                       # to respond
+                       req(features_entered()) 
+
+                       if (input$use_separate_features == FALSE){
+                         print("Background update (modular)")
+                         print("features_entered:")
+                         print(features_entered())
+                         
+                         updateSelectizeInput(
+                           session,
+                           inputId = ns("separate_features"),
+                           choices = valid_features,
+                           selected = features_entered(),
+                           server = TRUE
+                           )
+                         }
+                     })
+                   
+                   #TEMP
+                   observe({
+                     print("Separate Features (modular)")
+                     print(input$separate_features)
+                   })
+                   
+                   ## 5.2 Reset Separate Features Upon Checkbox Toggle ####
+                   # If the "use separate features" checkbox is toggled and the
+                   # features entered in the separate features text entry differ
+                   # from the general features selected, update the separate
+                   # features text entry to match the general features. 
+                   # This is necessary to ensure that selections for general 
+                   # features appear in the separate features text entry in the 
+                   # event that the user checks the box, unchecks it, changes
+                   # general features, and checks the box again.
+                   observeEvent(
+                     input$use_separate_features,
+                     label = 
+                       glue("{plot_label}: Set Separate Features Input"),
+                     {
+                       if (
+                         # Check if general feature and separate feature text 
+                         # entries are not in sync
+                         !setequal(
+                           features_entered(), 
+                           input$separate_features
+                           )
+                         ){
+                         updateSelectizeInput(
+                           session,
+                           inputId = "separate_features",
+                           choices = valid_features,
+                           selected = features_entered(),
+                           server=TRUE
+                         )
+                       }
+                     })
+                 }
+                 
+                 # 6. Plot -----------------------------------------------------
+                 ## 6.1 Construct Plot ####
                  # Plot created based on the type specified when this server 
                  # function is called
                  if (plot_type == "dimplot"){
@@ -495,19 +743,30 @@ plot_selections_server <- function(id,
                          features_entered = features_entered, 
                          group_by = plot_selections$group_by,
                          split_by = plot_selections$split_by,
-                         show_label = plot_selections$label,
                          show_legend = plot_selections$legend,
                          ncol = plot_selections$ncol,
                          assay_info = assay_info,
-                         xlim_orig = xlim_orig,
-                         ylim_orig = ylim_orig
-                       )
+                         )
                      })
                  } else if (plot_type == "dot") {
-
-                 }
+                   #Dot plot using arguments relevant to shiny_dot()
+                   plot <- reactive(
+                     label = glue("{plot_label}: Create Plot"),
+                     {
+                       shiny_dot(
+                         object = object,
+                         features_entered = features_entered, 
+                         use_separate_features = 
+                           reactive({input$use_separate_features}),
+                         separate_features = 
+                           reactive({input$separate_features}),
+                         group_by = plot_selections$group_by,
+                         show_legend = plot_selections$legend
+                         )
+                     })
+                   }
                  
-                 ## 5.2 Render plot ####
+                 ## 6.2 Render plot ####
                  # Height and width arguments are left undefined
                  # If undefined, they will use the values from plotOutput, which
                  # respond to the manual dimensions inputs.

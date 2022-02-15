@@ -116,15 +116,17 @@ assay_info <- assay_list(
               dropdown_title = "Gene Signature Scores")
 )
 
-#Create a list of valid features using the assays defined above
-valid_features <- feature_list_all(sobj,
-                                   assay_list = assay_info,
-                                   #include_numeric_metadata: a boolean variable 
-                                   #that is hard-coded for now and will be 
-                                   #defined in the config file
-                                   numeric_metadata = include_numeric_metadata, 
-                                   #The same is true for numeric_metadata_title
-                                   numeric_metadata_title = numeric_metadata_title)
+# Create a list of valid features using the assays defined above
+valid_features <- 
+  feature_list_all(
+    sobj,
+    assay_list = assay_info,
+    # include_numeric_metadata: a boolean variable that is hard-coded for now 
+    # and will be defined in the config file
+    numeric_metadata = include_numeric_metadata, 
+    #The same is true for numeric_metadata_title
+    numeric_metadata_title = numeric_metadata_title
+    )
 
 ##Define searchable features and Metadata ####
 #Gene_expression features
@@ -439,9 +441,9 @@ plots_tab <- function(unique_metadata,config){
                    conditionalPanel(
                      condition = "input.make_umap==true",
                      collapsible_panel(
-                       inputId="plots_umap_collapsible_copy",
-                       label="UMAP Specific Options (Modular)",
-                       active=TRUE,
+                       inputId = "plots_umap_collapsible_copy",
+                       label = "UMAP Specific Options (Modular)",
+                       active = TRUE,
                        plot_selections_ui(
                          id = "umap",
                          ui_component = "options",
@@ -603,6 +605,30 @@ plots_tab <- function(unique_metadata,config){
                                     ), #End 1.1.1.6.
                    
                    #### 1.1.1.7. Options specific to dot plot ####
+                   conditionalPanel(
+                     condition = "input.make_dot==true",
+                     collapsible_panel(
+                       inputId = "plots_dot_collapsible_copy",
+                       label = "Dot Plot Specific Options (Modular)",
+                       active = FALSE,
+                       plot_selections_ui(
+                         id = "dot",
+                         ui_component = "options",
+                         meta_choices = meta_choices,
+                         plot_label = "Dot Plot",
+                         group_by =          TRUE,
+                         split_by =          FALSE,
+                         ncol_slider =       FALSE,
+                         label_checkbox =    FALSE,
+                         legend_checkbox =   TRUE,
+                         limits_checkbox =   FALSE,
+                         manual_dimensions = TRUE,
+                         separate_features = TRUE,
+                         download_button =   TRUE
+                       )
+                     )
+                   ),
+                   
                    conditionalPanel(condition = "input.make_dot==true",
                                     collapsible_panel(inputId="plots_dot_collapsible",
                                                       label="Dot Plot Specific Options",
@@ -622,23 +648,27 @@ plots_tab <- function(unique_metadata,config){
                                                       
                                                       #If the checkbox above is selected, 
                                                       #display a selectize input for feature selection
-                                                      conditionalPanel(condition="input.diff_features_dot==true",
-                                                                       #Label
-                                                                       tags$p(tags$strong("Enter features to display on dot plot:")),
-                                                                       #Selectize entry
-                                                                       div(style="vertical-align: top; margin-bottom: 0px;",
-                                                                           selectizeInput(inputId = "dot_features",
-                                                                                          multiple=TRUE,
-                                                                                          label=NULL,
-                                                                                          choices = NULL,
-                                                                                          selected = NULL,
-                                                                                          #Add remove button to inputs
-                                                                                          options = list(
-                                                                                            'plugins' = list('remove_button'),
-                                                                                            'create'=FALSE)
-                                                                                          )
-                                                                           )
-                                                                       ),
+                                                      conditionalPanel(
+                                                        condition="input.diff_features_dot==true",
+                                                        #Label
+                                                        tags$p(tags$strong("Enter features to display on dot plot:")),
+                                                        #Selectize entry
+                                                        div(
+                                                          style="vertical-align: top; margin-bottom: 0px;",
+                                                          selectizeInput(
+                                                            inputId = "dot_features",
+                                                            multiple=TRUE,
+                                                            label=NULL,
+                                                            choices = NULL,
+                                                            selected = NULL,
+                                                            #Add remove button to inputs
+                                                            options = list(
+                                                              'plugins' = list('remove_button'),
+                                                              'create'=FALSE
+                                                              )
+                                                            )
+                                                          )
+                                                        ),
                                                       #Checkbox to add or remove Legend
                                                       checkboxInput(inputId="dot_legend",
                                                                     label="Include Legend",
@@ -690,6 +720,11 @@ plots_tab <- function(unique_metadata,config){
             
             
             #1.1.2.4. Dot plot panel
+            plot_selections_ui(
+              id = "dot",
+              ui_component = "plot"
+            ),
+            
             conditionalPanel(condition = "input.make_dot==true",
                              uiOutput(outputId = "dot_slot"))
             ) #End div
@@ -835,53 +870,74 @@ server <- function(input,output,session){
   ## 2.1. Plots Tab #####
   #TEMP: plots selections modules. Put in plots_tab module when testing complete
   #UMAP
-  plot_selections_server(id = "umap",
-                         object = plots_subset, #Reactive
-                         #plot_switch: uses the input$make_umap switch
-                         plot_switch = reactive({input$make_umap}),
-                         plot_label = "UMAP", #Non-reactive
-                         n_cells_original = n_cells_original, #Non-reactive
-                         #Instructs server on which plot function to run 
-                         plot_type = "dimplot",
-                         xlim_orig = xlim_orig,
-                         ylim_orig = ylim_orig
-                         )
+  plot_selections_server(
+    id = "umap",
+    object = plots_subset, #Reactive
+    #plot_switch: uses the input$make_umap switch
+    plot_switch = reactive({input$make_umap}),
+    plot_label = "UMAP", #Non-reactive
+    n_cells_original = n_cells_original, #Non-reactive
+    #Instructs server on which plot function to run
+    plot_type = "dimplot",
+    xlim_orig = xlim_orig,
+    ylim_orig = ylim_orig
+    )
+  
   #Feature Plot
-  plot_selections_server(id = "feature",
-                         object = plots_subset, #Reactive
-                         #plot_switch: uses the input$make_feature switch
-                         plot_switch = reactive({input$make_feature}),
-                         features_entered = reactive({input$text_features}),
-                         plot_label = "Feature Plot", #Non-reactive
-                         n_cells_original = n_cells_original, #Non-reactive
-                         #Instructs server on which plot function to run 
-                         plot_type = "feature",
-                         assay_info = assay_info
-  )
+  plot_selections_server(
+    id = "feature",
+    object = plots_subset, #Reactive
+    #plot_switch: uses the input$make_feature switch
+    plot_switch = reactive({input$make_feature}),
+    features_entered = reactive({input$text_features}),
+    plot_label = "Feature Plot", #Non-reactive
+    n_cells_original = n_cells_original, #Non-reactive
+    #Instructs server on which plot function to run 
+    plot_type = "feature",
+    assay_info = assay_info
+    )
   
   #Violin Plot
-  plot_selections_server(id = "violin",
-                         object = plots_subset, #Reactive
-                         #plot_switch: uses the input$make_vln switch
-                         plot_switch = reactive({input$make_vln}),
-                         features_entered = reactive({input$text_features}),
-                         plot_label = "Violin Plot", #Non-reactive
-                         n_cells_original = n_cells_original, #Non-reactive
-                         #Instructs server on which plot function to run 
-                         plot_type = "violin",
-                         assay_info = assay_info
-  )
+  plot_selections_server(
+    id = "violin",
+    object = plots_subset, #Reactive
+    #plot_switch: uses the input$make_vln switch
+    plot_switch = reactive({input$make_vln}),
+    features_entered = reactive({input$text_features}),
+    plot_label = "Violin Plot", #Non-reactive
+    #Instructs server on which plot function to run 
+    plot_type = "violin",
+    assay_info = assay_info
+    )
+  
+  #Dot plot
+  plot_selections_server(
+    id = "dot",
+    object = plots_subset, #Reactive
+    #plot_switch: uses the input$make_dot switch
+    plot_switch = reactive({input$make_dot}),
+    features_entered = reactive({input$text_features}),
+    plot_label = "Dot Plot", #Non-reactive
+    #Instructs server on which plot function to run 
+    plot_type = "dot",
+    valid_features = valid_features,
+    separate_features_server = TRUE
+    )
   
   ### 2.1.1 Subset for Plots Tab #####
   #2.1.1.1. Module server to process user selections and report to other modules
-  plots_subset_selections <- subset_selections_server("plots_subset",
-                                                      sobj = sobj,
-                                                      unique_metadata = unique_metadata,
-                                                      metadata_config = config$metadata)
+  plots_subset_selections <- 
+    subset_selections_server(
+      "plots_subset",
+      sobj = sobj,
+      unique_metadata = unique_metadata,
+      metadata_config = config$metadata
+      )
   
-  output$plots_subsets_return <- renderPrint({
-    plots_subset_selections()
-  })
+  output$plots_subsets_return <- 
+    renderPrint({
+      plots_subset_selections()
+      })
   
   #2.1.1.2. Update choices in subset selection menu based on user selections
   #Update patients menu based on entries in 'response' or 'treatment' (timepoint)
@@ -1701,18 +1757,34 @@ server <- function(input,output,session){
   })
   
   #### 2.1.5.2. Feature choices #####
-  #First observeEvent() function
-  #The function below responds to each feature entered while the "use separate features for dot plot" checkbox is not checked. It is designed to load the selected options in the background before the user checks the box, making them immediately available when the box is checked 
+  # First observeEvent() function
+  # The function below responds to each feature entered while the 
+  # "use separate features for dot plot" checkbox is not checked. It is designed 
+  # to load the selected options in the background before the user checks the 
+  # box, making them immediately available when the box is checked 
   observeEvent(input$text_features,
-               {req(input$text_features) #prevents code from running at startup (waits until something is entered in text_features)
+               {
+                 req(input$text_features) #prevents code from running at startup (waits until something is entered in text_features)
+                 
+                 print("Background update (original)")
+                 print("features_entered:")
+                 print(input$text_features)
+                 
                  if (input$diff_features_dot==FALSE){
-                 updateSelectizeInput(session,
-                                      inputId = "dot_features",
-                                      choices = valid_features,
-                                      selected = input$text_features,
-                                      server = TRUE)
+                   updateSelectizeInput(
+                     session,
+                     inputId = "dot_features",
+                     choices = valid_features,
+                     selected = input$text_features,
+                     server = TRUE
+                     )
                }
                })
+  
+  observe({
+    print("Separate Features (original)")
+    print(input$dot_features)
+  })
   
   #Second observeEvent() function
   #When the user checks the box to specify different features, sync the selected options for the dot plot with the generic text entry.

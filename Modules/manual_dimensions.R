@@ -79,7 +79,7 @@ manual_dimensions_server <- function(id,
                      manual_dimensions_inputs()
                      })
                  
-                 # 2. Reactively Update Inputs ----------------------------------
+                 # 2. Reactively Update Inputs ---------------------------------
                  # Update values between slider/text box pairs when either 
                  # input is changed
                   
@@ -246,10 +246,10 @@ manual_dimensions_server <- function(id,
                      }
                      })
                  
-                 # 3. Process Selections for Height and Width -------------------
+                 # 3. Process Selections for Height and Width ------------------
                  # Listen for changes in either the slider or the text box and 
-                 # store the value for the slider (this will be equal to the text 
-                 # box after the reactives in 1. run)
+                 # store the value for the slider (this will be equal to 
+                 # the text box after the reactives in 1. run)
                  width <- reactive(
                    label = glue("{id}: Process Width Selection"),
                    {
