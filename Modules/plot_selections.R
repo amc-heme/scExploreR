@@ -151,10 +151,7 @@ plot_selections_ui <- function(id,
           outputId = ns("download"), 
           label=glue("Download {plot_label}")
           )
-      } else NULL,
-      
-      #TEMP
-      verbatimTextOutput(outputId = ns("temp"))
+      } else NULL
     )
     
   } else if (ui_component == "plot"){
@@ -205,15 +202,13 @@ plot_selections_server <- function(id,
                                    ){
   moduleServer(id,
                function(input,output,session){
-                 # Server namespace function: for dynamic UI and modules
+                 # Server namespace function: for dynamic UI
                  ns <- session$ns
                  
                  # 1. Manual Dimensions Module Server --------------------------
                  if (manual_dimensions == TRUE){
                    manual_dim <- manual_dimensions_server(id = "manual_dim")
                    }
-                 
-                 output$temp <- renderPrint(print_reactive_list(manual_dim))
                  
                  # 2. Record plot options --------------------------------------
                  #list of reactives for storing selected inputs
@@ -640,17 +635,7 @@ plot_selections_server <- function(id,
                        glue("{plot_label}: Update Separate 
                             Features Text Entry"),
                      {
-                       # At least one feature must be entered for the observer
-                       # to respond
-                       #req(features_entered()) 
-                       
-                       print("Background update (modular)")
-
                        if (input$use_separate_features == FALSE){
-                         print("if (input$use_separate_features == FALSE)")
-                         print("features_entered:")
-                         print(features_entered())
-                         
                          updateSelectizeInput(
                            session,
                            inputId = "separate_features",
@@ -660,12 +645,6 @@ plot_selections_server <- function(id,
                            )
                          }
                      })
-                   
-                   #TEMP
-                   observe({
-                     print("Separate Features (modular)")
-                     print(input$separate_features)
-                   })
                    
                    ## 5.2 Reset Separate Features Upon Checkbox Toggle ####
                    # If the "use separate features" checkbox is toggled and the
