@@ -170,6 +170,9 @@ feature_list <- function(assay, prefix_machine, suffix_human) {
 
 #Metadata variables to group and split by in drop down menus
 
+# category_labels: list of labels for each metadata category (names are the
+# category IDs and the values are the labels chosen)
+category_labels <- lapply(config$metadata, function(category){category$label})
 
 #Specify metadata variables to group and split by in drop down menus
 #meta_choices: a named vector with name-value pairs for the display name of the 
@@ -339,6 +342,7 @@ ui <- tagList(
                         id = "plots",
                         meta_choices = meta_choices,
                         unique_metadata = unique_metadata,
+                        category_labels = category_labels,
                         metadata_config = config$metadata
                         )
                       ),
@@ -437,18 +441,13 @@ ui <- tagList(
 
 # 2. Main Server function ------------------------------------------------------
 server <- function(input,output,session){
-  ## 2.0. Initialize Session ####
-  #2.0.1. Render feature choices for text feature selection (plots tab)
-  updateSelectizeInput(session,
-                       inputId = "text_features", 
-                       choices = valid_features, 
-                       server = TRUE)
-  
   ## 2.1. Plots Tab #####
   plots_tab_server(
     id = "plots",
     sobj = sobj,
     assay_info = assay_info,
+    category_labels = category_labels,
+    unique_metadata = unique_metadata,
     valid_features = valid_features,
     error_list = error_list,
     n_cells_original = n_cells_original,

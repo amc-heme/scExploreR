@@ -8,6 +8,8 @@
 # unique_metadata: a list of the unique metadata values for each of the metadata 
 # categories listed in the config file. This is generated in the main server
 # function at startup.
+# category_labels: list of labels for each metadata category, generated in main
+# server at startup.
 
 # TODO: replace metadata_config in the subset selections module with a more 
 # specific variable
@@ -15,6 +17,7 @@
 plots_tab_ui <- function(id,
                          meta_choices,
                          unique_metadata,
+                         category_labels,
                          metadata_config
                          ){
    # Namespace function: prevents conflicts with 
@@ -111,54 +114,39 @@ plots_tab_ui <- function(id,
            inputId = ns("subset_collapsible"),
            label = "Subset Options",
            active = FALSE,
+           # div for spinner that displays over the full subset options panel
            div(
              id = ns("subset_panel"),
+             # 1.3.1 div for spinner that displays over the subset summary only
              div(
                id = ns("subset_stats"),
-               # Selected metadata outputs: still hard-coded
+               # Header for subset summary
                tags$strong(
                  "Metadata in Displayed Subset",
                  id = ns("subset_header")
-                 ),
-               div(
-                 tags$strong("Clusters: "),
-                 textOutput(
-                   outputId = ns("plots_selected_clusters"), 
-                   inline = TRUE
-                   )
-                 ),
-               div(tags$strong("Response criteria: "),
-                   textOutput(
-                     outputId = ns("plots_selected_response"), 
-                     inline = TRUE
-                     )
-                   ),
-               div(tags$strong("Timepoints: "),
-                   textOutput(
-                     outputId = ns("plots_selected_treatment"), 
-                     inline = TRUE
-                     )
-                   ),
-               div(tags$strong("Patients: "),
-                   textOutput(
-                     outputId = ns("plots_selected_htb"), 
-                     inline = TRUE
-                     )
-                   )
                ),
-             # Generate subset menus using the config file and unique_metadata
-             # subset_selections module
+               # subset_summary module: prints the unique values for each 
+               # metadata category in the current subset/object
+               subset_summary_ui(
+                 id = ns("subset_summary"),
+                 category_labels = category_labels
+                 )
+               ), # End subset_stats div
+             
+             # 1.3.2. Subset selection menus
              subset_selections_ui(
                id = ns("subset_selections"),
                unique_metadata = unique_metadata,
                metadata_config = metadata_config
                ),
+             
+             # 1.3.3. Submit button for subset
              actionButton(
                inputId = ns("subset_submit"),
                label="Apply Subset"
                )
-             )
-           ),# End 1.3
+             ) # End subset_panel div
+         ), # End 1.3
          
          # TEMP: text output for subset selections
          verbatimTextOutput(
@@ -168,9 +156,13 @@ plots_tab_ui <- function(id,
          
          ### Plot Specific Options ###
          ## 1.4. UMAP Options ####
-         #Panel will display if "Make UMAP" switch is on
+         # Panel will display if "Make UMAP" switch is on
          conditionalPanel(
-           condition = glue("input['ns(make_umap)']==true"),
+           # Javascript expression for condition in which to show panel
+           # Input is accesses using bracket notation
+           # Must use {ns('id')} (with quotes) to get the namespaced id,
+           # and that id must be within quotes 
+           condition = glue("input['{ns('make_umap')}'] == true"),
            collapsible_panel(
              inputId = ns("umap_collapsible"),
              label = "UMAP Specific Options (Modular)",
@@ -194,7 +186,7 @@ plots_tab_ui <- function(id,
          
          ## 1.5. Feature Plot Options ####
          conditionalPanel(
-           condition = glue("input['ns(make_feature)']==true"),
+           condition = glue("input['{ns('make_feature')}'] == true"),
            collapsible_panel(
              inputId = ns("feature_collapsible"),
              label = "Feature Plot Specific Options (Modular)",
@@ -218,7 +210,7 @@ plots_tab_ui <- function(id,
          
          ## 1.6. Violin Plot Options ####
          conditionalPanel(
-           condition = glue("input['ns(make_vln)']==true"),
+           condition = glue("input['{ns('make_vln')}'] == true"),
            collapsible_panel(
              inputId = ns("vln_collapsible"),
              label = "Violin Plot Specific Options (Modular)",
@@ -242,7 +234,7 @@ plots_tab_ui <- function(id,
          
          ## 1.7. Dot Plot Options ####
          conditionalPanel(
-           condition = glue("input['ns(make_dot)']==true"),
+           condition = glue("input['{ns('make_dot')}'] == true"),
            collapsible_panel(
              inputId = ns("dot_collapsible"),
              label = "Dot Plot Specific Options (Modular)",
@@ -314,6 +306,8 @@ plots_tab_ui <- function(id,
 # sobj: The Seurat Object defined in the main server function
 # assay_info: A list of assays defined in the config file and constructed in the
 # main server function at startup.
+# category_labels: list of labels for each metadata category, generated in main
+# server at startup.
 # valid_features: a list giving the valid features that can be selected from 
 # each assay. This is generated from the config file in the main server function
 # error_list: a list of error messages to use in a tryCatch expression. This is 
@@ -330,6 +324,8 @@ plots_tab_ui <- function(id,
 plots_tab_server <- function(id,
                              sobj,
                              assay_info,
+                             category_labels,
+                             unique_metadata,
                              valid_features,
                              error_list,
                              n_cells_original,
@@ -342,7 +338,49 @@ plots_tab_server <- function(id,
                  # Server namespace function: for dynamic UI
                  ns <- session$ns
                  
-                 # 1. Plot Modules ---------------------------------------------
+                 # Define spinners to show while subset and stats are computing
+                 
+                 # Spinner over subset criteria while options are updating
+                 subset_options_spinner <-
+                   Waiter$new(
+                     id = ns("subset_panel"),
+                     html = spin_loaders(id = 2, color = "#555588"),
+                     color = "#B1B1B188",
+                     #Gives manual control of showing/hiding spinner
+                     hide_on_render = FALSE 
+                   )
+                 
+                 # Spinner displaying over the unique values in the subset while
+                 # a new subset is calculated
+                 subset_meta_spinner <-
+                   Waiter$new(
+                     id = ns("subset_stats"),
+                     html = spin_loaders(id = 2, color = "#555588"),
+                     color = "#B1B1B188",
+                     # Gives manual control of showing/hiding spinner
+                     hide_on_render = FALSE 
+                   )
+                 
+                 # Spinner for main panel
+                 main_spinner <-
+                   Waiter$new(
+                     id = ns("main_panel"),
+                     html = spin_loaders(id = 2, color = "#555588"),
+                     color = "#FFFFFF",
+                     # Gives manual control of showing/hiding spinner
+                     hide_on_render = FALSE 
+                   )
+                 
+                 # Add feature choices to text entry 
+                 updateSelectizeInput(
+                   session,
+                   # Do not namespace IDs in update* functions
+                   inputId = "text_features", 
+                   choices = valid_features, 
+                   server = TRUE
+                   )
+                 
+                 # 2. Plot Modules ---------------------------------------------
                  # A plot_selections module server is created for each plot
                  # UMAP Plot
                  plot_selections_server(
@@ -356,7 +394,7 @@ plots_tab_server <- function(id,
                    plot_type = "dimplot",
                    xlim_orig = xlim_orig,
                    ylim_orig = ylim_orig
-                 )
+                   )
                  
                  # Feature Plot
                  plot_selections_server(
@@ -370,7 +408,7 @@ plots_tab_server <- function(id,
                    # Instructs server on which plot function to run 
                    plot_type = "feature",
                    assay_info = assay_info
-                 )
+                   )
                  
                  # Violin Plot
                  plot_selections_server(
@@ -383,7 +421,7 @@ plots_tab_server <- function(id,
                    # Instructs server on which plot function to run 
                    plot_type = "violin",
                    assay_info = assay_info
-                 )
+                   )
                  
                  # Dot plot
                  plot_selections_server(
@@ -399,8 +437,8 @@ plots_tab_server <- function(id,
                    separate_features_server = TRUE
                    )
                  
-                 # 2. Process Subset -------------------------------------------
-                 # 2.1 Module server to process user selections and report 
+                 # 3. Process Subset -------------------------------------------
+                 # 3.1 Module server to process user selections and report ####
                  # to other modules
                  plots_subset_selections <- 
                    subset_selections_server(
@@ -415,8 +453,9 @@ plots_tab_server <- function(id,
                      plots_subset_selections()
                    })
                  
-                 # 2.2. Update choices in subset selection menu based on user 
-                 # selections
+                 ## 3.2. Update Menus ####
+                 # TODO: get this to work for arbitrary metadata 
+                 
                  # Update patients menu based on entries in 'response' or 
                  # 'treatment' (timepoint)
                  observeEvent(
@@ -428,13 +467,7 @@ plots_tab_server <- function(id,
                      # Display spinner during computation to keep user from 
                      # choosing outdated options
                      # Show a spinner while the valid patient ID's are calculated
-                     waiter_show(
-                       id = ns("subset_panel"),
-                       html = spin_loaders(id = 2, color = "#555588"),
-                       color = "#B1B1B188",
-                       #Gives manual control of showing/hiding spinner
-                       hide_on_render = FALSE 
-                       )
+                     subset_options_spinner$show()
                          
                      # Filter object for treatment and response selections
                      valid_patients <- 
@@ -472,36 +505,23 @@ plots_tab_server <- function(id,
                        ) # End updatePickerInput
                      
                      # Hide spinner
-                     waiter_hide(ns("subset_panel"))
+                     subset_options_spinner$hide()
                      })
                  
-                 # 2.3. Construct subset after "Apply Subset" button is clicked
+                 ## 3.3. Make Subset ####
                  plots_subset <- 
                    eventReactive(
                      input$subset_submit,
                      ignoreNULL=FALSE,
                      label = "Plots Subset", 
                      {
-                       print("Executing subset code")
                        # Display spinner over main window while the 
                        # subset is being computed
-                       waiter_show(
-                         id = ns("main_panel"),
-                         html = spin_loaders(id = 2, color = "#555588"),
-                         color = "#FFFFFF",
-                         # Gives manual control of showing/hiding spinner
-                         hide_on_render = FALSE 
-                         )
+                       main_spinner$show()
                        
                        # Also display a spinner over the text showing
                        # The metadata in the current subset
-                       waiter_show(
-                         id = ns("subset_stats"),
-                         html = spin_loaders(id = 2, color = "#555588"),
-                         color = "#B1B1B188",
-                         # Gives manual control of showing/hiding spinner
-                         hide_on_render = FALSE 
-                         )
+                       subset_options_spinner$show()
                        
                        plots_s_sub <- 
                          tryCatch(
@@ -538,87 +558,23 @@ plots_tab_server <- function(id,
                              }
                            )#End tryCatch
                        
-                       # Hide the water
-                       waiter_hide("plots_main_panel")
+                       # Hide the spinners
+                       main_spinner$hide()
+                       subset_options_spinner$hide()
                        
                        # Return subset to the eventReactive variable
                        plots_s_sub
                        })
                  
-                 # HARD CODED
-                 # Rendering text for selected subsets
-                 observeEvent(
-                   input$subset_submit, 
-                   ignoreNULL = FALSE,
-                   label = "Plots: Render Subset Criteria",
-                   {
-                     # plots_subset() is NULL if errors are found during the 
-                     # subsetting. Code will only proceed with identifying 
-                     # metadata if no errors were encountered
-                     if(!is.null(plots_subset())){
-                       # Store the current metadata levels stored in the 
-                       # selected subset
-                       responses_found <- unique(plots_subset()$response)
-                       treatments_found <- unique(plots_subset()$treatment)
-                       patients_found <- unique(plots_subset()$htb)
-                       clusters_found <- unique(plots_subset()$clusters)
-                       
-                       # Rendering Selections and Stats for report
-                       output$plots_selected_clusters <- 
-                         renderText({
-                           #If all clusters are selected, print "All"
-                           if(setequal(clusters_found,clusters)){
-                             "All"
-                             # Otherwise, print the selected clusters
-                             } else { 
-                               isolate(vector_to_text(clusters_found))
-                               } # End Conditionals
-                           }) # End renderText
-                       
-                       # Selected Response Criteria
-                       output$plots_selected_response <- 
-                         renderText({
-                           # Print "All" if all response criteria are selected 
-                           if(setequal(responses_found,responses)){
-                             "All"
-                             }else{
-                               # Otherwise, print selected responses
-                               isolate(vector_to_text(responses_found))
-                               }# End conditionals
-                           }) # End renderText
-                       
-                       # Selected Timepoints
-                       output$plots_selected_treatment <- 
-                         renderText({
-                           # Print "All" if all treatment categories 
-                           # (timepoints) are selected
-                           if(setequal(treatments_found,treatments)){
-                             "All"
-                             }else{
-                               # Otherwise, print selected treatment 
-                               # categories (timepoints)
-                               isolate(vector_to_text(treatments_found))
-                               }# End conditionals
-                           }) # End renderText
-                       
-                       # Selected Patients
-                       output$plots_selected_htb <- 
-                         renderText({
-                           if(setequal(patients_found,patients)){
-                             # Print "all" if all patient IDs are selected
-                             "All"
-                             }else{
-                               # Otherwise, print selected patients
-                               isolate(vector_to_text(patients_found))
-                               } # End conditionals
-                         }) # End renderText
-                       }
-                     
-                     # When finished rendering current metadata, hide the 
-                     # spinner over the panel
-                     waiter_hide("subset_stats")
-                     })
-                 
+                 ## 3.4 Subset Summary Module ####
+                 # Computes and exports the unique metadata values in the 
+                 # current subset/object
+                 subset_summary_server(
+                   id = "subset_summary",
+                   object = plots_subset,
+                   category_labels = category_labels,
+                   unique_metadata = unique_metadata
+                   )
                  
                })
   }

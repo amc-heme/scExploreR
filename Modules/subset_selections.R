@@ -68,14 +68,19 @@ subset_selections_ui <- function(id,
   return(menus)
 }
 
-#Server function
-#Arguments
-#id: the namespace to use for the module. UI-server function pairs should use the same id.
-#sobj: The Seurat Object defined in the main server function
-#metadata_config: the metadata section of the config file. This does not need to
-#be specified if the config list is stored as "config" in the global environment.
-#hide_menu (optional): a string or character vector giving the name(s) of metadata
-#categories for which to hide menus in the subset selection interface.
+# Server function
+# Arguments
+# id: the namespace to use for the module. UI-server function pairs should 
+# use the same id.
+# sobj: The Seurat Object defined in the main server function
+# unique_metadata: a list of the unique metadata values for each of the metadata 
+# categories listed in the config file. This is generated in the main server
+# function at startup.
+# metadata_config: the metadata section of the config file. This does not need 
+# to be specified if the config list is stored as "config" in the global
+# environment.
+# hide_menu (optional): a string or character vector giving the name(s) of 
+# metadata categories for which to hide menus in the subset selection interface.
 subset_selections_server <- function(id,
                                      sobj,
                                      unique_metadata,

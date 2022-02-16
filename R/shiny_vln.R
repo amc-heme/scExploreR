@@ -34,6 +34,8 @@ shiny_vln <- function(
       )
     )
     
+    print("Starting Violin plot")
+    
     vln_plot <- 
       VlnPlot(
         object(),
@@ -47,6 +49,8 @@ shiny_vln <- function(
       ) +
       #Legend position: "right" if a legend is desired, and "none" if not
       theme(legend.position = if (show_legend()==TRUE) "right" else "none")
+    
+    print("Finished plot and layers")
     
     #Correct titles: change machine-readable name to human-readable name
     #Determine number of plots created

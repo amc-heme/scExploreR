@@ -81,7 +81,7 @@ shiny_umap <- function(object, #Reactive
       #Element B
       #Must first test to see if subset is present
       #Input container does not exist if there is no subset
-      if(is_subset()){
+      if(is_subset() & length(original_limits()) > 0){
         #Add original limits to the list if the 
         #corresponding checkbox is checked
         #The conditional is tied to a reactive value 
@@ -95,10 +95,10 @@ shiny_umap <- function(object, #Reactive
       #Element C
       #Check for subset (input container in child conditional 
       #does not exist before a subset is created)
-      if(is_subset()){
+      if(is_subset() & length(original_limits()) > 0){
         #Add original limits to the list if the 
         #corresponding checkbox is checked
-        if(original_limits() == TRUE) {
+        if (original_limits() == TRUE) {
           scale_y_continuous(limits = ylim_orig)
         } 
       }

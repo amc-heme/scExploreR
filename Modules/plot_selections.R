@@ -107,8 +107,6 @@ plot_selections_ui <- function(id,
             value = FALSE
             ),
           
-          # uiOutput(outputId = ns("separate_features_ui"))
-          
           # Use conditional panel (rendering UI will reset the text entry)
           conditionalPanel(
             condition = glue("input['{sep_id}'] == true"),
@@ -151,7 +149,10 @@ plot_selections_ui <- function(id,
           outputId = ns("download"), 
           label=glue("Download {plot_label}")
           )
-      } else NULL
+      } else NULL,
+      
+      #TEMP
+      verbatimTextOutput(outputId = ns("print_limits"), placeholder = TRUE)
     )
     
   } else if (ui_component == "plot"){
@@ -253,8 +254,13 @@ plot_selections_server <- function(id,
                      }),
                      
                      # Original axes limits
+                     # isolate(names(input)) does not work for testing the
+                     # existence of the original axes limits checkbox. 
+                     # input$original_limits will be either TRUE or FALSE if
+                     # the checkbox exists, or NULL if it does not. A suitable
+                     # existence test is !is.null(input$original_limits)
                      `limits` = reactive({
-                       if("original_limits" %in% isolate(names(input))){
+                       if(!is.null(input$original_limits)){
                          input$original_limits
                        } else NULL
                      })
@@ -732,13 +738,19 @@ plot_selections_server <- function(id,
                        original_limits = plot_selections$limits,
                        xlim_orig = xlim_orig,
                        ylim_orig = ylim_orig
-                     )
+                       )
+                   })
+                   
+                   output$print_limits <- renderPrint({
+                     print("Use original axes limits")
+                     print(plot_selections$limits())
                    })
                  } else if (plot_type == "feature") {
                    plot <- reactive(
                      label = glue("{plot_label}: Create Plot"),
                      {
-                       #Feature plot using arguments relevant to shiny_feature()
+                       # Feature plot using arguments relevant to 
+                       # shiny_feature()
                        shiny_feature(
                          object = object,
                          features_entered = features_entered, 
@@ -756,7 +768,7 @@ plot_selections_server <- function(id,
                    plot <- reactive(
                      label = glue("{plot_label}: Create Plot"),
                      {
-                       #Violin plot using arguments relevant to shiny_vln()
+                       # Violin plot using arguments relevant to shiny_vln()
                        shiny_vln(
                          object = object,
                          features_entered = features_entered, 
@@ -764,11 +776,11 @@ plot_selections_server <- function(id,
                          split_by = plot_selections$split_by,
                          show_legend = plot_selections$legend,
                          ncol = plot_selections$ncol,
-                         assay_info = assay_info,
+                         assay_info = assay_info
                          )
                      })
                  } else if (plot_type == "dot") {
-                   #Dot plot using arguments relevant to shiny_dot()
+                   # Dot plot using arguments relevant to shiny_dot()
                    plot <- reactive(
                      label = glue("{plot_label}: Create Plot"),
                      {
