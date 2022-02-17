@@ -453,62 +453,7 @@ plots_tab_server <- function(id,
                      plots_subset_selections()
                    })
                  
-                 ## 3.2. Update Menus ####
-                 # TODO: get this to work for arbitrary metadata 
-                 
-                 # Update patients menu based on entries in 'response' or 
-                 # 'treatment' (timepoint)
-                 observeEvent(
-                   c(input$plots_response_selection,
-                     input$plots_treatment_selection),
-                   ignoreNULL = FALSE,
-                   label = "Plots Update Patients",
-                   {
-                     # Display spinner during computation to keep user from 
-                     # choosing outdated options
-                     # Show a spinner while the valid patient ID's are calculated
-                     subset_options_spinner$show()
-                         
-                     # Filter object for treatment and response selections
-                     valid_patients <- 
-                       sobj@meta.data |> 
-                       filter(
-                         (.data[["response"]] %in% input$plots_response_selection)&
-                           (.data[["treatment"]] %in% input$plots_treatment_selection)
-                         ) |> 
-                       # Select patients metadata column
-                       select(.data[["htb"]]) |> 
-                       # Return unique values
-                       unique() |>
-                       # Convert to a character vector
-                       unlist()
-                     
-                     # Form categorized list of valid patients for 
-                     # display in dropdown menu
-                     valid_patients_categories <- 
-                       build_patient_list(valid_patients)
-                     # Sort patients categorized list so they appear in order
-                     valid_patients_categories <- 
-                       sort_patient_list(valid_patients_categories)
-                     
-                     # Update picker input with valid patient IDs
-                     updatePickerInput(
-                       session,
-                       inputId = ns("htb_selection"),
-                       label = "Restrict by Patient",
-                       choices = valid_patients_categories,
-                       selected = valid_patients,
-                       options = list(
-                         "selected-text-format" = "count > 3",
-                         "actions-box" = TRUE
-                         )
-                       ) # End updatePickerInput
-                     
-                     # Hide spinner
-                     subset_options_spinner$hide()
-                     })
-                 
-                 ## 3.3. Make Subset ####
+                 ## 3.2. Make Subset ####
                  plots_subset <- 
                    eventReactive(
                      input$subset_submit,
@@ -566,7 +511,7 @@ plots_tab_server <- function(id,
                        plots_s_sub
                        })
                  
-                 ## 3.4 Subset Summary Module ####
+                 ## 3.3 Subset Summary Module ####
                  # Computes and exports the unique metadata values in the 
                  # current subset/object
                  subset_summary_server(
