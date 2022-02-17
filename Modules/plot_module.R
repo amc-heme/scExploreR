@@ -183,9 +183,6 @@ plot_module_ui <- function(id,
           label=glue("Download {plot_label}")
           )
       } else NULL,
-      
-      #TEMP
-      verbatimTextOutput(outputId = ns("print_limits"), placeholder = TRUE)
     )
     
   } else if (ui_component == "plot"){
@@ -735,10 +732,6 @@ plot_module_server <- function(id,
                        )
                    })
                    
-                   output$print_limits <- renderPrint({
-                     print("Use original axes limits")
-                     print(plot_selections$limits())
-                   })
                  } else if (plot_type == "feature") {
                    plot <- reactive(
                      label = glue("{plot_label}: Create Plot"),

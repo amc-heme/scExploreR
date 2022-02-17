@@ -33,48 +33,56 @@ plots_tab_ui <- function(id,
          fluid=FALSE,
          ## 1.1 Checkboxes for choosing desired plot ####
          # Two-column checkboxes: put inside inline block elements 
-         #that span half of the sidebar panel
+         # that span half of the sidebar panel
+         # Division element that contains both columns (this element keeps one 
+         # of the columns from protruding into the elements beneath of it 
+         # becomes larger than the other column)
          div(
-           class="two_column",
-           style="float: left;",
-           #Specify if UMAP Plot is desired
-           materialSwitch(
-             inputId = ns("make_umap"),
-             label = "UMAP plot", 
-             value = TRUE,
-             right = TRUE,
-             status = "default"
+           class = "two-column-container",
+           style = "height: 110px;",
+           #Left column
+           div(
+             class="two_column",
+             style="float: left;",
+             #Specify if UMAP Plot is desired
+             materialSwitch(
+               inputId = ns("make_umap"),
+               label = "UMAP plot", 
+               value = TRUE,
+               right = TRUE,
+               status = "default"
              ),
-           
-           #Specify if feature plot is desired
-           materialSwitch(
-             inputId = ns("make_feature"),
-             label = "Feature Plot", 
-             value = FALSE,
-             right = TRUE,
-             status = "default"
+             
+             #Specify if feature plot is desired
+             materialSwitch(
+               inputId = ns("make_feature"),
+               label = "Feature Plot", 
+               value = FALSE,
+               right = TRUE,
+               status = "default"
              )
            ),#End div
-         
-         div(
-           class="two_column",
-           #Specify if violin plot is desired
-           materialSwitch(
-             inputId = ns("make_vln"),
-             label = "Violin Plot", 
-             value = FALSE,
-             right = TRUE,
-             status = "default"
+           # Right column
+           div(
+             class="two_column",
+             #Specify if violin plot is desired
+             materialSwitch(
+               inputId = ns("make_vln"),
+               label = "Violin Plot", 
+               value = FALSE,
+               right = TRUE,
+               status = "default"
              ),
-           #Specify if dot plot is desired
-           materialSwitch(
-             inputId = ns("make_dot"),
-             label = "Dot Plot", 
-             value = FALSE,
-             right = TRUE,
-             status = "default"
+             #Specify if dot plot is desired
+             materialSwitch(
+               inputId = ns("make_dot"),
+               label = "Dot Plot", 
+               value = FALSE,
+               right = TRUE,
+               status = "default"
              )
            ),#End div
+         ),
          
          ## 1.2. Feature Text Entry. #### 
          # Applies to feature, violin, and dot plots unless the user specifies 
@@ -90,6 +98,8 @@ plots_tab_ui <- function(id,
            tags$p(tags$strong("Enter features to display on plots:")),
            # Inline text entry and update button
            div(
+             #Class below reduces margin beneath selectizeInput to 5px
+             class="input-margin-5",
              style="vertical-align: top; margin-bottom: 0px;",
              selectizeInput(
                inputId = ns("text_features"),
@@ -148,12 +158,6 @@ plots_tab_ui <- function(id,
              ) # End subset_panel div
          ), # End 1.3
          
-         # TEMP: text output for subset selections
-         verbatimTextOutput(
-           outputId = ns("plots_subsets_return"),
-           placeholder = TRUE
-           ),
-         
          ### Plot Specific Options ###
          ## 1.4. UMAP Options ####
          # Panel will display if "Make UMAP" switch is on
@@ -165,7 +169,7 @@ plots_tab_ui <- function(id,
            condition = glue("input['{ns('make_umap')}'] == true"),
            collapsible_panel(
              inputId = ns("umap_collapsible"),
-             label = "UMAP Specific Options (Modular)",
+             label = "UMAP Specific Options",
              active = TRUE,
              plot_module_ui(
                id = ns("umap"),
@@ -189,7 +193,7 @@ plots_tab_ui <- function(id,
            condition = glue("input['{ns('make_feature')}'] == true"),
            collapsible_panel(
              inputId = ns("feature_collapsible"),
-             label = "Feature Plot Specific Options (Modular)",
+             label = "Feature Plot Specific Options",
              active = FALSE,
              plot_module_ui(
                id = ns("feature"),
@@ -213,7 +217,7 @@ plots_tab_ui <- function(id,
            condition = glue("input['{ns('make_vln')}'] == true"),
            collapsible_panel(
              inputId = ns("vln_collapsible"),
-             label = "Violin Plot Specific Options (Modular)",
+             label = "Violin Plot Specific Options",
              active = FALSE,
              plot_module_ui(
                id = ns("violin"),
@@ -237,7 +241,7 @@ plots_tab_ui <- function(id,
            condition = glue("input['{ns('make_dot')}'] == true"),
            collapsible_panel(
              inputId = ns("dot_collapsible"),
-             label = "Dot Plot Specific Options (Modular)",
+             label = "Dot Plot Specific Options",
              active = FALSE,
              plot_module_ui(
                id = ns("dot"),
@@ -447,11 +451,6 @@ plots_tab_server <- function(id,
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config
                      )
-                 
-                 output$plots_subsets_return <- 
-                   renderPrint({
-                     plots_subset_selections()
-                   })
                  
                  ## 3.2. Make Subset ####
                  plots_subset <- 

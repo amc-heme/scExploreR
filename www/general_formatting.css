@@ -102,6 +102,11 @@ h2, h3 {
     margin: 0px;
 }
 
+/* Reduces bottom margin of shiny input elements within container to 5px */
+.input-margin-5 > .shiny-input-container > div > .selectize-control{
+    margin-bottom: 5px;
+}
+
 /* inline-containers: sets all containers inside element to inline display */
 .inline-containers > .shiny-input-container {
   display: inline-block;

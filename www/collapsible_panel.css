@@ -1,30 +1,46 @@
 :root {
-	--border_rad: 7px;
-	--content_pad: 0.5em;
-	--header_pad: 0.5em;
+	--border-rad: 7px;
+	--content-pad: 0.5em;
+	--header-pad: 0.5em;
 	--spacing: 0.5em;
+	/* Font size for panel header (uses size of h3 tag by default) */
+	--header-font-size: 1.17em;
+}
+
+
+@media (max-width: 1100px) {
+	/* For smaller windows, decrease the font size of the header */
+	/* 1100px is the threshold below which the current headers in the plots tab
+		 wrap onto multiple lines */
+	:root{
+		--header-font-size: 1em;
+	}
 }
 
 /* Style for header of closed collapsible panel*/
 .collapsible {
   background-color: #888888;
-  height: 2.8em;
+  /*height: 2.8em;*/
   color: white; /* Color of text within panel */
   cursor: pointer;
-  padding: var(--header_pad);
+  padding: var(--header-pad);
   width: 100%; /* Potentially problematic, may have to change this */
   border: none; /* Buttons have a border by default */
-  border-radius: var(--border_rad); /* Round edges of header */
+  border-radius: var(--border-rad); /* Round edges of header */
   text-align: left;
   outline: none;
-  font-size: 1.17em; /* Uses default size for h3 tag */
+  font-size: var(--header-font-size);
   font-weight: bolder; /* Default font weight for h3 tag*/
   margin-top: var(--spacing);
   margin-bottom: var(--spacing);
+	/* Indenting word wrap of collapsible panel header: a padding-left tag will
+		 cause the text to be indented within the panel button. This complements
+		 a negative margin in the ::before element*/
+	padding-left: 2em;
 }
 
-/* CSS specific to open collapsible panel */
-.active {
+/* CSS specific to open collapsible panel (.collapsible *and* .active classes)*/
+.collapsible.active {
   /* Don't round region of header that contacts the content within*/
   border-bottom-right-radius: 0px;
   border-bottom-left-radius: 0px;
@@ -47,8 +63,13 @@ content: '\25B6'; /* Right-pointing arrow*/
 color: white;
 float: left;
 font-weight: bold;
-margin-right: 10px;
-box-sizing: inherit; /*Inherits box sizing from the panel header to ensure symbol is centered within the header and is never larger than the header itself*/
+/* Inherits box sizing from the panel header to ensure symbol is centered within
+	the header and is never larger than the header itself*/
+box-sizing: inherit;
+/* Indentation: negative margin causes arrow to hang to the left of text,
+ 	leaving just the text indented with padding (second row and onward will appear
+  as indented)*/
+margin-left: -1.3em;
 }
 
 /* Symbol which apppears at left hand side of panel header when the tab is opened */
@@ -57,19 +78,20 @@ content: '\25BC'; /* Down arrow*/
 color: white;
 float: left;
 font-weight: bold;
-margin-right: 10px;
 box-sizing: inherit;
+/* Negative margin for indentation */
+margin-left: -1.3em;
 }
 
 .content {
   padding: 0 18px;
   display: none;
   overflow: visible; /* This keeps dropdown menus from being clipped at the bottom of the content space*/
-  padding: var(--content_pad);
+  padding: var(--content-pad);
   /* TODO: Change background color to match shiny (may want to do a transparent background or a border instead) */
   background-color: #e1e1e1;
   margin-bottom: var(--spacing);
   /* Round bottom of content for consistency with header */
-  border-bottom-left-radius: var(--border_rad);
-  border-bottom-right-radius: var(--border_rad);
+  border-bottom-left-radius: var(--border-rad);
+  border-bottom-right-radius: var(--border-rad);
 }
