@@ -28,22 +28,28 @@ library(presto)
 
 #Load functions in ./R directory
 #Get list of files
-source_files <- list.files(path = "./R", 
-                           #Pattern, any set of characters, followed by ".R"
-                           #Period is double escaped
-                           pattern=".*\\.R", 
-                           full.names=TRUE, 
-                           ignore.case=TRUE)
+source_files <- 
+  list.files(
+    path = "./R",
+    #Pattern, any set of characters, followed by ".R"
+    #Period is double escaped
+    pattern=".*\\.R", 
+    full.names=TRUE, 
+    ignore.case=TRUE
+    )
 
 #Load .R files in modules directory
-source_files <- c(source_files, 
-                  list.files(path = "./Modules", 
-                             #Pattern, any set of characters, followed by ".R"
-                             #Period is double escaped
-                             pattern=".*\\.R", 
-                             full.names=TRUE, 
-                             ignore.case=TRUE)
-                  )
+source_files <- 
+  c(source_files, 
+    list.files(
+      path = "./Modules", 
+      #Pattern, any set of characters, followed by ".R"
+      #Period is double escaped
+      pattern=".*\\.R", 
+      full.names=TRUE, 
+      ignore.case=TRUE
+      )
+    )
 
 #Use source() to import files into R
 sapply(source_files, source)
@@ -52,25 +58,32 @@ sapply(source_files, source)
 #<script> tag using includeCSS(). Each tag defined is passed to a list, which is
 #included in the main UI function.
 #Get list of .css files in www/ directory
-css_files <- list.files(path = "./www", 
-                          pattern=".*\\.css", 
-                          full.names=TRUE, 
-                          ignore.case=TRUE)
+css_files <- 
+  list.files(
+    path = "./www",
+    pattern=".*\\.css", 
+    full.names=TRUE, 
+    ignore.case=TRUE
+    )
+
 #Create list of style tags for each CSS file
 css_list <- lapply(css_files,includeCSS)
 
 #Load Javasctipt files for app: find all .js files in www/ directory and create
 #a list of script() tags using includeScript().
 #Get list of .js files in www/ directory
-js_files <- list.files(path = "./www", 
-                       #Regex: uses \\. to select for files ending in ".js".
-                       #Pattern arguments require double backslashes for eacape 
-                       #characters to work (R and regex use the same string 
-                       #character)
-                       pattern=".*\\.js", 
-                       full.names=TRUE, 
-                       ignore.case=TRUE,
-                       include.dirs = FALSE)
+js_files <- 
+  list.files(
+    path = "./www", 
+    #Regex: uses \\. to select for files ending in ".js".
+    #Pattern arguments require double backslashes for eacape 
+    #characters to work (R and regex use the same string 
+    #character)
+    pattern=".*\\.js", 
+    full.names=TRUE, 
+    ignore.case=TRUE,
+    include.dirs = FALSE
+    )
 #Create list of style tags for each CSS file
 js_list <- lapply(js_files,includeScript)
 
@@ -89,32 +102,41 @@ numeric_metadata_title <- "Metadata Features"
 
 ##Define searchable features and Metadata ####
 #Assay list: created using functions in Object_Specific_Processing.R
-assay_info <- assay_list(
-  #Genes: include even though it is the default assay (it may not be in some objects)
-  assay_entry(assay="RNA",
-              #machine-readable prefix: in some objects, this is capital; 
-              #in others, this is lowercase
-              prefix_machine = "rna_",
-              #no suffix used in the dropdown menu for genes
-              suffix_human = "",
-              #dropdown_title: the name that appears in the dividers in the 
-              #dropdown menu, which groups search results by assay. 
-              dropdown_title = "Genes"),
+assay_info <- 
+  assay_list(
+    #Genes: include even though it is the default assay 
+    #(it may not be in some objects)
+    assay_entry(
+      assay="RNA",
+      #machine-readable prefix: in some objects, this is capital; 
+      #in others, this is lowercase
+      prefix_machine = "rna_",
+      #no suffix used in the dropdown menu for genes
+      suffix_human = "",
+      #dropdown_title: the name that appears in the dividers in the 
+      #dropdown menu, which groups search results by assay. 
+      dropdown_title = "Genes"
+      ),
   
   #ADT assay
-  assay_entry(assay = "ADT",
-              prefix_machine = "adt_",
-              suffix_human = " (Surface Protein)",
-              dropdown_title = "Surface Protein Markers"),
+  assay_entry(
+    assay = "ADT",
+    prefix_machine = "adt_",
+    suffix_human = " (Surface Protein)",
+    dropdown_title = "Surface Protein Markers"
+    ),
   
   #Gene signatures assay
-  assay_entry(assay = "SIG", 
-              prefix_machine = "sig_", 
-              #The signatures do not need a suffix as they are distinct 
-              #from gene names. The dropdown menu title should be sufficient
-              suffix_human = "",
-              dropdown_title = "Gene Signature Scores")
+  assay_entry(
+    assay = "SIG", 
+    prefix_machine = "sig_", 
+    #The signatures do not need a suffix as they are distinct 
+    #from gene names. The dropdown menu title should be sufficient
+    suffix_human = "",
+    dropdown_title = "Gene Signature Scores"
+    )
 )
+
 
 # Create a list of valid features using the assays defined above
 # TODO: edit feature_list_all() to handle config$assays
@@ -122,12 +144,12 @@ valid_features <-
   feature_list_all(
     sobj,
     assay_list = assay_info,
-    # include_numeric_metadata: a boolean variable that is hard-coded for now 
-    # and will be defined in the config file
+    #include_numeric_metadata: a boolean variable 
+    #that is hard-coded for now and will be 
+    #defined in the config file
     numeric_metadata = include_numeric_metadata, 
     #The same is true for numeric_metadata_title
-    numeric_metadata_title = numeric_metadata_title
-    )
+    numeric_metadata_title = numeric_metadata_title)
 
 # category_labels: list of labels for each metadata category (names are the
 # category IDs and the values are the labels chosen)
@@ -276,7 +298,8 @@ ui <- tagList(
                       dge_tab_ui(
                         id = "dge",
                         unique_metadata = unique_metadata,
-                        metadata_config = config$metadata
+                        metadata_config = config$metadata,
+                        meta_categories = meta_categories
                         )
                       ),
              tabPanel("Gene Correlations",
@@ -386,6 +409,7 @@ server <- function(input,output,session){
   dge_tab_server(id = "dge",
                  sobj = sobj,
                  metadata_config = config$metadata,
+                 meta_categories = meta_categories,
                  unique_metadata = unique_metadata,
                  meta_choices = meta_choices)
   
@@ -393,6 +417,7 @@ server <- function(input,output,session){
   corr_tab_server(id = "corr",
                   sobj = sobj,
                   metadata_config = config$metadata,
+                  meta_categories = meta_categories,
                   unique_metadata = unique_metadata,
                   n_cells_original = n_cells_original, 
                   nonzero_threshold = nonzero_threshold, 

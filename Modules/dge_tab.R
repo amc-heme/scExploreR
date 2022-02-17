@@ -10,7 +10,9 @@
 #main server function
 dge_tab_ui <- function(id,
                        unique_metadata,
-                       metadata_config){
+                       metadata_config,
+                       meta_categories
+                       ){
   #Namespace function: prevents conflicts with 
   #inputs/outputs defined in other modules 
   ns <- NS(id)
@@ -87,18 +89,42 @@ dge_tab_ui <- function(id,
 dge_tab_server <- function(id,
                            sobj,
                            metadata_config,
+                           # This will replace metadata_config at some point
+                           # (It is derived from the config file and is the only
+                           # information used)
+                           meta_categories,
                            unique_metadata,
                            meta_choices){
   moduleServer(id,
                function(input,output,session){
                  #Server namespace function: for dynamic UI and modules
                  ns <- session$ns
-                 
-                 #This will become TRUE when the subset button is pressed at 
-                 #least once
-                 # submit_pressed <- reactive({FALSE})
-                 #submit_pressed <- FALSE
 
+                 # Create spinners to display during computation in dge tab
+                  
+                 # Spinner for options panel
+                 # Keeps user from being able to press download buttons
+                 # before content is ready
+                 sidebar_spinner <- 
+                   Waiter$new(
+                     id = ns("sidebar"),
+                     html = spin_loaders(id = 2, color = "#555588"),
+                     color = "#B1B1B188",
+                     #Gives manual control of showing/hiding spinner
+                     hide_on_render = FALSE
+                     )
+                 
+                 #Spinner for main panel
+                 #Displays until hidden at the end of computation
+                 main_spinner <-
+                   Waiter$new(
+                     id = ns("main_panel"),
+                     html = spin_loaders(id = 2,color = "#555588"),
+                     color = "#FFFFFF",
+                     #Gives manual control of showing/hiding spinner
+                     hide_on_render = FALSE
+                     )
+                 
                  #1. Process Selections for DGE Test ---------------------------
                  test_selections <- 
                    dge_test_selection_server(
@@ -146,6 +172,26 @@ dge_tab_server <- function(id,
                    input$submit
                  })
                  
+                 #Show spinner: runs after submit button is pressed
+                 show_spinner <-
+                   eventReactive(
+                     submit_button(),
+                     label = "DGE: Show Spinner",
+                     {
+                       #Hide the main panel UI while calculations are performed
+                       print(glue("hiding {ns('main_panel_ui')}"))
+                       hideElement(id=ns("main_panel_ui"))
+                       
+                       #Display spinners
+                       sidebar_spinner$show()
+                       main_spinner$show()
+                       
+                       # Return the value of submit_button() 
+                       # This makes this eventReactive change each time it is
+                       # ran, triggering the next reactive in the series
+                       submit_button()
+                     })
+                 
                  ## 3.2. Define subset criteria
                  #Combines outputs from test selection and subset selection 
                  #modules. The subset criteria are used both in the 
@@ -154,13 +200,12 @@ dge_tab_server <- function(id,
                  #as input)
                  dge_subset_criteria <- 
                    eventReactive(
-                     submit_button(),
+                     show_spinner(),
                      label = "DGE: Subset Criteria",
                      #All reactives in 3. must run at startup for output to be
                      #properly generated (endless spinner results otherwise)
                      ignoreInit = FALSE,
                      {
-                       print("3.2 Process subset criteria")
                        #Retrieve information from test_selections
                        #Category
                        group_by_category <- test_selections()$group_by
@@ -187,69 +232,58 @@ dge_tab_server <- function(id,
                      })
                  
                  ## 3.3. Form subset
-                 subset <- eventReactive(
-                   dge_subset_criteria(),
-                   label = "DGE: Subset",
-                   ignoreNULL = FALSE,
-                   {
-                     print("3.3 make subset")
-                     #Create subset from selections and return
-                     subset <- make_subset(sobj = sobj,
-                                           criteria_list = dge_subset_criteria())
-                     return(subset)
-                   })
+                 subset <- 
+                   eventReactive(
+                     dge_subset_criteria(),
+                     label = "DGE: Subset",
+                     ignoreNULL = FALSE,
+                     {
+                       #Create subset from selections and return
+                       subset <- 
+                         make_subset(
+                           sobj = sobj,
+                           criteria_list = dge_subset_criteria()
+                           )
+                       
+                       return(subset)
+                       })
                  
                  ## 3.4. Compute subset stats
-                 subset_stats <- 
-                   eventReactive(
-                     subset(),
-                     label = "DGE: Subset Stats",
-                     ignoreNULL = FALSE,
-                     #Do not run at startup
-                     #ignoreInit = TRUE,
-                     {
-                       print("3.4 subset stats")
-                       #Initiate subset_stats server and store output
-                       stats <- subset_stats_server(
-                         id = "subset_stats",
-                         tab = "dge",
-                         subset = subset,
-                         #Pass dge_subset_criteria() to this argument instead of
-                         #subset_selections() (dge_subset_criteria() includes
-                         #the group by category)
-                         subset_selections = dge_subset_criteria,
-                         submit_button = submit_button,
-                         group_by_category = group_by_category
-                         )
-                       
-                       #Return computed stats from the server module
-                       return(stats())
-                   }
-                 )
+                 subset_stats <-
+                   subset_stats_server(
+                     id = "subset_stats",
+                     tab = "dge",
+                     subset = subset,
+                     meta_categories = meta_categories,
+                     event_expr = subset,
+                     group_by_category = group_by_category
+                    )
                  
                  ## 3.5. Run Presto
                  dge_table_content <- 
                    eventReactive(
-                     #subset(),
-                     subset_stats(),
+                      #subset(),
+                     # Chose the first reactive variable in the subset stats list
+                     # (all are updated simultaneously, and it is desired for 
+                     # presto to run after stats are computed)
+                     subset_stats$n_cells(),
                      label = "DGE: Run Presto",
                      ignoreNULL = FALSE,
                      {
-                       print("3.5 Run Presto")
                        dge_table <-
-                         #Run presto on the subset, using the group by category
+                         # Run presto on the subset, using the group by category
                          wilcoxauc(subset(), group_by = group_by_category()) %>%
-                         #Explicitly coerce to tibble
+                         # Explicitly coerce to tibble
                          as_tibble() %>%
-                         #remove stat and auc from the output table
+                         # remove stat and auc from the output table
                          select(-c(statistic, auc)) %>%
-                         #Using magrittr pipes here because the following 
-                         #statement doesn't work with base R pipes
-                         #remove negative logFCs if box is checked
+                         # Using magrittr pipes here because the following 
+                         # statement doesn't work with base R pipes
+                         # remove negative logFCs if box is checked
                          {if (input$pos) filter(., logFC > 0) else .} %>%
-                         #Arrange in ascending order for padj, pval (lower 
-                         #values are more "significant"). Ascending order is 
-                         #used for the log fold-change
+                         # Arrange in ascending order for padj, pval (lower 
+                         # values are more "significant"). Ascending order is 
+                         # used for the log fold-change
                          arrange(padj, pval, desc(abs(logFC)))
                      
                      return(dge_table)
@@ -263,7 +297,6 @@ dge_tab_server <- function(id,
                      label = "DGE: DT Generation",
                      ignoreNULL=FALSE,
                      {
-                       print("3.6. Make DT Table")
                        datatable(
                          dge_table_content(),
                          class = "compact stripe cell-border hover",
@@ -278,11 +311,10 @@ dge_tab_server <- function(id,
                  ## 3.7. UMAP of DE Selected Groups 
                  dge_umap <- 
                    eventReactive(
-                     dge_DT_content(), 
+                     c(dge_DT_content(), input$umap_group_by), 
                      ignoreNULL = FALSE,
-                     label="DGE: UMAP", 
+                     label = "DGE: UMAP", 
                      {
-                       print("3.7. DGE UMAP")
                        #ncol_argument: number of columns
                        #Based on number of classes being analyzed in the subset. 
                        #Access with double brackets returns a dataframe.
@@ -314,53 +346,22 @@ dge_tab_server <- function(id,
                          split.by = group_by_category(),
                          #Group by variable set in UMAP options panel
                          group.by = input$umap_group_by,
-                         ncol=ncol
+                         ncol = ncol
                          )
                        
-                       #Hide loading screen
-                       #UMAP is last time-intensive object calculated
-                       #after submit button is pressed 
-                       waiter_hide(id = ns("main_panel"))
-                       waiter_hide(id = ns("sidebar"))
-                       
-                       return(umap)
+                       umap
                        })
                  
                  # 4. Dynamic UI for Main Panel --------------------------------
                  dge_ui <- 
                    eventReactive(
-                     submit_button(),
+                     #UI now renders once all computations are complete
+                     subset(),
                      label = "DGE Main UI (Define Content)",
                      #Do not render main UI at startup to avoid errors
                      #ignoreInit=TRUE,
                      #ignoreNULL = FALSE,
                      {
-                       print("4. DGE Main UI")
-                       #Spinner for main panel
-                       #Displays until the UMAP is calculated (last reactive
-                       #computed after subset button is clicked)
-                       waiter_show(
-                         id = ns("main_panel"),
-                         html = spin_loaders(
-                           id = 2,
-                           color = "#555588"
-                         ),
-                         color = "#FFFFFF",
-                         #Gives manual control of showing/hiding spinner
-                         hide_on_render = FALSE
-                       )
-
-                       #Spinner for options panel
-                       #Keeps user from being able to press download buttons
-                       #before content is ready
-                       waiter_show(
-                         id = ns("sidebar"),
-                         html = spin_loaders(id = 2, color = "#555588"),
-                         color = "#B1B1B188",
-                         #Gives manual control of showing/hiding spinner
-                         hide_on_render = FALSE
-                       )
-
                        #User-defined label for group-by variable (for printing
                        #in UI below)
                        #TODO: make sure this updates when a different group
@@ -384,6 +385,7 @@ dge_tab_server <- function(id,
                            #Pass dge_subset_criteria() to this argument instead
                            #of subset_selections() (dge_subset_criteria()
                            #includes the group by category)
+                           meta_categories = meta_categories,
                            subset_selections = dge_subset_criteria
                          ),
                          #DGE Table (uses DT data table)
@@ -397,9 +399,9 @@ dge_tab_server <- function(id,
                          #Title for plot
                          #Depends on mode, tested through n_classes()
                          #Make sure n_classes is defined to avoid errors
-                         if (!is.null(subset_stats()$n_classes)){
+                         if (!is.null(subset_stats$n_classes())){
                            #Use different titles based on the test used
-                           if(subset_stats()$n_classes == 2){
+                           if(subset_stats$n_classes() == 2){
                              #Title for differential gene expression
                              tags$h3("UMAP of groups being compared",
                                      class="center")
@@ -450,13 +452,10 @@ dge_tab_server <- function(id,
                  # 6. Dynamic UI: Options Panel for UMAP -----------------------
                  umap_options <-
                    eventReactive(
-                     dge_umap(),
+                     subset(),
                      label = "DGE: UMAP Options Panel",
                      #ignoreNULL = FALSE,
                      {
-                       print("dge_umap")
-                       print(dge_umap())
-                       print("class of dge_umap: {class(dge_umap())}")
                        #Display options panel after the umap is created
                        #Test: dge_umap is of class 'ggplot'
                        if ("ggplot" %in% class(dge_umap())){
@@ -525,7 +524,21 @@ dge_tab_server <- function(id,
                  #   subset_stats()
                  # })
                  
-                 # 8. Download Handler for DGE Table ---------------------------
+                 # 8. Hide Spinners --------------------------------------------
+                 #Placement 
+                 observeEvent(
+                   umap_options(),
+                   label = "DGE: Hide Spinner",
+                   {
+                     #Show UI
+                     showElement(id = ns("main_panel_ui"))
+                     #Hide spinners
+                     sidebar_spinner$hide()
+                     main_spinner$hide()
+                   }
+                 )
+                 
+                 # 9. Download Handler for DGE Table ---------------------------
                  output$dge_download_table <- downloadHandler(
                    filename = function() {
                      glue("DGE_table_{input$dge_group_by}.csv")
