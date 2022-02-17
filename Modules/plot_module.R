@@ -1,27 +1,60 @@
-# Plot Selections Module
+# Plot Module
+# Displays selections menus for an individual plot, builds the plot, and 
+# displays it to the screen
 
-# Displays selections menus for an individual plot and processes user entries
-plot_selections_ui <- function(id,
-                               # The plot_selections UI consists of the options
-                               # panels and the plot output, which exist in 
-                               # different places in the app. This argument will
-                               # allow the module server to update components in
-                               # different locations
-                               ui_component = c("options", "plot"),
-                               meta_choices = NULL,
-                               plot_label = "",
-                               # TEMP: conditionals vertically aligned
-                               # for multi-cursor editing
-                               group_by =           FALSE,
-                               split_by =           FALSE,
-                               ncol_slider =        FALSE,
-                               label_checkbox =     FALSE,
-                               legend_checkbox =    FALSE,
-                               limits_checkbox =    FALSE,
-                               manual_dimensions =  FALSE,
-                               separate_features =  FALSE,
-                               download_button =    FALSE
-                               ){
+# plot_module_ui
+# The module UI has two components: "options", which builds the selection menus 
+# for plot options, and "plot", which contains the output for the plot itself. 
+# The UI component needs to be called twice, once in the desired location for 
+# the menus using ui_component="options", and again in the desired location for 
+# the plot output with ui_component="plot". For the plot component, the only 
+# arguments that need to be set are id and the ui_component; all other arguments
+# are used for the options tab
+
+# Arguments
+# id: ID to use for module elements. IDs for the options and plot UI components,
+# and the server component, must match.
+# ui_component: determines which UI component is to be plotted. Use "options" 
+# to create the input menus for plot options, and "plot" to create the output
+# container for the plot.
+# plot_label: a human readable name for the plot that will appear in the menus.
+# The name should make sense by itself (i.e. "Feature Plot" should be entered
+# instead of "Feature").
+# group_by: if TRUE, display a menu with metadata categories to group by.
+# split_by: if TRUE, display a menu with metadata categories to split by.
+# ncol_slider: if TRUE, display a slider to specify the number of columns to use
+# for the plot. This only works for UMAP and violin plots. 
+# label_checkbox: if TRUE, display a checkbox for including labels on the plot.
+# legend_checkbox: if TRUE, display a checkbox for including a legend.
+# limits_checkbox: if TRUE, display a checkbox for the use of original axes.
+# limits when a subset is plotted. This only works for UMAP and Feature plots.
+# manual_dimensions: if TRUE, display an interface to specify manual height and
+# width parameters for the plot.
+# separate_features: if TRUE, display a checkbox to enter separate features 
+# for the plot. A text entry will be created if the checkbox is selected.
+# download_button: if TRUE, display a download button that will save a .png 
+# image of the plot to disk.
+plot_module_ui <- function(id,
+                           # The plot_module UI consists of the options
+                           # panels and the plot output, which exist in 
+                           # different places in the app. This argument will
+                           # allow the module server to update components in
+                           # different locations
+                           ui_component = c("options", "plot"),
+                           meta_choices = NULL,
+                           plot_label = "",
+                           # TEMP: conditionals vertically aligned
+                           # for multi-cursor editing
+                           group_by =           FALSE,
+                           split_by =           FALSE,
+                           ncol_slider =        FALSE,
+                           label_checkbox =     FALSE,
+                           legend_checkbox =    FALSE,
+                           limits_checkbox =    FALSE,
+                           manual_dimensions =  FALSE,
+                           separate_features =  FALSE,
+                           download_button =    FALSE
+                           ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
   
@@ -163,7 +196,9 @@ plot_selections_ui <- function(id,
   }
 }
 
+#plot_module_server
 
+# Arguments
 # manual_dimensions: creates a server instance for specifying manual dimensions 
 # if TRUE. This should be set to TRUE if manual_dimensions is also true in the UI
 # Object: the Seurat object to be used for plotting. It may be a subset or the 
@@ -183,7 +218,7 @@ plot_selections_ui <- function(id,
 # separate_features_separate: a boolean giving whether server code to process 
 # separate features (features specific to the plot created by this module) 
 # should be ran
-plot_selections_server <- function(id,
+plot_module_server <- function(id,
                                    object, #Reactive
                                    plot_switch, #Reactive
                                    plot_label, #Non-reactive
@@ -405,44 +440,7 @@ plot_selections_server <- function(id,
 
                        })
                  
-                 ## 4.3. Separate feature entry ####
-                 # separate_features_ui <- 
-                 #   eventReactive(
-                 #     input$use_separate_features,
-                 #     label = glue("{plot_label}: Separate Features UI"),
-                 #     {
-                 #       if (input$use_separate_features == TRUE){
-                 #         tagList(
-                 #           #Label
-                 #           tags$p(
-                 #             tags$strong(
-                 #               "Enter features (specific to this plot):"
-                 #             )
-                 #           ),
-                 #           
-                 #           # Selectize input for separate features
-                 #           div(
-                 #             style =
-                 #               "vertical-align: top; margin-bottom: 0px;",
-                 #             selectizeInput(
-                 #               inputId = ns("separate_features"),
-                 #               multiple = TRUE,
-                 #               label = NULL,
-                 #               choices = NULL,
-                 #               selected = NULL,
-                 #               # Add remove button to inputs
-                 #               options = 
-                 #                 list(
-                 #                   'plugins' = list('remove_button'),
-                 #                   'create' = FALSE
-                 #                 )
-                 #             )
-                 #           )
-                 #         )
-                 #       } else NULL
-                 #     })
-                 
-                 ## 4.4. Dynamic UI for plot output ####
+                 ## 4.3. Dynamic UI for plot output ####
                  # UI display depends on the plot type and whether the plot 
                  # has a separate features option
                  if (
@@ -454,7 +452,8 @@ plot_selections_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Plot Output UI"),
                        {
-                         # UI only computes if the switch for the plot is enabled  
+                         # UI only computes if the switch for the plot is
+                         # enabled  
                          req(plot_switch())
                          
                          # If manual dimensions are specified, they must be 
@@ -604,7 +603,7 @@ plot_selections_server <- function(id,
                        })
                  }
                  
-                 ## 4.5. Render Dynamic UI ####
+                 ## 4.4. Render Dynamic UI ####
                  output$ncol_slider <- 
                    renderUI({
                      ncol_slider()
@@ -619,12 +618,7 @@ plot_selections_server <- function(id,
                    renderUI({
                      plot_output_ui()
                      })
-                 
-                 # output$separate_features_ui <- 
-                 #   renderUI({
-                 #     separate_features_ui()
-                 #   })
-                 
+
                  # 5. Separate Features Entry: Dynamic Update ------------------
                  # Observers for separate features only update for server 
                  # instances where features_entered
@@ -798,13 +792,54 @@ plot_selections_server <- function(id,
                      })
                    }
                  
-                 ## 6.2 Render plot ####
+                 ## 6.2. Render plot ####
                  # Height and width arguments are left undefined
                  # If undefined, they will use the values from plotOutput, which
                  # respond to the manual dimensions inputs.
                  output$plot <- renderPlot({
                    plot()
                  })
-                   
+                 
+                 # 7. Download Handler -----------------------------------------
+                 output$download <- downloadHandler(
+                   # Filename: takes the label and replaces 
+                   # spaces with underscores
+                   filename = glue("{sub(' ','_',plot_label)}.png"),
+                   content = function(file){
+                     # Conditional: manual dimensions are specified
+                     if (
+                       (!is.null(manual_dim$width())) && 
+                       (!is.null(manual_dim$height()))
+                     ){
+                       # If manual dimensions are specified, apply them to 
+                       # height and width arguments
+                       ggsave(
+                         file,
+                         plot = plot(),
+                         device = "png",
+                         width = manual_dim$width(),
+                         height = manual_dim$height(),
+                         # Set dpi to 72 so proportions of downloaded plot 
+                         # match the plot in the app
+                         dpi = 72,
+                         units = "px",
+                         # Set background color to white (background is 
+                         # transparent on some plots)
+                         bg="#FFFFFF"
+                         )
+                     } else {
+                       ggsave(
+                         file,
+                         plot = plot(),
+                         device = "png",
+                         # Set background color to white (background is 
+                         # transparent on some plots)
+                         bg ="#FFFFFF"
+                         )
+                       }
+                     },#End content function
+                   contentType = "image/png"
+                 ) #End downloadHandler function
+                 
                  })
   }

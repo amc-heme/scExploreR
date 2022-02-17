@@ -117,6 +117,7 @@ assay_info <- assay_list(
 )
 
 # Create a list of valid features using the assays defined above
+# TODO: edit feature_list_all() to handle config$assays
 valid_features <- 
   feature_list_all(
     sobj,
@@ -128,146 +129,71 @@ valid_features <-
     numeric_metadata_title = numeric_metadata_title
     )
 
-##Define searchable features and Metadata ####
-#Gene_expression features
-#genes <- rownames(sobj)
-
-### Define function to build feature lists from arbitrary assays
-feature_list <- function(assay, prefix_machine, suffix_human) {
-  #Fetch features in Seurat object by assay
-  features <- rownames(sobj[[assay]])
-  #Human-readable feature names
-  human_readable <- paste0(features, suffix_human)
-  #Machine-readable feature names (format "<prefix>_<feature_name>")
-  machine_readable <- paste0(prefix_machine, features)
-  #Zip above into a list of key-value pairs (human-readable features as keys, machine-readable features as values)
-  split(machine_readable, human_readable)
-}
-
-#For future generalization of app: fetch names of all assays to pass to functions
-#for generating feature lists
-#assays <- names(sobj@assays)
-
-###ADT features
-#adt_list <- feature_list("ADT", "adt_", " (Surface Protein)")
-
-###Gene Signatures
-#sig_list <- feature_list("SIG", "sig_", " (Gene Signature)")
-
-#Metadata columns (only numeric columns can be plotted)
-#meta_cols <- names(sobj@meta.data)
-
-#Select columns that have numeric or integer values
-#numeric_cols <- meta_cols[sapply(meta_cols, FUN=function(x){
-#  (class(sobj@meta.data[[x]])=="numeric") || (class(sobj@meta.data[[x]])=="integer")
-#  })]
-
-#Combine into list
-#valid_features <- list(`Genes`=as.list(genes),
-#                       `Surface Protein Markers`=adt_list,
-#                       `Gene Signature Scores`=sig_list,
-#                       `Metadata Features`=as.list(numeric_cols))
-
-#Metadata variables to group and split by in drop down menus
-
 # category_labels: list of labels for each metadata category (names are the
 # category IDs and the values are the labels chosen)
 category_labels <- lapply(config$metadata, function(category){category$label})
 
-#Specify metadata variables to group and split by in drop down menus
-#meta_choices: a named vector with name-value pairs for the display name of the 
-#metadata category and the key used to access the category in the Seurat Object
-
-#Construct from config file
-#Base vector: contains the "none" option
+# Specify metadata variables to group and split by in drop down menus
+# meta_choices: a named vector with name-value pairs for the display name of the 
+# metadata category and the key used to access the category in the Seurat Object
+ 
+# Construct from config file
+# Base vector: contains the "none" option
 meta_choices <- c("None"="none")
-#Iteratively populate vector using entries in the metadata section of the config file 
+# Iteratively populate vector using entries in the metadata section 
+# of the config file 
 for (category in names(config$metadata)){
-  #Use setNames from the stats package to add a new name-value pair to the vector
+  # Use setNames from the stats package to add a new name-value 
+  # pair to the vector
   meta_choices <- setNames(
-    #Add `meta_colname` to vector
+    # Add `meta_colname` to vector
     object = c(meta_choices, 
                config$metadata[[category]]$meta_colname),
-    #Add `label` to the vector as a name
+    # Add `label` to the vector as a name
     nm = c(names(meta_choices),
            config$metadata[[category]]$label)
   )
 }
 
-#Choices are specific to the D0/D30 object
-#meta_choices <- c("None"="none",
-#                  "Clusters"="clusters",
-#                  "Response"="response",
-#                  "Response (Additional Detail)"="best_response",
-#                  "Timepoint (Approximate)"="treatment",
-#                  "Patient ID"="htb")
-
-##Plots tab ####
-#Store UMAP Dimensions of full object
-#This is used to allow plotting of subsets with original axes scales
-#Plot a UMAP of the full data, store it to memory, and record the
-#x and y limits of the plot
+## Plots tab ####
+# Store UMAP Dimensions of full object
+# This is used to allow plotting of subsets with original axes scales
+# Plot a UMAP of the full data, store it to memory, and record the
+# x and y limits of the plot
 umap_orig <- DimPlot(sobj, 
                       group.by = "clusters")
-#Record limits
+# Record limits
 xlim_orig <- layer_scales(umap_orig)$x$range$range
 ylim_orig <- layer_scales(umap_orig)$y$range$range
 
-#Store number of cells: used to determine if it is a subset
-#TODO: does this apply to non-CITEseq datasets?
+# Store number of cells: used to determine if it is a subset
+# TODO: does this apply to non-CITEseq datasets?
 n_cells_original <- ncol(sobj)
 
-##Define Valid Metadata Selections####
-#The unique values for each metadata category listed in the config file will be 
-#stored as vectors in a list 
+## Define Valid Metadata Selections####
+# The unique values for each metadata category listed in the config 
+# file will be stored as vectors in a list 
 unique_metadata <- list()
-#Store unique values for each metadata category entered
+# Store unique values for each metadata category entered
 for (category in names(config$metadata)){
-  #Use sobj@meta.data[[category]] instead of sobj[[category]] to return a vector
+  # Use sobj@meta.data[[category]] instead of sobj[[category]] 
+  # to return a vector (sobj[[category]] returns a dataframe)
   unique_metadata[[category]] <- unique(sobj@meta.data[[category]])
-  #If the metadata category is a factor, convert to a vector with levels() to 
-  #avoid integers appearing in place of the unique values themselves
+  # If the metadata category is a factor, convert to a vector with levels() to 
+  # avoid integers appearing in place of the unique values themselves
   if(class(unique_metadata[[category]])=="factor"){
     unique_metadata[[category]] <- levels(unique_metadata[[category]])
   }
 }
 
-#Clusters dropdown
-#clusters <- levels(unique(sobj$clusters)) 
-
-#Response dropdown
-#responses <- unique(sobj$response)
-
-#Treatment dropdown (for d0/d30 object. Shows as 'approximate timepoint')
-#treatments <- unique(sobj$treatment)
-
-#Patients dropdown
-#Create vector and list of patients
-#Vector is processed by server; list of patients sorted by dataset type (normal 
-#bone marrow, d0/d30, dx/Rl) is displayed to user
-#Vector of all patients
-#patients <- unique(sobj$htb)
-#Use function from R/d0-d30_patient_list.R to build list of patients 
-#patients_categories <- build_patient_list(patients)
-#Apply sorting function to patients_categories so this list appears in order initially
-#patients_categories <- sort_patient_list(patients_categories)
-
-#Compile the valid selections above into a valid choices (vc) list, 
-#so choices can be more easily passed to functions
-# choices <- list("clusters" = clusters,
-#            "responses" = responses, 
-#            "treatments" = treatments,
-#            "patients" = patients,
-#            "patients_categories" = patients_categories)
-
-#Non-zero proportion threshold: if the proportion of cells for a gene is below 
-#this threshold, return a warning to the user.
+# Non-zero proportion threshold: if the proportion of cells for a gene is below 
+# this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
-#Error Handling: define possible errors ####
-#Errors are defined in a list using the functions in "./R/error_handling.R". 
-#The error_handler() function is executed in a tryCatch() statement and checks
-#the error message returned against a list of errors.
+# Error Handling: define possible errors ####
+# Errors are defined in a list using the functions in "./R/error_handling.R". 
+# The error_handler() function is executed in a tryCatch() statement and checks
+# the error message returned against a list of errors.
 ## List of errors for subset operations ####
 error_list <- list(
   add_error_notification(
@@ -279,13 +205,13 @@ error_list <- list(
         Please narrow down the subset scope using the restriction criteria to 
         the left, and feel free to", 
         github_link(display_text = "let us know"),
-        " ",#Space after link
+        " ", # Space after link
         "if you repeatedly recieve this error.")#End tagList
-      ),#End icon_notification_ui
+      ), # End icon_notification_ui
     notification_id = "mem_error"
-    ),#End add_error_notification
+    ), # End add_error_notification
   
-  #Error 2: Vector memory exhausted
+  # Error 2: Vector memory exhausted
   add_error_notification(
     message="vector memory exhausted",
     notification_ui=icon_notification_ui_2(
@@ -294,11 +220,11 @@ error_list <- list(
       github_link("contact us"),
       " with a screenshot of the response criteria selected. For now, narrowing 
       down the subset criteria may resolve the error."
-      ),#End icon_notification_ui
+      ), # End icon_notification_ui
     notification_id = "vector_mem_error"
 ),
 
-#Error 3: No Cells in Subset
+# Error 3: No Cells in Subset
 add_error_notification(
   message = "No cells found",
   icon_notification_ui_2(
@@ -307,12 +233,12 @@ add_error_notification(
     subset dropdowns for mutually exclusive selections. If you recieve this error 
     for combinations that should be valid, please",
     github_link("let us know"),
-    #Period at end of link
+    # Period at end of link
     "."
-    ),#End icon_notification_ui
+    ), # End icon_notification_ui
   notification_id = "no_cells_found"
-  )#End add_error_notification
-)#End list of error definitions (subset_errors)
+  )# End add_error_notification
+)# End list of error definitions (subset_errors)
 
 # Table of Contents #####
 # TODO: Add module tree here
@@ -320,20 +246,20 @@ add_error_notification(
 # Main UI ----------------------------------------------------------------------
 # Navigation panel and references to tabs
 ui <- tagList(
-  #Add CSS from each .css file in the www/ directory
-  #Uses a list of style tags defined at startup
+  # Add CSS from each .css file in the www/ directory
+  # Uses a list of style tags defined at startup
   css_list,
-  #Introjs UI: for guided tour
+  # Introjs UI: for guided tour
   introjsUI(),
-  #Waiter UI: spinners
+  # Waiter UI: spinners
   useWaiter(),
-  #Shinyjs: a Shiny JavaScript extension
+  # Shinyjs: a Shiny JavaScript extension
   useShinyjs(),
-  #CSS style: prevents navbar from appearing on top of content 
-  #tags$head(tags$style(HTML("body{
-  #                          padding-top: 60px;
-  #                          }"))),
-  #CSS and JS for collapsible panel
+  # CSS style: prevents navbar from appearing on top of content 
+  # tags$head(tags$style(HTML("body{
+  #                           padding-top: 60px;
+  #                           }"))),
+  # CSS and JS for collapsible panel
   navbarPage("Shiny scExplorer",
              windowTitle="Shiny scExplorer",
              position="fixed-top",
@@ -361,7 +287,7 @@ ui <- tagList(
                         metadata_config = config$metadata
                         )
                       )
-             ), #End navbarPage()
+             ), # End navbarPage()
   # Help button - Creates a Dropdown menu when clicked
   # Button should appear in the upper right hand corner of the navbar menu
   # This will be achieved with the button_wizzard.js script
@@ -413,35 +339,35 @@ ui <- tagList(
             rel="noopener noreferrer" 
             ),
           
-          #Tutorial Document
+          # Tutorial Document
           tags$a(
             "Tutorial Vignette",
             href="Shiny_Vignette.html",
             class="blue_hover",
-            #Opens link in new tab
+            # Opens link in new tab
             target="_blank", 
             rel="noopener noreferrer" 
-            ), #End Detailed Walkthrough link
+            ), # End Detailed Walkthrough link
           
-          #File issue on github
+          # File issue on github
           tags$a(
             "Report a Bug",
             href="https://github.com/amc-heme/DataExploreShiny/issues",
             class="blue_hover",
-            #Opens link in new tab
+            # Opens link in new tab
             target="_blank", 
             rel="noopener noreferrer")
-          )#End tagList
-        )#End Help Button
-      )#End introBox2
-    ),#End introBox 1
-  #Include list of scripts built from .js files in www/ directory
+          )# End tagList
+        ) #End Help Button
+      ) #End introBox2
+    ), #End introBox 1
+  # Include list of scripts built from .js files in www/ directory
   js_list
 )
 
 # 2. Main Server function ------------------------------------------------------
 server <- function(input,output,session){
-  ## 2.1. Plots Tab #####
+  ## 2.1. Plots Tab Server Module #####
   plots_tab_server(
     id = "plots",
     sobj = sobj,
@@ -455,97 +381,6 @@ server <- function(input,output,session){
     ylim_orig = ylim_orig,
     metadata_config = config$metadata
     )
-  
-  # #### 2.1.2.9. Download UMAP Plot ####
-  # output$umap_download <- downloadHandler(
-  #   filename = "UMAP_plot.png",
-  #   content = function(file){
-  #     if (input$umap_manual_dim==TRUE){
-  #       ggsave(file, 
-  #              plot=umap_plot_content(), 
-  #              device="png",
-  #              width=umap_width(),
-  #              height=umap_height(),
-  #              dpi=72,
-  #              units="px")
-  #     } else {
-  #       ggsave(file, 
-  #              plot=umap_plot_content(), 
-  #              device="png")
-  #     }
-  #   },#End content function
-  #   contentType = "image/png"
-  # ) #End downloadHandler function
-  # 
-  # 
-  # #Feature and Violin Plots: choose whether to render a plot or a message based on user inputs
-  # 
-  # #### 2.1.3.7. Feature Plot Download ####
-  # output$feature_download <- downloadHandler(
-  #   filename = "Feature_plot.png",
-  #   content = function(file){
-  #     if (input$feature_manual_dim==TRUE){
-  #       ggsave(file, 
-  #              plot=feature_plot_content(), 
-  #              device="png",
-  #              width=feature_width(),
-  #              height=feature_height(),
-  #              dpi=72,
-  #              units="px")
-  #     } else {
-  #       ggsave(file, 
-  #              plot=feature_plot_content(), 
-  #              device="png")
-  #     }
-  #   },#End content function
-  #   contentType = "image/png"
-  # ) #End downloadHandler function
-  # 
-  # #### 2.1.4.6. Violin Plot Download ####
-  # output$vln_download <- downloadHandler(
-  #   filename = "Violin_plot.png",
-  #   content = function(file){
-  #     if (input$vln_manual_dim==TRUE){
-  #       ggsave(file, 
-  #              plot=vln_plot_content(), 
-  #              device="png",
-  #              width=vln_width(),
-  #              height=vln_height(),
-  #              dpi=72,
-  #              units="px")
-  #     } else {
-  #       ggsave(file, 
-  #              plot=vln_plot_content(), 
-  #              device="png")
-  #     }
-  #   },#End content function
-  #   contentType = "image/png"
-  # ) #End downloadHandler function
-  # 
-  #### 2.1.5.6. Dot Plot Download #####
-  # output$dot_download <- downloadHandler(
-  #   filename = "Dot_plot.png",
-  #   content = function(file){
-  #     if (input$dot_manual_dim==TRUE){
-  #       ggsave(file, 
-  #              plot=dot_plot_content(), 
-  #              device="png",
-  #              width=dot_width(),
-  #              height=dot_height(),
-  #              dpi=72,
-  #              units="px",
-  #              #Explicitly state white background color (plots were transparent)
-  #              bg="#FFFFFF")
-  #     } else {
-  #       ggsave(file, 
-  #              plot=dot_plot_content(), 
-  #              device="png",
-  #              #White background
-  #              bg="#FFFFFF")
-  #     }
-  #   },#End content function
-  #   contentType = "image/png"
-  # ) #End downloadHandler function
   
   ## 2.2. DGE Tab Server Module ####
   dge_tab_server(id = "dge",

@@ -167,7 +167,7 @@ plots_tab_ui <- function(id,
              inputId = ns("umap_collapsible"),
              label = "UMAP Specific Options (Modular)",
              active = TRUE,
-             plot_selections_ui(
+             plot_module_ui(
                id = ns("umap"),
                ui_component = "options",
                meta_choices = meta_choices,
@@ -191,7 +191,7 @@ plots_tab_ui <- function(id,
              inputId = ns("feature_collapsible"),
              label = "Feature Plot Specific Options (Modular)",
              active = FALSE,
-             plot_selections_ui(
+             plot_module_ui(
                id = ns("feature"),
                ui_component = "options",
                meta_choices = meta_choices,
@@ -215,7 +215,7 @@ plots_tab_ui <- function(id,
              inputId = ns("vln_collapsible"),
              label = "Violin Plot Specific Options (Modular)",
              active = FALSE,
-             plot_selections_ui(
+             plot_module_ui(
                id = ns("violin"),
                ui_component = "options",
                meta_choices = meta_choices,
@@ -239,7 +239,7 @@ plots_tab_ui <- function(id,
              inputId = ns("dot_collapsible"),
              label = "Dot Plot Specific Options (Modular)",
              active = FALSE,
-             plot_selections_ui(
+             plot_module_ui(
                id = ns("dot"),
                ui_component = "options",
                meta_choices = meta_choices,
@@ -268,7 +268,7 @@ plots_tab_ui <- function(id,
            # Panels for plots: display if checkboxes corresponding to 
            # each type are checked
            ## 2.1. UMAP plot panel
-           plot_selections_ui(
+           plot_module_ui(
              id = ns("umap"),
              ui_component = "plot"
            ),
@@ -276,20 +276,20 @@ plots_tab_ui <- function(id,
            ## 2.2. Panel for feature plot 
            # Will be a message or a plot, depending on whether features have 
            # been entered
-           plot_selections_ui(
+           plot_module_ui(
              id = ns("feature"),
              ui_component = "plot"
            ),
            
            ## 2.3. Panel for violin plot
            # UI displayed will vary based on the entry into the feature text box
-           plot_selections_ui(
+           plot_module_ui(
              id = ns("violin"),
              ui_component = "plot"
            ),
            
            ## 2.4. Dot plot panel
-           plot_selections_ui(
+           plot_module_ui(
              id = ns("dot"),
              ui_component = "plot"
            )
@@ -381,9 +381,9 @@ plots_tab_server <- function(id,
                    )
                  
                  # 2. Plot Modules ---------------------------------------------
-                 # A plot_selections module server is created for each plot
+                 # A server instance of the plot_module is created for each plot
                  # UMAP Plot
-                 plot_selections_server(
+                 plot_module_server(
                    id = "umap",
                    object = plots_subset, # Reactive
                    # plot_switch: uses the input$make_umap switch
@@ -397,7 +397,7 @@ plots_tab_server <- function(id,
                    )
                  
                  # Feature Plot
-                 plot_selections_server(
+                 plot_module_server(
                    id = "feature",
                    object = plots_subset, # Reactive
                    # plot_switch: uses the input$make_feature switch
@@ -411,7 +411,7 @@ plots_tab_server <- function(id,
                    )
                  
                  # Violin Plot
-                 plot_selections_server(
+                 plot_module_server(
                    id = "violin",
                    object = plots_subset, # Reactive
                    # plot_switch: uses the input$make_vln switch
@@ -424,7 +424,7 @@ plots_tab_server <- function(id,
                    )
                  
                  # Dot plot
-                 plot_selections_server(
+                 plot_module_server(
                    id = "dot",
                    object = plots_subset, # Reactive
                    # plot_switch: uses the input$make_dot switch
