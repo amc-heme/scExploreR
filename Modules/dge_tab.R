@@ -99,12 +99,7 @@ dge_tab_server <- function(id,
                function(input,output,session){
                  #Namespace function: for dynamic UI and modules
                  ns <- session$ns
-                 
-                 # This will become TRUE when the subset button is pressed at 
-                 # least once
-                 #  submit_pressed <- reactive({FALSE})
-                 # submit_pressed <- FALSE
-                  
+
                  # Create spinners to display during computation in dge tab
                   
                  # Spinner for options panel
@@ -211,7 +206,6 @@ dge_tab_server <- function(id,
                      #properly generated (endless spinner results otherwise)
                      ignoreInit = FALSE,
                      {
-                       print("3.2 Process subset criteria")
                        #Retrieve information from test_selections
                        #Category
                        group_by_category <- test_selections()$group_by
@@ -244,7 +238,6 @@ dge_tab_server <- function(id,
                      label = "DGE: Subset",
                      ignoreNULL = FALSE,
                      {
-                       print("3.3 make subset")
                        #Create subset from selections and return
                        subset <- 
                          make_subset(
@@ -256,23 +249,6 @@ dge_tab_server <- function(id,
                        })
                  
                  ## 3.4. Compute subset stats
-                 # subset_stats <- 
-                 #   eventReactive(
-                 #     subset(),
-                 #     label = "DGE: Subset Stats",
-                 #     ignoreNULL = FALSE,
-                 #     #Do not run at startup
-                 #     #ignoreInit = TRUE,
-                 #     {
-                 #       print("3.4 subset stats")
-                 #       #Initiate subset_stats server and store output
-                 #      
-                 #       
-                 #       #Return computed stats from the server module
-                 #       return(stats())
-                 #   }
-                 # )
-                 
                  subset_stats <-
                    subset_stats_server(
                      id = "subset_stats",
@@ -294,7 +270,6 @@ dge_tab_server <- function(id,
                      label = "DGE: Run Presto",
                      ignoreNULL = FALSE,
                      {
-                       print("3.5 Run Presto")
                        dge_table <-
                          # Run presto on the subset, using the group by category
                          wilcoxauc(subset(), group_by = group_by_category()) %>%
@@ -322,7 +297,6 @@ dge_tab_server <- function(id,
                      label = "DGE: DT Generation",
                      ignoreNULL=FALSE,
                      {
-                       print("3.6. Make DT Table")
                        datatable(
                          dge_table_content(),
                          class = "compact stripe cell-border hover",
@@ -341,7 +315,6 @@ dge_tab_server <- function(id,
                      ignoreNULL = FALSE,
                      label = "DGE: UMAP", 
                      {
-                       print("3.7. DGE UMAP")
                        #ncol_argument: number of columns
                        #Based on number of classes being analyzed in the subset. 
                        #Access with double brackets returns a dataframe.
@@ -389,7 +362,6 @@ dge_tab_server <- function(id,
                      #ignoreInit=TRUE,
                      #ignoreNULL = FALSE,
                      {
-                       print("4. DGE Main UI")
                        #User-defined label for group-by variable (for printing
                        #in UI below)
                        #TODO: make sure this updates when a different group
@@ -484,9 +456,6 @@ dge_tab_server <- function(id,
                      label = "DGE: UMAP Options Panel",
                      #ignoreNULL = FALSE,
                      {
-                       print("dge_umap")
-                       print(dge_umap())
-                       print("class of dge_umap: {class(dge_umap())}")
                        #Display options panel after the umap is created
                        #Test: dge_umap is of class 'ggplot'
                        if ("ggplot" %in% class(dge_umap())){

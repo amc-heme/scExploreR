@@ -486,9 +486,6 @@ corr_tab_server <- function(id,
                        # state at initialization), prompt user to enter features
                        # isTruthy will cover a variety of possible scenarios
                        # ("" or NULL). This is the same test used by req()
-                       print(glue("UI: value of feature selection {input$feature_selection}"))
-                       print(glue("UI Truthy test for feature selection: 
-                                  {isTruthy(input$feature_selection)}"))
                        if (!isTruthy(input$feature_selection)){
                          tags$h3("Enter a feature and press submit to 
                          view correlated features. You may also 
