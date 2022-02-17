@@ -440,7 +440,7 @@ dge_tab_server <- function(id,
                          #Display button to download table after table is created
                          div(
                            downloadButton(
-                             outputId = "dge_download_table",
+                             outputId = ns("download_table"),
                              label = "Download Table",
                              icon = icon("table")
                            )
@@ -506,9 +506,11 @@ dge_tab_server <- function(id,
                  })
                  
                  #UMAP plot
-                 output$umap <- renderPlot({
+                 output$umap <- suppressGraphics(
+                   renderPlot({
                    dge_umap()
                  })
+                 )
                  
                  #During development: render outputs of reactive variables in tab
                  # output$test_selection_output <- renderPrint({

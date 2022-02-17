@@ -1,30 +1,30 @@
 ### Load Libraries and Data ####
-#Initialize libraries
+# Initialize libraries
 library(shiny)
-library(Seurat)
+library(Seurat, quietly = TRUE, warn.conflicts = FALSE)
 
-#Shiny add-ons 
-library(shinyWidgets)
-library(rintrojs)
-library(shinydashboard)
-library(waiter)
-library(shinycssloaders)
-library(shinyjs)
+# Shiny add-ons 
+library(shinyWidgets, quietly = TRUE, warn.conflicts = FALSE)
+library(rintrojs, quietly = TRUE, warn.conflicts = FALSE)
+library(shinydashboard, quietly = TRUE, warn.conflicts = FALSE)
+library(waiter, quietly = TRUE, warn.conflicts = FALSE)
+library(shinycssloaders, quietly = TRUE, warn.conflicts = FALSE)
+library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
 
-#Reactlog (for debugging)
-library(reactlog)
-options(shiny.reactlog=TRUE)
+# Reactlog (for debugging)
+library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
+options(shiny.reactlog=TRUE, warn.conflicts = FALSE)
 
-#Tidyverse Packages
-library(tidyverse)
-library(stringr)
-library(dplyr)
-library(ggplot2)
-library(glue)
-library(DT)
+# Tidyverse Packages
+library(tidyverse, quietly = TRUE, warn.conflicts = FALSE)
+library(stringr, quietly = TRUE, warn.conflicts = FALSE)
+library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
+library(glue, quietly = TRUE, warn.conflicts = FALSE)
+library(DT, quietly = TRUE, warn.conflicts = FALSE)
 
-#Additional Backend Packages
-library(presto)
+# Additional Backend Packages
+library(presto, quietly = TRUE, warn.conflicts = FALSE)
 
 #Load functions in ./R directory
 #Get list of files
@@ -51,7 +51,7 @@ source_files <-
       )
     )
 
-#Use source() to import files into R
+# Use source() to import files into R
 sapply(source_files, source)
 
 #Load CSS files for app: CSS files are defined and each file is converted to a
@@ -87,16 +87,16 @@ js_files <-
 #Create list of style tags for each CSS file
 js_list <- lapply(js_files,includeScript)
 
-#Load Seurat object (D0/D30 data, modified to include gene signature scores)
-#https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
+# Load Seurat object (D0/D30 data, modified to include gene signature scores)
+# https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
 # Object Config ####
 #Load config file
 config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
 
-#For now, this will be hard-coded. Later, these variables will be defined from
-#a .config file created from the config applet.
+# For now, this will be hard-coded. Later, these variables will be defined from
+# a .config file created from the config applet.
 include_numeric_metadata <- TRUE
 numeric_metadata_title <- "Metadata Features"
 
