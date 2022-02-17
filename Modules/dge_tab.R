@@ -97,7 +97,7 @@ dge_tab_server <- function(id,
                            meta_choices){
   moduleServer(id,
                function(input,output,session){
-                 #Namespace function: for dynamic UI and modules
+                 #Server namespace function: for dynamic UI and modules
                  ns <- session$ns
 
                  # Create spinners to display during computation in dge tab
