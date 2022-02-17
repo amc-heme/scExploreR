@@ -25,6 +25,7 @@ library(DT, quietly = TRUE, warn.conflicts = FALSE)
 
 # Additional Backend Packages
 library(presto, quietly = TRUE, warn.conflicts = FALSE)
+library(R.devices, quietly = TRUE, warn.conflicts = FALSE)
 
 #Load functions in ./R directory
 #Get list of files
@@ -95,13 +96,8 @@ sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 #Load config file
 config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
 
-# For now, this will be hard-coded. Later, these variables will be defined from
-# a .config file created from the config applet.
-include_numeric_metadata <- TRUE
-numeric_metadata_title <- "Metadata Features"
-
-##Define searchable features and Metadata ####
-#Assay list: created using functions in Object_Specific_Processing.R
+# Define searchable features and Metadata --------------------------------------
+# Assay list: created using functions in Object_Specific_Processing.R
 assay_info <- 
   assay_list(
     #Genes: include even though it is the default assay 
@@ -137,6 +133,11 @@ assay_info <-
     )
 )
 
+# Config information for metadata ----------------------------------------------
+# For now, this will be hard-coded. Later, these variables will be defined from
+# a .config file created from the config applet.
+include_numeric_metadata <- TRUE
+numeric_metadata_title <- "Metadata Features"
 
 # Create a list of valid features using the assays defined above
 # TODO: edit feature_list_all() to handle config$assays
@@ -151,15 +152,18 @@ valid_features <-
     #The same is true for numeric_metadata_title
     numeric_metadata_title = numeric_metadata_title)
 
+# meta_categories: a vector giving the IDs of each of the categories defined
+# in the metadata section of the config file
+meta_categories <- names(config$metadata)
+
 # category_labels: list of labels for each metadata category (names are the
 # category IDs and the values are the labels chosen)
 category_labels <- lapply(config$metadata, function(category){category$label})
 
-# Specify metadata variables to group and split by in drop down menus
-# meta_choices: a named vector with name-value pairs for the display name of the 
-# metadata category and the key used to access the category in the Seurat Object
- 
-# Construct from config file
+# meta_choices: used for group by and split by choices
+# A named vector with name-value pairs for the display name of the metadata
+# category and the key used to access the category in the Seurat Object. 
+# Constructed from config file
 # Base vector: contains the "none" option
 meta_choices <- c("None"="none")
 # Iteratively populate vector using entries in the metadata section 
@@ -177,21 +181,6 @@ for (category in names(config$metadata)){
   )
 }
 
-## Plots tab ####
-# Store UMAP Dimensions of full object
-# This is used to allow plotting of subsets with original axes scales
-# Plot a UMAP of the full data, store it to memory, and record the
-# x and y limits of the plot
-umap_orig <- DimPlot(sobj, 
-                      group.by = "clusters")
-# Record limits
-xlim_orig <- layer_scales(umap_orig)$x$range$range
-ylim_orig <- layer_scales(umap_orig)$y$range$range
-
-# Store number of cells: used to determine if it is a subset
-# TODO: does this apply to non-CITEseq datasets?
-n_cells_original <- ncol(sobj)
-
 ## Define Valid Metadata Selections####
 # The unique values for each metadata category listed in the config 
 # file will be stored as vectors in a list 
@@ -207,6 +196,21 @@ for (category in names(config$metadata)){
     unique_metadata[[category]] <- levels(unique_metadata[[category]])
   }
 }
+
+## Plots tab ####
+# Store UMAP Dimensions of full object
+# This is used to allow plotting of subsets with original axes scales
+# Plot a UMAP of the full data, store it to memory, and record the
+# x and y limits of the plot
+umap_orig <- DimPlot(sobj, 
+                      group.by = "clusters")
+# Record limits
+xlim_orig <- layer_scales(umap_orig)$x$range$range
+ylim_orig <- layer_scales(umap_orig)$y$range$range
+
+# Store number of cells: used to determine if it is a subset
+# TODO: does this apply to non-CITEseq datasets?
+n_cells_original <- ncol(sobj)
 
 # Non-zero proportion threshold: if the proportion of cells for a gene is below 
 # this threshold, return a warning to the user.

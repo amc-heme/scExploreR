@@ -745,7 +745,7 @@ corr_tab_server <- function(id,
                            })
                          
                          # Make and store scatterplot
-                         FeatureScatter(obj_sub(), 
+                         FeatureScatter(subset(), 
                                         feature1 = corr_main_gene(),
                                         feature2 = corr_secondary_gene(),
                                         # group.by and split.by 
