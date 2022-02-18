@@ -182,7 +182,7 @@ plot_module_ui <- function(id,
           outputId = ns("download"), 
           label=glue("Download {plot_label}")
           )
-      } else NULL,
+      } else NULL
     )
     
   } else if (ui_component == "plot"){
@@ -265,11 +265,24 @@ plot_module_server <- function(id,
                      # Special conditional used 
                      # input$ncol will still have a value if input$split by is 
                      # changed from a metadata category to "none" 
-                     `ncol` = reactive({
-                       if (input$split_by != "none"){
-                         input$ncol
-                       } else NULL
-                     }),
+                     `ncol` = 
+                       if (plot_type == "dimplot"){
+                         # Condition to record ncol for UMAP
+                         # Equal to conditions where there are multiple panels
+                         reactive({
+                           if (input$split_by != "none"){
+                             input$ncol
+                             } else NULL
+                           })
+                         } else if (plot_type == "violin"){
+                           # Condition to record ncol for violin plot
+                           # Equal to conditions where there are multiple panels
+                           reactive({
+                             if (length(features_entered()) > 1){
+                               input$ncol
+                               } else NULL
+                             })
+                           },
                      
                      # Include legend
                      `legend` = reactive({
