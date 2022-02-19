@@ -10,8 +10,7 @@
 # show_legend: user choice as to whether a legend should be shown
 # ncol: number of columns, as specified by user
 # is_subset: reactive boolean value stating whether the object is a subset
-# assay_info: contains information on the assays included. 
-# TODO: update assay_info and dependent functions using config file
+# assay_config: the assays section of the config file loaded at app startup.
 shiny_vln <- function(
   object, # Reactive
   features_entered, # Reactive
@@ -19,7 +18,7 @@ shiny_vln <- function(
   split_by, # Reactive
   show_legend, # Reactive
   ncol, # Reactive
-  assay_info # Non-reactive
+  assay_config # Non-reactive
 ){
   # At least one feature must be entered to avoid errors when computing plot
   if (length(features_entered()) > 0){
@@ -56,7 +55,7 @@ shiny_vln <- function(
     # Determine number of plots created
     n_patches <- n_patches(vln_plot)
     # Iterate through each plot, correcting the title
-    vln_plot <- hr_title(vln_plot,n_patches,assay_info)
+    vln_plot <- hr_title(vln_plot, n_patches, assay_config)
     
     # Return the plot
     vln_plot

@@ -211,7 +211,7 @@ plot_module_ui <- function(id,
 # xlim_orig: the x limits of the dimplot of the full Seurat object (before a
 # subset is created). This only applies to dimplots and feature plots.
 # ylim_orig: the y limits of the dimplot of the full Seurat object.
-# assay_info: list of assay information generated in main server at startup
+# assay_config: the assays section of the config file loaded at app startup.
 # separate_features_separate: a boolean giving whether server code to process 
 # separate features (features specific to the plot created by this module) 
 # should be ran
@@ -230,7 +230,7 @@ plot_module_server <- function(id,
                                    xlim_orig = NULL, #Non-reactive
                                    ylim_orig = NULL, #Non-reactive
                                    #Currently only needed for feature plots
-                                   assay_info = NULL, #Non-reactive
+                                   assay_config = NULL, #Non-reactive
                                    separate_features_server =  FALSE #Non-reactive
                                    ){
   moduleServer(id,
@@ -262,10 +262,13 @@ plot_module_server <- function(id,
                      }),
                      
                      # Number of columns in multi-panel plot
-                     # Special conditional used 
-                     # input$ncol will still have a value if input$split by is 
-                     # changed from a metadata category to "none" 
+                     # Special conditional used (in some cases ncol will still 
+                     # have a value in situations where it shouldn't, and this
+                     # can affect the plots)
                      `ncol` = 
+                       # Conditions under which ncol should be defined vary 
+                       # based on plot type. Separate reactive expressions are
+                       # created based on the plot type used for the module.
                        if (plot_type == "dimplot"){
                          # Condition to record ncol for UMAP
                          # Equal to conditions where there are multiple panels
@@ -759,7 +762,7 @@ plot_module_server <- function(id,
                          show_legend = plot_selections$legend,
                          is_subset = is_subset,
                          original_limits = plot_selections$limits,
-                         assay_info = assay_info,
+                         assay_config = assay_config,
                          xlim_orig = xlim_orig,
                          ylim_orig = ylim_orig
                          )
@@ -776,7 +779,7 @@ plot_module_server <- function(id,
                          split_by = plot_selections$split_by,
                          show_legend = plot_selections$legend,
                          ncol = plot_selections$ncol,
-                         assay_info = assay_info
+                         assay_config = assay_config
                          )
                      })
                  } else if (plot_type == "dot") {

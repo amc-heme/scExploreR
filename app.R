@@ -1,5 +1,5 @@
-### Load Libraries and Data ####
-# Initialize libraries
+# Load Libraries and Data ------------------------------------------------------
+## Initialize libraries ####
 library(shiny)
 library(Seurat, quietly = TRUE, warn.conflicts = FALSE)
 
@@ -27,25 +27,26 @@ library(DT, quietly = TRUE, warn.conflicts = FALSE)
 library(presto, quietly = TRUE, warn.conflicts = FALSE)
 library(R.devices, quietly = TRUE, warn.conflicts = FALSE)
 
-#Load functions in ./R directory
-#Get list of files
+## Load CSS, JavaScript, and R scripts ####
+# Load functions in ./R directory
+# Get list of files
 source_files <- 
   list.files(
     path = "./R",
-    #Pattern, any set of characters, followed by ".R"
-    #Period is double escaped
+    # Pattern, any set of characters, followed by ".R"
+    # Period is double escaped
     pattern=".*\\.R", 
     full.names=TRUE, 
     ignore.case=TRUE
     )
 
-#Load .R files in modules directory
+# Load .R files in modules directory
 source_files <- 
   c(source_files, 
     list.files(
       path = "./Modules", 
-      #Pattern, any set of characters, followed by ".R"
-      #Period is double escaped
+      # Pattern, any set of characters, followed by ".R"
+      # Period is double escaped
       pattern=".*\\.R", 
       full.names=TRUE, 
       ignore.case=TRUE
@@ -55,10 +56,10 @@ source_files <-
 # Use source() to import files into R
 sapply(source_files, source)
 
-#Load CSS files for app: CSS files are defined and each file is converted to a
-#<script> tag using includeCSS(). Each tag defined is passed to a list, which is
-#included in the main UI function.
-#Get list of .css files in www/ directory
+# Load CSS files for app: CSS files are defined and each file is converted to a
+# <script> tag using includeCSS(). Each tag defined is passed to a list, which 
+# is included in the main UI function.
+# Get list of .css files in www/ directory
 css_files <- 
   list.files(
     path = "./www",
@@ -67,84 +68,49 @@ css_files <-
     ignore.case=TRUE
     )
 
-#Create list of style tags for each CSS file
+# Create list of style tags for each CSS file
 css_list <- lapply(css_files,includeCSS)
 
-#Load Javasctipt files for app: find all .js files in www/ directory and create
-#a list of script() tags using includeScript().
-#Get list of .js files in www/ directory
+# Load Javasctipt files for app: find all .js files in www/ directory and create
+# a list of script() tags using includeScript().
+# Get list of .js files in www/ directory
 js_files <- 
   list.files(
     path = "./www", 
-    #Regex: uses \\. to select for files ending in ".js".
-    #Pattern arguments require double backslashes for eacape 
-    #characters to work (R and regex use the same string 
-    #character)
+    # Regex: uses \\. to select for files ending in ".js".
+    # Pattern arguments require double backslashes for eacape 
+    # characters to work (R and regex use the same string 
+    # character)
     pattern=".*\\.js", 
     full.names=TRUE, 
     ignore.case=TRUE,
     include.dirs = FALSE
     )
-#Create list of style tags for each CSS file
+# Create list of style tags for each CSS file
 js_list <- lapply(js_files,includeScript)
 
-# Load Seurat object (D0/D30 data, modified to include gene signature scores)
+# Load Seurat Object and Config File -------------------------------------------
+# currently, D0/D30 data, modified to include gene signature scores
 # https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
-# Object Config ####
-#Load config file
+# Load config file
 config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
 
-# Define searchable features and Metadata --------------------------------------
-# Assay list: created using functions in Object_Specific_Processing.R
-assay_info <- 
-  assay_list(
-    #Genes: include even though it is the default assay 
-    #(it may not be in some objects)
-    assay_entry(
-      assay="RNA",
-      #machine-readable prefix: in some objects, this is capital; 
-      #in others, this is lowercase
-      prefix_machine = "rna_",
-      #no suffix used in the dropdown menu for genes
-      suffix_human = "",
-      #dropdown_title: the name that appears in the dividers in the 
-      #dropdown menu, which groups search results by assay. 
-      dropdown_title = "Genes"
-      ),
-  
-  #ADT assay
-  assay_entry(
-    assay = "ADT",
-    prefix_machine = "adt_",
-    suffix_human = " (Surface Protein)",
-    dropdown_title = "Surface Protein Markers"
-    ),
-  
-  #Gene signatures assay
-  assay_entry(
-    assay = "SIG", 
-    prefix_machine = "sig_", 
-    #The signatures do not need a suffix as they are distinct 
-    #from gene names. The dropdown menu title should be sufficient
-    suffix_human = "",
-    dropdown_title = "Gene Signature Scores"
-    )
-)
+# Split config file into metadata and assay lists for use downstream
+metadata_config <- config$metadata
+assay_config <- config$assays
 
-# Config information for metadata ----------------------------------------------
-# For now, this will be hard-coded. Later, these variables will be defined from
-# a .config file created from the config applet.
+# Define Searchable Features ---------------------------------------------------
+# TODO: add include_numeric_metadata as an option in the config app 
 include_numeric_metadata <- TRUE
 numeric_metadata_title <- "Metadata Features"
 
 # Create a list of valid features using the assays defined above
-# TODO: edit feature_list_all() to handle config$assays
 valid_features <- 
   feature_list_all(
     sobj,
-    assay_list = assay_info,
+    assay_config = assay_config,
     #include_numeric_metadata: a boolean variable 
     #that is hard-coded for now and will be 
     #defined in the config file
@@ -152,23 +118,24 @@ valid_features <-
     #The same is true for numeric_metadata_title
     numeric_metadata_title = numeric_metadata_title)
 
+# Define Metadata Used in App --------------------------------------------------
 # meta_categories: a vector giving the IDs of each of the categories defined
 # in the metadata section of the config file
-meta_categories <- names(config$metadata)
+meta_categories <- names(metadata_config)
 
 # category_labels: list of labels for each metadata category (names are the
 # category IDs and the values are the labels chosen)
-category_labels <- lapply(config$metadata, function(category){category$label})
+category_labels <- lapply(metadata_config, function(category){category$label})
 
-# meta_choices: used for group by and split by choices
-# A named vector with name-value pairs for the display name of the metadata
-# category and the key used to access the category in the Seurat Object. 
-# Constructed from config file
+## Metadata categories in dropdown menua ####
+# meta_choices: a named vector with name-value pairs for the display name of 
+# the metadata category and the key used to access the category in the Seurat 
+# Object. 
 # Base vector: contains the "none" option
 meta_choices <- c("None"="none")
 # Iteratively populate vector using entries in the metadata section 
 # of the config file 
-for (category in names(config$metadata)){
+for (category in meta_categories){
   # Use setNames from the stats package to add a new name-value 
   # pair to the vector
   meta_choices <- setNames(
@@ -181,7 +148,7 @@ for (category in names(config$metadata)){
   )
 }
 
-## Define Valid Metadata Selections####
+## Unique values for each metadata category ####
 # The unique values for each metadata category listed in the config 
 # file will be stored as vectors in a list 
 unique_metadata <- list()
@@ -197,13 +164,17 @@ for (category in names(config$metadata)){
   }
 }
 
-## Plots tab ####
+# Non-reactive Global Variables ------------------------------------------------
 # Store UMAP Dimensions of full object
 # This is used to allow plotting of subsets with original axes scales
 # Plot a UMAP of the full data, store it to memory, and record the
 # x and y limits of the plot
-umap_orig <- DimPlot(sobj, 
-                      group.by = "clusters")
+umap_orig <- 
+  DimPlot(
+    sobj,
+    group.by = "clusters"
+    )
+
 # Record limits
 xlim_orig <- layer_scales(umap_orig)$x$range$range
 ylim_orig <- layer_scales(umap_orig)$y$range$range
@@ -212,11 +183,11 @@ ylim_orig <- layer_scales(umap_orig)$y$range$range
 # TODO: does this apply to non-CITEseq datasets?
 n_cells_original <- ncol(sobj)
 
-# Non-zero proportion threshold: if the proportion of cells for a gene is below 
-# this threshold, return a warning to the user.
+# Non-zero proportion threshold: if the proportion of cells for a 
+# gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
-# Error Handling: define possible errors ####
+# Error Handling: define possible errors ---------------------------------------
 # Errors are defined in a list using the functions in "./R/error_handling.R". 
 # The error_handler() function is executed in a tryCatch() statement and checks
 # the error message returned against a list of errors.
@@ -266,7 +237,7 @@ add_error_notification(
   )# End add_error_notification
 )# End list of error definitions (subset_errors)
 
-# Table of Contents #####
+# Table of Contents ------------------------------------------------------------
 # TODO: Add module tree here
 
 # Main UI ----------------------------------------------------------------------
@@ -398,7 +369,7 @@ server <- function(input,output,session){
   plots_tab_server(
     id = "plots",
     sobj = sobj,
-    assay_info = assay_info,
+    assay_config = assay_config,
     category_labels = category_labels,
     unique_metadata = unique_metadata,
     valid_features = valid_features,
@@ -406,13 +377,13 @@ server <- function(input,output,session){
     n_cells_original = n_cells_original,
     xlim_orig = xlim_orig,
     ylim_orig = ylim_orig,
-    metadata_config = config$metadata
+    metadata_config = metadata_config
     )
   
   ## 2.2. DGE Tab Server Module ####
   dge_tab_server(id = "dge",
                  sobj = sobj,
-                 metadata_config = config$metadata,
+                 metadata_config = metadata_config,
                  meta_categories = meta_categories,
                  unique_metadata = unique_metadata,
                  meta_choices = meta_choices)
@@ -420,7 +391,7 @@ server <- function(input,output,session){
   ## 2.3. Correlations Tab Server Module ####
   corr_tab_server(id = "corr",
                   sobj = sobj,
-                  metadata_config = config$metadata,
+                  metadata_config = metadata_config,
                   meta_categories = meta_categories,
                   unique_metadata = unique_metadata,
                   n_cells_original = n_cells_original, 

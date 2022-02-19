@@ -11,22 +11,21 @@
 # ncol: number of columns, as specified by user
 # is_subset: reactive boolean value stating whether the object is a subset
 # original_limits: user choice as to whether original axes limits should be used
-# assay_info: contains information on the assays included. 
-# TODO: update assay_info and dependent functions using config file
-# xlim_orig: the original x limits for the plot, computed from the full object at 
-# app startup
+# assay_config: the assays section of the config file loaded at app startup.
+# xlim_orig: the original x limits for the plot, computed from the full object 
+# at app startup
 # ylim_orig: the original y limits for the umap, computed from full object at 
 # app startup
 shiny_feature <- function(object, #Reactive
-                       features_entered, #Reactive
-                       split_by, #Reactive
-                       show_label, #Reactive
-                       show_legend, #Reactive
-                       is_subset, #Reactive
-                       original_limits, #Reactive
-                       assay_info, #Non-reactive
-                       xlim_orig, #Non-reactive
-                       ylim_orig #Non-reactive
+                          features_entered, #Reactive
+                          split_by, #Reactive
+                          show_label, #Reactive
+                          show_legend, #Reactive
+                          is_subset, #Reactive
+                          original_limits, #Reactive
+                          assay_config, #Non-reactive
+                          xlim_orig, #Non-reactive
+                          ylim_orig #Non-reactive
 ){
   #At least one feature must be entered to avoid errors when computing plot
   if (length(features_entered()) > 0){
@@ -59,7 +58,7 @@ shiny_feature <- function(object, #Reactive
         hr_title(
           feature_plot,
           n_patches,
-          assay_info
+          assay_config
           )
     }
     

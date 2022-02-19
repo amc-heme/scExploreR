@@ -308,8 +308,7 @@ plots_tab_ui <- function(id,
 # Arguments
 # id: Used to match server component of module to UI component
 # sobj: The Seurat Object defined in the main server function
-# assay_info: A list of assays defined in the config file and constructed in the
-# main server function at startup.
+# assay_config: the assays section of the config file loaded at app startup.
 # category_labels: list of labels for each metadata category, generated in main
 # server at startup.
 # valid_features: a list giving the valid features that can be selected from 
@@ -327,7 +326,7 @@ plots_tab_ui <- function(id,
 # metadata_config: the metadata section of the config file loaded at startup
 plots_tab_server <- function(id,
                              sobj,
-                             assay_info,
+                             assay_config,
                              category_labels,
                              unique_metadata,
                              valid_features,
@@ -411,7 +410,7 @@ plots_tab_server <- function(id,
                    n_cells_original = n_cells_original, # Non-reactive
                    # Instructs server on which plot function to run 
                    plot_type = "feature",
-                   assay_info = assay_info
+                   assay_config = assay_config
                    )
                  
                  # Violin Plot
@@ -424,7 +423,7 @@ plots_tab_server <- function(id,
                    features_entered = reactive({input$text_features}),
                    # Instructs server on which plot function to run 
                    plot_type = "violin",
-                   assay_info = assay_info
+                   assay_config = assay_config
                    )
                  
                  # Dot plot
