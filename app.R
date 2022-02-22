@@ -71,8 +71,8 @@ css_files <-
 # Create list of style tags for each CSS file
 css_list <- lapply(css_files,includeCSS)
 
-# Load Javasctipt files for app: find all .js files in www/ directory and create
-# a list of script() tags using includeScript().
+# Load Javasctipt files for app: find all .js files in www/ directory
+# and create a list of script() tags using includeScript().
 # Get list of .js files in www/ directory
 js_files <- 
   list.files(
@@ -95,7 +95,7 @@ js_list <- lapply(js_files,includeScript)
 sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
 # Load config file
-config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
+config <- readRDS("./Seurat_Objects/d0-d30-alt-config.rds")
 
 # Split config file into metadata and assay lists for use downstream
 metadata_config <- config$metadata
