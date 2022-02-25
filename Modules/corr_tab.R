@@ -135,8 +135,9 @@ corr_tab_server <- function(id,
                  updateSelectizeInput(
                    session,
                    inputId = "feature_selection",
-                   #Include only genes for now
-                   choices = valid_features[["Genes"]],
+                   # Include only genes for now (this will be the first row of
+                   # valid_features)
+                   choices = valid_features[[1]],
                    selected = character(0),
                    server = TRUE
                    )

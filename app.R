@@ -92,10 +92,10 @@ js_list <- lapply(js_files,includeScript)
 # Load Seurat Object and Config File -------------------------------------------
 # currently, D0/D30 data, modified to include gene signature scores
 # https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
-sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+sobj <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
 
 # Load config file
-config <- readRDS("./Seurat_Objects/d0-d30-alt-config.rds")
+config <- readRDS("./Seurat_Objects/AML_TotalVI_config.rds")
 
 # Split config file into metadata and assay lists for use downstream
 metadata_config <- config$metadata
@@ -116,7 +116,8 @@ valid_features <-
     #defined in the config file
     numeric_metadata = include_numeric_metadata, 
     #The same is true for numeric_metadata_title
-    numeric_metadata_title = numeric_metadata_title)
+    numeric_metadata_title = numeric_metadata_title
+    )
 
 # Define Metadata Used in App --------------------------------------------------
 # meta_categories: a vector giving the IDs of each of the categories defined
@@ -381,24 +382,28 @@ server <- function(input,output,session){
     )
   
   ## 2.2. DGE Tab Server Module ####
-  dge_tab_server(id = "dge",
-                 sobj = sobj,
-                 metadata_config = metadata_config,
-                 meta_categories = meta_categories,
-                 unique_metadata = unique_metadata,
-                 meta_choices = meta_choices)
+  dge_tab_server(
+    id = "dge",
+    sobj = sobj,
+    metadata_config = metadata_config,
+    meta_categories = meta_categories,
+    unique_metadata = unique_metadata,
+    meta_choices = meta_choices
+    )
   
   ## 2.3. Correlations Tab Server Module ####
-  corr_tab_server(id = "corr",
-                  sobj = sobj,
-                  metadata_config = metadata_config,
-                  meta_categories = meta_categories,
-                  unique_metadata = unique_metadata,
-                  n_cells_original = n_cells_original, 
-                  nonzero_threshold = nonzero_threshold, 
-                  meta_choices = meta_choices,
-                  valid_features = valid_features,
-                  error_list = error_list)
+  corr_tab_server(
+    id = "corr",
+    sobj = sobj,
+    metadata_config = metadata_config,
+    meta_categories = meta_categories,
+    unique_metadata = unique_metadata,
+    n_cells_original = n_cells_original, 
+    nonzero_threshold = nonzero_threshold, 
+    meta_choices = meta_choices,
+    valid_features = valid_features,
+    error_list = error_list
+    )
 }
 
 # Run the application 
