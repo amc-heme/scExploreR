@@ -92,10 +92,10 @@ js_list <- lapply(js_files,includeScript)
 # Load Seurat Object and Config File -------------------------------------------
 # currently, D0/D30 data, modified to include gene signature scores
 # https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
-sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+sobj <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
 
 # Load config file
-config <- readRDS("./Seurat_Objects/d0-d30-alt-config.rds")
+config <- readRDS("./Seurat_Objects/AML_TotalVI_config.rds")
 
 # Split config file into metadata and assay lists for use downstream
 metadata_config <- config$metadata

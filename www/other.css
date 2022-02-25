@@ -22,7 +22,7 @@ z-index: 999;
    the output ID is changed or moved to a different module) */
 /* Consider generalizing to all verbatimtextoutput (<pre>) elements*/
 .n_by_class_style > pre {
-  width: 20%;
+  width: 50%;
   background-color: #FFFFFF;
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
   border: none;

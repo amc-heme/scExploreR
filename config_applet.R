@@ -64,7 +64,7 @@ js_list <- lapply(js_files,includeScript)
 
 
 #Load object (hard-coded for now but will soon be chosen using a file input)
-sobj <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+sobj <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
 #Need a conditional to test if the loaded object is a Seurat object
 
 #Overview####
