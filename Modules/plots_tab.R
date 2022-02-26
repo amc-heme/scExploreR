@@ -10,6 +10,7 @@
 # function at startup.
 # category_labels: list of labels for each metadata category, generated in main
 # server at startup.
+# reductions: a vector giving the reductions used in the Seurat object
 
 # TODO: replace metadata_config in the subset selections module with a more 
 # specific variable
@@ -18,7 +19,8 @@ plots_tab_ui <- function(id,
                          meta_choices,
                          unique_metadata,
                          category_labels,
-                         metadata_config
+                         metadata_config,
+                         reductions
                          ){
    # Namespace function: prevents conflicts with 
    # inputs/outputs defined in other modules 
@@ -176,6 +178,8 @@ plots_tab_ui <- function(id,
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "UMAP",
+               reductions = reductions,
+               reductions_menu =   TRUE,
                group_by =          TRUE,
                split_by =          TRUE,
                ncol_slider =       TRUE,
@@ -200,6 +204,8 @@ plots_tab_ui <- function(id,
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "Feature Plot",
+               reductions = reductions,
+               reductions_menu =   TRUE,
                group_by =          FALSE,
                split_by =          TRUE,
                ncol_slider =       FALSE,

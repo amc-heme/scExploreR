@@ -184,6 +184,17 @@ ylim_orig <- layer_scales(umap_orig)$y$range$range
 # TODO: does this apply to non-CITEseq datasets?
 n_cells_original <- ncol(sobj)
 
+# Reductions in object
+reductions <- names(sobj@reductions)
+# Order UMAP reduction first by default, if it exists
+if ("umap" %in% reductions){
+  reductions <-
+    c(
+      reductions[reductions=="umap"],
+      reductions[!reductions=="umap"]
+      )
+}
+
 # Non-zero proportion threshold: if the proportion of cells for a 
 # gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
@@ -267,7 +278,8 @@ ui <- tagList(
                         meta_choices = meta_choices,
                         unique_metadata = unique_metadata,
                         category_labels = category_labels,
-                        metadata_config = config$metadata
+                        metadata_config = config$metadata,
+                        reductions = reductions
                         )
                       ),
              tabPanel("Differential Expression",

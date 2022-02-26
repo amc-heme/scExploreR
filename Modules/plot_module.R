@@ -20,6 +20,8 @@
 # plot_label: a human readable name for the plot that will appear in the menus.
 # The name should make sense by itself (i.e. "Feature Plot" should be entered
 # instead of "Feature").
+# reductions: a vector giving all the reductions used in the Seurat object. 
+# must be supplied if reductions_menu == TRUE
 # group_by: if TRUE, display a menu with metadata categories to group by.
 # split_by: if TRUE, display a menu with metadata categories to split by.
 # ncol_slider: if TRUE, display a slider to specify the number of columns to use
@@ -43,8 +45,10 @@ plot_module_ui <- function(id,
                            ui_component = c("options", "plot"),
                            meta_choices = NULL,
                            plot_label = "",
+                           reductions = NULL,
                            # TEMP: conditionals vertically aligned
                            # for multi-cursor editing
+                           reductions_menu =    FALSE,
                            group_by =           FALSE,
                            split_by =           FALSE,
                            ncol_slider =        FALSE,
@@ -64,6 +68,7 @@ plot_module_ui <- function(id,
     # Attempted to use ifelse() for this; ifelse() did not print Shiny tags 
     # properly and was unable to process NULL
     tagList(
+      # Add menus if their corresponding arguments are TRUE 
       # Group by menu
       if (group_by == TRUE){
         # If TRUE, add element
@@ -87,6 +92,19 @@ plot_module_ui <- function(id,
           choices= meta_choices,  
           #"none" selected by default
           selected = "none"
+        )
+      } else NULL,
+      
+      # Reductions menu
+      if (reductions_menu == TRUE){
+        if (is.null(reductions)){
+          stop("If reductions_menu is TRUE, `reductions` must be specified.")
+        }
+        
+        selectInput(
+          inputId = ns("reduction"),
+          label = "Choose Projection",
+          choices = reductions
         )
       } else NULL,
       
@@ -259,6 +277,13 @@ plot_module_server <- function(id,
                        if("split_by" %in% isolate(names(input))){
                          input$split_by
                          } else NULL
+                     }),
+                     
+                     # Reduction
+                     `reduction` = reactive({
+                       if("reduction" %in% isolate(names(input))){
+                         input$reduction
+                       } else NULL
                      }),
                      
                      # Number of columns in multi-panel plot
@@ -744,7 +769,8 @@ plot_module_server <- function(id,
                        is_subset = is_subset,
                        original_limits = plot_selections$limits,
                        xlim_orig = xlim_orig,
-                       ylim_orig = ylim_orig
+                       ylim_orig = ylim_orig,
+                       reduction = plot_selections$reduction
                        )
                    })
                    
@@ -764,7 +790,8 @@ plot_module_server <- function(id,
                          original_limits = plot_selections$limits,
                          assay_config = assay_config,
                          xlim_orig = xlim_orig,
-                         ylim_orig = ylim_orig
+                         ylim_orig = ylim_orig,
+                         reduction = plot_selections$reduction
                          )
                        })
                  } else if (plot_type == "violin") {
