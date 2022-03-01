@@ -251,6 +251,28 @@ add_error_notification(
   )# End add_error_notification
 )# End list of error definitions (subset_errors)
 
+# Datasets: a list of available datasets with paths to object and config files,
+# as well as a description
+datasets <- 
+  list(
+    `d0_d30` = 
+      list(
+        `object` = "./Seurat_Objects/longitudinal_samples_20211025.rds",
+        `config` = "./Seurat_Objects/d0-d30-config.rds",
+        `description` = 
+          "Contains 3 normal bone marrow samples, and longitudinal samples from 
+          6 patients with the first sample taken at time of diagnosis and the
+          second sample taken approximately one month afterward."
+          ),
+    `AML_samples` = 
+      list(
+        `object` = "./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds",
+        `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
+        `description` = 
+          "Contains 3 normal bone marrow samples, and 23 AML samples."
+        )
+    )
+
 # Table of Contents ------------------------------------------------------------
 # TODO: Add module tree here
 
@@ -429,34 +451,104 @@ server <- function(input,output,session){
     )
   
   ## 2.4 Pop-up window to select dataset
-  # Define modal
-  data_Modal <- function(){
-    modalDialog(
-      title = "Choose Dataset",
-      footer = 
-        actionButton(
-          inputId = "close_dataset_window",
-          label = "Close Window"
-          ),
-      size = "l",
-      tagList("Content will go here")
-    )
-  }
-  
   # Event observers to open and close modal
   observeEvent(
     input$open_dataset_window,
     label = "Open Dataset Modal",
     {
-      showModal(data_Modal())
+      showModal(data_Modal(selected_key = selected_key))
     })
   
+  # When the "confirm selection" button is selected, close the window
   observeEvent(
-    input$close_dataset_window,
+    input$confirm_selection,
     label = "Close Dataset Modal",
     {
       removeModal()
     })
+  
+  # Update object to match the selected dataset
+  object_rxv <- 
+    eventReactive( 
+      input$confirm_selection,
+      label = "Update Object",
+      ignoreNULL = FALSE,
+      {
+        # input$data_key is used to select datasets
+        # The input is NULL at startup since the choices modal has not yet been
+        # opened. 
+        print("is.null conditional (object)")
+        print(!is.null(input$data_key))
+        if (!is.null(input$data_key)){
+          # Define path using datasets list and key for selected dataset
+          path <- datasets[[input$data_key]]$object
+          } else {
+            # When input$data_key is not defined, use the first 
+            # dataset on the list
+            path <- datasets[[1]]$object
+          }
+        print("path (object)")
+        print(path)
+        # Load seurat object using defined path
+        readRDS(path)
+        
+      })
+  
+  # Update config file with the one from the selected dataset
+  config_rxv <-
+    eventReactive( 
+      input$confirm_selection,
+      label = "Update Config File",
+      ignoreNULL = FALSE,
+      {
+        print("is.null conditional (config)")
+        print(!is.null(input$data_key))
+        if (!is.null(input$data_key)){
+          # Define path using datasets list and key for selected dataset
+          path <- datasets[[input$data_key]]$config
+          } else {
+            # Use the first dataset if input$data_key is undefined
+            print(datasets[[1]]$config)
+            path <- datasets[[1]]$config
+          }
+        print("path (config)")
+        print(path)
+        # Load config file using defined path
+        readRDS(path)
+        }
+      )
+  
+  # Also, save the selected key for the next time the window is opened (the 
+  # group of buttons is re-created every time the modal is opened)
+  selected_key <-
+    eventReactive( 
+      input$confirm_selection,
+      label = "Save Key of Selected Dataset",
+      ignoreNULL = FALSE,
+      {
+        # selected_key will be equal to input$data_key if it is defined, 
+        # otherwise it will be NULL. 
+        input$data_key
+        }
+    )
+  
+  observe({
+    print("Object loaded")
+    print(object_rxv())
+  })
+  
+  observe({
+    print("Config file loaded")
+    print(config_rxv())
+  })
+  
+  # TEMP: inspect output of radio buttons
+  output$buttontest <- 
+    renderPrint({
+      # subset datasets list for the input key returned 
+      # by the group of radio buttons
+      datasets[[input$data_key]]
+      })
 }
 
 # Run the application 
