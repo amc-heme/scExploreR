@@ -78,9 +78,6 @@ make_subset <- function(sobj, criteria_list){
     subset_str <- paste0(subset_str, criterion)
   }
   
-  print("Subset String Constructed")
-  print(subset_str)
-  
   # Subset using the subset string 
   subset <- eval(parse(text=paste0("subset(sobj, subset = ", subset_str, ")")))
   

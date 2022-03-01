@@ -10,6 +10,8 @@ library(shinydashboard, quietly = TRUE, warn.conflicts = FALSE)
 library(waiter, quietly = TRUE, warn.conflicts = FALSE)
 library(shinycssloaders, quietly = TRUE, warn.conflicts = FALSE)
 library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
+# library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
+
 
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
@@ -299,79 +301,88 @@ ui <- tagList(
                         )
                       )
              ), # End navbarPage()
+  
+  ## Buttons on upper-right hand corner of app ---------------------------------
   # Help button - Creates a Dropdown menu when clicked
   # Button should appear in the upper right hand corner of the navbar menu
   # This will be achieved with the button_wizzard.js script
-  # (Help button is wrapped in two introBoxes)
-  introBox(
-    data.step=1,
-    data.intro=
-      'Welcome to the Shiny app.<br><br>Please click the ">" 
-      button to continue with the tour, or click "skip" to proceed to the app.',
-    data.position = "left",
-    # Begin introBox2
-    introBox(
-      data.step = 2,
-      data.intro = 
-        'Click this button to view help. For a more 
-        detailed explanation of features, select "detailed walkthrough". 
-        For more information on interpereting the plots in this app, 
-        select "Interpereting scRNA-seq Plots". Click "Guided tour" 
-        to view this tour again.',
-      data.position="left",
-      # Begin Help button
-      dropdownButton(
-        inputId = "help",
-        status="info",
-        right=TRUE,
-        label = "",
-        size="sm",
-        icon = icon("question"),
-        
-        # Dropdown menu content
-        # Header
-        tagList(
-          tags$p("Help and Background",
-          style=
-            "color: #888888; 
+  dropdownButton(
+    inputId = "help",
+    status="info",
+    right=TRUE,
+    label = "",
+    size="sm",
+    icon = icon("question"),
+    # Dropdown menu content
+    # Header
+    tagList(
+      tags$p("Help and Background",
+             style=
+               "color: #888888; 
             margin-bottom: 0px;
             font-size: 1.17em;"
-          ),
-          
-          # Interpreting scRNA-seq plots
-          tags$a(
-            "Interpereting scRNA-seq Plots",
-            href="scRNA_Plots_Explained.html",
-            class="blue_hover",
-            # Opens link in new tab
-            target="_blank", 
-            # Cybersecurity measure for links that 
-            # open in new tab: prevents tabnapping
-            rel="noopener noreferrer" 
-            ),
-          
-          # Tutorial Document
-          tags$a(
-            "Tutorial Vignette",
-            href="Shiny_Vignette.html",
-            class="blue_hover",
-            # Opens link in new tab
-            target="_blank", 
-            rel="noopener noreferrer" 
-            ), # End Detailed Walkthrough link
-          
-          # File issue on github
-          tags$a(
-            "Report a Bug",
-            href="https://github.com/amc-heme/DataExploreShiny/issues",
-            class="blue_hover",
-            # Opens link in new tab
-            target="_blank", 
-            rel="noopener noreferrer")
-          )# End tagList
-        ) #End Help Button
-      ) #End introBox2
-    ), #End introBox 1
+      ),
+      
+      # Interpreting scRNA-seq plots
+      tags$a(
+        "Interpereting scRNA-seq Plots",
+        href="scRNA_Plots_Explained.html",
+        class="blue_hover",
+        # Opens link in new tab
+        target="_blank", 
+        # Cybersecurity measure for links that 
+        # open in new tab: prevents tabnapping
+        rel="noopener noreferrer" 
+        ),
+      
+      # Tutorial Document
+      tags$a(
+        "Tutorial Vignette",
+        href="Shiny_Vignette.html",
+        class="blue_hover",
+        # Opens link in new tab
+        target="_blank", 
+        rel="noopener noreferrer" 
+        ), # End Detailed Walkthrough link
+      
+      # File issue on github
+      tags$a(
+        "Report a Bug",
+        href="https://github.com/amc-heme/DataExploreShiny/issues",
+        class="blue_hover",
+        # Opens link in new tab
+        target="_blank", 
+        rel="noopener noreferrer"
+        )
+    )# End tagList
+  ), #End Help Button
+  
+  # Dataset Button ('DNA' icon)
+  dropdownButton(
+    inputId = "options",
+    status="info",
+    right=TRUE,
+    label = "",
+    size="sm",
+    icon = icon("ellipsis-h"),
+    actionLink(
+      inputId = "open_dataset_window",
+      label = "Choose Dataset",
+      class = "blue_hover"
+    )
+  ),
+  
+  # Dataset pop-up (modal) window (shows when the "choose dataset" 
+  # button is pressed)
+  # ShinyBS method
+  # bsModal(
+  #   id = "data_modal",
+  #   title = "Choose Dataset",
+  #   trigger = "open_dataset_window",
+  #   size = "large",
+  #   "This is a modal"
+  #   ),
+  
   # Include list of scripts built from .js files in www/ directory
   js_list
 )
@@ -416,6 +427,36 @@ server <- function(input,output,session){
     valid_features = valid_features,
     error_list = error_list
     )
+  
+  ## 2.4 Pop-up window to select dataset
+  # Define modal
+  data_Modal <- function(){
+    modalDialog(
+      title = "Choose Dataset",
+      footer = 
+        actionButton(
+          inputId = "close_dataset_window",
+          label = "Close Window"
+          ),
+      size = "l",
+      tagList("Content will go here")
+    )
+  }
+  
+  # Event observers to open and close modal
+  observeEvent(
+    input$open_dataset_window,
+    label = "Open Dataset Modal",
+    {
+      showModal(data_Modal())
+    })
+  
+  observeEvent(
+    input$close_dataset_window,
+    label = "Close Dataset Modal",
+    {
+      removeModal()
+    })
 }
 
 # Run the application 

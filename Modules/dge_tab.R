@@ -299,9 +299,14 @@ dge_tab_server <- function(id,
                      {
                        datatable(
                          dge_table_content(),
+                         # DT classes applied
+                         # See https://datatables.net/manual/styling/classes
                          class = "compact stripe cell-border hover",
+                         # Disallow selection of rows/cells
                          selection = "none",
+                         # Add filter interface above columns
                          filter = "top",
+                         # Remove rownames
                          rownames = FALSE
                          ) %>%
                          #Use 5 sig figs (3 or more is sufficient)
