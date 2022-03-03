@@ -54,30 +54,42 @@ subset_summary_server <- function(id,
   moduleServer(
     id,
     function(input,output,session){
-      # Compute unique values in the object for each category
-      lapply(
-        # Loop through category IDs (names of `category_labels`)
-        names(category_labels()),
-        function(category, object){
-          output[[glue("selected_{category}")]] <-
-            renderText({
-              # Store unique values for category in full object and subset
-              # Uses unique_values() in-house function 
-              subset_values <- unique_values(object, category)
-              original_values <- unique_metadata()[[category]]
-              
-              if (setequal(subset_values, original_values)){
-                # If the unique values for the subset match the unique values
-                # in the full object, print "all".
-                "All"
-              } else {
-                # If they do not match, print the values in the current subset.
-                vector_to_text(subset_values)
-              }
-            })
-        },
-        # Additional variables in the function above are passed to lappy here
-        object
-      )
+      # The categories for which to create inputs now depend on the dataset 
+      # loaded. Outputs must now be reactively created each time a new dataset
+      # is loaded. This will result in duplicate outputs existing when a dataset 
+      # is re-loaded after loading a different dataset, but this should be fine
+      # for now. 
+      observeEvent(
+        # Observer reacts when unique_metadata() is changed, which should be 
+        # when the dataset is changed
+        unique_metadata(),
+        {
+          # Compute unique values in the object for each category
+          lapply(
+            # Loop through category IDs (names of `category_labels`)
+            names(isolate(category_labels())),
+            function(category, object){
+              output[[glue("selected_{category}")]] <-
+                renderText({
+                  # Store unique values for category in full object and subset
+                  # Uses unique_values() in-house function 
+                  subset_values <- unique_values(object, category)
+                  original_values <- isolate(unique_metadata())[[category]]
+                  
+                  if (setequal(subset_values, original_values)){
+                    # If the unique values for the subset match the unique
+                    # values in the full object, print "all".
+                    "All"
+                  } else {
+                    # If they do not match, print the values 
+                    # in the current subset.
+                    vector_to_text(subset_values)
+                  }
+                })
+            },
+            # Additional variables in the function above are passed to lappy here
+            object
+          )
+        })
     })
 }
