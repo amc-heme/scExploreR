@@ -120,3 +120,10 @@ h2, h3 {
 #options_group_name {
   height: 34px;
 }
+
+/* spinner_text class: for text that appears beneath spinner*/
+.spinner_text {
+  margin-top: 10px;
+  color: #444455;
+  font-weight: bold;
+}

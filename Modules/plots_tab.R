@@ -313,7 +313,7 @@ plots_tab_ui <- function(id,
 # plots_tab_server
 # Arguments
 # id: Used to match server component of module to UI component
-# sobj: The Seurat Object defined in the main server function
+# object: The Seurat Object defined in the main server function
 # assay_config: the assays section of the config file loaded at app startup.
 # category_labels: list of labels for each metadata category, generated in main
 # server at startup.
@@ -331,7 +331,8 @@ plots_tab_ui <- function(id,
 # specific variable
 # metadata_config: the metadata section of the config file loaded at startup
 plots_tab_server <- function(id,
-                             sobj,
+                             object,
+                             metadata_config,
                              assay_config,
                              category_labels,
                              unique_metadata,
@@ -339,8 +340,7 @@ plots_tab_server <- function(id,
                              error_list,
                              n_cells_original,
                              xlim_orig,
-                             ylim_orig,
-                             metadata_config
+                             ylim_orig
                              ){
   moduleServer(id,
                function(input,output,session){
@@ -380,14 +380,20 @@ plots_tab_server <- function(id,
                      hide_on_render = FALSE 
                    )
                  
-                 # Add feature choices to text entry 
-                 updateSelectizeInput(
-                   session,
-                   # Do not namespace IDs in update* functions
-                   inputId = "text_features", 
-                   choices = valid_features, 
-                   server = TRUE
-                   )
+                 # Feature choices for text entry 
+                 observeEvent(
+                   # Reactive - updates in response to change in dataset
+                   object(),
+                   label = "Render choices for feature selection",
+                   {
+                     updateSelectizeInput(
+                       session,
+                       # Do not namespace IDs in update* functions
+                       inputId = "text_features", 
+                       choices = valid_features(), 
+                       server = TRUE
+                       )
+                   })
                  
                  # 2. Plot Modules ---------------------------------------------
                  # A server instance of the plot_module is created for each plot
@@ -397,7 +403,7 @@ plots_tab_server <- function(id,
                    object = plots_subset, # Reactive
                    # plot_switch: uses the input$make_umap switch
                    plot_switch = reactive({input$make_umap}),
-                   plot_label = "UMAP", # Non-reactive
+                   plot_label = "UMAP", # Reactive
                    n_cells_original = n_cells_original, # Non-reactive
                    # Instructs server on which plot function to run
                    plot_type = "dimplot",
@@ -413,7 +419,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_feature}),
                    features_entered = reactive({input$text_features}),
                    plot_label = "Feature Plot", # Non-reactive
-                   n_cells_original = n_cells_original, # Non-reactive
+                   n_cells_original = n_cells_original, # Reactive
                    # Instructs server on which plot function to run 
                    plot_type = "feature",
                    assay_config = assay_config
@@ -452,7 +458,7 @@ plots_tab_server <- function(id,
                  plots_subset_selections <- 
                    subset_selections_server(
                      id = "subset_selections",
-                     sobj = sobj,
+                     object = object,
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config
                      )
@@ -501,7 +507,7 @@ plots_tab_server <- function(id,
                              # subset selections module as `criteria_list`.
                              plots_s_sub <-
                                make_subset(
-                                sobj,
+                                 object,
                                  criteria_list = plots_subset_selections
                                  )
                              }

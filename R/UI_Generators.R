@@ -93,57 +93,57 @@ manual_dim_UI <- function(plot_type,
 #menu_categories: a vector giving the metadata categories to create subset menus for. 
 #Use (names(config$metadata)) to create menus for all categories included in the config file.
 #input_prefix: a string giving the prefix to add to the input id for each menu. 
-subset_menus <- function(unique_metadata,
-                         metadata_config,
-                         menu_categories,
-                         input_prefix=""){
-  print("Begin subset_menus")
-  #Create a list for storing the Shiny tags from each menu 
-  menus <- tagList()
-  
-  for(category in menu_categories){
-    #Create menu for the current category
-    print(glue("For loop: {category}"))
-    menu_tag <- pickerInput(
-      #input_prefix: will become unnecessary once the subset menus are placed within a module
-      inputId = glue("{input_prefix}{category}_selection"),
-      #label: uses the label defined for the category in the config file
-      label = glue("Restrict by {metadata_config[[category]]$label}"),
-      #choices: filled using the unique_metadata list
-      #If the metadata category has defined groups, sort choices into a named list 
-      #based on the groups. This will show choices divided by group in the pickerInput menu.
-      choices= 
-        if(!is.null(metadata_config[[category]]$groups)){
-        #Use group_metadata_choices() to generate list
-        group_metadata_choices(
-          group_info=metadata_config[[category]]$groups,
-          choices = unique_metadata[[category]]
-        )
-          } else {
-        #If groups are not defined, use the vector of choices from unique_metadata
-        unique_metadata[[category]]
-      },
-      #selected: all choices selected by default
-      selected = unique_metadata[[category]],
-      multiple = TRUE,
-      #Options for pickerInput
-      options = list(
-        #Display number of items selected instead of their names 
-        #when more than 5 values are selected
-        "selected-text-format" = "count > 5",
-        #Define max options to show at a time to keep menu from being cut off
-        "size" = 10, 
-        #Add "select all" and "deselect all" buttons
-        "actions-box"=TRUE
-      )
-    )#End pickerInput
-    
-    #Append tag to list using tagList (append() will modify the HTML of the tag)
-    menus <- tagList(menus,menu_tag)
-  }
-  #Return list of menu tags
-  return(menus)
-}
+# subset_menus <- function(unique_metadata,
+#                          metadata_config,
+#                          menu_categories,
+#                          input_prefix=""){
+#   print("Begin subset_menus")
+#   #Create a list for storing the Shiny tags from each menu 
+#   menus <- tagList()
+#   
+#   for(category in menu_categories){
+#     #Create menu for the current category
+#     print(glue("For loop: {category}"))
+#     menu_tag <- pickerInput(
+#       #input_prefix: will become unnecessary once the subset menus are placed within a module
+#       inputId = glue("{input_prefix}{category}_selection"),
+#       #label: uses the label defined for the category in the config file
+#       label = glue("Restrict by {metadata_config[[category]]$label}"),
+#       #choices: filled using the unique_metadata list
+#       #If the metadata category has defined groups, sort choices into a named list 
+#       #based on the groups. This will show choices divided by group in the pickerInput menu.
+#       choices= 
+#         if(!is.null(metadata_config[[category]]$groups)){
+#         #Use group_metadata_choices() to generate list
+#         group_metadata_choices(
+#           group_info=metadata_config[[category]]$groups,
+#           choices = unique_metadata[[category]]
+#         )
+#           } else {
+#         #If groups are not defined, use the vector of choices from unique_metadata
+#         unique_metadata[[category]]
+#       },
+#       #selected: all choices selected by default
+#       selected = unique_metadata[[category]],
+#       multiple = TRUE,
+#       #Options for pickerInput
+#       options = list(
+#         #Display number of items selected instead of their names 
+#         #when more than 5 values are selected
+#         "selected-text-format" = "count > 5",
+#         #Define max options to show at a time to keep menu from being cut off
+#         "size" = 10, 
+#         #Add "select all" and "deselect all" buttons
+#         "actions-box"=TRUE
+#       )
+#     )#End pickerInput
+#     
+#     #Append tag to list using tagList (append() will modify the HTML of the tag)
+#     menus <- tagList(menus,menu_tag)
+#   }
+#   #Return list of menu tags
+#   return(menus)
+# }
 ###
 
 ### Icon Notification Function

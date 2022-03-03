@@ -4,10 +4,14 @@
 
 # Arguments
 # selected_key (reactive): this 
-data_Modal <- function(selected_key){
+data_Modal <- function(datasets,
+                       selected_key){
   if(!is.reactive(selected_key)){
     stop("Argument 'selected_key' must be reactive.")
   }
+  # Fetch possible keys for datasets (keys are the names for each 
+  # dataset in the list)
+  keys <- names(datasets)
   
   modalDialog(
     title = "Choose Dataset",
@@ -26,19 +30,16 @@ data_Modal <- function(selected_key){
         style = "float: left; height: 500px;",
         radioGroupButtons(
           inputId = "data_key",
-          # Names of choices displayed to user
+          # Names of choices displayed to user: `label` property for each 
+          # dataset in datasets
           choiceNames = 
-            list(
-              "Longitudinal Data", 
-              "AML Dataset"
-            ),
+            lapply(
+              keys,
+              function(key){datasets[[key]]$label}
+              ),
           # Values: the server values are keys used to subset the 'datasets' 
-          # list for information on each dataset choice
-          choiceValues = 
-            list(
-              "d0_d30",
-              "AML_samples"
-            ),
+          # list for information on each dataset choice (names(datasets))
+          choiceValues = keys,
           # Selected value: equal to the last key selected, if it exists. If
           # there is no last key, NULL will be passed and the first dataset 
           # will be selected by default. This value is reactive.
@@ -52,8 +53,7 @@ data_Modal <- function(selected_key){
       # Right-hand side: will contain a description of the selected dataset
       div(
         class = "two_column",
-        style = "float: right; height : 500px;",
-        verbatimTextOutput(outputId = "buttontest")
+        style = "float: right; height : 500px;"
       )
     )
   )

@@ -87,7 +87,7 @@ dge_tab_ui <- function(id,
 
 #dge_tab_server
 dge_tab_server <- function(id,
-                           sobj,
+                           object,
                            metadata_config,
                            # This will replace metadata_config at some point
                            # (It is derived from the config file and is the only
@@ -125,38 +125,39 @@ dge_tab_server <- function(id,
                      hide_on_render = FALSE
                      )
                  
-                 #1. Process Selections for DGE Test ---------------------------
+                 # 1. Process Selections for DGE Test --------------------------
                  test_selections <- 
                    dge_test_selection_server(
                      id = "test_selections",
-                     sobj = sobj,
+                     object = object,
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config, 
                      meta_choices = meta_choices
                      )
                  
-                 #2. Process Subset Selection Options --------------------------
-                 ##2.1. Process group_by category from test_selections
-                 #The metadata chosen as the group by category in the test 
-                 #selections menu must be hidden from the subset selections 
-                 #inputs, since the subset must be equal to the classes or 
-                 #groups chosen, which are already selected by the user in the
-                 #test selections module. 
+                 # 2. Process Subset Selection Options -------------------------
+                 ## 2.1. Process group_by category from test_selections
+                 # The metadata chosen as the group by category in the test 
+                 # selections menu must be hidden from the subset selections 
+                 # inputs, since the subset must be equal to the classes or 
+                 # groups chosen, which are already selected by the user in the
+                 # test selections module. 
                  group_by_category <- 
-                   eventReactive(test_selections(),
-                                 label = "DGE Tab: Process Group by Selection",
-                                 {
-                                   test_selections()$group_by
-                                 })
+                   eventReactive(
+                     test_selections(),
+                     label = "DGE Tab: Process Group by Selection",
+                     {
+                       test_selections()$group_by
+                       })
 
-                 ##2.2. Call subset_selections module
-                 #Use observer so subset_selections module reacts to the 
-                 #selected group by variable 
+                 ## 2.2. Call subset_selections module
+                 # Use observer so subset_selections module reacts to the 
+                 # selected group by variable 
                  observe({
                    subset_selections <<- 
                      subset_selections_server(
                        id = "subset_selections",
-                       sobj = sobj,
+                       object = object,
                        unique_metadata = unique_metadata,
                        metadata_config = metadata_config,
                        hide_menu = group_by_category
@@ -164,25 +165,27 @@ dge_tab_server <- function(id,
                    })
                  
                  # 3. Calculations ran after submit button is pressed ----------
-                 #Includes table, stats, and UMAP
-                 #Subset criteria (3.1) processed first, UMAP (3.6) processed last
+                 # Includes table, stats, and UMAP
+                 # Subset criteria (3.1) processed first, 
+                 # UMAP (3.6) processed last
                  ## 3.1. Process Submit button input
-                 #Pass value of action button to nested modules to control reactivity
+                 # Pass value of action button to nested modules 
+                 # to control reactivity
                  submit_button <- reactive({
                    input$submit
                  })
                  
-                 #Show spinner: runs after submit button is pressed
+                 # Show spinner: runs after submit button is pressed
                  show_spinner <-
                    eventReactive(
                      submit_button(),
                      label = "DGE: Show Spinner",
                      {
-                       #Hide the main panel UI while calculations are performed
+                       # Hide the main panel UI while calculations are performed
                        print(glue("hiding {ns('main_panel_ui')}"))
                        hideElement(id=ns("main_panel_ui"))
                        
-                       #Display spinners
+                       # Display spinners
                        sidebar_spinner$show()
                        main_spinner$show()
                        
@@ -193,39 +196,39 @@ dge_tab_server <- function(id,
                      })
                  
                  ## 3.2. Define subset criteria
-                 #Combines outputs from test selection and subset selection 
-                 #modules. The subset criteria are used both in the 
-                 #make_subset() function and the subset stats module (the 
-                 #latter of which is designed to take a reactive variable
-                 #as input)
+                 # Combines outputs from test selection and subset selection 
+                 # modules. The subset criteria are used both in the 
+                 # make_subset() function and the subset stats module (the 
+                 # latter of which is designed to take a reactive variable
+                 # as input)
                  dge_subset_criteria <- 
                    eventReactive(
                      show_spinner(),
                      label = "DGE: Subset Criteria",
-                     #All reactives in 3. must run at startup for output to be
-                     #properly generated (endless spinner results otherwise)
+                     # All reactives in 3. must run at startup for output to be
+                     # properly generated (endless spinner results otherwise)
                      ignoreInit = FALSE,
                      {
-                       #Retrieve information from test_selections
-                       #Category
+                       # Retrieve information from 
+                       # test_selections Category
                        group_by_category <- test_selections()$group_by
-                       #Chosen groups/classes (store in a vector)
+                       # Chosen groups/classes (store in a vector)
                        if (test_selections()$dge_mode == "mode_dge"){
-                         #For DGE mode: set the vector of choices equal to the 
-                         #selections for the two groups
+                         # For DGE mode: set the vector of choices equal to the 
+                         # selections for the two groups
                          choices <- 
                            c(test_selections()$group_1, 
                              test_selections()$group_2)
                        } else if (test_selections()$dge_mode == "mode_marker"){
-                         #Marker identification: use vector of selected classes
+                         # Marker identification: use vector of selected classes
                          choices <- test_selections()$classes_selected 
                        }
                        
-                       #Retrieve list of subset selections 
-                       #Must unpack from reactive to avoid modifying the reactive
-                       #with the test_selections data above
+                       # Retrieve list of subset selections 
+                       # Must unpack from reactive to avoid modifying the 
+                       # reactive with the test_selections data above
                        subset_criteria <- subset_selections()
-                       #Append test_selections information to selections list 
+                       # Append test_selections information to selections list 
                        subset_criteria[[group_by_category]] <- choices
                        
                        return(subset_criteria)
@@ -238,10 +241,10 @@ dge_tab_server <- function(id,
                      label = "DGE: Subset",
                      ignoreNULL = FALSE,
                      {
-                       #Create subset from selections and return
+                       # Create subset from selections and return
                        subset <- 
                          make_subset(
-                           sobj = sobj,
+                           object = object,
                            criteria_list = dge_subset_criteria()
                            )
                        
@@ -320,10 +323,11 @@ dge_tab_server <- function(id,
                      ignoreNULL = FALSE,
                      label = "DGE: UMAP", 
                      {
-                       #ncol_argument: number of columns
-                       #Based on number of classes being analyzed in the subset. 
-                       #Access with double brackets returns a dataframe.
-                       #Slice for the first row (the unique values)
+                       # ncol_argument: number of columns
+                       # Based on number of classes being
+                       # analyzed in the subset. 
+                       # Access with double brackets returns a dataframe.
+                       # Slice for the first row (the unique values)
                        n_panel <- 
                          unique(subset()[[group_by_category()]])[,1] |>
                          length()
@@ -372,7 +376,7 @@ dge_tab_server <- function(id,
                        #TODO: make sure this updates when a different group
                        #by variable is submitted
                        group_by_label <-
-                         metadata_config[[test_selections()$group_by]]$label
+                         metadata_config()[[test_selections()$group_by]]$label
 
                        #UI to display
                        tagList(
@@ -475,11 +479,11 @@ dge_tab_server <- function(id,
                              #Remove "none" from selectable
                              #options to group by
                              choices=
-                               meta_choices[!meta_choices %in% "none"],
+                               meta_choices()[!meta_choices() %in% "none"],
                              #First category in meta_choices is selected
                              #by default
                              selected =
-                               meta_choices[!meta_choices %in% "none"][1]
+                               meta_choices()[!meta_choices() %in% "none"][1]
                              )
                            )
                        } else {

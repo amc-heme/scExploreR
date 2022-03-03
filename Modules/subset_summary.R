@@ -21,14 +21,13 @@ subset_summary_ui <- function(id,
       # names(category_labels) give the ID's of each category (as they appear in
       # the Seurat object), whereas the values of category_labels are the labels 
       # for each category
-      names(category_labels), 
+      names(category_labels()), 
       # 'category' is an iteration of names(category_labels) 
       function(category){
         # UI element: an inline container with the label and the output computed
         # in the server function
         div(
-          # Label = category_labels[[category]] 
-          tags$strong(glue("{category_labels[[category]]}: ")),
+          tags$strong(glue("{category_labels()[[category]]}: ")),
           # OutputId: uses category name (not the label)
           textOutput(
             outputId = ns(glue("selected_{category}")), 
@@ -50,21 +49,22 @@ subset_summary_ui <- function(id,
 subset_summary_server <- function(id,
                                   object,
                                   category_labels,
-                                  unique_metadata){
+                                  unique_metadata
+                                  ){
   moduleServer(
     id,
     function(input,output,session){
       # Compute unique values in the object for each category
       lapply(
         # Loop through category IDs (names of `category_labels`)
-        names(category_labels),
+        names(category_labels()),
         function(category, object){
           output[[glue("selected_{category}")]] <-
             renderText({
               # Store unique values for category in full object and subset
               # Uses unique_values() in-house function 
               subset_values <- unique_values(object, category)
-              original_values <- unique_metadata[[category]]
+              original_values <- unique_metadata()[[category]]
               
               if (setequal(subset_values, original_values)){
                 # If the unique values for the subset match the unique values

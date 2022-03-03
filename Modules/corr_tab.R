@@ -1,92 +1,99 @@
-#Correlations tab module
-
-#corr_tab_ui
-#arguments
-#id: ID to use for module elements. Should be equal to "corr".
-#unique_metadata: a list of the unique metadata values for each of the metadata 
-#categories listed in the config file. This is generated in the main server function 
-#at startup.
-#metadata_config: the metadata section of the config file imported in the main server function
+# Correlations tab module
+ 
+# corr_tab_ui
+# Arguments
+# id: ID to use for module elements. Should be equal to "corr".
+# unique_metadata: a list of the unique metadata values for each of the metadata 
+# categories listed in the config file. This is generated in the main 
+# server function at startup.
+# metadata_config: the metadata section of the config file imported 
+# in the main server function
 corr_tab_ui <- function(id,
                         unique_metadata,
                         metadata_config){
-  #Namespace function: prevents conflicts with inputs/outputs defined in other modules 
+  # Namespace function: prevents conflicts with inputs/outputs defined in other modules 
   ns <- NS(id)
   
   fluidPage(
     sidebarLayout(
-      #1.3.1. Options Panel
+      # 1.3.1. Options Panel
       sidebarPanel(
-        #Add a block to display a waiter over when the options are updating
+        # Add a block to display a waiter over when the options are updating
         div(id = ns("sidebar"),
-            #1.3.1.1. Restrict correlation table by metadata
+            # 1.3.1.1. Restrict correlation table by metadata
             tags$h3("Correlation Coefficients"),
-            tags$p("Enter one feature to view the top features positively and negatively correlated with the feature in the data. You may optionally restrict the correlation analysis by metadata variables using the dropdown menus below."),
-            #Feature selection: only one feature can be entered
+            tags$p("Enter one feature to view the top features positively and 
+                   negatively correlated with the feature in the data. You may 
+                   optionally restrict the correlation analysis by metadata 
+                   variables using the dropdown menus below."),
+            # Feature selection: only one feature can be entered
             selectizeInput(inputId = ns("feature_selection"),
                            label = "Gene Selection",
-                           #Feature choices populated in server, as in the plots tab
+                           # Feature choices populated in server, 
+                           # as in the plots tab
                            choices = NULL,
                            selected = character(0),
                            options = list("placeholder"="Enter gene name")),
-            #Module for subset selections              
-            subset_selections_ui(id = ns("subset_selections"),
-                                 unique_metadata = unique_metadata,
-                                 metadata_config = metadata_config),
-            #Submit button
+            # Module for subset selections              
+            subset_selections_ui(
+              id = ns("subset_selections"),
+              unique_metadata = unique_metadata,
+              metadata_config = metadata_config
+              ),
+            # Submit button
             actionButton(inputId = ns("submit"),
                          label = "Submit",
-                         #Display inline with download button when it appears
+                         # Display inline with download button when it appears
                          class = "inline-block"),
             
-            #Download buttons: render after the correlations table 
-            #and scatterplots are computed
+            # Download buttons: render after the correlations table 
+            # and scatterplots are computed
             uiOutput(outputId = ns("downloads_ui"), 
                      inline = TRUE),
             
-            #Options for scatterplot: a collapsible panel of options
-            #appears after a scatterplot is displayed
+            # Options for scatterplot: a collapsible panel of options
+            # appears after a scatterplot is displayed
             uiOutput(outputId = ns("scatter_options_ui"))
-        )#End corr-sidebar div
-      ),#End sidebarPanel (1.3.1)
+        ) # End corr-sidebar div
+      ), # End sidebarPanel (1.3.1)
       
-      #1.3.2 Main Panel
+      # 1.3.2 Main Panel
       mainPanel(
         div(id = ns("main_panel"), 
             class = "spinner-container-main", 
-            #Div added to contain Waiter spinner (forces the spinner to cover 
-            #the full main panel)
+            # Div added to contain Waiter spinner (forces the spinner to cover 
+            # the full main panel)
             uiOutput(outputId = ns("main_panel_ui")))
         
-      )#End MainPanel
-    )#End sidebarLayout
-  )#End fluidPage
+      ) # End MainPanel
+    ) # End sidebarLayout
+  ) # End fluidPage
 }
 
-#corr_tab_server
-#Arguments
-#id: Used to match server function to ui function. "corr" is the recommended 
-#value to use
-#sobj: The Seurat Object defined in the main server function
-#metadata_config: metadata section of the config file imported in the main server function
-#unique_metadata: a list of the unique metadata values for each of the metadata 
-#categories listed in the config file. This is generated in the main server function 
-#at startup.
-#n_cells_original: number of cells in full Seurat object. Calculated in main 
-#server function.
-#nonzero_threshold: the minimum acceptable proportion of cells with nonzero reads 
-#for the feature used to compute correlations. This is defined in the 
-#main server function.
-#meta_choices: a named vector giving the metadata categories defined in the 
-#config file, with their respective labels for display in dropdown menus. This 
-#is defined in the main server function.
-#valid features: a list giving the valid features that can be selected from each
-#assay. This is generated from the config file in the main server function
-#error_list: a list of error messages to print custom notifications for, 
-#if they are encountered while the correlations table is being calculated. This 
-#is defined in the main server function.
+# corr_tab_server
+# Arguments
+# id: Used to match server function to ui function. "corr" is the recommended 
+# value to use
+# object: The Seurat Object defined in the main server function
+# metadata_config: metadata section of the config file imported in the main server function
+# unique_metadata: a list of the unique metadata values for each of the metadata 
+# categories listed in the config file. This is generated in the main server function 
+# at startup.
+# n_cells_original: number of cells in full Seurat object. Calculated in main 
+# server function.
+# nonzero_threshold: the minimum acceptable proportion of cells with nonzero reads 
+# for the feature used to compute correlations. This is defined in the 
+# main server function.
+# meta_choices: a named vector giving the metadata categories defined in the 
+# config file, with their respective labels for display in dropdown menus. This 
+# is defined in the main server function.
+# valid features: a list giving the valid features that can be selected from each
+# assay. This is generated from the config file in the main server function
+# error_list: a list of error messages to print custom notifications for, 
+# if they are encountered while the correlations table is being calculated. This 
+# is defined in the main server function.
 corr_tab_server <- function(id,
-                            sobj,
+                            object,
                             metadata_config,
                             # This will replace metadata_config at some point
                             # (It is derived from the config file and is the 
@@ -97,17 +104,19 @@ corr_tab_server <- function(id,
                             nonzero_threshold,
                             meta_choices,
                             valid_features,
-                            error_list){
+                            error_list
+                            ){
 
   #Function to initialize module server
   moduleServer(id,
                function(input,output,session){
-                 #Server namespace function: required for ids defined within 
-                 #renderUI functions, but not for other ids 
+                 # Server namespace function: required for ids defined within 
+                 # renderUI functions, but not for other ids 
                  ns <- session$ns
                  
-                 #Correlations Tab Server ###
-                 #HARD CODING: Entire correlations tab only supports the RNA assay.
+                 # Correlations Tab Server ###
+                 # TODO: Entire correlations tab only supports 
+                 # the RNA assay. Should expand to other assays at some point.
                  
                  # Define spinners to display during computation
                  # Spinner for options panel
@@ -132,19 +141,25 @@ corr_tab_server <- function(id,
                  
                  # 1. Render Choices for Feature selection ---------------------
                  # 1.1. Render Choices ####
-                 updateSelectizeInput(
-                   session,
-                   inputId = "feature_selection",
-                   # Include only genes for now (this will be the first row of
-                   # valid_features)
-                   choices = valid_features[[1]],
-                   selected = character(0),
-                   server = TRUE
-                   )
+                 # Reactive - updates in response to change in dataset 
+                 observeEvent(
+                   object(),
+                   label = "Render choices for feature selection",
+                   {
+                     updateSelectizeInput(
+                       session,
+                       inputId = "feature_selection",
+                       # Include only genes for now (this will be 
+                       # the first row of valid_features)
+                       choices = valid_features()[[1]],
+                       selected = character(0),
+                       server = TRUE
+                       )
+                   })
                  
                  # 2. Process Inputs -------------------------------------------
-                 #Inputs are packaged into reactive values for proper processing
-                 #in downstream modules and functions
+                 # Inputs are packaged into reactive values for proper 
+                 # processing in downstream modules and functions
                  
                  ## 2.1. Gene selection for correlation analysis ####
                  corr_main_gene <- 
@@ -153,14 +168,14 @@ corr_tab_server <- function(id,
                      ignoreNULL = FALSE,
                      label="Corr: Process Selected Feature",
                      {
-                       #Only run if a feature is defined 
-                       #(avoids downstream errors)
-                       #req(input$feature_selection, cancelOutput = TRUE)
-                       
-                       #HARD CODING: remove "rna_" prefix 
-                       #from feature entered. Currently specific 
-                       #to RNA assay in this Seurat object
-                       return(sub("rna_","",input$feature_selection))
+                       # Only run if a feature is defined 
+                       # (avoids downstream errors)
+                       # req(input$feature_selection, cancelOutput = TRUE)
+                        
+                       # HARD CODING: remove "rna_" prefix 
+                       # from feature entered. Currently specific 
+                       # to RNA assay in this Seurat object
+                       return(sub("rna_", "", input$feature_selection))
                        })
                  
                  ## 2.2. Inputs in subset selections menus ####
@@ -169,7 +184,7 @@ corr_tab_server <- function(id,
                  subset_selections <- 
                    subset_selections_server(
                      id = "subset_selections",
-                     sobj=sobj,
+                     object = object,
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config
                      )
@@ -200,74 +215,6 @@ corr_tab_server <- function(id,
                        input$submit
                        }
                      )
-                 
-                 # ?. Reactive dropdown menu for patient -----------------------
-                 # TODO: add a more generalized form of this in the subset 
-                 # selections ui
-                 # Since patients fall into either the sensitive or resistant 
-                 # category, the patients dropdown will need to be updated to keep 
-                 # the user from choosing invalid combinations.
-                 # Menu will be updated in the future when variables such as treatment 
-                 # and time after diagnosis are added (ignoreInit prevents this 
-                 # from happening when app is initialized)
-                 # observeEvent(
-                 #   c(input$response_selection,
-                 #     input$treatment_selection),
-                 #   # Do not run this code at startup
-                 #   ignoreInit = TRUE,
-                 #   label="Corr: Reactive Patient Dropdown",
-                 #   {
-                 #     # Show a spinner while the valid patient ID's are calculated
-                 #     waiter_show(
-                 #       id = ns("sidebar"),
-                 #       html = spin_loaders(id=2, color = "#555588"),
-                 #       color = "#B1B1B188",
-                 #       #Gives manual control of showing/hiding spinner
-                 #       hide_on_render = FALSE 
-                 #       )
-                 #     
-                 #     #### Corr dplyr subset ####
-                 #     # Filter object for treatment and response selections, 
-                 #     # and find valid patients
-                 #     valid_patients <- 
-                 #       sobj@meta.data |> 
-                 #       filter(
-                 #         (.data[["response"]] %in% input$response_selection)&
-                 #           (.data[["treatment"]] %in% input$treatment_selection)
-                 #         ) |> 
-                 #       # Select patients metadata column
-                 #       select(.data[["htb"]]) |> 
-                 #       # Return unique values
-                 #       unique() |>
-                 #       # Convert to a character vector
-                 #       unlist()
-                 #                
-                 #     # Form categorized list of valid patients for display 
-                 #     # in dropdown menu
-                 #     valid_patients_categories <- 
-                 #       build_patient_list(valid_patients)
-                 #     
-                 #     # Sort patients categorized list so they 
-                 #     # appear in order
-                 #     valid_patients_categories <- 
-                 #       sort_patient_list(valid_patients_categories)
-                 #                
-                 #     #####
-                 #                
-                 #     #Update picker input with valid patient ID's
-                 #     updatePickerInput(session,
-                 #                       inputId = "htb_selection",
-                 #                       label = "Restrict by Patient",
-                 #                       choices = valid_patients_categories,
-                 #                       selected = valid_patients,
-                 #                       options = list(
-                 #                         "selected-text-format" = "count > 3",
-                 #                         "actions-box"=TRUE
-                 #                         ))
-                 #     
-                 #     #Hide waiter
-                 #     waiter_hide(id = ns("sidebar"))
-                 #     })
 
                  ## 3.2 Form subset based on chosen criteria ####
                  # Store in reactive variable
@@ -277,7 +224,7 @@ corr_tab_server <- function(id,
                      label = "Corr: Make Subset",
                      {
                        make_subset(
-                         sobj,
+                         object,
                          criteria_list = subset_selections
                          ) 
                        })
@@ -305,7 +252,7 @@ corr_tab_server <- function(id,
                        # Test if the number of cells in the subset differs from
                        # the number of cells in the original object. If this
                        # conditional is TRUE, then the object read is a subset
-                       n_cells_original != n_cells_subset
+                       n_cells_original() != n_cells_subset
                        })
                  
                  ## 3.4 Subset Stats Module ####
@@ -335,7 +282,7 @@ corr_tab_server <- function(id,
                          table_full <- 
                            compute_correlation(
                              gene_selected = corr_main_gene,
-                             object = sobj,
+                             object = object,
                              colnames=
                                c("Feature",
                                  "Correlation_Global")
@@ -425,8 +372,8 @@ corr_tab_server <- function(id,
                            # (feature and correlation coefficient in full data)
                            header <- 
                              tags$table(
-                               #center-colnames class: centers the
-                               #column names in the header
+                               # center-colnames class: centers the
+                               # column names in the header
                                class = "compact stripe cell-border 
                                hover center-colnames",
                                tags$thead(
@@ -438,10 +385,10 @@ corr_tab_server <- function(id,
                                        tags$br(),
                                        "(Global)"
                                        )
-                                     ) #End th
-                                   ) #End tr
-                                 ) #End thead
-                             ) #End table tag
+                                     ) # End th
+                                   ) # End tr
+                                 ) # End thead
+                             ) # End table tag
                            }
                        
                        datatable(
@@ -452,9 +399,9 @@ corr_tab_server <- function(id,
                          rownames = FALSE,
                          container = header
                          ) %>%
-                         #Use 5 sig figs for pearson coefficientcolumn(s). If a 
-                         #subset is used, this will be columns 2 and 3; 
-                         #if not, this will be column 2.
+                         # Use 5 sig figs for pearson coefficientcolumn(s). If a 
+                         # subset is used, this will be columns 2 and 3; 
+                         # if not, this will be column 2.
                          formatSignif(
                            columns = if (is_subset() == TRUE) c(2,3) else 2,
                            digits = 5
@@ -466,16 +413,16 @@ corr_tab_server <- function(id,
                    corr_DT_content(),
                    label="Corr: Hide Spinners",
                    {
-                     #Hide loading screen
+                     # Hide loading screen
                      main_spinner$hide()
                      sidebar_spinner$hide()
-                     #Show content in main panel
+                     # Show content in main panel
                      showElement(id = ns("main_panel_ui"))
                    })
                  
                  # 4. Correlations UI ------------------------------------------
                  ## 4.1. Main Panel UI ####
-                 #IgnoreNULL set to false to get UI to render at start up
+                 # IgnoreNULL set to false to get UI to render at start up
                  main_panel_ui <- 
                    eventReactive(
                      submit_button(),
@@ -528,7 +475,7 @@ corr_tab_server <- function(id,
                                  "Correlation Table", 
                                  class="center single-space-bottom"
                                  ),
-                               #Use a DT data table
+                               # Use a DT data table
                                DTOutput(
                                  outputId = ns("corr_table")
                                  )
@@ -623,7 +570,8 @@ corr_tab_server <- function(id,
                              inputId = ns("scatter_group_by"),
                              label = "Metadata to Group by:",
                              # Remove "none" from selectable options to group by
-                             choices= meta_choices[!meta_choices %in% "none"], 
+                             choices = 
+                               meta_choices()[!meta_choices() %in% "none"], 
                              selected = "clusters"
                              ),
                            
@@ -673,18 +621,18 @@ corr_tab_server <- function(id,
                        # Condition !hasName(): 
                        # TRUE before table is created, FALSE after
                        if (!hasName(input,"corr_table_rows_selected")){
-                         #Display nothing before table is created
+                         # Display nothing before table is created
                          NULL 
                          } else {
-                           #Display download button after table is created
+                           # Display download button after table is created
                            downloadButton(
                              outputId = ns("download_table"),
                              label = "Download Table",
-                             #Add space before button
+                             # Add space before button
                              class = "inline-block",
                              icon = icon("table")
                              )
-                           } #End else
+                           } # End else
                        })
                  
                  # 5. Server Value for Rows Selected from Table ----------------
@@ -777,7 +725,7 @@ corr_tab_server <- function(id,
                          #Make and store scatterplot 
                          #Use full object
                          FeatureScatter(
-                           sobj, 
+                           object(), 
                            feature1 = corr_main_gene(),
                            feature2 = corr_secondary_gene(),
                            #group.by and split.by according to user input
@@ -787,17 +735,17 @@ corr_tab_server <- function(id,
                        })
                  
                  # 7. Render Correlation UI, table, scatterplot, and statistics ----
-                 #Main panel UI
+                 # Main panel UI
                  output$main_panel_ui <- renderUI({
                    main_panel_ui()
                  })
                  
-                 #Container for scatterplots (main panel)
+                 # Container for scatterplots (main panel)
                  output$scatterplot_ui <- renderUI({
                    scatterplot_ui()
                  })
                  
-                 #Scatterplot (main panel, in UI container)
+                 # Scatterplot (main panel, in UI container)
                  observeEvent(input$corr_table_rows_selected, 
                               label = "Render Corr Scatter (Subset)", 
                               {
@@ -807,7 +755,7 @@ corr_tab_server <- function(id,
                                     })
                               })
                  
-                 #Scatterplot (main panel, in UI container)
+                 # Scatterplot (main panel, in UI container)
                  observeEvent(input$corr_table_rows_selected, 
                               label = "Render Corr Scatter (Global)", 
                               {
@@ -817,23 +765,23 @@ corr_tab_server <- function(id,
                                     })
                               })
                  
-                 #Options for scatterplot (sidebar panel)
+                 # Options for scatterplot (sidebar panel)
                  output$scatter_options_ui <- renderUI({
                    scatter_options()
                  })
                  
-                 #Download button for Table
+                 # Download button for Table
                  output$downloads_ui <- renderUI({
                    downloads_ui()
                  })
                  
-                 #Table
+                 # Table
                  output$corr_table <- renderDT({
                    corr_DT_content()
                  })
                  
                  # 8. Download Handlers ----------------------------------------
-                 #Correlations Table
+                 # Correlations Table
                  output$download_table <- downloadHandler(
                    filename=function(){
                      glue("Corr_table_{corr_main_gene()}.csv")
@@ -844,9 +792,9 @@ corr_tab_server <- function(id,
                                row.names=FALSE)
                    },
                    contentType="text/csv"
-                 )#End downloadHandler 
+                 ) # End downloadHandler 
                  
-                 #Scatterplot (for selected subset)
+                 # Scatterplot (for selected subset)
                  output$download_scatter_subset <- downloadHandler(
                    filename=function(){
                      glue("Corr_scatter_{corr_main_gene()}-vs-{corr_secondary_gene()}_subset.png")
@@ -858,9 +806,9 @@ corr_tab_server <- function(id,
                             bg="#FFFFFF")
                    },
                    contentType = "image/png"
-                 )#End downloadHandler
+                 )# End downloadHandler
                  
-                 #Scatterplot (for full data)
+                 # Scatterplot (for full data)
                  output$download_scatter_global <- downloadHandler(
                    filename=function(){
                      glue("Corr_scatter_{corr_main_gene()}-vs-{corr_secondary_gene()}_global.png")
@@ -872,7 +820,7 @@ corr_tab_server <- function(id,
                             bg="#FFFFFF")
                    },
                    contentType = "image/png"
-                 )#End downloadHandler
+                  )# End downloadHandler
                }
                )
 }

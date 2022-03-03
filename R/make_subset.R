@@ -7,7 +7,9 @@
 # metadata slot of the Seurat object, and the list object itself must be 
 # reactive, as opposed to each individual item being reactive. The app code 
 # should generate the list in the correct format automatically.  
-make_subset <- function(sobj, criteria_list){
+make_subset <- function(object, 
+                        criteria_list
+                        ){
   # Define sub-function vector_code (generates code to be passed as a string 
   # to the subset function)
   # Given a vector, vector_code will export a string that will 
@@ -79,7 +81,7 @@ make_subset <- function(sobj, criteria_list){
   }
   
   # Subset using the subset string 
-  subset <- eval(parse(text=paste0("subset(sobj, subset = ", subset_str, ")")))
+  subset <- eval(parse(text=paste0("subset(object(), subset = ", subset_str, ")")))
   
   # Return subset
   return(subset)

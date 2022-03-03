@@ -89,113 +89,111 @@ js_files <-
     include.dirs = FALSE
     )
 # Create list of style tags for each CSS file
-js_list <- lapply(js_files,includeScript)
+js_list <- lapply(js_files, includeScript)
 
 # Load Seurat Object and Config File -------------------------------------------
-# currently, D0/D30 data, modified to include gene signature scores
-# https://storage.googleapis.com/jv_omics_sandbox/longitudinal_samples_20211025.Rds
-sobj <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
+#sobj <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
 
 # Load config file
-config <- readRDS("./Seurat_Objects/AML_TotalVI_config.rds")
+#config <- readRDS("./Seurat_Objects/AML_TotalVI_config.rds")
 
 # Split config file into metadata and assay lists for use downstream
-metadata_config <- config$metadata
-assay_config <- config$assays
+#metadata_config <- config$metadata
+#assay_config <- config$assays
 
 # Define Searchable Features ---------------------------------------------------
-# TODO: add include_numeric_metadata as an option in the config app 
-include_numeric_metadata <- TRUE
-numeric_metadata_title <- "Metadata Features"
-
-# Create a list of valid features using the assays defined above
-valid_features <- 
-  feature_list_all(
-    sobj,
-    assay_config = assay_config,
-    #include_numeric_metadata: a boolean variable 
-    #that is hard-coded for now and will be 
-    #defined in the config file
-    numeric_metadata = include_numeric_metadata, 
-    #The same is true for numeric_metadata_title
-    numeric_metadata_title = numeric_metadata_title
-    )
+# # TODO: add include_numeric_metadata as an option in the config app 
+# include_numeric_metadata <- TRUE
+# numeric_metadata_title <- "Metadata Features"
+# 
+# # Create a list of valid features using the assays defined above
+# valid_features <- 
+#   feature_list_all(
+#     sobj,
+#     assay_config = assay_config,
+#     #include_numeric_metadata: a boolean variable 
+#     #that is hard-coded for now and will be 
+#     #defined in the config file
+#     numeric_metadata = include_numeric_metadata, 
+#     #The same is true for numeric_metadata_title
+#     numeric_metadata_title = numeric_metadata_title
+#     )
 
 # Define Metadata Used in App --------------------------------------------------
 # meta_categories: a vector giving the IDs of each of the categories defined
 # in the metadata section of the config file
-meta_categories <- names(metadata_config)
+#meta_categories <- names(metadata_config)
 
 # category_labels: list of labels for each metadata category (names are the
 # category IDs and the values are the labels chosen)
-category_labels <- lapply(metadata_config, function(category){category$label})
+#category_labels <- lapply(metadata_config, function(category){category$label})
 
-## Metadata categories in dropdown menua ####
-# meta_choices: a named vector with name-value pairs for the display name of 
-# the metadata category and the key used to access the category in the Seurat 
-# Object. 
-# Base vector: contains the "none" option
-meta_choices <- c("None"="none")
-# Iteratively populate vector using entries in the metadata section 
-# of the config file 
-for (category in meta_categories){
-  # Use setNames from the stats package to add a new name-value 
-  # pair to the vector
-  meta_choices <- setNames(
-    # Add `meta_colname` to vector
-    object = c(meta_choices, 
-               config$metadata[[category]]$meta_colname),
-    # Add `label` to the vector as a name
-    nm = c(names(meta_choices),
-           config$metadata[[category]]$label)
-  )
-}
+# ## Metadata categories in dropdown menus ####
+# # meta_choices: a named vector with name-value pairs for the display name of 
+# # the metadata category and the key used to access the category in the Seurat 
+# # Object. 
+# # Base vector: contains the "none" option
+# meta_choices <- c("None"="none")
+# # Iteratively populate vector using entries in the metadata section 
+# # of the config file 
+# for (category in meta_categories){
+#   # Use setNames from the stats package to add a new name-value 
+#   # pair to the vector
+#   meta_choices <- setNames(
+#     # Add `meta_colname` to vector
+#     object = c(meta_choices, 
+#                config$metadata[[category]]$meta_colname),
+#     # Add `label` to the vector as a name
+#     nm = c(names(meta_choices),
+#            config$metadata[[category]]$label)
+#   )
+# }
 
-## Unique values for each metadata category ####
-# The unique values for each metadata category listed in the config 
-# file will be stored as vectors in a list 
-unique_metadata <- list()
-# Store unique values for each metadata category entered
-for (category in names(config$metadata)){
-  # Use sobj@meta.data[[category]] instead of sobj[[category]] 
-  # to return a vector (sobj[[category]] returns a dataframe)
-  unique_metadata[[category]] <- unique(sobj@meta.data[[category]])
-  # If the metadata category is a factor, convert to a vector with levels() to 
-  # avoid integers appearing in place of the unique values themselves
-  if(class(unique_metadata[[category]])=="factor"){
-    unique_metadata[[category]] <- levels(unique_metadata[[category]])
-  }
-}
+# ## Unique values for each metadata category ####
+# # The unique values for each metadata category listed in the config 
+# # file will be stored as vectors in a list 
+# unique_metadata <- list()
+# # Store unique values for each metadata category entered
+# for (category in names(config$metadata)){
+#   # Use sobj@meta.data[[category]] instead of sobj[[category]] 
+#   # to return a vector (sobj[[category]] returns a dataframe)
+#   unique_metadata[[category]] <- unique(sobj@meta.data[[category]])
+#   # If the metadata category is a factor, convert to a vector with levels() to 
+#   # avoid integers appearing in place of the unique values themselves
+#   if(class(unique_metadata[[category]])=="factor"){
+#     unique_metadata[[category]] <- levels(unique_metadata[[category]])
+#   }
+# }
 
 # Non-reactive Global Variables ------------------------------------------------
-# Store UMAP Dimensions of full object
-# This is used to allow plotting of subsets with original axes scales
-# Plot a UMAP of the full data, store it to memory, and record the
-# x and y limits of the plot
-umap_orig <- 
-  DimPlot(
-    sobj,
-    group.by = "clusters"
-    )
+# # Store UMAP Dimensions of full object
+# # This is used to allow plotting of subsets with original axes scales
+# # Plot a UMAP of the full data, store it to memory, and record the
+# # x and y limits of the plot
+# umap_orig <-
+#   DimPlot(
+#     sobj
+#     )
+# 
+# # Record limits
+# xlim_orig <- layer_scales(umap_orig)$x$range$range
+# ylim_orig <- layer_scales(umap_orig)$y$range$range
+# 
+# # Store number of cells: used to determine if it is a subset
+# # TODO: does this apply to non-CITEseq datasets?
+# n_cells_original <- ncol(sobj)
+# 
+# # Reductions in object
+# reductions <- names(sobj@reductions)
 
-# Record limits
-xlim_orig <- layer_scales(umap_orig)$x$range$range
-ylim_orig <- layer_scales(umap_orig)$y$range$range
-
-# Store number of cells: used to determine if it is a subset
-# TODO: does this apply to non-CITEseq datasets?
-n_cells_original <- ncol(sobj)
-
-# Reductions in object
-reductions <- names(sobj@reductions)
-# Order UMAP reduction first by default, if it exists
-if ("umap" %in% reductions){
-  reductions <-
-    c(
-      reductions[reductions=="umap"],
-      reductions[!reductions=="umap"]
-      )
-}
+# # Order UMAP reduction first by default, if it exists
+# if ("umap" %in% reductions){
+#   reductions <-
+#     c(
+#       reductions[reductions=="umap"],
+#       reductions[!reductions=="umap"]
+#       )
+# }
 
 # Non-zero proportion threshold: if the proportion of cells for a 
 # gene is below this threshold, return a warning to the user.
@@ -257,6 +255,7 @@ datasets <-
   list(
     `d0_d30` = 
       list(
+        `label` = "Longitudinal Data",
         `object` = "./Seurat_Objects/longitudinal_samples_20211025.rds",
         `config` = "./Seurat_Objects/d0-d30-config.rds",
         `description` = 
@@ -266,6 +265,7 @@ datasets <-
           ),
     `AML_samples` = 
       list(
+        `label` = "AML Dataset",
         `object` = "./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds",
         `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
         `description` = 
@@ -288,40 +288,29 @@ ui <- tagList(
   useWaiter(),
   # Shinyjs: a Shiny JavaScript extension
   useShinyjs(),
-  # CSS style: prevents navbar from appearing on top of content 
-  # tags$head(tags$style(HTML("body{
-  #                           padding-top: 60px;
-  #                           }"))),
   # CSS and JS for collapsible panel
   navbarPage("Shiny scExplorer",
              windowTitle="Shiny scExplorer",
              position="fixed-top",
-             tabPanel("Plots",
-                      plots_tab_ui(
-                        id = "plots",
-                        meta_choices = meta_choices,
-                        unique_metadata = unique_metadata,
-                        category_labels = category_labels,
-                        metadata_config = config$metadata,
-                        reductions = reductions
-                        )
-                      ),
-             tabPanel("Differential Expression",
-                      dge_tab_ui(
-                        id = "dge",
-                        unique_metadata = unique_metadata,
-                        metadata_config = config$metadata,
-                        meta_categories = meta_categories
-                        )
-                      ),
-             tabPanel("Gene Correlations",
-                      #Use corr_tab_ui module
-                      corr_tab_ui(
-                        id = "corr",
-                        unique_metadata = unique_metadata,
-                        metadata_config = config$metadata
-                        )
-                      )
+             tabPanel(
+               "Plots",
+               uiOutput(outputId = "verify_object")
+               # uiOutput(
+               #   outputId = "plots_dynamic_ui"
+               #   )
+               ),
+             tabPanel(
+               "Differential Expression",
+               # uiOutput(
+               #   outputId = "dge_dynamic_ui"
+               #   )
+               ),
+             tabPanel(
+               "Gene Correlations",
+               # uiOutput(
+               #   outputId = "corr_dynamic_ui"
+               #   )
+               )
              ), # End navbarPage()
   
   ## Buttons on upper-right hand corner of app ---------------------------------
@@ -394,161 +383,529 @@ ui <- tagList(
     )
   ),
   
-  # Dataset pop-up (modal) window (shows when the "choose dataset" 
-  # button is pressed)
-  # ShinyBS method
-  # bsModal(
-  #   id = "data_modal",
-  #   title = "Choose Dataset",
-  #   trigger = "open_dataset_window",
-  #   size = "large",
-  #   "This is a modal"
-  #   ),
-  
   # Include list of scripts built from .js files in www/ directory
   js_list
 )
 
-# 2. Main Server function ------------------------------------------------------
-server <- function(input,output,session){
-  ## 2.1. Plots Tab Server Module #####
-  plots_tab_server(
-    id = "plots",
-    sobj = sobj,
-    assay_config = assay_config,
-    category_labels = category_labels,
-    unique_metadata = unique_metadata,
-    valid_features = valid_features,
-    error_list = error_list,
-    n_cells_original = n_cells_original,
-    xlim_orig = xlim_orig,
-    ylim_orig = ylim_orig,
-    metadata_config = metadata_config
+# Main Server function ---------------------------------------------------------
+server <- function(input, output, session){
+  # Define spinner to display over main screen when the object and config files
+  # are loading
+  app_spinner <-
+    Waiter$new(
+      # When the ID is null, the waiter is applied to the 
+      # <body> element (entire app)
+      id = NULL,
+      html = 
+        tagList(
+          spin_loaders(id = 2,color = "#555588"), 
+          div(
+            class = "spinner_text",
+            "Loading dataset, please wait...")
+          ),
+      color = "#FFFFFF",
+      #Gives manual control of showing/hiding spinner
+      hide_on_render = FALSE
     )
   
-  ## 2.2. DGE Tab Server Module ####
-  dge_tab_server(
-    id = "dge",
-    sobj = sobj,
-    metadata_config = metadata_config,
-    meta_categories = meta_categories,
-    unique_metadata = unique_metadata,
-    meta_choices = meta_choices
-    )
+  # 1. Reactively load object and config file
+  # Initialize a reactiveVal for storing the key of the last dataset loaded
+  dataset_info <- reactiveValues()
+  dataset_info$last_object_key <- NULL
+  # Initialize reactiveVal for storing the seurat object
+  object <- reactiveVal(NULL)
+  config <- reactiveVal(NULL)
   
-  ## 2.3. Correlations Tab Server Module ####
-  corr_tab_server(
-    id = "corr",
-    sobj = sobj,
-    metadata_config = metadata_config,
-    meta_categories = meta_categories,
-    unique_metadata = unique_metadata,
-    n_cells_original = n_cells_original, 
-    nonzero_threshold = nonzero_threshold, 
-    meta_choices = meta_choices,
-    valid_features = valid_features,
-    error_list = error_list
-    )
+  # Startup: a reactive value created to get eventReactive expression for
+  # loading datasets to run at startup, in addition to when the dataset window 
+  # is closed
+  startup <- reactiveVal(1)
+  # A change to startup is made at startup only (below)
+  # Value of startup is not important (though it can't be zero or it will be
+  # ignored by observers with ignoreNULL arguments set to TRUE)
+  startup(2)
   
-  ## 2.4 Pop-up window to select dataset
-  # Event observers to open and close modal
+  observeEvent(
+    startup(),
+    {
+      print("startup() observer")
+    })
+  
+  # observeEvent(
+  #   #req(isTruthy(close_dataset_modal()) | isTruthy(startup())),
+  #   #close_dataset_modal() | startup(),
+  #   eventExpr = 
+  #     {
+  #       # eventExpr: observer executes when this expression evaluates to TRUE 
+  #       # at startup, input$confirm_selection is NULL and 
+  #       # close_dataset_modal() will not run. To get observer to run at startup,
+  #       # a conditional is used to respond to startup() when 
+  #       # input$confirm_selection is NULL.
+  #       if (is.null(input$confirm_selection)){
+  #         isTruthy(startup())
+  #       } else {
+  #         # When close_dataset_modal is defined, execute in response to the
+  #         # variable
+  #         isTruthy(close_dataset_modal())
+  #       }
+  #     },
+  #   {
+  #     print("Combined startup observer")
+  #   }
+  # )
+  
+  
+  ## 1.1. Event observers to open and close modal
   observeEvent(
     input$open_dataset_window,
     label = "Open Dataset Modal",
     {
-      showModal(data_Modal(selected_key = selected_key))
-    })
-  
-  # When the "confirm selection" button is selected, close the window
-  observeEvent(
-    input$confirm_selection,
-    label = "Close Dataset Modal",
-    {
-      removeModal()
-    })
-  
-  # Update object to match the selected dataset
-  object_rxv <- 
-    eventReactive( 
-      input$confirm_selection,
-      label = "Update Object",
-      ignoreNULL = FALSE,
-      {
-        # input$data_key is used to select datasets
-        # The input is NULL at startup since the choices modal has not yet been
-        # opened. 
-        print("is.null conditional (object)")
-        print(!is.null(input$data_key))
-        if (!is.null(input$data_key)){
-          # Define path using datasets list and key for selected dataset
-          path <- datasets[[input$data_key]]$object
-          } else {
-            # When input$data_key is not defined, use the first 
-            # dataset on the list
-            path <- datasets[[1]]$object
-          }
-        print("path (object)")
-        print(path)
-        # Load seurat object using defined path
-        readRDS(path)
-        
+      showModal(
+        data_Modal(
+          datasets = datasets,
+          selected_key = selected_key
+          )
+        )
       })
   
-  # Update config file with the one from the selected dataset
-  config_rxv <-
-    eventReactive( 
+  ## 1.2. When the "confirm selection" button is selected, close the window
+  close_dataset_modal <- 
+    eventReactive(
       input$confirm_selection,
-      label = "Update Config File",
+      label = "Close Dataset Window",
+      #ignoreNULL = FALSE,
+      {
+        removeModal()
+        # Record value of input$confirm_selection (code to load the 
+        # object and config file will respond to this reactive expression 
+        # instead of to the button itself, ensuring the modal is closed before
+        # the dataset is computed, and that the window only closes when the
+        # "confirm selection" button is pressed)
+        input$confirm_selection
+      })
+  
+  # Conditional to determine when to load datasets
+  load_conditional <-
+    eventReactive(
+      # load_conditional at startup, and when the "confirm selection" button 
+      # is pressed
+      eventExpr = 
+        {
+          # eventExpr: observer executes when this expression evaluates to TRUE 
+          # at startup, input$confirm_selection is NULL and 
+          # close_dataset_modal() will not run. To get observer to run at 
+          # startup, a conditional is used to respond to startup() when 
+          # input$confirm_selection is NULL.
+          if (is.null(input$confirm_selection)){
+            isTruthy(startup())
+          } else {
+            # When close_dataset_modal is defined, execute in response to the
+            # variable
+            isTruthy(close_dataset_modal())
+          }
+        },
+      label = "Loading Conditional",
       ignoreNULL = FALSE,
       {
-        print("is.null conditional (config)")
-        print(!is.null(input$data_key))
-        if (!is.null(input$data_key)){
-          # Define path using datasets list and key for selected dataset
-          path <- datasets[[input$data_key]]$config
+        # Object and config files should be loaded
+        # a. At startup, and
+        # b. When the dataset requested is different from the one 
+        #    currently loaded (key of dataset selected != key of
+        #    currently loaded dataset)
+        
+        # Fetch key for previously loaded dataset from dataset_info reactive
+        # list
+        previous_key <- dataset_info$last_object_key
+        
+        # a. startup (previous_key == NULL)
+        if (is.null(previous_key)){
+          print("TRUE")
+          return(TRUE)
+        } else {
+          # b. Dataset requested is different
+          if (previous_key != selected_key()){
+            print("TRUE")
+            return(TRUE)
           } else {
-            # Use the first dataset if input$data_key is undefined
-            print(datasets[[1]]$config)
-            path <- datasets[[1]]$config
+            # if previous_key==selected_key and selected_key is not NULL, the
+            # dataset is the same. Do not proceed with dataset loading in this
+            # case
+            print("FALSE")
+            return(FALSE)
           }
+        }
+      })
+  
+  ## 1.3. Update object to match the selected dataset
+  observeEvent(
+      load_conditional(),
+      label = "Load/Update Object",
+      #ignoreNULL = FALSE,
+      {
+        if (load_conditional() == TRUE){
+          path <- datasets[[selected_key()]]$object
+          
+          app_spinner$show()
+          # Load seurat object using defined path and set "object" 
+          # reactiveVal to the object
+          object(readRDS(path))
+          
+          print("Object loaded successfully")
+          
+          # Set last_object key to the key of the last dataset loaded (value
+          # of selected_key when the object was loaded)
+          dataset_info$last_object_key <- selected_key()
+          
+          app_spinner$hide()
+        } 
+        # If load_conditional() == FALSE, the object will be unchanged
+      })
+  
+  ## 1.4. Update config file with the one from the selected dataset,
+  # if it has changed
+  observeEvent( 
+    load_conditional(),
+    label = "Update Config File",
+    #ignoreNULL = FALSE,
+    {
+      if (load_conditional() == TRUE){
+        path <- datasets[[selected_key()]]$config
+        
         print("path (config)")
         print(path)
-        # Load config file using defined path
-        readRDS(path)
-        }
-      )
+        # Load config file using defined path and set reactiveVal object
+        config(readRDS(path))
+      }
+      # If load_conditional() is not TRUE, the config file is unchanged.
+    })
   
-  # Also, save the selected key for the next time the window is opened (the 
+  #Save the selected key for the next time the window is opened (the 
   # group of buttons is re-created every time the modal is opened)
   selected_key <-
     eventReactive( 
-      input$confirm_selection,
-      label = "Save Key of Selected Dataset",
+      # Must run at startup (to load dataset initially) and in response 
+      # to the "confirm selection" button 
+      eventExpr = 
+        {
+          # eventExpr: observer executes when this expression evaluates to TRUE 
+          # at startup, input$confirm_selection is NULL and 
+          # close_dataset_modal() will not run. To get observer to run at 
+          # startup, a conditional is used to respond to startup() when 
+          # input$confirm_selection is NULL.
+          if (is.null(input$confirm_selection)){
+            isTruthy(startup())
+          } else {
+            # When close_dataset_modal is defined, execute in response to the
+            # variable
+            isTruthy(close_dataset_modal())
+          }
+        },
+      label = "Save Data Key",
       ignoreNULL = FALSE,
       {
-        # selected_key will be equal to input$data_key if it is defined, 
-        # otherwise it will be NULL. 
-        input$data_key
+        if (!is.null(input$data_key)){
+          # Record value of input$data_key
+          input$data_key
+        } else {
+          # If input$data_key is NULL, the key has not yet been defined.
+          # in this case, use the default data key (the first one)
+          names(datasets)[1]
         }
-    )
-  
-  observe({
-    print("Object loaded")
-    print(object_rxv())
-  })
-  
-  observe({
-    print("Config file loaded")
-    print(config_rxv())
-  })
-  
-  # TEMP: inspect output of radio buttons
-  output$buttontest <- 
-    renderPrint({
-      # subset datasets list for the input key returned 
-      # by the group of radio buttons
-      datasets[[input$data_key]]
       })
+  
+  # 2. Initialize Variables specific to object and config file
+  # Split config file into metadata and assay lists for use downstream
+  metadata_config <- reactive({config()$metadata})
+  assay_config <- reactive({config()$assays})
+  
+  # TODO: add include_numeric_metadata as an option in the config app 
+  include_numeric_metadata <- TRUE
+  numeric_metadata_title <- "Metadata Features"
+  
+  # Create a list of valid features using the assays defined above
+  valid_features <-
+    reactive({
+      valid_features <- feature_list_all(
+        object = object,
+        assay_config = assay_config,
+        #include_numeric_metadata: a boolean variable 
+        #that is hard-coded for now and will be 
+        #defined in the config file
+        numeric_metadata = include_numeric_metadata, 
+        #The same is true for numeric_metadata_title
+        numeric_metadata_title = numeric_metadata_title
+        )
+      
+      valid_features
+      })
+  
+  # meta_categories: a vector giving the IDs of each of the categories defined
+  # in the metadata section of the config file
+  meta_categories <- reactive({names(metadata_config())})
+  
+  # category_labels: list of labels for each metadata category (names are the
+  # category IDs and the values are the labels chosen)
+  category_labels <- 
+    reactive({
+      lapply(metadata_config(), function(category){category$label})
+      })
+  
+  ## Metadata categories in dropdown menus ####
+  # meta_choices: a named vector with name-value pairs for the display name of 
+  # the metadata category and the key used to access the category in the Seurat 
+  # Object. 
+  meta_choices <- 
+    reactive({
+      # Base vector: contains the "none" option
+      meta_choices <- c("None"="none")
+      # Iteratively populate vector using entries in the metadata section 
+      # of the config file 
+      for (category in meta_categories()){
+        # Use setNames from the stats package to add a new name-value 
+        # pair to the vector
+        meta_choices <- setNames(
+          # Add `meta_colname` to vector
+          object = c(meta_choices, 
+                     metadata_config()[[category]]$meta_colname),
+          # Add `label` to the vector as a name
+          nm = c(names(meta_choices),
+                 metadata_config()[[category]]$label)
+        )
+        }
+    })
+  
+  ## Unique values for each metadata category ####
+  unique_metadata <- 
+    reactive({
+      # The unique values for each metadata category listed in the config 
+      # file will be stored as vectors in a list 
+      unique_metadata <- list()
+      
+      # Store unique values for each metadata category entered
+      for (category in names(metadata_config())){
+        # Use sobj@meta.data[[category]] instead of object()[[category]] 
+        # to return a vector (sobj[[category]] returns a dataframe)
+        unique_metadata[[category]] <- 
+          unique(object()@meta.data[[category]])
+        # If the metadata category is a factor, convert to a vector with 
+        # levels to avoid integers appearing in place of the 
+        # unique values themselves
+        if (class(unique_metadata[[category]]) == "factor"){
+          unique_metadata[[category]] <- 
+            levels(unique_metadata[[category]])
+        }
+      }
+      
+      unique_metadata
+      })
+  
+  # Store UMAP Dimensions of full object
+  # This is used to allow plotting of subsets with original axes scales
+  # Plot a UMAP of the full data, store it to memory, and record the
+  # x and y limits of the plot
+  umap_orig <- 
+    reactive({
+      DimPlot(
+        object()
+      )
+    })
+  
+  # Record limits
+  xlim_orig <- 
+    reactive({
+      layer_scales(umap_orig())$x$range$range
+    })
+    
+  ylim_orig <- 
+    reactive({
+      layer_scales(umap_orig())$y$range$range
+    })
+  
+  # Store number of cells: used to determine if it is a subset
+  # TODO: does this apply to non-CITEseq datasets?
+  n_cells_original <- 
+    reactive({
+      ncol(object())
+    })
+  
+  # Reductions in object
+  reductions <- 
+    reactive({
+      reductions <- names(object()@reductions)
+      
+      # Order UMAP reduction first by default, if it exists
+      if ("umap" %in% reductions){
+        reductions <-
+          c(
+            reductions[reductions=="umap"],
+            reductions[!reductions=="umap"]
+          )
+      }
+      
+      reductions
+    })
+    
+  
+  # 3. Initialize Modules ------------------------------------------------------
+  ## 3.1. Dynamic UI ####
+  # All UI for modules is dynamic as it depends on the currently 
+  # selected object.
+  ### 3.1.1. Plots tab UI
+  # plots_tab_ui <-
+  #   eventReactive(
+  #     # UI should only update when the object and config files are switched
+  #     c(object(), config()),
+  #     label = "Plots Tab Dynamic UI",
+  #     {
+  #       plots_tab_ui(
+  #         id = "plots",
+  #         meta_choices = meta_choices,
+  #         unique_metadata = unique_metadata,
+  #         category_labels = category_labels,
+  #         metadata_config = metadata_config,
+  #         reductions = reductions
+  #         )
+  #     })
+  
+  ### 3.1.2. DGE tab UI
+  # dge_tab_ui <-
+  #   eventReactive(
+  #     # UI should only update when the object and config files are switched
+  #     c(object(), config()),
+  #     label = "DGE Tab Dynamic UI",
+  #     {
+  #       dge_tab_ui(
+  #         id = "dge",
+  #         unique_metadata = unique_metadata,
+  #         metadata_config = metadata_config,
+  #         meta_categories = meta_categories
+  #         )
+  #     })
+  
+  ### 3.1.3. Correlations tab UI
+  # corr_tab_ui <-
+  #   eventReactive(
+  #     # UI should only update when the object and config files are switched
+  #     c(object(), config()),
+  #     label = "Correlations Tab Dynamic UI",
+  #     {
+  #       corr_tab_ui(
+  #         id = "corr",
+  #         unique_metadata = unique_metadata,
+  #         metadata_config = metadata_config
+  #         )
+  #     })
+  
+  ### 3.1.4. Render Dynamic UI components
+  # output$plots_dynamic_ui <- 
+  #   renderUI({
+  #     plots_tab_ui()
+  #     })
+  # 
+  # output$dge_dynamic_ui <- 
+  #   renderUI({
+  #     dge_tab_ui()
+  #     })
+  # 
+  # output$corr_dynamic_ui <- 
+  #   renderUI({
+  #     corr_tab_ui()
+  #     })
+  
+  ## 3.2 Server instances ####
+  ### 3.2.1. Plots Tab Server Module #####
+  # plots_tab_server(
+  #   id = "plots",
+  #   object = object,
+  #   metadata_config = metadata_config,
+  #   assay_config = assay_config,
+  #   category_labels = category_labels,
+  #   unique_metadata = unique_metadata,
+  #   valid_features = valid_features,
+  #   error_list = error_list,
+  #   n_cells_original = n_cells_original,
+  #   xlim_orig = xlim_orig,
+  #   ylim_orig = ylim_orig
+  #   )
+  
+  ### 3.2.2. DGE Tab Server Module ####
+  # dge_tab_server(
+  #   id = "dge",
+  #   object = object,
+  #   metadata_config = metadata_config,
+  #   meta_categories = meta_categories,
+  #   unique_metadata = unique_metadata,
+  #   meta_choices = meta_choices
+  #   )
+  
+  ### 3.2.3. Correlations Tab Server Module ####
+  # corr_tab_server(
+  #   id = "corr",
+  #   object = object,
+  #   metadata_config = metadata_config,
+  #   meta_categories = meta_categories,
+  #   unique_metadata = unique_metadata,
+  #   n_cells_original = n_cells_original, 
+  #   nonzero_threshold = nonzero_threshold, 
+  #   meta_choices = meta_choices,
+  #   valid_features = valid_features,
+  #   error_list = error_list
+  #   )
+  
+  # TEMP: UI to test object and config file are properly rendered
+  output$verify_object <- 
+    renderUI({
+      div(
+        "Object",
+        verbatimTextOutput(outputId = "object_summary"),
+        "Config File",
+        verbatimTextOutput(outputId = "config_summary"),
+        "Valid Features",
+        verbatimTextOutput(outputId = "valid_features_summary"),
+        "Unique Metadata",
+        verbatimTextOutput(outputId = "unique_metadata_summary"),
+        "Other Reactives",
+        verbatimTextOutput(outputId = "other_summary")
+      )
+    })
+  
+  output$object_summary <- 
+    renderPrint({
+      print(object())
+    })
+  
+  output$config_summary <-
+    renderPrint({
+      print(config())
+    })
+  
+  output$valid_features_summary <-
+    renderPrint({
+      str(valid_features())
+    })
+  
+  output$unique_metadata_summary <-
+    renderPrint({
+      print(str(unique_metadata()))
+    })
+  
+  output$other_summary <-
+    renderPrint({
+      print("meta_categories")
+      print(meta_categories())
+      print("category_labels")
+      print(category_labels())
+      print("meta_choices")
+      print(meta_choices())
+      print("xlim_orig")
+      print(xlim_orig())
+      print("ylim_orig")
+      print(ylim_orig())
+      print("n_cells_original")
+      print(n_cells_original())
+      print("reductions")
+      print(reductions())
+    })
 }
 
 # Run the application 

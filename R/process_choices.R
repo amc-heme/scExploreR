@@ -14,7 +14,7 @@ process_choices <- function(metadata_config,
                             choices
                             ){
   # Fetch group info from the metadata_config file
-  group_info <- metadata_config[[category]]$groups
+  group_info <- metadata_config()[[category]]$groups
   
   if(!is.null(group_info)){
     # If group info data exists, construct groups with group_metadata_choices

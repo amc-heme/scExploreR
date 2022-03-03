@@ -76,9 +76,9 @@ plot_module_ui <- function(id,
           inputId = ns("group_by"), 
           label = "Metadata to Group by:",
           # Can select all options except "none"
-          choices= meta_choices[!meta_choices %in% "none"], 
+          choices = meta_choices()[!meta_choices() %in% "none"], 
           # First option selected by default 
-          selected = meta_choices[1]
+          selected = meta_choices()[1]
         )
         # Do not add element if FALSE
       } else NULL,
@@ -89,7 +89,7 @@ plot_module_ui <- function(id,
           inputId = ns("split_by"), 
           label = "Metadata to Split By:",
           # Use vector of included metadata category names from the config file
-          choices= meta_choices,  
+          choices = meta_choices(),  
           #"none" selected by default
           selected = "none"
         )
@@ -98,13 +98,20 @@ plot_module_ui <- function(id,
       # Reductions menu
       if (reductions_menu == TRUE){
         if (is.null(reductions)){
+          # Error handling: return error if reductions is not specified when 
+          # reductions_menu is TRUE
           stop("If reductions_menu is TRUE, `reductions` must be specified.")
+        } else {
+          if(!is.reactive(reductions)){
+            # Also, return an error if `reductions` is not a reactive variable
+            stop("`reductions` must be a reactive variable.")
+          }
         }
         
         selectInput(
           inputId = ns("reduction"),
           label = "Choose Projection",
-          choices = reductions
+          choices = reductions()
         )
       } else NULL,
       
@@ -234,23 +241,23 @@ plot_module_ui <- function(id,
 # separate features (features specific to the plot created by this module) 
 # should be ran
 plot_module_server <- function(id,
-                                   object, #Reactive
-                                   plot_switch, #Reactive
-                                   plot_label, #Non-reactive
-                                   n_cells_original, #Non-reactive
-                                   features_entered = NULL, #Reactive 
-                                   manual_dimensions = TRUE, #Non-reactive
-                                   plot_type = c("dimplot",
-                                                 "feature",
-                                                 "violin",
-                                                 "dot"), #Non-reactive
-                                   valid_features = NULL, #Non-reactive
-                                   xlim_orig = NULL, #Non-reactive
-                                   ylim_orig = NULL, #Non-reactive
-                                   #Currently only needed for feature plots
-                                   assay_config = NULL, #Non-reactive
-                                   separate_features_server =  FALSE #Non-reactive
-                                   ){
+                               object, #Reactive
+                               plot_switch, #Reactive
+                               plot_label, #Non-reactive
+                               n_cells_original, #Reactive
+                               features_entered = NULL, #Reactive 
+                               manual_dimensions = TRUE, #Non-reactive
+                               plot_type = c("dimplot",
+                                             "feature",
+                                             "violin",
+                                             "dot"), #Non-reactive
+                               valid_features = NULL, #Reactive
+                               xlim_orig = NULL, #Reactive
+                               ylim_orig = NULL, #Reactive
+                               #Currently only needed for feature plots
+                               assay_config = NULL,
+                               separate_features_server = FALSE #Non-reactive
+                               ){
   moduleServer(id,
                function(input,output,session){
                  # Server namespace function: for dynamic UI
@@ -364,7 +371,7 @@ plot_module_server <- function(id,
                      # Test if the number of cells in the subset differs from
                      # the number of cells in the original object. If this
                      # conditional is TRUE, then the object read is a subset
-                     n_cells_original != n_cells_subset
+                     n_cells_original() != n_cells_subset
                  })
                  
                  # 4. Conditional UI -------------------------------------------
@@ -677,7 +684,7 @@ plot_module_server <- function(id,
                          updateSelectizeInput(
                            session,
                            inputId = "separate_features",
-                           choices = valid_features,
+                           choices = valid_features(),
                            selected = features_entered(),
                            server = TRUE
                            )
@@ -709,7 +716,7 @@ plot_module_server <- function(id,
                          updateSelectizeInput(
                            session,
                            inputId = "separate_features",
-                           choices = valid_features,
+                           choices = valid_features(),
                            selected = features_entered(),
                            server=TRUE
                          )

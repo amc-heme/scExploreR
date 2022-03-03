@@ -4,8 +4,10 @@
 # use the machine-readable name by default.
 # The machine readable name is the name of the feature with the assay key as 
 # a prefix (for example, RNA features use the '_rna' key)
-hr_name <- function(machine_readable_name, assay_config){
-  for (assay in assay_config){
+hr_name <- function(machine_readable_name, 
+                    assay_config
+                    ){
+  for (assay in assay_config()){
     # Given the machine-readable name in question, test each assay to see if 
     # the assay key is in the name
     if (grepl(assay$key, machine_readable_name)){

@@ -23,9 +23,9 @@ shiny_feature <- function(object, #Reactive
                           show_legend, #Reactive
                           is_subset, #Reactive
                           original_limits, #Reactive
-                          assay_config, #Non-reactive
-                          xlim_orig, #Non-reactive
-                          ylim_orig, #Non-reactive
+                          assay_config, #Reactive
+                          xlim_orig, #Reactive
+                          ylim_orig, #Reactive
                           reduction = NULL #Reactive
 ){
   # At least one feature must be entered to avoid errors when computing plot
@@ -106,7 +106,7 @@ shiny_feature <- function(object, #Reactive
           # An error that occurs when this function is 
           # evaluated before the input is #defined. 
           if (original_limits() == TRUE) {
-            scale_x_continuous(limits = xlim_orig)
+            scale_x_continuous(limits = xlim_orig())
           }
         },
         # Element C
@@ -116,7 +116,7 @@ shiny_feature <- function(object, #Reactive
           # Add original limits to the list if the 
           # corresponding checkbox is checked
           if(original_limits() == TRUE) {
-            scale_y_continuous(limits = ylim_orig)
+            scale_y_continuous(limits = ylim_orig())
           } 
         }
       )

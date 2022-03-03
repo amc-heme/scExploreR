@@ -17,9 +17,9 @@ feature_list_all <- function(object,
   # assay type in a list.
   valid_features <- list()
   # Loop through each assay provided
-  for (assay_entry in assay_config){
+  for (assay_entry in assay_config()){
     # Fetch the features included in the object under the current assay
-    assay_features <- rownames(object[[assay_entry$assay]])
+    assay_features <- rownames(object()[[assay_entry$assay]])
     # Generate human-readable feature names
     if (assay_entry$suffix_human != ""){
       # If a human-readable suffix is defined, add it to the features 
@@ -46,7 +46,7 @@ feature_list_all <- function(object,
   # add that column.
   if (numeric_metadata==TRUE){
     # First, fetch all metadata columns in object.
-    meta_cols <- names(object@meta.data)
+    meta_cols <- names(object()@meta.data)
     # Next, select columns that have numeric or integer values
     numeric_cols <- 
       meta_cols[
@@ -55,8 +55,8 @@ feature_list_all <- function(object,
         sapply(
           meta_cols, 
           FUN = function(x){
-            (class(object@meta.data[[x]])=="numeric") || 
-              (class(object@meta.data[[x]])=="integer")
+            (class(object()@meta.data[[x]])=="numeric") || 
+              (class(object()@meta.data[[x]])=="integer")
             }
           )
         ]

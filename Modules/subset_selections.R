@@ -17,10 +17,9 @@ subset_selections_ui <- function(id,
   # Create a list for storing the Shiny tags from each menu 
    menus <- tagList()
   
-  for(category in names(metadata_config)){
-    # TEMP: inspect NA literals in best_response category
-    print("Best response choices passed to picker input")
-    print(unique_metadata[["best_response"]])
+  for(category in names(metadata_config())){
+    # Fetch config information for current category
+    config_i <- metadata_config()[[category]]
     
     # Create menu for the current category
     menu_tag <- pickerInput(
@@ -28,24 +27,24 @@ subset_selections_ui <- function(id,
       # within a module
       inputId = ns(glue("{category}_selection")),
       #label: uses the label defined for the category in the config file
-      label = glue("Restrict by {metadata_config[[category]]$label}"),
+      label = glue("Restrict by {config_i$label}"),
       # choices: filled using the unique_metadata list
       # If the metadata category has defined groups, sort choices into a named
       # list based on the groups. This will show choices divided by group in
       # the pickerInput menu.
-      choices = if(!is.null(metadata_config[[category]]$groups)){
+      choices = if(!is.null(config_i$groups)){
         # Use group_metadata_choices() to generate list
         group_metadata_choices(
-          group_info = metadata_config[[category]]$groups,
+          group_info = config_i$groups,
           choices = unique_metadata[[category]]
         )
       } else {
         # If groups are not defined, use the vector of choices
         # from unique_metadata
-        unique_metadata[[category]]
+        unique_metadata()[[category]]
       },
       # selected: all choices selected by default
-      selected = unique_metadata[[category]],
+      selected = unique_metadata()[[category]],
       multiple = TRUE,
       # Options for pickerInput
   options = list(
@@ -98,7 +97,7 @@ subset_selections_ui <- function(id,
 # Arguments
 # id: the namespace to use for the module. UI-server function pairs should 
 # use the same id.
-# sobj: The Seurat Object defined in the main server function
+# object: The Seurat Object defined in the main server function
 # unique_metadata: a list of the unique metadata values for each of the metadata 
 # categories listed in the config file. This is generated in the main server
 # function at startup.
@@ -108,7 +107,7 @@ subset_selections_ui <- function(id,
 # hide_menu (optional): a string or character vector giving the name(s) of 
 # metadata categories for which to hide menus in the subset selection interface.
 subset_selections_server <- function(id,
-                                     sobj,
+                                     object,
                                      unique_metadata,
                                      metadata_config = config$metadata,
                                      hide_menu = NULL,
@@ -126,12 +125,12 @@ subset_selections_server <- function(id,
         # Store selections for each input in the UI (one menu is created for 
         # each metadata category in the config file)
         selections_list <- lapply(
-          names(metadata_config),
+          names(metadata_config()),
           function(category){input[[glue("{category}_selection")]]}
           )
         
         # Add categories from metadata file to list names
-        names(selections_list) <- names(metadata_config)
+        names(selections_list) <-  names(metadata_config())
         
         # If hide_menu is provided and is a reactive, remove all hidden menus 
         # from the selections output
@@ -163,10 +162,10 @@ subset_selections_server <- function(id,
               # If hide menu is specified, remove the hidden category from the 
               # list of original choices
               all_values <- 
-                unique_metadata[!names(unique_metadata) %in% hide_menu()]
+                unique_metadata()[!names(unique_metadata()) %in% hide_menu()]
             } else {
               # If hide_menu is not specified, use the list of original choices
-              all_values <- unique_metadata
+              all_values <- unique_metadata()
               }
             
             not_equal <- 
@@ -222,7 +221,7 @@ subset_selections_server <- function(id,
       # for each category. It will be updated with the current valid
       # choices based on filter criteria selected
       for (category in all_categories){
-        available_choices[[category]] <- unique_metadata[[category]]
+        available_choices[[category]] <- unique_metadata()[[category]]
       }
       
       # Use lapply to build observers for each metadata category
@@ -250,7 +249,7 @@ subset_selections_server <- function(id,
               for (other_category in other_categories){
                 # Generate list of valid choices for the category
                 valid_choices <-
-                  sobj@meta.data |>
+                  object()@meta.data |> 
                   # Filter object for selections made in current category
                   filter(
                     .data[[current_category]] %in%
@@ -266,25 +265,15 @@ subset_selections_server <- function(id,
                   unlist() |>
                   as.character()
 
-                # cgiuces_to_list tests if the category has groups defined in 
+                # process_choices tests if the category has groups defined in 
                 # the config file. If so, valid choices are sorted into those 
                 # groups, and if not, the choices are returned unchanged.
-                choices_processed <- process_choices(metadata_config,
-                                           category = other_category,
-                                           choices = valid_choices
-                                           )
-                
-                # group_info <- metadata_config[[other_category]]$groups
-                # 
-                # if(!is.null(group_info)){
-                #   # Use group_metadata_choices() function to do this
-                #   choices_list <-
-                #     group_metadata_choices(group_info, valid_choices)
-                #   } else {
-                #     # If there is no group info for the category, do not
-                #     # group choices into a list
-                #     choices_list <- NULL
-                #     }
+                choices_processed <- 
+                  process_choices(
+                    metadata_config,
+                    category = other_category,
+                    choices = valid_choices
+                    )
 
                 # Next, update each picker input with valid choices
                 # *but only*
@@ -394,15 +383,16 @@ subset_selections_server <- function(id,
           # When the reset button is pressed, update all of the menus 
           for (category in all_categories){
             # Define original values using unique_metadata
-            initial_values <- unique_metadata[[category]]
+            initial_values <- unique_metadata()[[category]]
             
             # If the metadata category has a groups property, build a list of
             # grouped metadata values
             initial_values_processed <- 
-              process_choices(metadata_config,
-                              category = category,
-                              choices = initial_values
-                              )
+              process_choices(
+                metadata_config,
+                category = category,
+                choices = initial_values
+                )
             
             # Update picker input
             updatePickerInput(
@@ -447,7 +437,7 @@ subset_selections_server <- function(id,
                          }
                          # Show all menus in the module that are not in the 
                          # hide_menu vector
-                         for (category in names(metadata_config)){
+                         for (category in names(metadata_config())){
                            if (!category %in% hide_menu()){
                              showElement(id = ns(glue("{category}_selection")),
                                          asis = TRUE)
