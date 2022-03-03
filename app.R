@@ -29,7 +29,7 @@ library(DT, quietly = TRUE, warn.conflicts = FALSE)
 library(presto, quietly = TRUE, warn.conflicts = FALSE)
 library(R.devices, quietly = TRUE, warn.conflicts = FALSE)
 
-## Load CSS, JavaScript, and R scripts ####
+# Load CSS, JavaScript, and R scripts ------------------------------------------
 # Load functions in ./R directory
 # Get list of files
 source_files <- 
@@ -91,109 +91,7 @@ js_files <-
 # Create list of style tags for each CSS file
 js_list <- lapply(js_files, includeScript)
 
-# Load Seurat Object and Config File -------------------------------------------
-#sobj <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
-
-# Load config file
-#config <- readRDS("./Seurat_Objects/AML_TotalVI_config.rds")
-
-# Split config file into metadata and assay lists for use downstream
-#metadata_config <- config$metadata
-#assay_config <- config$assays
-
-# Define Searchable Features ---------------------------------------------------
-# # TODO: add include_numeric_metadata as an option in the config app 
-# include_numeric_metadata <- TRUE
-# numeric_metadata_title <- "Metadata Features"
-# 
-# # Create a list of valid features using the assays defined above
-# valid_features <- 
-#   feature_list_all(
-#     sobj,
-#     assay_config = assay_config,
-#     #include_numeric_metadata: a boolean variable 
-#     #that is hard-coded for now and will be 
-#     #defined in the config file
-#     numeric_metadata = include_numeric_metadata, 
-#     #The same is true for numeric_metadata_title
-#     numeric_metadata_title = numeric_metadata_title
-#     )
-
-# Define Metadata Used in App --------------------------------------------------
-# meta_categories: a vector giving the IDs of each of the categories defined
-# in the metadata section of the config file
-#meta_categories <- names(metadata_config)
-
-# category_labels: list of labels for each metadata category (names are the
-# category IDs and the values are the labels chosen)
-#category_labels <- lapply(metadata_config, function(category){category$label})
-
-# ## Metadata categories in dropdown menus ####
-# # meta_choices: a named vector with name-value pairs for the display name of 
-# # the metadata category and the key used to access the category in the Seurat 
-# # Object. 
-# # Base vector: contains the "none" option
-# meta_choices <- c("None"="none")
-# # Iteratively populate vector using entries in the metadata section 
-# # of the config file 
-# for (category in meta_categories){
-#   # Use setNames from the stats package to add a new name-value 
-#   # pair to the vector
-#   meta_choices <- setNames(
-#     # Add `meta_colname` to vector
-#     object = c(meta_choices, 
-#                config$metadata[[category]]$meta_colname),
-#     # Add `label` to the vector as a name
-#     nm = c(names(meta_choices),
-#            config$metadata[[category]]$label)
-#   )
-# }
-
-# ## Unique values for each metadata category ####
-# # The unique values for each metadata category listed in the config 
-# # file will be stored as vectors in a list 
-# unique_metadata <- list()
-# # Store unique values for each metadata category entered
-# for (category in names(config$metadata)){
-#   # Use sobj@meta.data[[category]] instead of sobj[[category]] 
-#   # to return a vector (sobj[[category]] returns a dataframe)
-#   unique_metadata[[category]] <- unique(sobj@meta.data[[category]])
-#   # If the metadata category is a factor, convert to a vector with levels() to 
-#   # avoid integers appearing in place of the unique values themselves
-#   if(class(unique_metadata[[category]])=="factor"){
-#     unique_metadata[[category]] <- levels(unique_metadata[[category]])
-#   }
-# }
-
 # Non-reactive Global Variables ------------------------------------------------
-# # Store UMAP Dimensions of full object
-# # This is used to allow plotting of subsets with original axes scales
-# # Plot a UMAP of the full data, store it to memory, and record the
-# # x and y limits of the plot
-# umap_orig <-
-#   DimPlot(
-#     sobj
-#     )
-# 
-# # Record limits
-# xlim_orig <- layer_scales(umap_orig)$x$range$range
-# ylim_orig <- layer_scales(umap_orig)$y$range$range
-# 
-# # Store number of cells: used to determine if it is a subset
-# # TODO: does this apply to non-CITEseq datasets?
-# n_cells_original <- ncol(sobj)
-# 
-# # Reductions in object
-# reductions <- names(sobj@reductions)
-
-# # Order UMAP reduction first by default, if it exists
-# if ("umap" %in% reductions){
-#   reductions <-
-#     c(
-#       reductions[reductions=="umap"],
-#       reductions[!reductions=="umap"]
-#       )
-# }
 
 # Non-zero proportion threshold: if the proportion of cells for a 
 # gene is below this threshold, return a warning to the user.
@@ -294,10 +192,9 @@ ui <- tagList(
              position="fixed-top",
              tabPanel(
                "Plots",
-               uiOutput(outputId = "verify_object")
-               # uiOutput(
-               #   outputId = "plots_dynamic_ui"
-               #   )
+               uiOutput(
+                 outputId = "plots_dynamic_ui"
+                 )
                ),
              tabPanel(
                "Differential Expression",
@@ -424,37 +321,7 @@ server <- function(input, output, session){
   # Value of startup is not important (though it can't be zero or it will be
   # ignored by observers with ignoreNULL arguments set to TRUE)
   startup(2)
-  
-  observeEvent(
-    startup(),
-    {
-      print("startup() observer")
-    })
-  
-  # observeEvent(
-  #   #req(isTruthy(close_dataset_modal()) | isTruthy(startup())),
-  #   #close_dataset_modal() | startup(),
-  #   eventExpr = 
-  #     {
-  #       # eventExpr: observer executes when this expression evaluates to TRUE 
-  #       # at startup, input$confirm_selection is NULL and 
-  #       # close_dataset_modal() will not run. To get observer to run at startup,
-  #       # a conditional is used to respond to startup() when 
-  #       # input$confirm_selection is NULL.
-  #       if (is.null(input$confirm_selection)){
-  #         isTruthy(startup())
-  #       } else {
-  #         # When close_dataset_modal is defined, execute in response to the
-  #         # variable
-  #         isTruthy(close_dataset_modal())
-  #       }
-  #     },
-  #   {
-  #     print("Combined startup observer")
-  #   }
-  # )
-  
-  
+
   ## 1.1. Event observers to open and close modal
   observeEvent(
     input$open_dataset_window,
@@ -751,24 +618,26 @@ server <- function(input, output, session){
   # All UI for modules is dynamic as it depends on the currently 
   # selected object.
   ### 3.1.1. Plots tab UI
-  # plots_tab_ui <-
-  #   eventReactive(
-  #     # UI should only update when the object and config files are switched
-  #     c(object(), config()),
-  #     label = "Plots Tab Dynamic UI",
-  #     {
-  #       plots_tab_ui(
-  #         id = "plots",
-  #         meta_choices = meta_choices,
-  #         unique_metadata = unique_metadata,
-  #         category_labels = category_labels,
-  #         metadata_config = metadata_config,
-  #         reductions = reductions
-  #         )
-  #     })
+  # Added "dynamic" to end of variable created to prevent collision with the
+  # plots_tab_ui reactive function
+  plots_tab_ui_dynamic <-
+    eventReactive(
+      # UI should only update when the object and config files are switched
+      c(object(), config()),
+      label = "Plots Tab Dynamic UI",
+      {
+        plots_tab_ui(
+          id = "plots",
+          meta_choices = meta_choices,
+          unique_metadata = unique_metadata,
+          category_labels = category_labels,
+          metadata_config = metadata_config,
+          reductions = reductions
+          )
+      })
   
   ### 3.1.2. DGE tab UI
-  # dge_tab_ui <-
+  # dge_tab_ui_dynamic <-
   #   eventReactive(
   #     # UI should only update when the object and config files are switched
   #     c(object(), config()),
@@ -783,7 +652,7 @@ server <- function(input, output, session){
   #     })
   
   ### 3.1.3. Correlations tab UI
-  # corr_tab_ui <-
+  # corr_tab_ui_dynamic <-
   #   eventReactive(
   #     # UI should only update when the object and config files are switched
   #     c(object(), config()),
@@ -797,36 +666,36 @@ server <- function(input, output, session){
   #     })
   
   ### 3.1.4. Render Dynamic UI components
-  # output$plots_dynamic_ui <- 
-  #   renderUI({
-  #     plots_tab_ui()
-  #     })
-  # 
+  output$plots_dynamic_ui <-
+    renderUI({
+      plots_tab_ui_dynamic()
+      })
+
   # output$dge_dynamic_ui <- 
   #   renderUI({
-  #     dge_tab_ui()
+  #     dge_tab_ui_dynamic()
   #     })
   # 
   # output$corr_dynamic_ui <- 
   #   renderUI({
-  #     corr_tab_ui()
+  #     corr_tab_ui_dynamic()
   #     })
   
   ## 3.2 Server instances ####
   ### 3.2.1. Plots Tab Server Module #####
-  # plots_tab_server(
-  #   id = "plots",
-  #   object = object,
-  #   metadata_config = metadata_config,
-  #   assay_config = assay_config,
-  #   category_labels = category_labels,
-  #   unique_metadata = unique_metadata,
-  #   valid_features = valid_features,
-  #   error_list = error_list,
-  #   n_cells_original = n_cells_original,
-  #   xlim_orig = xlim_orig,
-  #   ylim_orig = ylim_orig
-  #   )
+  plots_tab_server(
+    id = "plots",
+    object = object,
+    metadata_config = metadata_config,
+    assay_config = assay_config,
+    category_labels = category_labels,
+    unique_metadata = unique_metadata,
+    valid_features = valid_features,
+    error_list = error_list,
+    n_cells_original = n_cells_original,
+    xlim_orig = xlim_orig,
+    ylim_orig = ylim_orig
+    )
   
   ### 3.2.2. DGE Tab Server Module ####
   # dge_tab_server(
@@ -853,59 +722,59 @@ server <- function(input, output, session){
   #   )
   
   # TEMP: UI to test object and config file are properly rendered
-  output$verify_object <- 
-    renderUI({
-      div(
-        "Object",
-        verbatimTextOutput(outputId = "object_summary"),
-        "Config File",
-        verbatimTextOutput(outputId = "config_summary"),
-        "Valid Features",
-        verbatimTextOutput(outputId = "valid_features_summary"),
-        "Unique Metadata",
-        verbatimTextOutput(outputId = "unique_metadata_summary"),
-        "Other Reactives",
-        verbatimTextOutput(outputId = "other_summary")
-      )
-    })
+  # output$verify_object <- 
+  #   renderUI({
+  #     div(
+  #       "Object",
+  #       verbatimTextOutput(outputId = "object_summary"),
+  #       "Config File",
+  #       verbatimTextOutput(outputId = "config_summary"),
+  #       "Valid Features",
+  #       verbatimTextOutput(outputId = "valid_features_summary"),
+  #       "Unique Metadata",
+  #       verbatimTextOutput(outputId = "unique_metadata_summary"),
+  #       "Other Reactives",
+  #       verbatimTextOutput(outputId = "other_summary")
+  #     )
+  #   })
   
-  output$object_summary <- 
-    renderPrint({
-      print(object())
-    })
-  
-  output$config_summary <-
-    renderPrint({
-      print(config())
-    })
-  
-  output$valid_features_summary <-
-    renderPrint({
-      str(valid_features())
-    })
-  
-  output$unique_metadata_summary <-
-    renderPrint({
-      print(str(unique_metadata()))
-    })
-  
-  output$other_summary <-
-    renderPrint({
-      print("meta_categories")
-      print(meta_categories())
-      print("category_labels")
-      print(category_labels())
-      print("meta_choices")
-      print(meta_choices())
-      print("xlim_orig")
-      print(xlim_orig())
-      print("ylim_orig")
-      print(ylim_orig())
-      print("n_cells_original")
-      print(n_cells_original())
-      print("reductions")
-      print(reductions())
-    })
+  # output$object_summary <- 
+  #   renderPrint({
+  #     print(object())
+  #   })
+  # 
+  # output$config_summary <-
+  #   renderPrint({
+  #     print(config())
+  #   })
+  # 
+  # output$valid_features_summary <-
+  #   renderPrint({
+  #     str(valid_features())
+  #   })
+  # 
+  # output$unique_metadata_summary <-
+  #   renderPrint({
+  #     print(str(unique_metadata()))
+  #   })
+  # 
+  # output$other_summary <-
+  #   renderPrint({
+  #     print("meta_categories")
+  #     print(meta_categories())
+  #     print("category_labels")
+  #     print(category_labels())
+  #     print("meta_choices")
+  #     print(meta_choices())
+  #     print("xlim_orig")
+  #     print(xlim_orig())
+  #     print("ylim_orig")
+  #     print(ylim_orig())
+  #     print("n_cells_original")
+  #     print(n_cells_original())
+  #     print("reductions")
+  #     print(reductions())
+  #   })
 }
 
 # Run the application 

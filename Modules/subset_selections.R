@@ -109,7 +109,8 @@ subset_selections_ui <- function(id,
 subset_selections_server <- function(id,
                                      object,
                                      unique_metadata,
-                                     metadata_config = config$metadata,
+                                     metadata_config,
+                                     meta_categories,
                                      hide_menu = NULL,
                                      set_menu = NULL){
   # Initialize module 
@@ -208,172 +209,173 @@ subset_selections_server <- function(id,
       
       #3. For later: filter menus in UI based on selections --------------------
       ## 3.1. Filter menus 
-      
-      # Define metadata categories to loop through (based on names of 
-      # selections, which stay constant regardless of which options are 
-      # selected)
-      all_categories <- isolate(names(selections()))
-
-      # available_choices: a reactive list of the choices availiable in each menu
-      # that updates when menu options are filtered
-      available_choices <- reactiveValues()
-      # At startup, the list contains all of the unique values 
-      # for each category. It will be updated with the current valid
-      # choices based on filter criteria selected
-      for (category in all_categories){
-        available_choices[[category]] <- unique_metadata()[[category]]
-      }
-      
-      # Use lapply to build observers for each metadata category
-      lapply(
-        X = all_categories,
-        FUN = function(current_category){
-          observeEvent(
-            # Each observer responds to the change in the current category 
-            # iterated through using lapply
-            input[[glue("{current_category}_selection")]],
-            ignoreNULL = FALSE,
-            # Observer should not run at startup (filtering is unnecessary in 
-            # this case)
-            ignoreInit = TRUE,
-            {
-              # When the observer is triggered, change all other menus
-              # based on the selections chosen
-              
-              # Define values of other categories
-              other_categories <-
-                all_categories[!all_categories %in% current_category]
-
-              # For each other category, update the picker inputs based
-              # on the values selected in the current menu (current category)
-              for (other_category in other_categories){
-                # Generate list of valid choices for the category
-                valid_choices <-
-                  object()@meta.data |> 
-                  # Filter object for selections made in current category
-                  filter(
-                    .data[[current_category]] %in%
+      # Observers are created for each filter menu. Since the menus now change
+      # when different objects are loaded, the observers must be defined 
+      # reactively. This is not ideal as this means a new set of observers will
+      # be created each time a new dataset is loaded, but this shouldn't be 
+      # fatal for performance at this time.
+      observeEvent(
+        unique_metadata(),
+        label = glue("{id}: Create filter menu observers"),
+        {
+          # available_choices: a reactive list of the choices available in 
+          # each menu that updates when menu options are filtered. At startup, 
+          # the list contains all of the unique values for each category. It 
+          # will be updated with the current valid choices based on filter 
+          # criteria selected
+          available_choices <- reactiveValues()
+          
+          # Initialize available_choices with unique metadata values
+          # for each category 
+          for (category in isolate(meta_categories())){
+            available_choices[[category]] <- 
+              isolate(unique_metadata()[[category]])
+          }
+          
+          # Use lapply to build observers for each metadata category
+          lapply(
+            X = isolate(meta_categories()),
+            FUN = function(current_category){
+              observeEvent(
+                # Each observer responds to the change in the current category 
+                # iterated through using lapply
+                input[[glue("{current_category}_selection")]],
+                ignoreNULL = FALSE,
+                # Observer should not run at startup (filtering is 
+                # unnecessary in this case)
+                ignoreInit = TRUE,
+                {
+                  # When the observer is triggered, change all other menus
+                  # based on the selections chosen
+                  
+                  # Define values of other categories
+                  other_categories <-
+                    meta_categories[!meta_categories() %in% current_category]
+                  
+                  # For each other category, update the picker inputs based on 
+                  # the values selected in the current menu (current category)
+                  for (other_category in other_categories){
+                    # Generate list of valid choices for the category
+                    valid_choices <-
+                      object()@meta.data |> 
+                      # Filter object for selections made in current category
+                      filter(
+                        .data[[current_category]] %in%
+                          input[[glue("{current_category}_selection")]]
+                      ) |>
+                      # Select the column for the *other* category
+                      select(.data[[other_category]]) |>
+                      # Fetch unique values
+                      unique() |>
+                      # Convert to character vector (must use both unlist()
+                      # and as.character() to get correct values for
+                      # categories that are factors)
+                      unlist() |>
+                      as.character()
+                    
+                    # process_choices tests if the category has groups defined 
+                    # in the config file. If so, valid choices are sorted into 
+                    # those groups, and if not, the choices are returned 
+                    # unchanged.
+                    choices_processed <- 
+                      process_choices(
+                        metadata_config,
+                        category = other_category,
+                        choices = valid_choices
+                      )
+                    
+                    # Next, update each picker input with valid choices
+                    # *but only*
+                    # 1. if the options have not been narrowed down yet by the 
+                    #    user (prevents an infinite loop)
+                    # 2. if the current category has been narrowed down 
+                    #    (prevents looping upon startup), and
+                    
+                    #    (maybe)
+                    # 3. if at least one value is selected for the current 
+                    #    category (prevents options from disappearing when the 
+                    #    user clicks 'deselect all' in the picker menus)
+                    
+                    # Define initial choices and fetch selected choices for 
+                    # current and other categories
+                    #initial_choices_other <- 
+                    #  unique_metadata[[other_category]]
+                    selected_choices_other <- 
+                      input[[glue("{other_category}_selection")]]
+                    
+                    #available_choices[[current_category]] <-
+                    #  unique_metadata[[current_category]]
+                    selected_choices_current <- 
                       input[[glue("{current_category}_selection")]]
-                    ) |>
-                  # Select the column for the *other* category
-                  select(.data[[other_category]]) |>
-                  # Fetch unique values
-                  unique() |>
-                  # Convert to character vector (must use both unlist()
-                  # and as.character() to get correct values for
-                  # categories that are factors)
-                  unlist() |>
-                  as.character()
-
-                # process_choices tests if the category has groups defined in 
-                # the config file. If so, valid choices are sorted into those 
-                # groups, and if not, the choices are returned unchanged.
-                choices_processed <- 
-                  process_choices(
-                    metadata_config,
-                    category = other_category,
-                    choices = valid_choices
-                    )
-
-                # Next, update each picker input with valid choices
-                # *but only*
-                # 1. if the options have not been narrowed down yet by the user 
-                #    (prevents an infinite loop)
-                # 2. if the current category has been narrowed down 
-                #    (prevents looping upon startup), and
-                # (maybe)
-                # 3. if at least one value is selected for the current category
-                #    (prevents options from disappearing when the user clicks 
-                #    'deselect all' in the picker menus)
-                
-                # Define initial choices and fetch selected choices for current
-                # and other categories
-                #initial_choices_other <- 
-                #  unique_metadata[[other_category]]
-                selected_choices_other <- 
-                  input[[glue("{other_category}_selection")]]
-                
-                #available_choices[[current_category]] <-
-                #  unique_metadata[[current_category]]
-                selected_choices_current <- 
-                  input[[glue("{current_category}_selection")]]
-                
-                # Print statements to test specific menus
-                if (current_category == "tissue" & other_category == "htb"){
-                  print(glue("Id: {id}"))
-                  print(glue("Current category: {current_category}"))
-                  print(glue("Other category: {other_category}"))
-                  print(
-                    glue("Number of selected choices (current): 
+                    
+                    # Print statements to test specific menus
+                    if (current_category == "tissue" & other_category == "htb"){
+                      print(glue("Id: {id}"))
+                      print(glue("Current category: {current_category}"))
+                      print(glue("Other category: {other_category}"))
+                      print(
+                        glue("Number of selected choices (current): 
                          {length(selected_choices_current)}")
-                  )
-                  print(
-                    glue("Number of available choices (current): 
+                      )
+                      print(
+                        glue("Number of available choices (current): 
                          {length(available_choices[[current_category]])}")
-                  )
-                  print("Available choices (current)")
-                  print(available_choices[[current_category]])
-                  print("Selected choices (current)")
-                  print(selected_choices_current)
-                  print(
-                    glue("setequal test (current): 
+                      )
+                      print("Available choices (current)")
+                      print(available_choices[[current_category]])
+                      print("Selected choices (current)")
+                      print(selected_choices_current)
+                      print(
+                        glue("setequal test (current): 
                          {setequal(selected_choices_current, 
                          available_choices[[current_category]])}")
-                  )
-                  print(
-                    glue("Number of selected choices (other): 
+                      )
+                      print(
+                        glue("Number of selected choices (other): 
                          {length(selected_choices_other)}")
-                  )
-                  print(
-                    glue("Number of available choices (other): 
+                      )
+                      print(
+                        glue("Number of available choices (other): 
                          {length(available_choices[[other_category]])}")
-                  )
-                  print(
-                    glue("setequal test (other): 
+                      )
+                      print(
+                        glue("setequal test (other): 
                          {setequal(selected_choices_other, 
                          available_choices[[other_category]])}")
-                  )
-                }
-                
-                # Use setequal to test if all possible choices are selected
-                if (
-                  setequal(selected_choices_other, 
-                           available_choices[[other_category]])# &
-                  #!setequal(selected_choices_current, 
-                  #          available_choices[[current_category]]) 
-                  ){
-                  # Update input
-                  updatePickerInput(
-                    session,
-                    inputId = glue("{other_category}_selection"),
-                    # Choices: use the list of group choices if it is defined
-                    choices = choices_processed,
-                    selected = valid_choices,
-                    options =
-                      list(
-                        "selected-text-format" = "count > 5",
-                        "actions-box"=TRUE
-                        )
-                    )
-                  
-                  # Store the new choices in the available_choices reactive list
-                  available_choices[[other_category]] <- valid_choices
-                  
-                  print("New values in available_choices for other category:")
-                  print(available_choices[[other_category]])
-                  
-                  # TEMP: display notification to verify the observer
-                  # is responding correctly
-                  # showNotification(
-                  #   icon_notification_ui(
-                  #     message=glue("updated: {other_category}")
-                  #   )
-                  # )
-                  
+                      )
+                    }
+                    
+                    # Use setequal to test if all possible choices are selected
+                    if (
+                      setequal(selected_choices_other, 
+                               available_choices[[other_category]])# &
+                      #!setequal(selected_choices_current, 
+                      #          available_choices[[current_category]]) 
+                    ){
+                      # Update input
+                      updatePickerInput(
+                        session,
+                        inputId = glue("{other_category}_selection"),
+                        # Choices: use the list of group choices if it is defined
+                        choices = choices_processed,
+                        selected = valid_choices,
+                        options =
+                          list(
+                            "selected-text-format" = "count > 5",
+                            "actions-box"=TRUE
+                          )
+                      )
+                      
+                      # Store the new choices in the available_choices reactive list
+                      available_choices[[other_category]] <- valid_choices
+                      
+                      print("New values in available_choices for other category:")
+                      print(available_choices[[other_category]])
+                    }
                   }
-                }
-                       }) #End observeEvent
-        }) #End lapply
+                }) #End observeEvent
+            }) #End lapply
+        })
       
       ## 3.2. Reset button
       observeEvent(
@@ -381,7 +383,7 @@ subset_selections_server <- function(id,
         label = "Reset Filter Menus",
         {
           # When the reset button is pressed, update all of the menus 
-          for (category in all_categories){
+          for (category in meta_categories()){
             # Define original values using unique_metadata
             initial_values <- unique_metadata()[[category]]
             
