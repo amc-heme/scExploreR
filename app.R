@@ -354,8 +354,8 @@ server <- function(input, output, session){
   # Conditional to determine when to load datasets
   load_conditional <-
     eventReactive(
-      # load_conditional at startup, and when the "confirm selection" button 
-      # is pressed
+      # load_conditional at startup, and when the "confirm selection" 
+      # button is pressed
       eventExpr = 
         {
           # eventExpr: observer executes when this expression evaluates to TRUE 
@@ -446,7 +446,7 @@ server <- function(input, output, session){
       # If load_conditional() is not TRUE, the config file is unchanged.
     })
   
-  #Save the selected key for the next time the window is opened (the 
+  # Save the selected key for the next time the window is opened (the 
   # group of buttons is re-created every time the modal is opened)
   selected_key <-
     eventReactive( 
@@ -482,8 +482,23 @@ server <- function(input, output, session){
   
   # 2. Initialize Variables specific to object and config file
   # Split config file into metadata and assay lists for use downstream
-  metadata_config <- reactive({config()$metadata})
-  assay_config <- reactive({config()$assays})
+  metadata_config <- 
+    eventReactive(
+      config(),
+      label= "metadata_config",
+      ignoreNULL = FALSE,
+      {
+        config()$metadata
+        })
+  
+  assay_config <-
+    eventReactive(
+      config(),
+      label= "assay_config",
+      ignoreNULL = FALSE,
+      {
+        config()$assays
+        })
   
   # TODO: add include_numeric_metadata as an option in the config app 
   include_numeric_metadata <- TRUE
@@ -491,80 +506,107 @@ server <- function(input, output, session){
   
   # Create a list of valid features using the assays defined above
   valid_features <-
-    reactive({
-      valid_features <- feature_list_all(
-        object = object,
-        assay_config = assay_config,
-        #include_numeric_metadata: a boolean variable 
-        #that is hard-coded for now and will be 
-        #defined in the config file
-        numeric_metadata = include_numeric_metadata, 
-        #The same is true for numeric_metadata_title
-        numeric_metadata_title = numeric_metadata_title
-        )
-      
-      valid_features
-      })
+    eventReactive(
+      assay_config(),
+      label= "valid_features",
+      ignoreNULL = FALSE,
+      {
+        valid_features <- 
+          feature_list_all(
+            object = object,
+            assay_config = assay_config,
+            #include_numeric_metadata: a boolean variable 
+            #that is hard-coded for now and will be 
+            #defined in the config file
+            numeric_metadata = include_numeric_metadata, 
+            #The same is true for numeric_metadata_title
+            numeric_metadata_title = numeric_metadata_title
+            )
+        
+        valid_features
+        })
   
   # meta_categories: a vector giving the IDs of each of the categories defined
   # in the metadata section of the config file
-  meta_categories <- reactive({names(metadata_config())})
+  meta_categories <- 
+    eventReactive(
+      metadata_config(),
+      label= "meta_categories",
+      ignoreNULL = FALSE,
+      {
+        names(metadata_config())
+        })
   
   # category_labels: list of labels for each metadata category (names are the
   # category IDs and the values are the labels chosen)
   category_labels <- 
-    reactive({
-      lapply(metadata_config(), function(category){category$label})
-      })
+    eventReactive(
+      metadata_config(),
+      label= "category_labels",
+      ignoreNULL = FALSE,
+      {
+        lapply(metadata_config(), function(category){category$label})
+        })
   
   ## Metadata categories in dropdown menus ####
   # meta_choices: a named vector with name-value pairs for the display name of 
   # the metadata category and the key used to access the category in the Seurat 
   # Object. 
   meta_choices <- 
-    reactive({
-      # Base vector: contains the "none" option
-      meta_choices <- c("None"="none")
-      # Iteratively populate vector using entries in the metadata section 
-      # of the config file 
-      for (category in meta_categories()){
-        # Use setNames from the stats package to add a new name-value 
-        # pair to the vector
-        meta_choices <- setNames(
-          # Add `meta_colname` to vector
-          object = c(meta_choices, 
-                     metadata_config()[[category]]$meta_colname),
-          # Add `label` to the vector as a name
-          nm = c(names(meta_choices),
-                 metadata_config()[[category]]$label)
-        )
+    eventReactive(
+      meta_categories(),
+      label = "meta_choices generation",
+      ignoreNULL = FALSE,
+      {
+        # Base vector: contains the "none" option
+        meta_choices <- c("None"="none")
+        # Iteratively populate vector using entries in the metadata section 
+        # of the config file 
+        for (category in meta_categories()){
+          # Use setNames from the stats package to add a new name-value 
+          # pair to the vector
+          meta_choices <- setNames(
+            # Add `meta_colname` to vector
+            object = c(meta_choices, 
+                       metadata_config()[[category]]$meta_colname),
+            # Add `label` to the vector as a name
+            nm = c(names(meta_choices),
+                   metadata_config()[[category]]$label)
+            )
         }
+        
+        # Return meta_choices vector generated above
+        meta_choices
     })
   
   ## Unique values for each metadata category ####
   unique_metadata <- 
-    reactive({
-      # The unique values for each metadata category listed in the config 
-      # file will be stored as vectors in a list 
-      unique_metadata <- list()
-      
-      # Store unique values for each metadata category entered
-      for (category in names(metadata_config())){
-        # Use sobj@meta.data[[category]] instead of object()[[category]] 
-        # to return a vector (sobj[[category]] returns a dataframe)
-        unique_metadata[[category]] <- 
-          unique(object()@meta.data[[category]])
-        # If the metadata category is a factor, convert to a vector with 
-        # levels to avoid integers appearing in place of the 
-        # unique values themselves
-        if (class(unique_metadata[[category]]) == "factor"){
+    eventReactive(
+      metadata_config(),
+      label = "unique_metadata",
+      ignoreNULL = FALSE,
+      {
+        # The unique values for each metadata category listed in the config 
+        # file will be stored as vectors in a list 
+        unique_metadata <- list()
+        
+        # Store unique values for each metadata category entered
+        for (category in names(metadata_config())){
+          # Use sobj@meta.data[[category]] instead of object()[[category]] 
+          # to return a vector (sobj[[category]] returns a dataframe)
           unique_metadata[[category]] <- 
-            levels(unique_metadata[[category]])
+            unique(object()@meta.data[[category]])
+          # If the metadata category is a factor, convert to a vector with 
+          # levels to avoid integers appearing in place of the 
+          # unique values themselves
+          if (class(unique_metadata[[category]]) == "factor"){
+            unique_metadata[[category]] <- 
+              levels(unique_metadata[[category]])
+          }
         }
-      }
-      
-      unique_metadata
-      })
+        
+        unique_metadata
+        })
   
   # Store UMAP Dimensions of full object
   # This is used to allow plotting of subsets with original axes scales
@@ -622,9 +664,12 @@ server <- function(input, output, session){
   # plots_tab_ui reactive function
   plots_tab_ui_dynamic <-
     eventReactive(
-      # UI should only update when the object and config files are switched
-      c(object(), config()),
+      # Reactive event is set as the last initialization variable generated 
+      # from the config file (meta_choices reacts to meta_categories, which 
+      # reacts to metadata_config, which reacts to config)
+      meta_choices(),
       label = "Plots Tab Dynamic UI",
+      ignoreNULL = FALSE,
       {
         plots_tab_ui(
           id = "plots",
@@ -632,7 +677,8 @@ server <- function(input, output, session){
           unique_metadata = unique_metadata,
           category_labels = category_labels,
           metadata_config = metadata_config,
-          reductions = reductions
+          reductions = reductions,
+          data_key = selected_key
           )
       })
   
@@ -688,7 +734,9 @@ server <- function(input, output, session){
     object = object,
     metadata_config = metadata_config,
     assay_config = assay_config,
+    meta_categories = meta_categories,
     category_labels = category_labels,
+    data_key = selected_key,
     unique_metadata = unique_metadata,
     valid_features = valid_features,
     error_list = error_list,

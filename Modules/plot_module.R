@@ -71,14 +71,17 @@ plot_module_ui <- function(id,
       # Add menus if their corresponding arguments are TRUE 
       # Group by menu
       if (group_by == TRUE){
+        # Choices for group by selection: should exclude "none"
+        group_by_choices <- meta_choices()[!meta_choices() %in% "none"]
+        
         # If TRUE, add element
         selectInput(
           inputId = ns("group_by"), 
           label = "Metadata to Group by:",
           # Can select all options except "none"
-          choices = meta_choices()[!meta_choices() %in% "none"], 
+          choices = group_by_choices, 
           # First option selected by default 
-          selected = meta_choices()[1]
+          selected = group_by_choices[1]
         )
         # Do not add element if FALSE
       } else NULL,
@@ -358,7 +361,7 @@ plot_module_server <- function(id,
                      validate(
                        need(
                          object(),
-                         message = "subset is NULL"
+                         message = "error: subset is NULL"
                          )
                      )
 

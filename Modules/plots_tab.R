@@ -20,7 +20,8 @@ plots_tab_ui <- function(id,
                          unique_metadata,
                          category_labels,
                          metadata_config,
-                         reductions
+                         reductions,
+                         data_key
                          ){
    # Namespace function: prevents conflicts with 
    # inputs/outputs defined in other modules 
@@ -146,8 +147,10 @@ plots_tab_ui <- function(id,
                ), # End subset_stats div
 
              # 1.3.2. Subset selection menus
+             # With reactive objects, a new module must be created for each 
+             # object to avoid collisions between subset menu ID's. 
              subset_selections_ui(
-               id = ns("subset_selections"),
+               id = glue(ns("{data_key()}_subset_selections")),
                unique_metadata = unique_metadata,
                metadata_config = metadata_config
                ),
@@ -284,6 +287,12 @@ plots_tab_ui <- function(id,
              ui_component = "plot"
            ),
            
+           # TEMP: debug panel
+           verbatimTextOutput(
+             outputId = ns("debug_panel"), 
+             placeholder = TRUE
+             )
+           
            ## 2.2. Panel for feature plot 
            # Will be a message or a plot, depending on whether features have 
            # been entered
@@ -337,6 +346,7 @@ plots_tab_server <- function(id,
                              assay_config,
                              meta_categories,
                              category_labels,
+                             data_key,
                              unique_metadata,
                              valid_features,
                              error_list,
@@ -457,19 +467,37 @@ plots_tab_server <- function(id,
                  # 3. Process Subset -------------------------------------------
                  # 3.1 Module server to process user selections and report ####
                  # to other modules
+                 
+                 # With reactive objects, a new module must be created for each 
+                 # object to avoid collisions between subset menu ID's. 
                  plots_subset_selections <-
-                   subset_selections_server(
-                     id = "subset_selections",
-                     object = object,
-                     unique_metadata = unique_metadata,
-                     metadata_config = metadata_config,
-                     meta_categories = meta_categories
-                     )
+                   eventReactive(
+                     meta_categories(),
+                     label = "Subset Selections Module",
+                     {
+                      selections <- 
+                        subset_selections_server(
+                          id = glue("{data_key()}_subset_selections"),
+                          object = object,
+                          unique_metadata = unique_metadata,
+                          metadata_config = metadata_config,
+                          meta_categories = meta_categories
+                          )
+                      
+                      selections
+                     })
+                   
+                   
                  
                  ## 3.2. Make Subset ####
                  plots_subset <-
                    eventReactive(
-                     input$subset_submit,
+                     # Reacts to the object also (plots_subset must produce a 
+                     # new "subset" each time the object is loaded, even though
+                     # the subset is the full object initially. All downstream
+                     # operations in the plots tab respond to the subset instead
+                     # of the main object.)
+                     c(input$subset_submit, object()),
                      ignoreNULL=FALSE,
                      label = "Plots Subset",
                      {
@@ -506,12 +534,19 @@ plots_tab_server <- function(id,
                              }, # End tryCatch error function
                            # Begin tryCatch code
                            {
+                             print("Begin make_subset")
                              # Use subsetting function with the output of the
                              # subset selections module as `criteria_list`.
                              plots_s_sub <-
                                make_subset(
                                  object,
-                                 criteria_list = plots_subset_selections
+                                 # plots_subset_selections is a reactive 
+                                 # expression inside another reactive expression
+                                 # (the eventReactive in 3.1). Must extract from
+                                 # eventReactive before passing it to the 
+                                 # function, which will extract the reactive 
+                                 # inside
+                                 criteria_list = plots_subset_selections()
                                  )
                              }
                            )#End tryCatch
@@ -533,6 +568,12 @@ plots_tab_server <- function(id,
                    category_labels = category_labels,
                    unique_metadata = unique_metadata
                    )
+                 
+                 output$debug_panel <-
+                   renderPrint({
+                     print("Object")
+                     print(object())
+                   })
                  
                })
   }

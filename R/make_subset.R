@@ -51,7 +51,6 @@ make_subset <- function(object,
   if (is.reactive(criteria_list)){
     criteria_list <- criteria_list()
   }
-  
   # Loop through criteria defined in criteria_list 
   # Construct subset syntax for each input (indexing is used to allow a 
   # different format to be used for the last criterion)
@@ -79,6 +78,11 @@ make_subset <- function(object,
     # Add the criterion to the subset string
     subset_str <- paste0(subset_str, criterion)
   }
+  
+  print("object read by make_subset:")
+  print(object())
+  print("criteria read by make_subset:")
+  print(criteria_list)
   
   # Subset using the subset string 
   subset <- eval(parse(text=paste0("subset(object(), subset = ", subset_str, ")")))

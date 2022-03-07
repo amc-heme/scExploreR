@@ -10,7 +10,8 @@
 # be specified if the config list is stored as "config" in the global environment.
 subset_selections_ui <- function(id,
                                  unique_metadata,
-                                 metadata_config){
+                                 metadata_config
+                                 ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
   
@@ -36,7 +37,7 @@ subset_selections_ui <- function(id,
         # Use group_metadata_choices() to generate list
         group_metadata_choices(
           group_info = config_i$groups,
-          choices = unique_metadata[[category]]
+          choices = unique_metadata()[[category]]
         )
       } else {
         # If groups are not defined, use the vector of choices
@@ -122,30 +123,37 @@ subset_selections_server <- function(id,
       ns <- session$ns
       
       # 1. Store all input values from the UI as a reactive list ---------------
-      selections <- reactive({
-        # Store selections for each input in the UI (one menu is created for 
-        # each metadata category in the config file)
-        selections_list <- lapply(
-          names(metadata_config()),
-          function(category){input[[glue("{category}_selection")]]}
-          )
-        
-        # Add categories from metadata file to list names
-        names(selections_list) <-  names(metadata_config())
-        
-        # If hide_menu is provided and is a reactive, remove all hidden menus 
-        # from the selections output
-        # is.reactive() is used as a conditional to keep app from crashing when 
-        # hide_menu is NULL or not a reactive variable
-        if (!is.null(hide_menu) && is.reactive(hide_menu)){
-          # Remove any categories from the selections list that are also
-          # in hide_menu
-          selections_list <-
-            selections_list[!names(selections_list) %in% hide_menu()]
-        }
-        
-        return(selections_list)
-        })
+      selections <- 
+        reactive(
+          label = glue("{id}: selections_list"),
+          {
+            # Store selections for each input in the UI (one menu is created 
+            # for each metadata category in the config file)
+            selections_list <- 
+              lapply(
+                names(metadata_config()),
+                function(category){input[[glue("{category}_selection")]]}
+                )
+            
+            # Add categories from metadata file to list names
+            names(selections_list) <-  names(metadata_config())
+            
+            # If hide_menu is provided and is a reactive, remove all 
+            # hidden menus from the selections output
+            # is.reactive() is used as a conditional to keep app from crashing
+            # when hide_menu is NULL or not a reactive variable
+            if (!is.null(hide_menu) && is.reactive(hide_menu)){
+              # Remove any categories from the selections list 
+              # that are also in hide_menu
+              selections_list <-
+                selections_list[!names(selections_list) %in% hide_menu()]
+              }
+            
+            print("selections_list:")
+            print(selections_list)
+          
+            return(selections_list)
+          })
       
       # 2. UI for Filtering Selection Menus ------------------------------------
       # Subset menus will be filtered for 
@@ -236,10 +244,15 @@ subset_selections_server <- function(id,
           lapply(
             X = isolate(meta_categories()),
             FUN = function(current_category){
+              # Define input ID for current category in current object
+              # Formula: <current_category>_selection
+              current_input_id <- 
+                glue("{current_category}_selection")
+              
               observeEvent(
                 # Each observer responds to the change in the current category 
                 # iterated through using lapply
-                input[[glue("{current_category}_selection")]],
+                input[[current_input_id]],
                 ignoreNULL = FALSE,
                 # Observer should not run at startup (filtering is 
                 # unnecessary in this case)
@@ -250,18 +263,22 @@ subset_selections_server <- function(id,
                   
                   # Define values of other categories
                   other_categories <-
-                    meta_categories[!meta_categories() %in% current_category]
+                    meta_categories()[!meta_categories() %in% current_category]
                   
                   # For each other category, update the picker inputs based on 
                   # the values selected in the current menu (current category)
                   for (other_category in other_categories){
+                    # Define the input id for the "other_category"
+                    other_input_id <- 
+                      glue("{other_category}_selection")
+                    
                     # Generate list of valid choices for the category
                     valid_choices <-
                       object()@meta.data |> 
                       # Filter object for selections made in current category
                       filter(
                         .data[[current_category]] %in%
-                          input[[glue("{current_category}_selection")]]
+                          input[[current_input_id]]
                       ) |>
                       # Select the column for the *other* category
                       select(.data[[other_category]]) |>
@@ -282,7 +299,7 @@ subset_selections_server <- function(id,
                         metadata_config,
                         category = other_category,
                         choices = valid_choices
-                      )
+                        )
                     
                     # Next, update each picker input with valid choices
                     # *but only*
@@ -301,12 +318,12 @@ subset_selections_server <- function(id,
                     #initial_choices_other <- 
                     #  unique_metadata[[other_category]]
                     selected_choices_other <- 
-                      input[[glue("{other_category}_selection")]]
+                      input[[other_input_id]]
                     
                     #available_choices[[current_category]] <-
                     #  unique_metadata[[current_category]]
                     selected_choices_current <- 
-                      input[[glue("{current_category}_selection")]]
+                      input[[current_input_id]]
                     
                     # Print statements to test specific menus
                     if (current_category == "tissue" & other_category == "htb"){
@@ -355,8 +372,9 @@ subset_selections_server <- function(id,
                       # Update input
                       updatePickerInput(
                         session,
-                        inputId = glue("{other_category}_selection"),
-                        # Choices: use the list of group choices if it is defined
+                        inputId = other_input_id,
+                        # Choices: use the list of group choices 
+                        # if it is defined
                         choices = choices_processed,
                         selected = valid_choices,
                         options =
@@ -366,11 +384,9 @@ subset_selections_server <- function(id,
                           )
                       )
                       
-                      # Store the new choices in the available_choices reactive list
+                      # Store the new choices in the available_choices
+                      # reactive list
                       available_choices[[other_category]] <- valid_choices
-                      
-                      print("New values in available_choices for other category:")
-                      print(available_choices[[other_category]])
                     }
                   }
                 }) #End observeEvent
@@ -415,7 +431,43 @@ subset_selections_server <- function(id,
           }
         })
       
-      # 4. Hide menus, if specified by the user. -------------------------------
+      # 4. If the object is changed, reset the menus 
+      # observeEvent(
+      #   meta_categories(),
+      #   label = "Reset Subset Menus (Object Change)",
+      #   {
+      #     # Update each menu created from the new object to contain all of the
+      #     # possible values (content of unique_metadata() for the object)
+      #     for (category in meta_categories()){
+      #       # Define original values using unique_metadata
+      #       initial_values <- unique_metadata()[[category]]
+      #       
+      #       # If the metadata category has a groups property, build a list of
+      #       # grouped metadata values
+      #       initial_values_processed <- 
+      #         process_choices(
+      #           metadata_config,
+      #           category = category,
+      #           choices = initial_values
+      #         )
+      #       
+      #       # Update picker input
+      #       updatePickerInput(
+      #         session,
+      #         inputId = glue("{category}_selection"),
+      #         # Choices: use the list of group choices if it is defined
+      #         choices = initial_values_processed,
+      #         selected = initial_values,
+      #         options =
+      #           list(
+      #             "selected-text-format" = "count > 5",
+      #             "actions-box"=TRUE
+      #           )
+      #       )
+      #     }
+      #   })
+      
+      # 5. Hide menus, if specified by the user. -------------------------------
       # hide_menu is an optional argument that is NULL in modules where it is 
       # not specified. Since hide_menu is intended to be reactive, observers 
       # that use it will crash the app when NULL values are passed to them.
@@ -448,28 +500,7 @@ subset_selections_server <- function(id,
                        }
                      })
       }
-      
-      # 5. Set selection menus, if specified by user
-      # if (!is.null(set_menu) && is.reactive(set_menu)){
-      #   observeEvent(set_menu(),
-      #                label = "Subset Selections: Set Menus",
-      #                {
-      #                  #Loop through each menu specified to set_menu
-      #                  for (menu in set_menu()){
-      #                    updatePickerInput(
-      #                      session = session,
-      #                      #Do not use namespacing for update* functions
-      #                      inputId = glue("{menu$category}_selection"),
-      #                      choices = menu$choices,
-      #                      selected = menu$choices
-      #                      )
-      #                    
-      #                  }
-      #                })
-      #   
-      # 
-      # }
-      
+
       # Return the reactive list of selections 
       return(selections)
     }

@@ -71,6 +71,14 @@ subset_summary_server <- function(id,
             function(category, object){
               output[[glue("selected_{category}")]] <-
                 renderText({
+                  # If the object is undefined, return an error message
+                  validate(
+                    need(
+                      object(),
+                      message = "no cells in subset"
+                    )
+                  )
+                  
                   # Store unique values for category in full object and subset
                   # Uses unique_values() in-house function 
                   subset_values <- unique_values(object, category)
