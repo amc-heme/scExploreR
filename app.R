@@ -323,6 +323,23 @@ server <- function(input, output, session){
       hide_on_render = FALSE
     )
   
+  render_UI_spinner <- 
+    Waiter$new(
+      # When the ID is null, the waiter is applied to the 
+      # <body> element (entire app)
+      id = NULL,
+      html = 
+        tagList(
+          spin_loaders(id = 2,color = "#555588"), 
+          div(
+            class = "spinner_text",
+            "Updating menus to match new dataset...")
+        ),
+      color = "#FFFFFF",
+      #Gives manual control of showing/hiding spinner
+      hide_on_render = FALSE
+    )
+  
   # 1. Reactively load object and config file
   # Initialize a reactiveVal for storing the key of the last dataset loaded
   dataset_info <- reactiveValues()
@@ -689,15 +706,24 @@ server <- function(input, output, session){
       label = "Plots Tab Dynamic UI",
       ignoreNULL = FALSE,
       {
-        plots_tab_ui(
-          id = "plots",
-          meta_choices = meta_choices,
-          unique_metadata = unique_metadata,
-          category_labels = category_labels,
-          metadata_config = metadata_config,
-          reductions = reductions,
-          data_key = selected_key
-          )
+        # Show spinner while new UI is computing
+        render_UI_spinner$show()
+        
+        ui <- 
+          plots_tab_ui(
+            id = "plots",
+            meta_choices = meta_choices,
+            unique_metadata = unique_metadata,
+            category_labels = category_labels,
+            metadata_config = metadata_config,
+            reductions = reductions,
+            data_key = selected_key
+            )
+        
+        # Hide spinner and return module UI
+        render_UI_spinner$hide()
+        
+        ui
       })
   
   ### 3.1.2. DGE tab UI

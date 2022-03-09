@@ -91,36 +91,35 @@ plots_tab_ui <- function(id,
          # Applies to feature, violin, and dot plots unless the user specifies 
          # the use of different features for each plot (this is currently only 
          # possible for dot plots) 
-         
-         # conditionalPanel(
-         #   condition =
-         #     glue("input['{ns('make_feature')}'] == true | 
-         #          input['{ns('make_vln')}'] == true |
-         #          input['{ns('make_dot')}'] == true"),
-         #   # Content of conditionalPanel
-         #   # Label
-         #   tags$p(tags$strong("Enter features to display on plots:")),
-         #   # Inline text entry and update button
-         #   div(
-         #     #Class below reduces margin beneath selectizeInput to 5px
-         #     class="input-margin-5",
-         #     style="vertical-align: top; margin-bottom: 0px;",
-         #     selectizeInput(
-         #       inputId = ns("text_features"),
-         #       multiple = TRUE, 
-         #       label = NULL,
-         #       choices = NULL,
-         #       selected = NULL,
-         #       # Add remove button to inputs
-         #       options = list(
-         #         'plugins' = list('remove_button'),
-         #         # Do not allow user to input features not 
-         #         # in the list of options
-         #         'create'= FALSE
-         #         )
-         #       ) 
-         #     )
-         #   ),# End 1.2.
+         conditionalPanel(
+           condition =
+             glue("input['{ns('make_feature')}'] == true |
+                  input['{ns('make_vln')}'] == true |
+                  input['{ns('make_dot')}'] == true"),
+           # Content of conditionalPanel
+           # Label
+           tags$p(tags$strong("Enter features to display on plots:")),
+           # Inline text entry and update button
+           div(
+             #Class below reduces margin beneath selectizeInput to 5px
+             class="input-margin-5",
+             style="vertical-align: top; margin-bottom: 0px;",
+             selectizeInput(
+               inputId = ns("text_features"),
+               multiple = TRUE,
+               label = NULL,
+               choices = NULL,
+               selected = NULL,
+               # Add remove button to inputs
+               options = list(
+                 'plugins' = list('remove_button'),
+                 # Do not allow user to input features not
+                 # in the list of options
+                 'create'= FALSE
+                 )
+               )
+             )
+           ),# End 1.2.
          
          ## 1.3. Subsets for Plots ####
          collapsible_panel(
@@ -193,83 +192,82 @@ plots_tab_ui <- function(id,
                download_button =   TRUE
              )
            )
-         )#,
+         ),
          
          ## 1.5. Feature Plot Options ####
-         # conditionalPanel(
-         #   condition = glue("input['{ns('make_feature')}'] == true"),
-         #   collapsible_panel(
-         #     inputId = ns("feature_collapsible"),
-         #     label = "Feature Plot Specific Options",
-         #     active = FALSE,
-         #     plot_module_ui(
-         #       id = ns("feature"),
-         #       ui_component = "options",
-         #       meta_choices = meta_choices,
-         #       plot_label = "Feature Plot",
-         #       reductions = reductions,
-         #       reductions_menu =   TRUE,
-         #       group_by =          FALSE,
-         #       split_by =          TRUE,
-         #       ncol_slider =       FALSE,
-         #       label_checkbox =    FALSE,
-         #       legend_checkbox =   TRUE,
-         #       limits_checkbox =   TRUE,
-         #       manual_dimensions = TRUE,
-         #       download_button =   TRUE
-         #     )
-         #   )
-         # ),
+         conditionalPanel(
+           condition = glue("input['{ns('make_feature')}'] == true"),
+           collapsible_panel(
+             inputId = ns("feature_collapsible"),
+             label = "Feature Plot Specific Options",
+             active = FALSE,
+             plot_module_ui(
+               id = ns("feature"),
+               ui_component = "options",
+               meta_choices = meta_choices,
+               plot_label = "Feature Plot",
+               reductions = reductions,
+               reductions_menu =   TRUE,
+               group_by =          FALSE,
+               split_by =          TRUE,
+               ncol_slider =       FALSE,
+               label_checkbox =    FALSE,
+               legend_checkbox =   TRUE,
+               limits_checkbox =   TRUE,
+               manual_dimensions = TRUE,
+               download_button =   TRUE
+             )
+           )
+         ),
          
          ## 1.6. Violin Plot Options ####
-         # conditionalPanel(
-         #   condition = glue("input['{ns('make_vln')}'] == true"),
-         #   collapsible_panel(
-         #     inputId = ns("vln_collapsible"),
-         #     label = "Violin Plot Specific Options",
-         #     active = FALSE,
-         #     plot_module_ui(
-         #       id = ns("violin"),
-         #       ui_component = "options",
-         #       meta_choices = meta_choices,
-         #       plot_label = "Violin Plot",
-         #       group_by =          TRUE,
-         #       split_by =          TRUE,
-         #       ncol_slider =       TRUE,
-         #       label_checkbox =    FALSE,
-         #       legend_checkbox =   TRUE,
-         #       limits_checkbox =   FALSE,
-         #       manual_dimensions = TRUE,
-         #       download_button =   TRUE
-         #     )
-         #   )
-         # ), 
+         conditionalPanel(
+           condition = glue("input['{ns('make_vln')}'] == true"),
+           collapsible_panel(
+             inputId = ns("vln_collapsible"),
+             label = "Violin Plot Specific Options",
+             active = FALSE,
+             plot_module_ui(
+               id = ns("violin"),
+               ui_component = "options",
+               meta_choices = meta_choices,
+               plot_label = "Violin Plot",
+               group_by =          TRUE,
+               split_by =          TRUE,
+               ncol_slider =       TRUE,
+               label_checkbox =    FALSE,
+               legend_checkbox =   TRUE,
+               limits_checkbox =   FALSE,
+               manual_dimensions = TRUE,
+               download_button =   TRUE
+             )
+           )
+         ),
          
          ## 1.7. Dot Plot Options ####
-         
-         # conditionalPanel(
-         #   condition = glue("input['{ns('make_dot')}'] == true"),
-         #   collapsible_panel(
-         #     inputId = ns("dot_collapsible"),
-         #     label = "Dot Plot Specific Options",
-         #     active = FALSE,
-         #     plot_module_ui(
-         #       id = ns("dot"),
-         #       ui_component = "options",
-         #       meta_choices = meta_choices,
-         #       plot_label = "Dot Plot",
-         #       group_by =          TRUE,
-         #       split_by =          FALSE,
-         #       ncol_slider =       FALSE,
-         #       label_checkbox =    FALSE,
-         #       legend_checkbox =   TRUE,
-         #       limits_checkbox =   FALSE,
-         #       manual_dimensions = TRUE,
-         #       separate_features = TRUE,
-         #       download_button =   TRUE
-         #       )
-         #     )
-         #   ) #End 1.7
+         conditionalPanel(
+           condition = glue("input['{ns('make_dot')}'] == true"),
+           collapsible_panel(
+             inputId = ns("dot_collapsible"),
+             label = "Dot Plot Specific Options",
+             active = FALSE,
+             plot_module_ui(
+               id = ns("dot"),
+               ui_component = "options",
+               meta_choices = meta_choices,
+               plot_label = "Dot Plot",
+               group_by =          TRUE,
+               split_by =          FALSE,
+               ncol_slider =       FALSE,
+               label_checkbox =    FALSE,
+               legend_checkbox =   TRUE,
+               limits_checkbox =   FALSE,
+               manual_dimensions = TRUE,
+               separate_features = TRUE,
+               download_button =   TRUE
+               )
+             )
+           ) #End 1.7
          ), #End 1.
        
        # 2. Main panel for displaying plot output ------------------------------
@@ -287,32 +285,26 @@ plots_tab_ui <- function(id,
              ui_component = "plot"
            ),
            
-           # TEMP: debug panel
-           verbatimTextOutput(
-             outputId = ns("debug_panel"), 
-             placeholder = TRUE
-             )
-           
            ## 2.2. Panel for feature plot 
            # Will be a message or a plot, depending on whether features have 
            # been entered
-           # plot_module_ui(
-           #   id = ns("feature"),
-           #   ui_component = "plot"
-           # ),
+           plot_module_ui(
+             id = ns("feature"),
+             ui_component = "plot"
+           ),
            
            ## 2.3. Panel for violin plot
            # UI displayed will vary based on the entry into the feature text box
-           # plot_module_ui(
-           #   id = ns("violin"),
-           #   ui_component = "plot"
-           # ),
+           plot_module_ui(
+             id = ns("violin"),
+             ui_component = "plot"
+           ),
            
            ## 2.4. Dot plot panel
-           # plot_module_ui(
-           #   id = ns("dot"),
-           #   ui_component = "plot"
-           # )
+           plot_module_ui(
+             id = ns("dot"),
+             ui_component = "plot"
+           )
          ) # End div
        ) # End 2.
      ) # End sidebarLayout() 
@@ -395,7 +387,8 @@ plots_tab_server <- function(id,
                  # Feature choices for text entry 
                  observeEvent(
                    # Reactive - updates in response to change in dataset
-                   object(),
+                   # (valid_features computed downstream of object())
+                   valid_features(),
                    label = "Render choices for feature selection",
                    {
                      updateSelectizeInput(
@@ -424,50 +417,49 @@ plots_tab_server <- function(id,
                    )
                  
                  # Feature Plot
-                 # plot_module_server(
-                 #   id = "feature",
-                 #   object = plots_subset, # Reactive
-                 #   # plot_switch: uses the input$make_feature switch
-                 #   plot_switch = reactive({input$make_feature}),
-                 #   features_entered = reactive({input$text_features}),
-                 #   plot_label = "Feature Plot", # Non-reactive
-                 #   n_cells_original = n_cells_original, # Reactive
-                 #   # Instructs server on which plot function to run 
-                 #   plot_type = "feature",
-                 #   assay_config = assay_config
-                 #   )
+                 plot_module_server(
+                   id = "feature",
+                   object = plots_subset, # Reactive
+                   # plot_switch: uses the input$make_feature switch
+                   plot_switch = reactive({input$make_feature}),
+                   features_entered = reactive({input$text_features}),
+                   plot_label = "Feature Plot", # Non-reactive
+                   n_cells_original = n_cells_original, # Reactive
+                   # Instructs server on which plot function to run
+                   plot_type = "feature",
+                   assay_config = assay_config
+                   )
                  
                  # Violin Plot
-                 # plot_module_server(
-                 #   id = "violin",
-                 #   object = plots_subset, # Reactive
-                 #   # plot_switch: uses the input$make_vln switch
-                 #   plot_switch = reactive({input$make_vln}),
-                 #   plot_label = "Violin Plot", # Non-reactive
-                 #   features_entered = reactive({input$text_features}),
-                 #   # Instructs server on which plot function to run 
-                 #   plot_type = "violin",
-                 #   assay_config = assay_config
-                 #   )
+                 plot_module_server(
+                   id = "violin",
+                   object = plots_subset, # Reactive
+                   # plot_switch: uses the input$make_vln switch
+                   plot_switch = reactive({input$make_vln}),
+                   plot_label = "Violin Plot", # Non-reactive
+                   features_entered = reactive({input$text_features}),
+                   # Instructs server on which plot function to run
+                   plot_type = "violin",
+                   assay_config = assay_config
+                   )
                  
                  # Dot plot
-                 # plot_module_server(
-                 #   id = "dot",
-                 #   object = plots_subset, # Reactive
-                 #   # plot_switch: uses the input$make_dot switch
-                 #   plot_switch = reactive({input$make_dot}),
-                 #   features_entered = reactive({input$text_features}),
-                 #   plot_label = "Dot Plot", # Non-reactive
-                 #   # Instructs server on which plot function to run 
-                 #   plot_type = "dot",
-                 #   valid_features = valid_features,
-                 #   separate_features_server = TRUE
-                 #   )
+                 plot_module_server(
+                   id = "dot",
+                   object = plots_subset, # Reactive
+                   # plot_switch: uses the input$make_dot switch
+                   plot_switch = reactive({input$make_dot}),
+                   features_entered = reactive({input$text_features}),
+                   plot_label = "Dot Plot", # Non-reactive
+                   # Instructs server on which plot function to run
+                   plot_type = "dot",
+                   valid_features = valid_features,
+                   separate_features_server = TRUE
+                   )
                  
                  # 3. Process Subset -------------------------------------------
                  # 3.1 Module server to process user selections and report ####
                  # to other modules
-                 
                  # With reactive objects, a new module must be created for each 
                  # object to avoid collisions between subset menu ID's. 
                  plots_subset_selections <-
@@ -606,9 +598,7 @@ plots_tab_server <- function(id,
                        plots_s_sub
                        })
                  
-                 ## 3.3. Correct subset if an error is returned ####
-                 
-                 ## 3.4 Subset Summary Module ####
+                 ## 3.3 Subset Summary Module ####
                  # Computes and exports the unique metadata values in the 
                  # current subset/object
                  subset_summary_server(
@@ -617,12 +607,6 @@ plots_tab_server <- function(id,
                    category_labels = category_labels,
                    unique_metadata = unique_metadata
                    )
-                 
-                 output$debug_panel <-
-                   renderPrint({
-                     print("Object")
-                     print(object())
-                   })
                  
                })
   }
