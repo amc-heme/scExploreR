@@ -486,10 +486,48 @@ plots_tab_server <- function(id,
                       
                       selections
                      })
-                   
-                   
                  
                  ## 3.2. Make Subset ####
+                 # object_init: a reactive value set to TRUE when a new object 
+                 # is loaded. When object_init is TRUE it signals the 
+                 # plots_subset eventReactive to return the full object
+                 # instead of a subset the first time a new dataset is loaded.
+                 object_init <- reactiveVal(FALSE)
+                 
+                 # Reactive trigger function
+                 # Creates an action button which is programmatically 
+                 # triggered instead of triggered by the user
+                 # Code adapted from thread by Joe Cheng, the Author of Shiny.
+                 # https://community.rstudio.com/t/shiny-reactivetriggers-in-observeevent/42769
+                 makeReactiveTrigger <- function(){
+                   rv <- reactiveValues(a = 0)
+                   list(
+                     depend = function() {
+                       rv$a
+                       invisible()
+                     },
+                     trigger = function() {
+                       rv$a <- isolate(rv$a + 1)
+                     }
+                   )
+                 }
+                 
+                 # Create a reactive trigger 
+                 object_trigger <- makeReactiveTrigger()
+                 
+                 # Set object_init to TRUE when an object is loaded, 
+                 # and trigger the plots_subset eventReactive to run
+                 observeEvent(
+                   # Respond to downstream variable (results in less lag time 
+                   # between removal of loading screen and rendering of UMAP)
+                   metadata_config(),
+                   label = "object_init(TRUE)",
+                   {
+                     print("object_init set to TRUE")
+                     object_init(TRUE)
+                     object_trigger$trigger()
+                   })
+                 
                  plots_subset <-
                    eventReactive(
                      # Reacts to the object also (plots_subset must produce a 
@@ -497,7 +535,7 @@ plots_tab_server <- function(id,
                      # the subset is the full object initially. All downstream
                      # operations in the plots tab respond to the subset instead
                      # of the main object.)
-                     c(input$subset_submit, object()),
+                     c(input$subset_submit, object_trigger$depend()),
                      ignoreNULL=FALSE,
                      label = "Plots Subset",
                      {
@@ -535,19 +573,28 @@ plots_tab_server <- function(id,
                            # Begin tryCatch code
                            {
                              print("Begin make_subset")
-                             # Use subsetting function with the output of the
-                             # subset selections module as `criteria_list`.
-                             plots_s_sub <-
-                               make_subset(
-                                 object,
-                                 # plots_subset_selections is a reactive 
-                                 # expression inside another reactive expression
-                                 # (the eventReactive in 3.1). Must extract from
-                                 # eventReactive before passing it to the 
-                                 # function, which will extract the reactive 
-                                 # inside
-                                 criteria_list = plots_subset_selections()
+                             if (object_init() == TRUE){
+                               # if object_init is TRUE, return the full object
+                               # instead of subsetting. Also set object_init
+                               # back to FALSE. 
+                               object_init(FALSE)
+                               print("object_init set to FALSE")
+                               plots_s_sub <- object()
+                             } else {
+                               # Use subsetting function with the output of the
+                               # subset selections module as `criteria_list`.
+                               plots_s_sub <-
+                                 make_subset(
+                                   object,
+                                   # plots_subset_selections is a reactive 
+                                   # expression inside another reactive expression
+                                   # (the eventReactive in 3.1). Must extract from
+                                   # eventReactive before passing it to the 
+                                   # function, which will extract the reactive 
+                                   # inside
+                                   criteria_list = plots_subset_selections()
                                  )
+                               }
                              }
                            )#End tryCatch
 
@@ -559,7 +606,9 @@ plots_tab_server <- function(id,
                        plots_s_sub
                        })
                  
-                 ## 3.3 Subset Summary Module ####
+                 ## 3.3. Correct subset if an error is returned ####
+                 
+                 ## 3.4 Subset Summary Module ####
                  # Computes and exports the unique metadata values in the 
                  # current subset/object
                  subset_summary_server(

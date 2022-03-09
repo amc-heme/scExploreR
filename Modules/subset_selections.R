@@ -15,24 +15,26 @@ subset_selections_ui <- function(id,
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
   
-  # Create a list for storing the Shiny tags from each menu 
-   menus <- tagList()
   
-  for(category in names(metadata_config())){
+  # Create a list for storing the Shiny tags from each menu 
+  menus <- tagList()
+  
+  for (category in names(metadata_config())){
     # Fetch config information for current category
     config_i <- metadata_config()[[category]]
     
     # Create menu for the current category
     menu_tag <- pickerInput(
-      # input_prefix: will become unnecessary once the subset menus are placed
-      # within a module
+      # input_prefix: will become unnecessary once the subset 
+      # menus are placed within a module
       inputId = ns(glue("{category}_selection")),
-      #label: uses the label defined for the category in the config file
+      #label: uses the label defined for the category 
+      # in the config file
       label = glue("Restrict by {config_i$label}"),
       # choices: filled using the unique_metadata list
-      # If the metadata category has defined groups, sort choices into a named
-      # list based on the groups. This will show choices divided by group in
-      # the pickerInput menu.
+      # If the metadata category has defined groups, sort choices
+      # into a named list based on the groups. This will show choices
+      # divided by group in the pickerInput menu.
       choices = if(!is.null(config_i$groups)){
         # Use group_metadata_choices() to generate list
         group_metadata_choices(
@@ -40,59 +42,42 @@ subset_selections_ui <- function(id,
           choices = unique_metadata()[[category]]
         )
       } else {
-        # If groups are not defined, use the vector of choices
-        # from unique_metadata
+        # If groups are not defined, use the vector of 
+        # choices from unique_metadata
         unique_metadata()[[category]]
       },
       # selected: all choices selected by default
       selected = unique_metadata()[[category]],
       multiple = TRUE,
       # Options for pickerInput
-  options = list(
-    # Display number of items selected instead of their names
-    # when more than 5 values are selected
-    "selected-text-format" = "count > 5",
-    # Define max options to show at a time to keep menu from being cut off
-    "size" = 7,
-    # Add "select all" and "deselect all" buttons
-    "actions-box"=TRUE
-  )
+      options = list(
+        # Display number of items selected instead of their names
+        # when more than 5 values are selected
+        "selected-text-format" = "count > 5",
+        # Define max options to show at a time to keep menu
+        # from being cut off
+        "size" = 7,
+        # Add "select all" and "deselect all" buttons
+        "actions-box" = TRUE
+      )
     )# End pickerInput
-
+    
     # Append tag to list using tagList
     menus <- tagList(menus, menu_tag)
   }
   
-  # Last element: a reset button that will appear when subset menus are filtered 
-  # to remove criteria that are mutually exclusive with current selections
-  menus <- tagList(menus,
-                   uiOutput(outputId = ns("reset_filter_button"))
-  )
+  # Last element: a reset button that will appear when subset menus 
+  # are filtered  to remove criteria that are mutually exclusive 
+  # with current selections
+  menus <- 
+    tagList(
+      menus,
+      uiOutput(outputId = ns("reset_filter_button"))
+    )
   
   # Return list of menu tags
-  return(menus)
-  
-  # pickerGroupUI(
-  #   id = ns(glue("{id}_picker_group")),
-  #   params = list(
-  #     `clusters` = list(inputId = "clusters", label = "Restrict by clusters"),
-  #     `htb` = list(inputId = "htb", label = "Restrict by patient ID"),
-  #     `treatment` = list(inputId = "treatment", label = "Restrict by treatment"),
-  #     `response` = list(inputId = "response", label = "Restrict by response")
-  #     ),
-  #   btn_label = "Reset filters",
-  #   options = list(
-  #     # Display number of items selected instead of their names
-  #     # when more than 5 values are selected
-  #     "selected-text-format" = "count > 5",
-  #     # Define max options to show at a time to keep menu from being cut off
-  #     "size" = 7,
-  #     # Add "select all" and "deselect all" buttons
-  #     "actions-box"=TRUE
-  #     ),
-  #   inline = FALSE
-  #   )
-}
+  menus
+  }
 
 # Server function
 # Arguments
@@ -149,11 +134,41 @@ subset_selections_server <- function(id,
                 selections_list[!names(selections_list) %in% hide_menu()]
               }
             
-            print("selections_list:")
-            print(selections_list)
-          
-            return(selections_list)
+            print("Finished standard selections reactive")
+            selections_list
           })
+      
+      # observeEvent(
+      #   metadata_config(),
+      #   ignoreNULL = FALSE,
+      #   {
+      #     print("Input values") 
+      #     for (category in names(metadata_config())){
+      #       print(glue("input${category}_selection"))
+      #       print(input[[glue("{category}_selection")]])
+      #     }
+      #   })
+      
+      # 1a. Special case: when a new object is loaded, set "selections" equal to
+      # all unique values in the new object
+      # selections <- 
+      #   eventReactive(
+      #     metadata_config(),
+      #     label = glue("{id}: Update Selections on Object Change"),
+      #     ignoreNULL = FALSE,
+      #     {
+      #       # Construct list using all unique values for each category
+      #       all_selected <-
+      #         lapply(
+      #           meta_categories(),
+      #           function(category){unique_metadata()[[category]]}
+      #         )
+      #       
+      #       names(all_selected) <- names(meta_categories())
+      #       
+      #       print("Finished special selections reactive")
+      #       all_selected
+      #     })
       
       # 2. UI for Filtering Selection Menus ------------------------------------
       # Subset menus will be filtered for 
@@ -215,7 +230,7 @@ subset_selections_server <- function(id,
         reset_filter_ui()
       })
       
-      #3. For later: filter menus in UI based on selections --------------------
+      # 3. For later: filter menus in UI based on selections --------------------
       ## 3.1. Filter menus 
       # Observers are created for each filter menu. Since the menus now change
       # when different objects are loaded, the observers must be defined 
@@ -431,43 +446,7 @@ subset_selections_server <- function(id,
           }
         })
       
-      # 4. If the object is changed, reset the menus 
-      # observeEvent(
-      #   meta_categories(),
-      #   label = "Reset Subset Menus (Object Change)",
-      #   {
-      #     # Update each menu created from the new object to contain all of the
-      #     # possible values (content of unique_metadata() for the object)
-      #     for (category in meta_categories()){
-      #       # Define original values using unique_metadata
-      #       initial_values <- unique_metadata()[[category]]
-      #       
-      #       # If the metadata category has a groups property, build a list of
-      #       # grouped metadata values
-      #       initial_values_processed <- 
-      #         process_choices(
-      #           metadata_config,
-      #           category = category,
-      #           choices = initial_values
-      #         )
-      #       
-      #       # Update picker input
-      #       updatePickerInput(
-      #         session,
-      #         inputId = glue("{category}_selection"),
-      #         # Choices: use the list of group choices if it is defined
-      #         choices = initial_values_processed,
-      #         selected = initial_values,
-      #         options =
-      #           list(
-      #             "selected-text-format" = "count > 5",
-      #             "actions-box"=TRUE
-      #           )
-      #       )
-      #     }
-      #   })
-      
-      # 5. Hide menus, if specified by the user. -------------------------------
+      # 4. Hide menus, if specified by the user. -------------------------------
       # hide_menu is an optional argument that is NULL in modules where it is 
       # not specified. Since hide_menu is intended to be reactive, observers 
       # that use it will crash the app when NULL values are passed to them.
