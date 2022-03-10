@@ -163,7 +163,7 @@ datasets <-
           ),
     `AML_samples` = 
       list(
-        `label` = "AML Dataset",
+        `label` = "AML (Pheresis) Dataset",
         `object` = "./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds",
         `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
         `description` = 
@@ -171,23 +171,23 @@ datasets <-
         )
     )
 
-# Reactive trigger function
-# Creates an action button which is programmatically triggered instead of 
-# triggered by the user
-# Code adapted from thread by Joe Cheng, the Author of Shiny.
-# https://community.rstudio.com/t/shiny-reactivetriggers-in-observeevent/42769
-makeReactiveTrigger <- function(){
-  rv <- reactiveValues(a = 0)
-  list(
-    depend = function() {
-      rv$a
-      invisible()
-    },
-    trigger = function() {
-      rv$a <- isolate(rv$a + 1)
-    }
-  )
-}
+# # Reactive trigger function
+# # Creates an action button which is programmatically triggered instead of 
+# # triggered by the user
+# # Code adapted from thread by Joe Cheng, the Author of Shiny.
+# # https://community.rstudio.com/t/shiny-reactivetriggers-in-observeevent/42769
+# makeReactiveTrigger <- function(){
+#   rv <- reactiveValues(a = 0)
+#   list(
+#     depend = function() {
+#       rv$a
+#       invisible()
+#     },
+#     trigger = function() {
+#       rv$a <- isolate(rv$a + 1)
+#     }
+#   )
+#}
 
 # Table of Contents ------------------------------------------------------------
 # TODO: Add module tree here
@@ -208,6 +208,8 @@ ui <- tagList(
   navbarPage("Shiny scExplorer",
              windowTitle="Shiny scExplorer",
              position="fixed-top",
+             # TEMP: set selected tab
+             selected = "Differential Expression",
              tabPanel(
                "Plots",
                uiOutput(
@@ -216,9 +218,9 @@ ui <- tagList(
                ),
              tabPanel(
                "Differential Expression",
-               # uiOutput(
-               #   outputId = "dge_dynamic_ui"
-               #   )
+               uiOutput(
+                 outputId = "dge_dynamic_ui"
+                 )
                ),
              tabPanel(
                "Gene Correlations",
@@ -727,19 +729,21 @@ server <- function(input, output, session){
       })
   
   ### 3.1.2. DGE tab UI
-  # dge_tab_ui_dynamic <-
-  #   eventReactive(
-  #     # UI should only update when the object and config files are switched
-  #     c(object(), config()),
-  #     label = "DGE Tab Dynamic UI",
-  #     {
-  #       dge_tab_ui(
-  #         id = "dge",
-  #         unique_metadata = unique_metadata,
-  #         metadata_config = metadata_config,
-  #         meta_categories = meta_categories
-  #         )
-  #     })
+  dge_tab_ui_dynamic <-
+    eventReactive(
+      # UI should only update when the object and config files are switched
+      c(object(), config()),
+      label = "DGE Tab Dynamic UI",
+      ignoreNULL = FALSE,
+      {
+        dge_tab_ui(
+          id = "dge",
+          unique_metadata = unique_metadata,
+          metadata_config = metadata_config,
+          meta_categories = meta_categories,
+          data_key = selected_key
+          )
+      })
   
   ### 3.1.3. Correlations tab UI
   # corr_tab_ui_dynamic <-
@@ -747,6 +751,7 @@ server <- function(input, output, session){
   #     # UI should only update when the object and config files are switched
   #     c(object(), config()),
   #     label = "Correlations Tab Dynamic UI",
+  #     ignoreNULL = FALSE,
   #     {
   #       corr_tab_ui(
   #         id = "corr",
@@ -761,11 +766,11 @@ server <- function(input, output, session){
       plots_tab_ui_dynamic()
       })
 
-  # output$dge_dynamic_ui <- 
-  #   renderUI({
-  #     dge_tab_ui_dynamic()
-  #     })
-  # 
+  output$dge_dynamic_ui <-
+    renderUI({
+      dge_tab_ui_dynamic()
+      })
+
   # output$corr_dynamic_ui <- 
   #   renderUI({
   #     corr_tab_ui_dynamic()
@@ -790,14 +795,16 @@ server <- function(input, output, session){
     )
   
   ### 3.2.2. DGE Tab Server Module ####
-  # dge_tab_server(
-  #   id = "dge",
-  #   object = object,
-  #   metadata_config = metadata_config,
-  #   meta_categories = meta_categories,
-  #   unique_metadata = unique_metadata,
-  #   meta_choices = meta_choices
-  #   )
+  dge_tab_server(
+    id = "dge",
+    object = object,
+    metadata_config = metadata_config,
+    meta_categories = meta_categories,
+    unique_metadata = unique_metadata,
+    meta_choices = meta_choices,
+    data_key = selected_key,
+    possible_keys = names(datasets)
+    )
   
   ### 3.2.3. Correlations Tab Server Module ####
   # corr_tab_server(

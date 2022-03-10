@@ -49,28 +49,23 @@ dge_test_selection_server <- function(id,
                                       meta_choices){
   moduleServer(id,
                function(input,output,session){
-                 
-                 print("test_selection_server initialized")
-                 
                  # Namespace function: for dynamic UI
                  ns <- session$ns
                  
                  # 1. Process test mode ----------------------------------------
                  dge_mode <- reactive({
-                   print(glue("Process dge_mode: {input$mode}"))
                    input$mode
                  })
-                
+              
                  # 2. Dynamic UI for Group by Selection-------------------------
                  # Define UI
                  group_by_menu <- 
                    eventReactive(
                      # Reacts to dge_mode() defined in 1.
                      dge_mode(),
-                     ignoreNULL = FALSE,
+                     #ignoreNULL = FALSE,
                      label="Test Selection: Group by Selection Menu",
                      {
-                       print("Construct group_by_menu")
                        if (dge_mode() == "mode_dge"){
                          # Group by menu for DGE mode
                          selectInput(
@@ -113,16 +108,20 @@ dge_test_selection_server <- function(id,
                  # 3. Process group_by choice ----------------------------------
                  # Reactive below avoids namespace collision issue while
                  # pointing group by selections to one variable
-                 group_by_category <- reactive(
-                   label = "Test Selection: Process Group by Choices",
-                   {
-                     # Input to use depends on the selected DGE mode
-                     if (dge_mode() == "mode_dge"){
-                       return(input$group_by_dge)
-                       } else if (dge_mode() == "mode_marker"){
-                         return(input$group_by_marker)
-                         }
-                     })
+                 group_by_category <- 
+                   reactive(
+                     label = "Test Selection: Process Group by Choices",
+                     {
+                       # dge_mode() must be defined to avoid errors
+                       if (!is.null(dge_mode())){
+                         # Input to use depends on the selected DGE mode
+                         if (dge_mode() == "mode_dge"){
+                           return(input$group_by_dge)
+                           } else if (dge_mode() == "mode_marker"){
+                             return(input$group_by_marker)
+                           }
+                         } else NULL
+                       })
                  
                  # 4. Determine unique values for the group by category --------
                  # Will be options for marker classes or groups in DGE). This 
@@ -137,9 +136,8 @@ dge_test_selection_server <- function(id,
                      # group_by_category is NULL
                      ignoreNULL = TRUE,
                      {
-                       print(glue("Group by category: {group_by_category()}"))
-                       
-                       choices <- object()@meta.data |>
+                       choices <- 
+                         object()@meta.data |>
                          # Get unique values for the group by category
                          select(.data[[group_by_category()]]) |>
                          unique() |>
@@ -160,10 +158,8 @@ dge_test_selection_server <- function(id,
                      # Reacts to group choices, defined in 4.
                      group_choices(),
                      label="Test Selection: Classes Selection Menu",
-                     ignoreNULL = FALSE,
+                     #ignoreNULL = FALSE,
                      {
-                       print("Calculate test_classes")
-                       print(glue("selected mode: {dge_mode()}"))
                        if (dge_mode() == "mode_dge") {
                          # DGE mode: display menus to select two classes from 
                          # the metadata category chosen as the group_by 
@@ -274,19 +270,29 @@ dge_test_selection_server <- function(id,
                  # 7. Process Test Selections ----------------------------------
                  # Group 1: process input if DGE is the mode selected
                  group_1 <- reactive({
-                   if (dge_mode() == "mode_dge") input$group_1 else NULL
+                   #dge_mode() must be defined to avoid errors
+                   if (!is.null(dge_mode())){
+                     if (dge_mode() == "mode_dge") input$group_1 else NULL
+                   }
+                   
                  })
                  
                  # Group 1: process input if DGE is the mode selected
                  group_2 <- reactive({
-                   if (dge_mode() == "mode_dge") input$group_2 else NULL
+                   #dge_mode() must be defined to avoid errors
+                   if (!is.null(dge_mode())){
+                     if (dge_mode() == "mode_dge") input$group_2 else NULL
+                   }
                  })
                  
                  # Slected marker classes: process input if marker 
                  # identification is the mode selected
                  classes_selected <- reactive({
-                   if (dge_mode() == "mode_marker") input$marker_class_selection 
-                   else NULL
+                   #dge_mode() must be defined to avoid errors
+                   if (!is.null(dge_mode())){
+                     if (dge_mode() == "mode_marker") input$marker_class_selection 
+                     else NULL
+                   }
                  })
                  
                  # 8. Return information ---------------------------------------
@@ -296,28 +302,32 @@ dge_test_selection_server <- function(id,
                    reactive(
                      label="Test Selection: Return Values",
                      {
-                       if (dge_mode() == "mode_dge"){
-                         # Include groups when DGE is the selected mode
-                         return(
-                           list(
-                             `dge_mode` = dge_mode(),
-                             `group_by` = group_by_category(),
-                             `group_1` = group_1(),
-                             `group_2` = group_2()
+                       #dge_mode() must be defined to avoid errors
+                       if (!is.null(dge_mode())){
+                         if (dge_mode() == "mode_dge"){
+                           # Include groups when DGE is the selected mode
+                           return(
+                             list(
+                               `dge_mode` = dge_mode(),
+                               `group_by` = group_by_category(),
+                               `group_1` = group_1(),
+                               `group_2` = group_2()
                              )
                            )
-                       } else if (dge_mode() == "mode_marker"){
-                         # Include classes when marker identification 
-                         # is the selected mode
-                         return(
-                           list(
-                             `dge_mode` = dge_mode(),
-                             `group_by` = group_by_category(),
-                             `classes_selected` = classes_selected()
+                         } else if (dge_mode() == "mode_marker"){
+                           # Include classes when marker identification 
+                           # is the selected mode
+                           return(
+                             list(
+                               `dge_mode` = dge_mode(),
+                               `group_by` = group_by_category(),
+                               `classes_selected` = classes_selected()
                              )
                            )
                          }
+                       }
                      }) # End reactive
+                 
                  return(selections)
                  })
 }

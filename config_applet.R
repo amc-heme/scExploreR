@@ -795,8 +795,10 @@ server <- function(input, output, session) {
   #2.2. Create options server module instances for each metadata assay
   #Use observe() for reactive updates of module output
   observe({
-    #<<- is required for all_metadata_options to be accessible to other server
-    #code (not sure why)
+    # <<- is required for all_metadata_options to be accessible to other server
+    # code (variables defined within observers are defined in the local 
+    # environment of the observer by default, unless superassignment (<<-) 
+    # is used
     all_metadata_options <<- list()
     
     for (id in names(sobj@meta.data)){

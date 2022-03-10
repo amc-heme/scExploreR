@@ -465,7 +465,7 @@ plots_tab_server <- function(id,
                  plots_subset_selections <-
                    eventReactive(
                      meta_categories(),
-                     label = "Subset Selections Module",
+                     label = "Plots Tab: Subset Selections Module",
                      {
                       selections <- 
                         subset_selections_server(
@@ -579,11 +579,11 @@ plots_tab_server <- function(id,
                                  make_subset(
                                    object,
                                    # plots_subset_selections is a reactive 
-                                   # expression inside another reactive expression
-                                   # (the eventReactive in 3.1). Must extract from
-                                   # eventReactive before passing it to the 
-                                   # function, which will extract the reactive 
-                                   # inside
+                                   # expression inside another reactive 
+                                   # expression (the eventReactive in 3.1). Must
+                                   # extract from eventReactive before passing 
+                                   # it to the function, which will extract the
+                                   # reactive inside
                                    criteria_list = plots_subset_selections()
                                  )
                                }
