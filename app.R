@@ -209,7 +209,7 @@ ui <- tagList(
              windowTitle="Shiny scExplorer",
              position="fixed-top",
              # TEMP: set selected tab
-             selected = "Differential Expression",
+             selected = "Gene Correlations",
              tabPanel(
                "Plots",
                uiOutput(
@@ -224,9 +224,9 @@ ui <- tagList(
                ),
              tabPanel(
                "Gene Correlations",
-               # uiOutput(
-               #   outputId = "corr_dynamic_ui"
-               #   )
+               uiOutput(
+                 outputId = "corr_dynamic_ui"
+                 )
                )
              ), # End navbarPage()
   
@@ -552,11 +552,11 @@ server <- function(input, output, session){
           feature_list_all(
             object = object,
             assay_config = assay_config,
-            #include_numeric_metadata: a boolean variable 
-            #that is hard-coded for now and will be 
-            #defined in the config file
+            # include_numeric_metadata: a boolean variable 
+            # that is hard-coded for now and will be 
+            # defined in the config file
             numeric_metadata = include_numeric_metadata, 
-            #The same is true for numeric_metadata_title
+            # The same is true for numeric_metadata_title
             numeric_metadata_title = numeric_metadata_title
             )
         
@@ -746,19 +746,20 @@ server <- function(input, output, session){
       })
   
   ### 3.1.3. Correlations tab UI
-  # corr_tab_ui_dynamic <-
-  #   eventReactive(
-  #     # UI should only update when the object and config files are switched
-  #     c(object(), config()),
-  #     label = "Correlations Tab Dynamic UI",
-  #     ignoreNULL = FALSE,
-  #     {
-  #       corr_tab_ui(
-  #         id = "corr",
-  #         unique_metadata = unique_metadata,
-  #         metadata_config = metadata_config
-  #         )
-  #     })
+  corr_tab_ui_dynamic <-
+    eventReactive(
+      # UI should only update when the object and config files are switched
+      c(object(), config()),
+      label = "Correlations Tab Dynamic UI",
+      ignoreNULL = FALSE,
+      {
+        corr_tab_ui(
+          id = "corr",
+          unique_metadata = unique_metadata,
+          metadata_config = metadata_config,
+          data_key = selected_key
+          )
+      })
   
   ### 3.1.4. Render Dynamic UI components
   output$plots_dynamic_ui <-
@@ -771,10 +772,10 @@ server <- function(input, output, session){
       dge_tab_ui_dynamic()
       })
 
-  # output$corr_dynamic_ui <- 
-  #   renderUI({
-  #     corr_tab_ui_dynamic()
-  #     })
+  output$corr_dynamic_ui <- 
+    renderUI({
+      corr_tab_ui_dynamic()
+      })
   
   ## 3.2 Server instances ####
   ### 3.2.1. Plots Tab Server Module #####
@@ -807,18 +808,20 @@ server <- function(input, output, session){
     )
   
   ### 3.2.3. Correlations Tab Server Module ####
-  # corr_tab_server(
-  #   id = "corr",
-  #   object = object,
-  #   metadata_config = metadata_config,
-  #   meta_categories = meta_categories,
-  #   unique_metadata = unique_metadata,
-  #   n_cells_original = n_cells_original, 
-  #   nonzero_threshold = nonzero_threshold, 
-  #   meta_choices = meta_choices,
-  #   valid_features = valid_features,
-  #   error_list = error_list
-  #   )
+  corr_tab_server(
+    id = "corr",
+    object = object,
+    metadata_config = metadata_config,
+    meta_categories = meta_categories,
+    unique_metadata = unique_metadata,
+    n_cells_original = n_cells_original,
+    nonzero_threshold = nonzero_threshold,
+    meta_choices = meta_choices,
+    valid_features = valid_features,
+    error_list = error_list,
+    data_key = selected_key,
+    possible_keys = names(datasets)
+    )
   
   # TEMP: UI to test object and config file are properly rendered
   # output$verify_object <- 

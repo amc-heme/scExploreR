@@ -248,7 +248,6 @@ dge_tab_server <- function(id,
                      # properly generated (endless spinner results otherwise)
                      ignoreInit = FALSE,
                      {
-                       print("Computing subset criteria")
                        # Retrieve information from
                        # test_selections Category
                        group_by_category <- test_selections()$group_by
@@ -295,7 +294,7 @@ dge_tab_server <- function(id,
                  # Run instance of subset_stats_server and update if
                  # dataset is changed
                  observe(
-                   label = "DGE tab: Subset Stats Server Instance",
+                   label = "DGE tab: Initialize Subset Stats Server",
                    {
                      # Separate instances of the subset stats servers are 
                      # created for each dataset to avoid namespace collisions
@@ -310,13 +309,13 @@ dge_tab_server <- function(id,
                          subset_stats_server(
                            # ID uses key of dataset to avoid namespace collisions
                            # when a new dataset is loaded
-                           id = glue("{data_key()}_subset_stats"),
+                           id = glue("{key}_subset_stats"),
                            tab = "dge",
                            subset = subset,
                            meta_categories = meta_categories,
                            event_expr = subset,
                            group_by_category = group_by_category
-                         )
+                           )
                        }
                      })
                  
@@ -325,7 +324,7 @@ dge_tab_server <- function(id,
                    reactive({
                      subset_stats_all[[data_key()]]
                    })
-
+                 
                  ## 3.5. Run Presto
                  dge_table_content <-
                    eventReactive(
@@ -434,7 +433,6 @@ dge_tab_server <- function(id,
                      #ignoreInit=TRUE,
                      #ignoreNULL = FALSE,
                      {
-                       print("Computing dynamic UI")
                        # User-defined label for group-by variable (for printing
                        # in UI below)
                        # TODO: make sure this updates when a different group

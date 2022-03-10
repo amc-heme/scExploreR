@@ -79,11 +79,6 @@ make_subset <- function(object,
     subset_str <- paste0(subset_str, criterion)
   }
   
-  print("object read by make_subset:")
-  print(object())
-  print("criteria read by make_subset:")
-  print(criteria_list)
-  
   # Subset using the subset string 
   subset <- eval(parse(text=paste0("subset(object(), subset = ", subset_str, ")")))
   

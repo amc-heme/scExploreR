@@ -197,7 +197,7 @@ subset_stats_server <- function(id,
                  
                  # For DGE tab only: stats on selected DE/marker classes, test 
                  # mode, and number of cells by class
-                 if(tab=="dge"){
+                 if(tab == "dge"){
                    # classes: unique values in the selected group by metadata 
                    # category (not displayed but used downstream)
                    print("Computing classes")
@@ -251,7 +251,7 @@ subset_stats_server <- function(id,
                            # Group by the specified metadata variable 
                            group_by(.data[[group_by_category()]]) |>
                            # Calculate number of cells per group
-                           summarise(n=n()) 
+                           summarise(n = n()) 
                          
                          # Extract information from tibble
                          # Class names in first column of tibble
@@ -260,7 +260,7 @@ subset_stats_server <- function(id,
                          n_cells <- n_cells_tibble[[2]]
                          
                          # Print list of classes and the number of cells in each
-                         n_cells_list=list()
+                         n_cells_list = list()
                          for (i in 1:nrow(n_cells_tibble)){
                            n_cells_list[[i]] <- 
                              glue("{class_names[i]}: {n_cells[i]}")
@@ -269,7 +269,7 @@ subset_stats_server <- function(id,
                          # Collapse list of class-count pairs into a string
                          # \n is the separator (will be read by 
                          # verbatimTextOutput())
-                         n_by_class <- paste(n_cells_list,collapse = "\n")
+                         n_by_class <- paste(n_cells_list, collapse = "\n")
                          
                          return(n_by_class)
                        })
@@ -325,27 +325,29 @@ subset_stats_server <- function(id,
                  
                  ## 3.2 Cells with nonzero reads (correlations tab only)
                  if (tab == "corr"){
-                   output$n_nonzero_and_percent <- renderText({
-                     glue("{n_nonzero()} ({percent_nonzero()}%)")
-                   })
+                   output$n_nonzero_and_percent <-
+                     renderText({
+                       glue("{n_nonzero()} ({percent_nonzero()}%)")
+                       })
                  }
                  
                  ## 3.3. - 3.4 Outputs specific to DGE tab
                  if (tab == "dge"){
                    ## 3.3 Print description of test selected
-                   output$print_mode <- renderText({
-                     mode_description()
-                   })
+                   output$print_mode <- 
+                     renderText({
+                       mode_description()
+                       })
                    
                    ## 3.4 Print number of cells by class
-                   output$n_by_class <- renderText({
-                     n_by_class()
-                   })
+                   output$n_by_class <- 
+                     renderText({
+                       n_by_class()
+                       })
                  }
                  
                  ## 3.5. Summary of unique metadata in subset (both tabs)
-                 # lapply creates an output for each metadata category used in 
-                 # creation of the subset
+                 # lapply creates an output for each metadata category
                  lapply(
                    X = meta_categories(), 
                    FUN = function(category){
@@ -358,10 +360,10 @@ subset_stats_server <- function(id,
                            # May add support for custom order later
                            str_sort(numeric=TRUE) |> 
                            vector_to_text()
-                         }) # End renderText
+                       }) # End renderText
                      }
                    )
-                 
+
                  # 4. Return Stats from Server ---------------------------------
                  # For dge tab: return n_cells, classes, and n_classes
                  # Return a list of reactives, as opposed to a reactive list

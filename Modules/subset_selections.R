@@ -107,8 +107,6 @@ subset_selections_server <- function(id,
       # Server namespace function: used for UI elements rendered in server
       ns <- session$ns
       
-      print("Initializing subset_selections server")
-      
       # 1. Store all input values from the UI as a reactive list ---------------
       selections <- 
         reactive(
@@ -481,8 +479,6 @@ subset_selections_server <- function(id,
                        }
                      })
       }
-
-      print("subset_selections server initialized")
       
       # Return the reactive list of selections 
       return(selections)
