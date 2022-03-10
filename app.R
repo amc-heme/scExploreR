@@ -159,7 +159,8 @@ datasets <-
         `description` = 
           "Contains 3 normal bone marrow samples, and longitudinal samples from 
           6 patients with the first sample taken at time of diagnosis and the
-          second sample taken approximately one month afterward."
+          second sample taken approximately one month afterward.",
+        `plot` = "./www/d0_d30_UMAP.png"
           ),
     `AML_samples` = 
       list(
@@ -167,7 +168,8 @@ datasets <-
         `object` = "./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds",
         `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
         `description` = 
-          "Contains 3 normal bone marrow samples, and 23 AML samples."
+          "Contains 3 normal bone marrow samples, and 23 AML samples.",
+        `plot` = "./www/aml_UMAP.png"
         )
     )
 
@@ -823,7 +825,26 @@ server <- function(input, output, session){
     possible_keys = names(datasets)
     )
   
-  # TEMP: UI to test object and config file are properly rendered
+  # 4. Dataset Description in modal UI ####
+  # Render text for the dataset modal that displays a description of the dataset
+  # currently selected
+  output$dataset_description <-
+    renderText({
+      # Fetch description of the dataset selected (key = input$data_key)
+      datasets[[input$data_key]]$description
+    })
+  
+  output$dataset_dimplot <-
+    renderImage({
+      path <- datasets[[input$data_key]]$plot
+      list(
+        `src` = path,
+        `width` = 290,
+        `height` = 218
+        )
+    })
+  
+  # DEBUG: UI to test object and config file are properly rendered
   # output$verify_object <- 
   #   renderUI({
   #     div(

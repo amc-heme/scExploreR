@@ -53,20 +53,9 @@ data_Modal <- function(datasets,
       # Right-hand side: will contain a description of the selected dataset
       div(
         class = "two_column",
-        style = "float: right; height : 500px;",
-        # Dataset image and description
-        # This output is defined in the main server for now. In the future, the
-        # modal content should be put in an module for scalability.
-        # Image: show a dimplot of the dataset, for a visual overview
-        imageOutput(
-          outputId = "dataset_dimplot",
-          width = "290px",
-          height = "218px"
-          ),
-        # Text description
-        tags$strong("Dataset Description"),
-        textOutput(outputId = "dataset_description")
-        )
+        style = "float: right; height : 500px;"
+        
+      )
     )
   )
 }
