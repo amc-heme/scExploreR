@@ -210,8 +210,6 @@ ui <- tagList(
   navbarPage("Shiny scExplorer",
              windowTitle="Shiny scExplorer",
              position="fixed-top",
-             # TEMP: set selected tab
-             selected = "Gene Correlations",
              tabPanel(
                "Plots",
                uiOutput(
