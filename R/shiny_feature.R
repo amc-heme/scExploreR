@@ -94,13 +94,17 @@ shiny_feature <- function(object, #Reactive
             } else "none")),
         
         # Elements B-C. Axis limits: 
-        # use limits from full dataset if specified
-        # Simultaneously test if subset is present
-        # and if the corresponding limits reactive
-        # is truthy.
+        # Use limits from full dataset if specified.
+        # The conditional is tied to a reactive value 
+        # instead of the input to avoid an error that
+        # occurs when this function is evaluated
+        # before the input is #defined.
+        # First, simultaneously test if subset is
+        # present and if the corresponding
+        # original_limits reactive is truthy
+        # (i.e. both present and checked).
         if(is_subset() & isTruthy(original_limits())){
-          # Add original limits to the list if the 
-          # corresponding checkbox is checked
+          # If so, add original limits to the list
               list(scale_x_continuous(limits = xlim_orig()),
                    scale_y_continuous(limits = ylim_orig()))
         }
