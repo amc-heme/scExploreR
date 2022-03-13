@@ -83,7 +83,7 @@ shiny_feature <- function(object, #Reactive
     # to user input
     # 'layers' is a list of layers that is applied to the plot
     layers <- 
-      list(
+      c(list(
         # Element A 
         # Legend position: "right" if a legend is desired, 
         # and "none" if not
@@ -91,37 +91,18 @@ shiny_feature <- function(object, #Reactive
           legend.position = 
             if (show_legend()==TRUE) {
               "right"
-            } else "none"),
+            } else "none")),
         
-        # B-C. Axis limits: use limits from full dataset if 
-        # specified
-        # Element B
-        # Must first test to see if subset is present
-        # Input container does not exist if there is no subset
-        if(is_subset()){
+        # Elements B-C. Axis limits: 
+        # use limits from full dataset if specified
+        # Simultaneously test if subset is present
+        # and if the corresponding limits reactive
+        # is truthy.
+        if(is_subset() & isTruthy(original_limits())){
           # Add original limits to the list if the 
           # corresponding checkbox is checked
-          # The conditional is tied to a reactive value 
-          # instead of the input to avoid
-          # An error that occurs when this function is 
-          # evaluated before the input is #defined.
-          if (isTruthy(original_limits())) {
-            if (original_limits() == TRUE) {
-              scale_x_continuous(limits = xlim_orig())
-            }
-          }
-        }, 
-        # Element C
-        # Check for subset (input container in child conditional 
-        # does not exist before a subset is created)
-        if(is_subset()){
-          # Add original limits to the list if the 
-          # corresponding checkbox is checked
-          if (isTruthy(original_limits())) {
-            if (original_limits() == TRUE) {
-              scale_y_continuous(limits = ylim_orig())
-            }
-          }
+              list(scale_x_continuous(limits = xlim_orig()),
+                   scale_y_continuous(limits = ylim_orig()))
         }
       )
     
