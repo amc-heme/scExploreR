@@ -104,20 +104,24 @@ shiny_feature <- function(object, #Reactive
           # The conditional is tied to a reactive value 
           # instead of the input to avoid
           # An error that occurs when this function is 
-          # evaluated before the input is #defined. 
-          if (original_limits() == TRUE) {
-            scale_x_continuous(limits = xlim_orig())
+          # evaluated before the input is #defined.
+          if (isTruthy(original_limits())) {
+            if (original_limits() == TRUE) {
+              scale_x_continuous(limits = xlim_orig())
+            }
           }
-        },
+        }, 
         # Element C
         # Check for subset (input container in child conditional 
         # does not exist before a subset is created)
         if(is_subset()){
           # Add original limits to the list if the 
           # corresponding checkbox is checked
-          if(original_limits() == TRUE) {
-            scale_y_continuous(limits = ylim_orig())
-          } 
+          if (isTruthy(original_limits())) {
+            if (original_limits() == TRUE) {
+              scale_y_continuous(limits = ylim_orig())
+            }
+          }
         }
       )
     
