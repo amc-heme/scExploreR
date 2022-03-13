@@ -342,7 +342,14 @@ server <- function(input, output, session){
       hide_on_render = FALSE
     )
   
-  # 1. Reactively load object and config file
+  # Create a reactive trigger to run the feature text box update after 
+  # the UI is created (originally the UI always ran first, but now it does
+  # not update until the correlation tab is opened since it is now a 
+  # reactive and the output for the UI is not evaluated until the tab is 
+  # opened (lazy evaluation))
+  update_features <- makeReactiveTrigger()
+  
+  # 1. Reactively load object and config file ----------------------------------
   # Initialize a reactiveVal for storing the key of the last dataset loaded
   dataset_info <- reactiveValues()
   dataset_info$last_object_key <- NULL
@@ -517,7 +524,7 @@ server <- function(input, output, session){
         }
       })
   
-  # 2. Initialize Variables specific to object and config file
+  # 2. Initialize Variables specific to object and config file -----------------
   # Split config file into metadata and assay lists for use downstream
   metadata_config <- 
     eventReactive(
@@ -753,12 +760,16 @@ server <- function(input, output, session){
       label = "Correlations Tab Dynamic UI",
       ignoreNULL = FALSE,
       {
-        corr_tab_ui(
-          id = "corr",
+        ui <- corr_tab_ui(
+          id = glue("{selected_key()}_corr"),
           unique_metadata = unique_metadata,
           metadata_config = metadata_config,
           data_key = selected_key
           )
+
+        update_features$trigger()
+        
+        ui
       })
   
   ### 3.1.4. Render Dynamic UI components
@@ -808,20 +819,23 @@ server <- function(input, output, session){
     )
   
   ### 3.2.3. Correlations Tab Server Module ####
-  corr_tab_server(
-    id = "corr",
-    object = object,
-    metadata_config = metadata_config,
-    meta_categories = meta_categories,
-    unique_metadata = unique_metadata,
-    n_cells_original = n_cells_original,
-    nonzero_threshold = nonzero_threshold,
-    meta_choices = meta_choices,
-    valid_features = valid_features,
-    error_list = error_list,
-    data_key = selected_key,
-    possible_keys = names(datasets)
+  observe({
+    corr_tab_server(
+      id = glue("{selected_key()}_corr"),
+      object = object,
+      metadata_config = metadata_config,
+      meta_categories = meta_categories,
+      unique_metadata = unique_metadata,
+      n_cells_original = n_cells_original,
+      nonzero_threshold = nonzero_threshold,
+      meta_choices = meta_choices,
+      valid_features = valid_features,
+      error_list = error_list,
+      data_key = selected_key,
+      possible_keys = names(datasets),
+      update_features = update_features
     )
+  })
   
   # 4. Dataset Description in modal UI ####
   # Render text for the dataset modal that displays a description of the dataset

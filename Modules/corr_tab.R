@@ -13,8 +13,11 @@ corr_tab_ui <- function(id,
                         metadata_config,
                         data_key
                         ){
-  # Namespace function: prevents conflicts with inputs/outputs defined in other modules 
+  # Namespace function: prevents conflicts with inputs/outputs defined in 
+  # other modules 
   ns <- NS(id)
+
+  print("Creating correlation tab ui")
   
   fluidPage(
     sidebarLayout(
@@ -98,6 +101,14 @@ corr_tab_ui <- function(id,
 # error_list: a list of error messages to print custom notifications for, 
 # if they are encountered while the correlations table is being calculated. This 
 # is defined in the main server function.
+# possible_keys: a vector with the names (keys) of all datasets defined in the
+# datasets list. Used to create separate module server instances for each 
+# datset in the app, to avoid namespace collisions between inputs that may be
+# shared accross datasets.
+# update_features: a reactive trigger created by the local makeReactiveTrigger() 
+# function. The trigger is created in the main server function and ensures that
+# the feature selection input is updated after the input is created (input will
+# have no choices otherwise.)
 corr_tab_server <- function(id,
                             object,
                             metadata_config,
@@ -112,7 +123,8 @@ corr_tab_server <- function(id,
                             valid_features,
                             error_list,
                             data_key,
-                            possible_keys
+                            possible_keys,
+                            update_features
                             ){
 
   #Function to initialize module server
@@ -141,7 +153,7 @@ corr_tab_server <- function(id,
                  main_spinner <-
                    Waiter$new(
                      id = ns("main_panel"),
-                     html = spin_loaders(id = 2,color = "#555588"),
+                     html = spin_loaders(id = 2, color = "#555588"),
                      color = "#FFFFFF",
                      #Gives manual control of showing/hiding spinner
                      hide_on_render = FALSE
@@ -151,7 +163,10 @@ corr_tab_server <- function(id,
                  # 1.1. Render Choices ####
                  # Reactive - updates in response to change in dataset 
                  observeEvent(
-                   valid_features(),
+                   # Responds to loading of update and creation of UI (to ensure
+                   # feature updating is always performed after the input is 
+                   # created)
+                   c(valid_features(), update_features$depend()),
                    label = "Render choices for feature selection",
                    {
                      updateSelectizeInput(
