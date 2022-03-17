@@ -603,7 +603,7 @@ server <- function(input, output, session){
       ignoreNULL = FALSE,
       {
         # Base vector: contains the "none" option
-        meta_choices <- c("None"="none")
+        meta_choices <- c("None" = "none")
         # Iteratively populate vector using entries in the metadata section 
         # of the config file 
         for (category in meta_categories()){
@@ -854,7 +854,9 @@ server <- function(input, output, session){
         `width` = 290,
         `height` = 218
         )
-    })
+    },
+    deleteFile=FALSE
+    )
   
   # DEBUG: UI to test object and config file are properly rendered
   # output$verify_object <- 

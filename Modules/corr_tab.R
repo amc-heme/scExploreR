@@ -31,6 +31,7 @@ corr_tab_ui <- function(id,
                    negatively correlated with the feature in the data. You may 
                    optionally restrict the correlation analysis by metadata 
                    variables using the dropdown menus below."),
+            
             # Feature selection: only one feature can be entered
             selectizeInput(
               inputId = ns("feature_selection"),
@@ -38,15 +39,17 @@ corr_tab_ui <- function(id,
               # Feature choices populated in server, as in the plots tab
               choices = NULL,
               selected = character(0),
-              options = list("placeholder"="Enter gene name")),
+              options = list("placeholder" = "Enter gene name")),
+            
             # Module for subset selections              
             subset_selections_ui(
               # Create separate module instances for each datset to avoid 
               # namespace collisions between datasets. Use key of dataset in id
-              id = ns(glue("{data_key()}_subset_selections")),
+              id = ns("subset_selections"),
               unique_metadata = unique_metadata,
               metadata_config = metadata_config
               ),
+            
             # Submit button
             actionButton(
               inputId = ns("submit"),
@@ -57,8 +60,10 @@ corr_tab_ui <- function(id,
             
             # Download buttons: render after the correlations table 
             # and scatterplots are computed
-            uiOutput(outputId = ns("downloads_ui"), 
-                     inline = TRUE),
+            uiOutput(
+              outputId = ns("downloads_ui"), 
+              inline = TRUE
+              ),
             
             # Options for scatterplot: a collapsible panel of options
             # appears after a scatterplot is displayed
@@ -206,32 +211,42 @@ corr_tab_server <- function(id,
                  # metadata categories
                  
                  ### 2.2.1 Create module instances for each dataset
-                 observe({
-                   # Create a list for storing the outputs from each module
-                   subset_selections_all <<- list()
-                   
-                   # Loop through the names (keys) of each dataset in the
-                   # "datasets" list
-                   for (key in possible_keys){
-                     # Module instance for dataset
-                     subset_selections_all[[key]] <<-
-                       subset_selections_server(
-                         # Use key of dataset in the id to avoid collisions
-                         id = glue("{key}_subset_selections"),
-                         object = object,
-                         unique_metadata = unique_metadata,
-                         metadata_config = metadata_config,
-                         meta_categories = meta_categories
-                         )
-                     }
-                   })
-                 
-                 ### 2.2.2. Load subset selections module for currently 
-                 # selected dataset
                  subset_selections <- 
-                   reactive({
-                     subset_selections_all[[data_key()]]()
-                     })
+                   subset_selections_server(
+                     # Use key of dataset in the id to avoid collisions
+                     id = "subset_selections",
+                     object = object,
+                     unique_metadata = unique_metadata,
+                     metadata_config = metadata_config,
+                     meta_categories = meta_categories
+                     )
+                 
+                 # observe({
+                 #   # Create a list for storing the outputs from each module
+                 #   subset_selections_all <<- list()
+                 #   
+                 #   # Loop through the names (keys) of each dataset in the
+                 #   # "datasets" list
+                 #   for (key in possible_keys){
+                 #     # Module instance for dataset
+                 #     subset_selections_all[[key]] <<-
+                 #       subset_selections_server(
+                 #         # Use key of dataset in the id to avoid collisions
+                 #         id = glue("{key}_subset_selections"),
+                 #         object = object,
+                 #         unique_metadata = unique_metadata,
+                 #         metadata_config = metadata_config,
+                 #         meta_categories = meta_categories
+                 #         )
+                 #     }
+                 #   })
+                 # 
+                 # ### 2.2.2. Load subset selections module for currently 
+                 # # selected dataset
+                 # subset_selections <- 
+                 #   reactive({
+                 #     subset_selections_all[[data_key()]]()
+                 #     })
                  
                  # 3. Computation of Correlation Table
                  # A chain of reactive expressions is used, beginning with a 
@@ -309,25 +324,18 @@ corr_tab_server <- function(id,
                        n_cells_original() != n_cells_subset
                        })
                  
-                 ## 3.4 Subset Stats Modules ####
-                 # This module does not return values in the correlations tab 
-                 # (thus there is no need to store outputs in a list)
-                 observe({
-                   for (key in possible_keys){
-                     # However, one module is still created for each dataset
-                     subset_stats_server(
-                       id = glue("{key}_stats"),
-                       tab = "corr",
-                       subset = subset,
-                       meta_categories = meta_categories,
-                       # Reactive expressions in module will execute after 
-                       # is_subset is computed
-                       event_expr = is_subset,
-                       gene_selected = corr_main_gene,
-                       nonzero_threshold = nonzero_threshold
-                       )
-                     }
-                 })
+                 ## 3.4 Subset Stats Module ####
+                 subset_stats_server(
+                   id = "stats",
+                   tab = "corr",
+                   subset = subset,
+                   meta_categories = meta_categories,
+                   # Reactive expressions in module will execute after 
+                   # is_subset is computed
+                   event_expr = is_subset,
+                   gene_selected = corr_main_gene,
+                   nonzero_threshold = nonzero_threshold
+                 )
                  
                  ## 3.5 Compute correlation tables ####
                  # Calculations used depend on whether the object is a subset
@@ -518,7 +526,7 @@ corr_tab_server <- function(id,
                                # Use namespacing for module UI instance
                                # Use key of currently selected dataset to avoid
                                # collisions between inputs of different datasets
-                               id = ns(glue("{data_key()}_stats")),
+                               id = ns("stats"),
                                tab = "corr",
                                metadata_config = metadata_config,
                                meta_categories = meta_categories,
