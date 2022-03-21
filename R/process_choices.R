@@ -20,10 +20,13 @@ process_choices <- function(metadata_config,
     # If group info data exists, construct groups with group_metadata_choices
     choices_list <-
       group_metadata_choices(group_info, choices)
-    return(choices_list)
+    # Return grouped choices
+    choices_list
   } else {
-    # If there is no group info for the category, return the choices vector
-    return(choices)
+    # If there is no group info for the category, sort the choices vector
+    # alphanumerically and return it
+    choices <- str_sort(choices, numeric = TRUE)
+    choices
   }
 }
 
