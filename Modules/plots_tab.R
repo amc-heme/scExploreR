@@ -20,8 +20,7 @@ plots_tab_ui <- function(id,
                          unique_metadata,
                          category_labels,
                          metadata_config,
-                         reductions,
-                         data_key
+                         reductions
                          ){
    # Namespace function: prevents conflicts with 
    # inputs/outputs defined in other modules 
@@ -146,10 +145,8 @@ plots_tab_ui <- function(id,
                ), # End subset_stats div
 
              # 1.3.2. Subset selection menus
-             # With reactive objects, a new module must be created for each 
-             # object to avoid collisions between subset menu ID's. 
              subset_selections_ui(
-               id = glue(ns("{data_key()}_subset_selections")),
+               id = ns("subset_selections"),
                unique_metadata = unique_metadata,
                metadata_config = metadata_config
                ),
@@ -338,7 +335,6 @@ plots_tab_server <- function(id,
                              assay_config,
                              meta_categories,
                              category_labels,
-                             data_key,
                              unique_metadata,
                              valid_features,
                              error_list,
@@ -463,21 +459,13 @@ plots_tab_server <- function(id,
                  # With reactive objects, a new module must be created for each 
                  # object to avoid collisions between subset menu ID's. 
                  plots_subset_selections <-
-                   eventReactive(
-                     meta_categories(),
-                     label = "Plots Tab: Subset Selections Module",
-                     {
-                      selections <- 
-                        subset_selections_server(
-                          id = glue("{data_key()}_subset_selections"),
-                          object = object,
-                          unique_metadata = unique_metadata,
-                          metadata_config = metadata_config,
-                          meta_categories = meta_categories
-                          )
-                      
-                      selections
-                     })
+                   subset_selections_server(
+                     id = "subset_selections",
+                     object = object,
+                     unique_metadata = unique_metadata,
+                     metadata_config = metadata_config,
+                     meta_categories = meta_categories
+                     )
                  
                  ## 3.2. Make Subset ####
                  # object_init: a reactive value set to TRUE when a new object 
@@ -548,14 +536,16 @@ plots_tab_server <- function(id,
                              # message text with grepl (not recommended,
                              # but I currently don't know any other way to
                              # catch this error type)
-                             error_handler(session,
-                                           cnd_message = cnd$message,
-                                           # Uses a list of
-                                           # subset-specific errors
-                                           error_list = error_list,
-                                           # Id prefix for the
-                                           # notification elements
-                                           id_prefix = ns(""))
+                             error_handler(
+                               session,
+                               cnd_message = cnd$message,
+                               # Uses a list of
+                               # subset-specific errors
+                               error_list = error_list,
+                               # Id prefix for the
+                               # notification elements
+                               id_prefix = ns("")
+                               )
 
                              # Return "NULL" for subset when an
                              # error has occurred

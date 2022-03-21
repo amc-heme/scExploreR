@@ -11,8 +11,7 @@
 dge_tab_ui <- function(id,
                        unique_metadata,
                        metadata_config,
-                       meta_categories,
-                       data_key
+                       meta_categories
                        ){
   #Namespace function: prevents conflicts with 
   #inputs/outputs defined in other modules 
@@ -32,22 +31,18 @@ dge_tab_ui <- function(id,
             #Menus to choose test (DGE or marker identification and 
             #classes/groups to include). Uses dge_test_selection module
             dge_test_selection_ui(
-              # ID includes data key to prevent namespace collisions when 
-              # different datasets are loaded
-              id = ns(glue("{data_key()}_test_selections")),
+              id = ns("test_selections"),
               meta_choices = meta_choices
               ),
             
             #Menus to choose subset (placed within collapsible panel)
             collapsible_panel(
-              inputId = ns("subset_selections"), 
+              inputId = ns("subset_selections_collapsible"), 
               label = "Subset Options", 
               active = TRUE, 
               {
                 subset_selections_ui(
-                  # ID includes data key to prevent namespace collisions when 
-                  # different datasets are loaded
-                  id = ns(glue("{data_key()}_subset_selections")),
+                  id = ns("subset_selections"),
                   unique_metadata = unique_metadata,
                   metadata_config = metadata_config
                   )
@@ -103,9 +98,8 @@ dge_tab_server <- function(id,
                            # information used)
                            meta_categories,
                            unique_metadata,
-                           meta_choices,
-                           data_key,
-                           possible_keys){
+                           meta_choices
+                           ){
   moduleServer(id,
                 function(input,output,session){
                  #Server namespace function: for dynamic UI and modules
@@ -137,36 +131,14 @@ dge_tab_server <- function(id,
                      )
                  
                  # 1. Process Selections for DGE Test --------------------------
-                 # One instance of the test_selections module is created for 
-                 # each possible dataset to avoid namespace collisions when 
-                 # loading different datasets. 
-                 
-                 # An observer is required to reactively update module outputs.
-                 observe({
-                   test_selections_all <<- list()
-                   
-                   # Keys for each dataset used for module IDs. Loop through the
-                   # keys for each dataset
-                   for (key in possible_keys){
-                     # Server instance for individual dataset
-                     test_selections_all[[key]] <<-
-                       dge_test_selection_server(
-                         id = glue("{key}_test_selections"),
-                         object = object,
-                         unique_metadata = unique_metadata,
-                         metadata_config = metadata_config,
-                         meta_choices = meta_choices
-                       )
-                   }
-                 })
-                 
-                 # Load test_selections output for current dataset
-                 test_selections <- 
-                   reactive(
-                     label = "Load test_selections for Dataset",
-                     {
-                       test_selections_all[[data_key()]]()
-                       })
+                 test_selections <-
+                   dge_test_selection_server(
+                     id = "test_selections",
+                     object = object,
+                     unique_metadata = unique_metadata,
+                     metadata_config = metadata_config,
+                     meta_choices = meta_choices
+                     )
 
                  # 2. Process Subset Selection Options -------------------------
                  ## 2.1. Process group_by category from test_selections
@@ -183,23 +155,15 @@ dge_tab_server <- function(id,
                      })
 
                  ## 2.2. Call subset_selections module
-                 # Use observer so subset_selections module reacts to the
-                 # selected dataset and group by variable
-                  observe({
-                    print("2.2. Call subset_selections module")
-                    
-                    subset_selections <<-
-                      subset_selections_server(
-                        # Module ID contains key of currently selected dataset
-                        # to avoid namespace collisions between datasets
-                        id = glue("{data_key()}_subset_selections"),
-                        object = object,
-                        unique_metadata = unique_metadata,
-                        metadata_config = metadata_config,
-                        meta_categories = meta_categories,
-                        hide_menu = group_by_category
-                        )
-                    })
+                 subset_selections <-
+                   subset_selections_server(
+                     id = "subset_selections",
+                     object = object,
+                     unique_metadata = unique_metadata,
+                     metadata_config = metadata_config,
+                     meta_categories = meta_categories,
+                     hide_menu = group_by_category
+                   )
 
                  # 3. Calculations ran after submit button is pressed ----------
                  # Includes table, stats, and UMAP
@@ -291,39 +255,15 @@ dge_tab_server <- function(id,
                        })
 
                  ## 3.4. Compute subset stats
-                 # Run instance of subset_stats_server and update if
-                 # dataset is changed
-                 observe(
-                   label = "DGE tab: Initialize Subset Stats Server",
-                   {
-                     # Separate instances of the subset stats servers are 
-                     # created for each dataset to avoid namespace collisions
-                     # between similarly named categories between datasets.
-                     # As with test_selections, the module outputs are stored
-                     # in a list.
-                     subset_stats_all <<- list()
-                     
-                     for (key in possible_keys){
-                       # Server instance for individual dataset
-                       subset_stats_all[[key]] <<-
-                         subset_stats_server(
-                           # ID uses key of dataset to avoid namespace collisions
-                           # when a new dataset is loaded
-                           id = glue("{key}_subset_stats"),
-                           tab = "dge",
-                           subset = subset,
-                           meta_categories = meta_categories,
-                           event_expr = subset,
-                           group_by_category = group_by_category
-                           )
-                       }
-                     })
-                 
-                 # Load module output for the current dataset
                  subset_stats <- 
-                   reactive({
-                     subset_stats_all[[data_key()]]
-                   })
+                   subset_stats_server(
+                     id = "subset_stats",
+                     tab = "dge",
+                     subset = subset,
+                     meta_categories = meta_categories,
+                     event_expr = subset,
+                     group_by_category = group_by_category
+                     )
                  
                  ## 3.5. Run Presto
                  dge_table_content <-
@@ -450,7 +390,7 @@ dge_tab_server <- function(id,
                          tags$h3("Test Summary", class="center"),
                          # Subset Stats Module for showing summary stats
                          subset_stats_ui(
-                           id = ns(glue("{data_key()}_subset_stats")),
+                           id = ns("subset_stats"),
                            tab = "dge",
                            metadata_config = metadata_config,
                            # Pass dge_subset_criteria() to this argument instead

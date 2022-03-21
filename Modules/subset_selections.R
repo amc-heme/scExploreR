@@ -186,7 +186,7 @@ subset_selections_server <- function(id,
       observeEvent(
         selections(),
         {
-          print("Change in selections()")
+          print(glue("{ns('')}: change in selections()"))
         })
       
       # 2. UI for Filtering Selection Menus ------------------------------------
@@ -237,11 +237,13 @@ subset_selections_server <- function(id,
             
             if (filters_applied() == TRUE){
               # Display reset button if filters have been applied 
-              actionButton(
-                inputId = ns("reset_filter"),
-                label = "Reset Filters",
-                icon = icon("times-circle")
-                )
+              
+              # actionButton(
+              #   inputId = ns("reset_filter"),
+              #   label = "Reset Filters",
+              #   icon = icon("times-circle")
+              #   )
+              
               # Do not display anything otherwise
               } else NULL
             })

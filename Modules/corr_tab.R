@@ -10,8 +10,7 @@
 # in the main server function
 corr_tab_ui <- function(id,
                         unique_metadata,
-                        metadata_config,
-                        data_key
+                        metadata_config
                         ){
   # Namespace function: prevents conflicts with inputs/outputs defined in 
   # other modules 
@@ -106,10 +105,6 @@ corr_tab_ui <- function(id,
 # error_list: a list of error messages to print custom notifications for, 
 # if they are encountered while the correlations table is being calculated. This 
 # is defined in the main server function.
-# possible_keys: a vector with the names (keys) of all datasets defined in the
-# datasets list. Used to create separate module server instances for each 
-# datset in the app, to avoid namespace collisions between inputs that may be
-# shared accross datasets.
 # update_features: a reactive trigger created by the local makeReactiveTrigger() 
 # function. The trigger is created in the main server function and ensures that
 # the feature selection input is updated after the input is created (input will
@@ -127,8 +122,6 @@ corr_tab_server <- function(id,
                             meta_choices,
                             valid_features,
                             error_list,
-                            data_key,
-                            possible_keys,
                             update_features
                             ){
 
@@ -220,33 +213,6 @@ corr_tab_server <- function(id,
                      metadata_config = metadata_config,
                      meta_categories = meta_categories
                      )
-                 
-                 # observe({
-                 #   # Create a list for storing the outputs from each module
-                 #   subset_selections_all <<- list()
-                 #   
-                 #   # Loop through the names (keys) of each dataset in the
-                 #   # "datasets" list
-                 #   for (key in possible_keys){
-                 #     # Module instance for dataset
-                 #     subset_selections_all[[key]] <<-
-                 #       subset_selections_server(
-                 #         # Use key of dataset in the id to avoid collisions
-                 #         id = glue("{key}_subset_selections"),
-                 #         object = object,
-                 #         unique_metadata = unique_metadata,
-                 #         metadata_config = metadata_config,
-                 #         meta_categories = meta_categories
-                 #         )
-                 #     }
-                 #   })
-                 # 
-                 # ### 2.2.2. Load subset selections module for currently 
-                 # # selected dataset
-                 # subset_selections <- 
-                 #   reactive({
-                 #     subset_selections_all[[data_key()]]()
-                 #     })
                  
                  # 3. Computation of Correlation Table
                  # A chain of reactive expressions is used, beginning with a 

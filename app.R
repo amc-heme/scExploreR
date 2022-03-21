@@ -720,13 +720,12 @@ server <- function(input, output, session){
         
         ui <- 
           plots_tab_ui(
-            id = "plots",
+            id = glue("{selected_key()}_plots"),
             meta_choices = meta_choices,
             unique_metadata = unique_metadata,
             category_labels = category_labels,
             metadata_config = metadata_config,
-            reductions = reductions,
-            data_key = selected_key
+            reductions = reductions
             )
         
         # Hide spinner and return module UI
@@ -744,11 +743,10 @@ server <- function(input, output, session){
       ignoreNULL = FALSE,
       {
         dge_tab_ui(
-          id = "dge",
+          id = glue("{selected_key()}_dge"),
           unique_metadata = unique_metadata,
           metadata_config = metadata_config,
-          meta_categories = meta_categories,
-          data_key = selected_key
+          meta_categories = meta_categories
           )
       })
   
@@ -763,8 +761,7 @@ server <- function(input, output, session){
         ui <- corr_tab_ui(
           id = glue("{selected_key()}_corr"),
           unique_metadata = unique_metadata,
-          metadata_config = metadata_config,
-          data_key = selected_key
+          metadata_config = metadata_config
           )
 
         update_features$trigger()
@@ -789,34 +786,38 @@ server <- function(input, output, session){
       })
   
   ## 3.2 Server instances ####
+  # Separate instances of each tab server are created for each dataset to avoid 
+  # namespace collisions between datasets that share metadata category names
+  
   ### 3.2.1. Plots Tab Server Module #####
-  plots_tab_server(
-    id = "plots",
-    object = object,
-    metadata_config = metadata_config,
-    assay_config = assay_config,
-    meta_categories = meta_categories,
-    category_labels = category_labels,
-    data_key = selected_key,
-    unique_metadata = unique_metadata,
-    valid_features = valid_features,
-    error_list = error_list,
-    n_cells_original = n_cells_original,
-    xlim_orig = xlim_orig,
-    ylim_orig = ylim_orig
-    )
+  observe({
+    plots_tab_server(
+      id = glue("{selected_key()}_plots"),
+      object = object,
+      metadata_config = metadata_config,
+      assay_config = assay_config,
+      meta_categories = meta_categories,
+      category_labels = category_labels,
+      unique_metadata = unique_metadata,
+      valid_features = valid_features,
+      error_list = error_list,
+      n_cells_original = n_cells_original,
+      xlim_orig = xlim_orig,
+      ylim_orig = ylim_orig
+      )
+  })
   
   ### 3.2.2. DGE Tab Server Module ####
-  dge_tab_server(
-    id = "dge",
-    object = object,
-    metadata_config = metadata_config,
-    meta_categories = meta_categories,
-    unique_metadata = unique_metadata,
-    meta_choices = meta_choices,
-    data_key = selected_key,
-    possible_keys = names(datasets)
-    )
+  observe({
+    dge_tab_server(
+      id = glue("{selected_key()}_dge"),
+      object = object,
+      metadata_config = metadata_config,
+      meta_categories = meta_categories,
+      unique_metadata = unique_metadata,
+      meta_choices = meta_choices
+      )
+  })
   
   ### 3.2.3. Correlations Tab Server Module ####
   observe({
@@ -831,10 +832,8 @@ server <- function(input, output, session){
       meta_choices = meta_choices,
       valid_features = valid_features,
       error_list = error_list,
-      data_key = selected_key,
-      possible_keys = names(datasets),
       update_features = update_features
-    )
+      )
   })
   
   # 4. Dataset Description in modal UI ####
