@@ -692,8 +692,8 @@ server <- function(input, output, session){
           c(
             reductions[reductions=="umap"],
             reductions[!reductions=="umap"]
-          )
-      }
+            )
+        }
       
       reductions
     })
@@ -805,7 +805,7 @@ server <- function(input, output, session){
       xlim_orig = xlim_orig,
       ylim_orig = ylim_orig
       )
-  })
+    })
   
   ### 3.2.2. DGE Tab Server Module ####
   observe({
@@ -817,7 +817,7 @@ server <- function(input, output, session){
       unique_metadata = unique_metadata,
       meta_choices = meta_choices
       )
-  })
+    })
   
   ### 3.2.3. Correlations Tab Server Module ####
   observe({
@@ -834,7 +834,7 @@ server <- function(input, output, session){
       error_list = error_list,
       update_features = update_features
       )
-  })
+    })
   
   # 4. Dataset Description in modal UI ####
   # Render text for the dataset modal that displays a description of the dataset
@@ -843,7 +843,7 @@ server <- function(input, output, session){
     renderText({
       # Fetch description of the dataset selected (key = input$data_key)
       datasets[[input$data_key]]$description
-    })
+      })
   
   output$dataset_dimplot <-
     renderImage({
