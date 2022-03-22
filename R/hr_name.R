@@ -25,6 +25,16 @@ hr_name <- function(machine_readable_name,
     }
   }
   
-  # Return the human-readable name 
-  return(HR)
+  # Numeric metadata features: these are not defined in assays. For these 
+  # features, the loop above will not match any assay key, and will not generate
+  # the variable "HR". 
+  # To allow plotting of numeric metadata variables, the code below will 
+  # have hr_name return the machine readable name when no matches are found. 
+  if (!exists("HR")){
+    # If HR does not exist, return the machine readable name
+    return(machine_readable_name)
+  } else {
+    # Return the human-readable name if it exists
+    return(HR)
+  }
 }
