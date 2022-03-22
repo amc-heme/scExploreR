@@ -171,18 +171,21 @@ datasets <-
           "Contains 3 normal bone marrow samples, and 23 AML samples.",
         `plot` = "./www/aml_UMAP.png"
         )
-    #,
+    # Important:
+    # Uncomment entry below when working on NA handling, 
+    # then ***comment out before committing***
+    # ,
     # `AML_NA_Test` =
     #   list(
     #     `label` = "NA Test Object",
     #     `object` = "./Seurat_Objects/NA_example.rds",
     #     `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
-    #     `description` = 
-    #       "Seurat Object used purely to test the handling of NA values. This 
+    #     `description` =
+    #       "Seurat Object used purely to test the handling of NA values. This
     #       object is identical to the pheresis dataset; the only difference is
     #      that clusters that were labeled as 'unknown' are instead labeled NA.",
-    #     `plot` = "./www/aml_UMAP.png" 
-    #   )
+    #     `plot` = "./www/aml_UMAP.png"
+    #     )
     )
 
 # Table of Contents ------------------------------------------------------------

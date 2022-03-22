@@ -82,6 +82,16 @@ make_subset <- function(object,
   # Subset using the subset string 
   subset <- eval(parse(text=paste0("subset(object(), subset = ", subset_str, ")")))
   
+  # Re-level factors in subset: test every metadata category to see if it 
+  # is a factor
+  for (category in colnames(subset@meta.data)){
+    if (class(subset@meta.data[[category]]) == "factor"){
+      # If the metadata category is a factor, drop unused levels
+      subset@meta.data[[category]] <- 
+        droplevels(subset@meta.data[[category]])
+    }
+  }
+  
   # Return subset
   return(subset)
 }
