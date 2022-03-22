@@ -423,7 +423,9 @@ plots_tab_server <- function(id,
                    n_cells_original = n_cells_original, # Reactive
                    # Instructs server on which plot function to run
                    plot_type = "feature",
-                   assay_config = assay_config
+                   assay_config = assay_config,
+                   xlim_orig = xlim_orig,
+                   ylim_orig = ylim_orig
                    )
                  
                  # Violin Plot

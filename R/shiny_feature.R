@@ -103,12 +103,19 @@ shiny_feature <- function(object, #Reactive
         # present and if the corresponding
         # original_limits reactive is truthy
         # (i.e. both present and checked).
-        if(is_subset() & isTruthy(original_limits())){
+        if (is_subset() & isTruthy(original_limits())){
           # If so, add original limits to the list
-              list(scale_x_continuous(limits = xlim_orig()),
-                   scale_y_continuous(limits = ylim_orig()))
+              list(
+                scale_x_continuous(limits = xlim_orig()),
+                scale_y_continuous(limits = ylim_orig())
+                )
         }
       )
+    
+    print("'layers' for feature plot")
+    print(layers)
+    print("Class of layers")
+    print(class(layers))
     
     # Modify the plot using the layers defined above
     feature_plot <- 

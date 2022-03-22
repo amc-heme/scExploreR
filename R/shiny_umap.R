@@ -68,43 +68,32 @@ shiny_umap <- function(object, #Reactive
   # to user input
   # 'layers' is a list of layers that is applied to the plot
   layers <- 
-    list(
+    c(
       # Element A 
       # Legend position: "right" if a legend is desired, 
       # and "none" if not
-      theme(
-        legend.position = 
-          if (show_legend()==TRUE) {
-            "right"
-          } else "none"),
-      
+      list(
+        theme(
+          legend.position = 
+            if (show_legend()==TRUE) {
+              "right"
+            } else "none")
+        ),
       # B-C. Axis limits: use limits from full dataset if 
       # specified
-      # Element B
-      # Must first test to see if subset is present
-      # Input container does not exist if there is no subset
-      if(is_subset() & length(original_limits()) > 0){
-        # Add original limits to the list if the 
-        # corresponding checkbox is checked
-        # The conditional is tied to a reactive value 
-        # instead of the input to avoid
-        # An error that occurs when this function is 
-        # evaluated before the input is #defined. 
-        if (original_limits() == TRUE) {
-          scale_x_continuous(limits = xlim_orig())
-        }
-      },
-      # Element C
-      # Check for subset (input container in child conditional 
-      # does not exist before a subset is created)
-      if(is_subset() & length(original_limits()) > 0){
-        # Add original limits to the list if the 
-        # corresponding checkbox is checked
-        if (original_limits() == TRUE) {
+      # First, simultaneously test if subset is present and if the corresponding
+      # original_limits reactive is truthy (i.e. both present and checked).
+      if (is_subset() & isTruthy(original_limits())){
+        # If so, add original limits to the list
+        list(
+          scale_x_continuous(limits = xlim_orig()),
           scale_y_continuous(limits = ylim_orig())
-        } 
+          )
       }
     )
+  
+  print("'layers' for dimplot")
+  print(layers)
   
   # Modify the plot using the layers defined above
   umap_plot <- 
