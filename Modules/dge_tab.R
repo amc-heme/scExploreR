@@ -271,7 +271,7 @@ dge_tab_server <- function(id,
                      # Chose the first reactive variable in the subset stats list
                      # (all are updated simultaneously, and it is desired for
                      # presto to run after stats are computed)
-                     subset_stats()$n_cells(),
+                     subset_stats$n_cells(),
                      label = "DGE: Run Presto",
                      ignoreNULL = FALSE,
                      {
@@ -411,10 +411,10 @@ dge_tab_server <- function(id,
                          # Depends on mode, tested through n_classes()
                          # Make sure n_classes is a reactive and is defined 
                          # to avoid errors
-                         if (is.reactive(subset_stats()$n_classes())){
-                           if (!is.null(subset_stats()$n_classes())){
+                         if (is.reactive(subset_stats$n_classes())){
+                           if (!is.null(subset_stats$n_classes())){
                              # Use different titles based on the test used
-                             if(subset_stats()$n_classes() == 2){
+                             if(subset_stats$n_classes() == 2){
                                # Title for differential gene expression
                                tags$h3(
                                  "UMAP of groups being compared",
