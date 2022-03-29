@@ -363,7 +363,7 @@ server <- function(input, output, session){
   # ignored by observers with ignoreNULL arguments set to TRUE)
   startup(2)
 
-  ## 1.1. Event observers to open and close modal
+  ## 1.1. Event observers to open and close modal ####
   observeEvent(
     input$open_dataset_window,
     label = "Open Dataset Modal",
@@ -376,7 +376,7 @@ server <- function(input, output, session){
         )
       })
   
-  ## 1.2. When the "confirm selection" button is selected, close the window
+  ## 1.2. When the "confirm selection" button is selected, close the window ####
   close_dataset_modal <- 
     eventReactive(
       input$confirm_selection,
@@ -392,7 +392,9 @@ server <- function(input, output, session){
         input$confirm_selection
       })
   
-  # Conditional to determine when to load datasets
+  ## 1.3. Conditional to determine when to load datasets ####
+  # Create reactive trigger that will invalidate the "load_update" dataset 
+  # reactive, but only when load_conditional is equal to TRUE. 
   load_conditional <-
     eventReactive(
       # load_conditional at startup, and when the "confirm selection" 
@@ -444,7 +446,7 @@ server <- function(input, output, session){
         }
       })
   
-  ## 1.3. Update object to match the selected dataset
+  ## 1.4. Load/Update Object ####
   observeEvent(
       load_conditional(),
       label = "Load/Update Object",
@@ -469,8 +471,8 @@ server <- function(input, output, session){
         # If load_conditional() == FALSE, the object will be unchanged
       })
   
-  ## 1.4. Update config file with the one from the selected dataset,
-  # if it has changed
+  ## 1.5. Load/Update Config File ####
+  # Update config file with the one from the selected dataset, if it has changed
   observeEvent( 
     load_conditional(),
     label = "Update Config File",
@@ -523,6 +525,7 @@ server <- function(input, output, session){
   
   # 2. Initialize Variables specific to object and config file -----------------
   # Split config file into metadata and assay lists for use downstream
+  ## 2.1. Metadata_config ####
   metadata_config <- 
     eventReactive(
       config(),
@@ -532,6 +535,7 @@ server <- function(input, output, session){
         config()$metadata
         })
   
+  ## 2.2. Assay_config ####
   assay_config <-
     eventReactive(
       config(),
@@ -545,6 +549,7 @@ server <- function(input, output, session){
   include_numeric_metadata <- TRUE
   numeric_metadata_title <- "Metadata Features"
   
+  ## 2.3. valid_features ####
   # Create a list of valid features using the assays defined above
   valid_features <-
     eventReactive(
@@ -567,6 +572,7 @@ server <- function(input, output, session){
         valid_features
         })
   
+  ## 2.4. meta_categories ####
   # meta_categories: a vector giving the IDs of each of the categories defined
   # in the metadata section of the config file
   meta_categories <- 
@@ -578,7 +584,8 @@ server <- function(input, output, session){
         names(metadata_config())
         })
   
-  # category_labels: list of labels for each metadata category (names are the
+  ## 2.5. category_labels ####
+  # Create a list of labels for each metadata category (names are the
   # category IDs and the values are the labels chosen)
   category_labels <- 
     eventReactive(
@@ -589,7 +596,7 @@ server <- function(input, output, session){
         lapply(metadata_config(), function(category){category$label})
         })
   
-  ## Metadata categories in dropdown menus ####
+  ## 2.6 Metadata categories in dropdown menus ####
   # meta_choices: a named vector with name-value pairs for the display name of 
   # the metadata category and the key used to access the category in the Seurat 
   # Object. 
@@ -620,7 +627,7 @@ server <- function(input, output, session){
         meta_choices
     })
   
-  ## Unique values for each metadata category ####
+  ## 2.7. Unique values for each metadata category ####
   unique_metadata <- 
     eventReactive(
       metadata_config(),
@@ -649,7 +656,7 @@ server <- function(input, output, session){
         unique_metadata
         })
   
-  # Store UMAP Dimensions of full object
+  ## 2.8. UMAP Dimensions of full object ####
   # This is used to allow plotting of subsets with original axes scales
   # Plot a UMAP of the full data, store it to memory, and record the
   # x and y limits of the plot
@@ -678,7 +685,7 @@ server <- function(input, output, session){
       ncol(object())
     })
   
-  # Reductions in object
+  ## 2.9 Reductions in object ####
   reductions <- 
     reactive({
       reductions <- names(object()@reductions)
