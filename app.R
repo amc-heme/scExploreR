@@ -392,103 +392,102 @@ server <- function(input, output, session){
         input$confirm_selection
       })
   
-  ## 1.3. Conditional to determine when to load datasets ####
-  # Create reactive trigger that will invalidate the "load_update" dataset 
-  # reactive, but only when load_conditional is equal to TRUE. 
-  load_conditional <-
-    eventReactive(
-      # load_conditional at startup, and when the "confirm selection" 
-      # button is pressed
-      eventExpr = 
-        {
-          # eventExpr: observer executes when this expression evaluates to TRUE 
-          # at startup, input$confirm_selection is NULL and 
-          # close_dataset_modal() will not run. To get observer to run at 
-          # startup, a conditional is used to respond to startup() when 
-          # input$confirm_selection is NULL.
-          if (is.null(input$confirm_selection)){
-            isTruthy(startup())
-          } else {
-            # When close_dataset_modal is defined, execute in response to the
-            # variable
-            isTruthy(close_dataset_modal())
-          }
-        },
-      label = "Loading Conditional",
-      ignoreNULL = FALSE,
+  ## 1.3. Loading Conditional ####
+  # Detects when the selected dataset has changed after the selection window 
+  # is closed.
+  # Create reactive trigger that will invalidate the "load/update dataset" 
+  # reactive when activated in the observer below
+  dataset_change <- makeReactiveTrigger()
+  
+  observeEvent(
+    eventExpr = 
       {
-        # Object and config files should be loaded
-        # a. At startup, and
-        # b. When the dataset requested is different from the one 
-        #    currently loaded (key of dataset selected != key of
-        #    currently loaded dataset)
-        
-        # Fetch key for previously loaded dataset from dataset_info reactive
-        # list
-        previous_key <- dataset_info$last_object_key
-        
-        # a. startup (previous_key == NULL)
-        if (is.null(previous_key)){
-          print("TRUE")
-          return(TRUE)
+        # eventExpr: observer executes when this expression evaluates to TRUE 
+        # Observer should execute at startup (when input$confirm_selection is 
+        # NULL) and when the window to change datasets is closed.
+        if (is.null(input$confirm_selection)){
+          # Before the dataset window is created for the first time, 
+          # respond to startup()
+          isTruthy(startup())
+          } else {
+            # When the button to close the window is defined for the first time,
+            # execute in response to the button 
+            isTruthy(close_dataset_modal())
+            }
+        },
+    label = "Loading Conditional",
+    ignoreNULL = FALSE,
+    {
+      # Object and config files should be loaded
+      # a. At startup, and
+      # b. When the dataset requested is different from the one 
+      #    currently loaded (key of dataset selected != key of
+      #    currently loaded dataset)
+      
+      # Fetch key for previously loaded dataset from dataset_info reactive list
+      previous_key <- dataset_info$last_object_key
+
+      print("Loading Conditional")
+      
+      # a. startup (previous_key == NULL)
+      if (is.null(previous_key)){
+        print("TRUE, previous_key is NULL")
+        # Activate Reactive trigger to load dataset
+        dataset_change$trigger()
         } else {
           # b. Dataset requested is different
+          print("previous_key")
+          print(previous_key)
+          print("selected_key")
+          print(selected_key())
           if (previous_key != selected_key()){
-            print("TRUE")
-            return(TRUE)
-          } else {
-            # if previous_key==selected_key and selected_key is not NULL, the
-            # dataset is the same. Do not proceed with dataset loading in this
-            # case
-            print("FALSE")
-            return(FALSE)
+            # Activate Reactive trigger to load dataset
+            dataset_change$trigger()
+            print("TRUE, key has changed")
+            } else {
+              # if previous_key == selected_key and selected_key is not NULL, 
+              # the dataset is the same. Do not proceed with dataset loading 
+              # in this case
+              print("FALSE, key has not changed")
           }
         }
       })
   
   ## 1.4. Load/Update Object ####
   observeEvent(
-      load_conditional(),
-      label = "Load/Update Object",
-      #ignoreNULL = FALSE,
-      {
-        if (load_conditional() == TRUE){
-          path <- datasets[[selected_key()]]$object
-          
-          app_spinner$show()
-          # Load seurat object using defined path and set "object" 
-          # reactiveVal to the object
-          object(readRDS(path))
-          
-          print("Object loaded successfully")
-          
-          # Set last_object key to the key of the last dataset loaded (value
-          # of selected_key when the object was loaded)
-          dataset_info$last_object_key <- selected_key()
-          
-          app_spinner$hide()
-        } 
-        # If load_conditional() == FALSE, the object will be unchanged
+    # Loads when the reactive trigger in "Loading Conditional" is activated
+    dataset_change$depend(),
+    label = "Load/Update Object",
+    ignoreNULL = FALSE,
+    {
+      path <- datasets[[selected_key()]]$object
+      
+      app_spinner$show()
+      # Load seurat object using defined path and set "object" 
+      # reactiveVal to the object
+      object(readRDS(path))
+      
+      print("Object loaded successfully")
+
+      app_spinner$hide()
       })
   
   ## 1.5. Load/Update Config File ####
   # Update config file with the one from the selected dataset, if it has changed
   observeEvent( 
-    load_conditional(),
-    label = "Update Config File",
-    #ignoreNULL = FALSE,
+    dataset_change$depend(),
+    label = "Load/Update Config File",
+    ignoreNULL = FALSE,
     {
-      if (load_conditional() == TRUE){
-        path <- datasets[[selected_key()]]$config
-        
-        print("path (config)")
-        print(path)
-        # Load config file using defined path and set reactiveVal object
-        config(readRDS(path))
-      }
-      # If load_conditional() is not TRUE, the config file is unchanged.
+      path <- datasets[[selected_key()]]$config
+      
+      print("path (config)")
+      print(path)
+      # Load config file using defined path and set reactiveVal object
+      config(readRDS(path))
     })
   
+  ## 1.6. Save Key of Dataset Selected When Window is Closed ####
   # Save the selected key for the next time the window is opened (the 
   # group of buttons is re-created every time the modal is opened)
   selected_key <-
@@ -522,6 +521,21 @@ server <- function(input, output, session){
           names(datasets)[1]
         }
       })
+  
+  ## 1.7. Last Key of Last Dataset Loaded ####
+  # Save the key of the last dataset loaded into the app.
+  # This is updated only when a change in dataset is observed upon closing the 
+  # window (as signaled by the loading conditional observer)
+  observeEvent(
+    dataset_change$depend(),
+    label = "Save Key of Last Dataset Loaded",
+    ignoreNULL = FALSE,
+    {
+      # Selected_key() is stored under last_object_key, but only when the 
+      # dataset is changed, or at startup (when "Loading Conditional" triggers
+      # dataset_change)
+      dataset_info$last_object_key <- selected_key()
+    })
   
   # 2. Initialize Variables specific to object and config file -----------------
   # Split config file into metadata and assay lists for use downstream
@@ -662,6 +676,7 @@ server <- function(input, output, session){
   # x and y limits of the plot
   umap_orig <- 
     reactive({
+      req(object())
       DimPlot(
         object()
       )
@@ -670,11 +685,13 @@ server <- function(input, output, session){
   # Record limits
   xlim_orig <- 
     reactive({
+      req(object())
       layer_scales(umap_orig())$x$range$range
     })
     
   ylim_orig <- 
     reactive({
+      req(object())
       layer_scales(umap_orig())$y$range$range
     })
   
@@ -682,12 +699,14 @@ server <- function(input, output, session){
   # TODO: does this apply to non-CITEseq datasets?
   n_cells_original <- 
     reactive({
+      req(object())
       ncol(object())
     })
   
   ## 2.9 Reductions in object ####
   reductions <- 
     reactive({
+      req(object())
       reductions <- names(object()@reductions)
       
       # Order UMAP reduction first by default, if it exists
@@ -724,7 +743,7 @@ server <- function(input, output, session){
         
         ui <- 
           plots_tab_ui(
-            id = glue("{selected_key()}_plots"),
+            id = glue("{dataset_info$last_object_key}_plots"),
             meta_choices = meta_choices,
             unique_metadata = unique_metadata,
             category_labels = category_labels,
@@ -747,7 +766,7 @@ server <- function(input, output, session){
       ignoreNULL = FALSE,
       {
         dge_tab_ui(
-          id = glue("{selected_key()}_dge"),
+          id = glue("{dataset_info$last_object_key}_dge"),
           unique_metadata = unique_metadata,
           metadata_config = metadata_config,
           meta_categories = meta_categories
@@ -763,7 +782,7 @@ server <- function(input, output, session){
       ignoreNULL = FALSE,
       {
         ui <- corr_tab_ui(
-          id = glue("{selected_key()}_corr"),
+          id = glue("{dataset_info$last_object_key}_corr"),
           unique_metadata = unique_metadata,
           metadata_config = metadata_config
           )
@@ -796,7 +815,7 @@ server <- function(input, output, session){
   ### 3.2.1. Plots Tab Server Module #####
   observe({
     plots_tab_server(
-      id = glue("{selected_key()}_plots"),
+      id = glue("{dataset_info$last_object_key}_plots"),
       object = object,
       metadata_config = metadata_config,
       assay_config = assay_config,
@@ -814,7 +833,7 @@ server <- function(input, output, session){
   ### 3.2.2. DGE Tab Server Module ####
   observe({
     dge_tab_server(
-      id = glue("{selected_key()}_dge"),
+      id = glue("{dataset_info$last_object_key}_dge"),
       object = object,
       metadata_config = metadata_config,
       meta_categories = meta_categories,
@@ -826,7 +845,7 @@ server <- function(input, output, session){
   ### 3.2.3. Correlations Tab Server Module ####
   observe({
     corr_tab_server(
-      id = glue("{selected_key()}_corr"),
+      id = glue("{dataset_info$last_object_key}_corr"),
       object = object,
       metadata_config = metadata_config,
       meta_categories = meta_categories,
