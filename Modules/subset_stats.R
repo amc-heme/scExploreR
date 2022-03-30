@@ -149,14 +149,11 @@ subset_stats_server <- function(id,
                  # JavaScript ID references)
                  ns <- session$ns
                  
-                 print("Started subset_stats server")
-                 
                  # 1. Compute stats for subset ---------------------------------
                  # Cells in subset (computed for both dge and corr tabs)
                  n_cells <- eventReactive(
                    event_expr(),
                    {
-                     print("Computing n_cells")
                      length(Cells(subset()))
                      })
                  
@@ -200,7 +197,6 @@ subset_stats_server <- function(id,
                  if(tab == "dge"){
                    # classes: unique values in the selected group by metadata 
                    # category (not displayed but used downstream)
-                   print("Computing classes")
                    classes <- 
                      eventReactive(
                        event_expr(),
@@ -210,7 +206,6 @@ subset_stats_server <- function(id,
                    
                    # Number of classes of the group_by metadata 
                    # category in subset
-                   print("Computing n_classes")
                    n_classes <- 
                      eventReactive(
                        event_expr(),
@@ -224,7 +219,6 @@ subset_stats_server <- function(id,
                      eventReactive(
                        event_expr(),
                        {
-                         print("Computing mode description")
                          ifelse(
                            # Conditional: TRUE when differential expression 
                            # is selected
@@ -244,7 +238,6 @@ subset_stats_server <- function(id,
                      eventReactive(
                        event_expr(),
                        {
-                         print("Computing n_by_class")
                          # Number of cells by class (tibble format)
                          n_cells_tibble <- 
                            subset()@meta.data |>

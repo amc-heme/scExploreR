@@ -112,11 +112,6 @@ shiny_feature <- function(object, #Reactive
         }
       )
     
-    print("'layers' for feature plot")
-    print(layers)
-    print("Class of layers")
-    print(class(layers))
-    
     # Modify the plot using the layers defined above
     feature_plot <- 
       feature_plot &

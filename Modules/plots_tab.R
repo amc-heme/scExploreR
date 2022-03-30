@@ -505,7 +505,6 @@ plots_tab_server <- function(id,
                    metadata_config(),
                    label = "object_init(TRUE)",
                    {
-                     print("object_init set to TRUE")
                      object_init(TRUE)
                      object_trigger$trigger()
                    })
@@ -556,13 +555,11 @@ plots_tab_server <- function(id,
                              }, # End tryCatch error function
                            # Begin tryCatch code
                            {
-                             print("Begin make_subset")
                              if (object_init() == TRUE){
                                # if object_init is TRUE, return the full object
                                # instead of subsetting. Also set object_init
                                # back to FALSE. 
                                object_init(FALSE)
-                               print("object_init set to FALSE")
                                plots_s_sub <- object()
                              } else {
                                # Use subsetting function with the output of the

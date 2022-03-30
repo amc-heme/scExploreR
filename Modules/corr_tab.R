@@ -15,8 +15,6 @@ corr_tab_ui <- function(id,
   # Namespace function: prevents conflicts with inputs/outputs defined in 
   # other modules 
   ns <- NS(id)
-
-  print("Creating correlation tab ui")
   
   fluidPage(
     sidebarLayout(
@@ -256,7 +254,7 @@ corr_tab_server <- function(id,
                      submit_button(),
                      label = "Corr: Make Subset",
                      {
-                       print("3.2 make subset")
+                       #print("3.2 make subset")
                        make_subset(
                          object,
                          criteria_list = subset_selections
@@ -269,7 +267,7 @@ corr_tab_server <- function(id,
                      subset(),
                      label = "Corr: Determine if Object is a Subset",
                      {
-                       print("3.3 is_subset")
+                       #print("3.3 is_subset")
                        # Print an error if the subset does not exist or is NULL
                        validate(
                          need(
@@ -310,7 +308,7 @@ corr_tab_server <- function(id,
                      subset(),
                      label = "Corr: Corr table",
                      {
-                       print("3.5 Compute Correlation Tables")
+                       #print("3.5 Compute Correlation Tables")
                        if (is_subset() == TRUE){
                          # Subset is selected: compute tables for full object 
                          # and subset, then merge
@@ -370,7 +368,7 @@ corr_tab_server <- function(id,
                      label = "Corr: DT Content",
                      ignoreNULL = FALSE,
                      {
-                       print("3.6. DT Table")
+                       #print("3.6. DT Table")
                        # Define header for datatable using HTML
                        if (is_subset() == TRUE){
                          # If a subset is selected, the header will have three 
@@ -466,7 +464,7 @@ corr_tab_server <- function(id,
                      label = "Corr: Main UI",
                      #ignoreNULL = FALSE, 
                      {
-                       print("C.4.1: Main UI")
+                       #print("C.4.1: Main UI")
                        # UI: if the feature selection menu is empty (default 
                        # state at initialization), prompt user to enter features
                        # isTruthy will cover a variety of possible scenarios

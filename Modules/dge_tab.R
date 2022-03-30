@@ -174,7 +174,6 @@ dge_tab_server <- function(id,
                  # to control reactivity
                  submit_button <-
                     reactive({
-                      print("3.1. Submit Button")
                       input$submit
                       })
 
@@ -185,7 +184,7 @@ dge_tab_server <- function(id,
                      label = "DGE: Show Spinner",
                      {
                        # Hide the main panel UI while calculations are performed
-                       print(glue("hiding {ns('main_panel_ui')}"))
+                       # print(glue("hiding {ns('main_panel_ui')}"))
                        hideElement(id = ns("main_panel_ui"))
 
                        # Display spinners
@@ -444,8 +443,6 @@ dge_tab_server <- function(id,
                            height = "600px"
                            )
                        ) # End tagList
-                       
-                       print("finished dynamic UI computation")
                        
                        ui
                        })

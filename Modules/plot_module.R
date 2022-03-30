@@ -738,7 +738,6 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Features for Plot"),            
                        {
-                         print("Conditionals in features argument")
                          # Test for separate_features_server first
                          # input$use_separate_features does not exist if 
                          # separate_features_server == FALSE

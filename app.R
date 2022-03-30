@@ -426,31 +426,22 @@ server <- function(input, output, session){
       
       # Fetch key for previously loaded dataset from dataset_info reactive list
       previous_key <- dataset_info$last_object_key
-
-      print("Loading Conditional")
       
       # a. startup (previous_key == NULL)
       if (is.null(previous_key)){
-        print("TRUE, previous_key is NULL")
         # Activate Reactive trigger to load dataset
         dataset_change$trigger()
         } else {
           # b. Dataset requested is different
-          print("previous_key")
-          print(previous_key)
-          print("selected_key")
-          print(selected_key())
           if (previous_key != selected_key()){
             # Activate Reactive trigger to load dataset
             dataset_change$trigger()
-            print("TRUE, key has changed")
-            } else {
-              # if previous_key == selected_key and selected_key is not NULL, 
-              # the dataset is the same. Do not proceed with dataset loading 
-              # in this case
-              print("FALSE, key has not changed")
+            } 
+          
+          # if previous_key == selected_key and selected_key is not NULL, 
+          # the dataset is the same. Do not proceed with dataset loading 
+          # in this case
           }
-        }
       })
   
   ## 1.4. Load/Update Object ####
@@ -466,8 +457,6 @@ server <- function(input, output, session){
       # Load seurat object using defined path and set "object" 
       # reactiveVal to the object
       object(readRDS(path))
-      
-      print("Object loaded successfully")
 
       app_spinner$hide()
       })
@@ -481,8 +470,6 @@ server <- function(input, output, session){
     {
       path <- datasets[[selected_key()]]$config
       
-      print("path (config)")
-      print(path)
       # Load config file using defined path and set reactiveVal object
       config(readRDS(path))
     })

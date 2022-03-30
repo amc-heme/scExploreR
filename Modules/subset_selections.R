@@ -184,12 +184,6 @@ subset_selections_server <- function(id,
       #       all_selected
       #     })
       
-      observeEvent(
-        selections(),
-        {
-          print(glue("{ns('')}: change in selections()"))
-        })
-      
       # 2. UI for Filtering Selection Menus ------------------------------------
       # Subset menus will be filtered for 
       ## 2.1. filters_applied: a boolean that is TRUE when a subset has been 
@@ -234,8 +228,6 @@ subset_selections_server <- function(id,
           filters_applied(),
           ignoreNULL = FALSE,
           {
-            print(glue("Test of filters_applied(): {filters_applied()}"))
-            
             if (filters_applied() == TRUE){
               # Display reset button if filters have been applied 
               actionButton(
@@ -259,15 +251,14 @@ subset_selections_server <- function(id,
         selections(),
         ignoreNULL = FALSE,
         {
-          cat("\n")
-          cat("Begin Filter Update Code\n")
-          print(glue("ID: {ns(id)}"))
           # Extract metadata table
           meta_df <- object()@meta.data
           
           # a. Determine cells that match selections made for each category 
           # where filter criteria have been entered
-          print("a. Filter by category")
+          
+          #print("a. Filter by category")
+          
           filter_by_category <-
             lapply(
               X = isolate(meta_categories()),
@@ -280,7 +271,6 @@ subset_selections_server <- function(id,
                 # menu for the chosen category has nothing selected
                 if (!is.null(input[[category_id]])){
                   if (! "" %in% input[[category_id]]){
-                    print(glue("Input detected for {category}"))
                     meta_df[[category]] %in% input[[category_id]]
                   } else {
                     # If the menu is blank, return a vector of all TRUE values 
@@ -298,16 +288,21 @@ subset_selections_server <- function(id,
           # b. Identify cells that match all of the above selected criteria 
           # Return TRUE for rows that match each criteria 
           # entered (TRUE for all categories)
-          print("b. Cells in Common")
+          
+          #print("b. Cells in Common")
+          
           in_common <- Reduce(f = `&`, x = filter_by_category)
           
           # c. Subset original table for all rows that are TRUE
-          print("c. Filter Seurat Metadata")
+          #print("c. Filter Seurat Metadata")
+          
           filter_df <- meta_df[in_common, ]
           
           # d. For each category where filters are not selected, 
           # fetch the unique values
-          print("d. Unique values for valid filter categories")
+          
+          #print("d. Unique values for valid filter categories")
+          
           valid_entries <-
             lapply(
               X = isolate(meta_categories()),
@@ -319,7 +314,6 @@ subset_selections_server <- function(id,
                 # Compute unique values for categories where the user has not 
                 # entered filter criteria (these inputs will be NULL)
                 if (is.null(input[[category_id]])){
-                  print(category)
                   filter_df |> 
                     # Fetch unique values for each category 
                     select(.data[[category]]) |>
@@ -337,7 +331,9 @@ subset_selections_server <- function(id,
           
           # e. Update selection menus with options in valid entries
           # Invalid entries will still display, but will be disabled
-          print("e. Update individual menus")
+          
+          #print("e. Update individual menus")
+          
           for (category in isolate(meta_categories())){
             # Update only menus for which the values in valid_entries 
             # are not NULL
@@ -345,7 +341,6 @@ subset_selections_server <- function(id,
               # Define input ID for category 
               # Formula: <category>_selection
               category_id <- glue("{category}_selection")
-              print(glue("Updating menu: {category_id}"))
               # Define choices available (this does not change, but it must be 
               # passed to updateSelectizeinput for the update to work)
               # Sort choices into a named list if group information is defined

@@ -91,10 +91,7 @@ shiny_umap <- function(object, #Reactive
           )
       }
     )
-  
-  print("'layers' for dimplot")
-  print(layers)
-  
+
   # Modify the plot using the layers defined above
   umap_plot <- 
     umap_plot &

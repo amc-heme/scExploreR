@@ -33,8 +33,6 @@ shiny_vln <- function(
       )
     )
     
-    print(glue("Value of ncol: {ncol()}"))
-    
     vln_plot <- 
       VlnPlot(
         object(),
