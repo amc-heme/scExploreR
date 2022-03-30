@@ -312,7 +312,7 @@ server <- function(input, output, session){
       id = NULL,
       html = 
         tagList(
-          spin_loaders(id = 2,color = "#555588"), 
+          spin_loaders(id = 2, color = "#555588"), 
           div(
             class = "spinner_text",
             "Loading dataset, please wait...")
@@ -329,7 +329,7 @@ server <- function(input, output, session){
       id = NULL,
       html = 
         tagList(
-          spin_loaders(id = 2,color = "#555588"), 
+          spin_loaders(id = 2, color = "#555588"), 
           div(
             class = "spinner_text",
             "Updating menus to match new dataset...")

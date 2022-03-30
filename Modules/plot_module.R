@@ -77,7 +77,7 @@ plot_module_ui <- function(id,
         # If TRUE, add element
         selectInput(
           inputId = ns("group_by"), 
-          label = "Metadata to Group by:",
+          label = "Metadata to Group By:",
           # Can select all options except "none"
           choices = group_by_choices, 
           # First option selected by default 
@@ -721,14 +721,14 @@ plot_module_server <- function(id,
                            inputId = "separate_features",
                            choices = valid_features(),
                            selected = features_entered(),
-                           server=TRUE
+                           server = TRUE
                          )
                        }
                      })
                  }
                  
                  # 6. Plot -----------------------------------------------------
-                 ## 6.1 Define Features to use (all plots except UMAP)
+                 ## 6.1 Define Features to use (all plots except UMAP) ####
                  # Uses either the general feature entry (features_entered()),
                  # or the separate features text entry depending on whether
                  # separate features are used in the module and whether the 
@@ -803,6 +803,7 @@ plot_module_server <- function(id,
                          reduction = plot_selections$reduction
                          )
                        })
+                   
                  } else if (plot_type == "violin") {
                    plot <- reactive(
                      label = glue("{plot_label}: Create Plot"),
@@ -837,11 +838,23 @@ plot_module_server <- function(id,
                      })
                    }
                  
-                 ## 6.2. Render plot ####
+                 ## 6.3. Render plot ####
                  # Height and width arguments are left undefined
                  # If undefined, they will use the values from plotOutput, which
                  # respond to the manual dimensions inputs.
                  output$plot <- renderPlot({
+                   if (plot_type %in% c("dimplot", "violin")){
+                     validate(
+                       need(
+                         input$group_by != input$split_by, 
+                         message = 
+                           glue(
+                             'Invalid selections for {plot_label}: "Group By" and "Split By" must be different.'
+                             )
+                         )
+                     )
+                   }
+                   
                    plot()
                  })
                  
