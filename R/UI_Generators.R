@@ -84,64 +84,83 @@ manual_dim_UI <- function(plot_type,
 
 ### Subset Menus UI Function ###
 # Generates a series of dropdown menus used to define subsets for an operation
-#For now, this is specific to the metadata values in the D0/D30 object
-subset_menus <- function(input_prefix,choices,menus="all"){
-  div(
-    #Display each picker menu if the user indicates its inclusion, 
-    #otherwise print a NULL element for that menu
-    if (menus=="all" || "clusters" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_clusters_selection"),
-                  label = "Restrict by Cluster",
-                  choices = choices$clusters,
-                  selected = choices$clusters,
-                  multiple = TRUE,
-                  options = list(
-                    "selected-text-format" = "count > 5",
-                    "size" = 10, #Define max options to show at a time to keep menu from being cut off
-                    "actions-box"=TRUE))
-    } else NULL,
-    if (menus=="all" || "response" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_response_selection"),
-                  label = "Restrict by Response",
-                  choices = choices$responses,
-                  selected = choices$responses,
-                  multiple = TRUE)
-    } else NULL,
-    if (menus=="all" || "treatment" %in% menus){
-      pickerInput(inputId=glue("{input_prefix}_treatment_selection"),
-                  label = "Restrict by Timepoint (approximate)",
-                  choices = choices$treatments,
-                  selected = choices$treatments, 
-                  multiple = TRUE,
-                  options = list(
-                    "selected-text-format" = "count > 3",
-                    "actions-box"=TRUE
-                  ))
-    } else NULL,
-    if(menus=="all" || "htb" %in% menus){
-      pickerInput(inputId = glue("{input_prefix}_htb_selection"),
-                  label = "Restrict by Patient",
-                  choices = choices$patients_categories, #Display patient groups to user
-                  selected = choices$patients, 
-                  multiple = TRUE,
-                  options = list(
-                    "selected-text-format" = "count > 3",
-                    "size" = 10, 
-                    "actions-box"=TRUE
-                  ))
-    } else NULL,
-  )#End div
-}
+
+#Arguments
+#unique_metadata: a list giving the unique values in the metadata categories 
+#defined in the config file
+#metadata_config: the metadata section of the config file. Menus will be created 
+#for each metadata category in the config file.
+#menu_categories: a vector giving the metadata categories to create subset menus for. 
+#Use (names(config$metadata)) to create menus for all categories included in the config file.
+#input_prefix: a string giving the prefix to add to the input id for each menu. 
+# subset_menus <- function(unique_metadata,
+#                          metadata_config,
+#                          menu_categories,
+#                          input_prefix=""){
+#   print("Begin subset_menus")
+#   #Create a list for storing the Shiny tags from each menu 
+#   menus <- tagList()
+#   
+#   for(category in menu_categories){
+#     #Create menu for the current category
+#     print(glue("For loop: {category}"))
+#     menu_tag <- pickerInput(
+#       #input_prefix: will become unnecessary once the subset menus are placed within a module
+#       inputId = glue("{input_prefix}{category}_selection"),
+#       #label: uses the label defined for the category in the config file
+#       label = glue("Restrict by {metadata_config[[category]]$label}"),
+#       #choices: filled using the unique_metadata list
+#       #If the metadata category has defined groups, sort choices into a named list 
+#       #based on the groups. This will show choices divided by group in the pickerInput menu.
+#       choices= 
+#         if(!is.null(metadata_config[[category]]$groups)){
+#         #Use group_metadata_choices() to generate list
+#         group_metadata_choices(
+#           group_info=metadata_config[[category]]$groups,
+#           choices = unique_metadata[[category]]
+#         )
+#           } else {
+#         #If groups are not defined, use the vector of choices from unique_metadata
+#         unique_metadata[[category]]
+#       },
+#       #selected: all choices selected by default
+#       selected = unique_metadata[[category]],
+#       multiple = TRUE,
+#       #Options for pickerInput
+#       options = list(
+#         #Display number of items selected instead of their names 
+#         #when more than 5 values are selected
+#         "selected-text-format" = "count > 5",
+#         #Define max options to show at a time to keep menu from being cut off
+#         "size" = 10, 
+#         #Add "select all" and "deselect all" buttons
+#         "actions-box"=TRUE
+#       )
+#     )#End pickerInput
+#     
+#     #Append tag to list using tagList (append() will modify the HTML of the tag)
+#     menus <- tagList(menus,menu_tag)
+#   }
+#   #Return list of menu tags
+#   return(menus)
+# }
 ###
 
 ### Icon Notification Function
 #Defines the HTML to be printed within a notification box. The function takes the name of a Font Awesome icon and a message as input, and will display the icon and the message inline.
-icon_notification_ui <- function(icon_name,message){
-  span(
-    #Icon (inline and enlarged)
-    icon(icon_name, style="display: inline-block; font-size: 1.7em;"),
-    #Message (inline with icon, font slightly enlarged)
+icon_notification_ui <- function(message,icon_name=NULL){
+  if (!is.null(icon_name)){
+    #Create ui with message and icon if the icon is defined
+    span(
+      #Icon (inline and enlarged)
+      icon(icon_name, style="display: inline-block; font-size: 1.7em;"),
+      #Message (inline with icon, font slightly enlarged)
+      span(message,style="font-size: 1.17em;")
+    )
+  } else {
+    #Create ui with just a message if icon==NULL
     span(message,style="font-size: 1.17em;")
-  )
+  }
+  
 }
 ###

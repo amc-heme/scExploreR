@@ -16,15 +16,24 @@ z-index: 999;
 #plots_subset_stats {
   margin-bottom: 1em;
 }
+
 /* CSS properties for DGE cells by class output */
-/* consider generalizing to verbatimtextoutput blocks*/
-#dge_print_n_by_class{
-  width: 20%;
+/* Responds to class selector of parent container (ensures format applies if
+   the output ID is changed or moved to a different module) */
+/* Consider generalizing to all verbatimtextoutput (<pre>) elements*/
+.n_by_class_style > pre {
+  width: 50%;
   background-color: #FFFFFF;
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
   border: none;
   margin: 0em 2em;
   padding: 0em;
+}
+
+/* Center table in DGE tab */
+#dge-table {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Correlations tab UI: remove margin from bottom of

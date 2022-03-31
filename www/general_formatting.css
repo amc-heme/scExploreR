@@ -1,5 +1,21 @@
 /* Formatting for text and other elements */
 
+/* Body: padding on top responds to media width. When the window is smaller than
+   a 'medium' bootstrap window (width <768px), the navbar becomes vertical, causing
+   the navbar tabs and icons to appear on top of content. For now, this will be
+   fixed by increasing the margin of the page body, but a solution that responds
+   to the new height of the navbar would be ideal. */
+@media (max-width:768px){
+  body{
+    padding-top: 220px;
+  }
+}
+@media (min-width: 769px){
+  body{
+    padding-top: 60px;
+  }
+}
+
 /* Adjust margins of headers */
 h2, h3 {
   margin-top: 10px !important;
@@ -12,6 +28,11 @@ h2, h3 {
   text-align: center;
   /* Display must be set to block for centering to work */
   display: block;
+}
+
+/* Small font */
+.small {
+  font-size: 0.85em;
 }
 
 /* Large font*/
@@ -46,6 +67,10 @@ h2, h3 {
   display: block;
 }
 
+.hidden {
+  display: none;
+}
+
 /* Two-column panel */
 .two_column {
 	width: 50%;
@@ -65,4 +90,40 @@ h2, h3 {
 .float_right {
 	/* Use this class for the right column */
   float: right;
+}
+
+/* Shiny input containers within a container with this class will have no margin */
+.input-no-margin > .shiny-input-container {
+  margin: 0px;
+}
+
+/* Selector to remove margins from elements within selectize forms */
+.input-no-margin > .shiny-input-container > div > .selectize-control{
+    margin: 0px;
+}
+
+/* Reduces bottom margin of shiny input elements within container to 5px */
+.input-margin-5 > .shiny-input-container > div > .selectize-control{
+    margin-bottom: 5px;
+}
+
+/* inline-containers: sets all containers inside element to inline display */
+.inline-containers > .shiny-input-container {
+  display: inline-block;
+}
+
+.align-containers-top > .shiny-input-container {
+  vertical-align: top;
+}
+
+/* Set height of group name text box for consistency with the group metadata to the right */
+#options_group_name {
+  height: 34px;
+}
+
+/* spinner_text class: for text that appears beneath spinner*/
+.spinner_text {
+  margin-top: 10px;
+  color: #444455;
+  font-weight: bold;
 }
