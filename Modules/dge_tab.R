@@ -253,6 +253,14 @@ dge_tab_server <- function(id,
                        return(subset)
                        })
 
+                 ## TEMP: Check Memory usage after making subset
+                 observeEvent(
+                   subset(),
+                   {
+                     print("Memory used after creating subset in dge tab")
+                     print(mem_used())
+                   })
+                 
                  ## 3.4. Compute subset stats
                  subset_stats <- 
                    subset_stats_server(

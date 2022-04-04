@@ -17,7 +17,12 @@ library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
 options(shiny.reactlog=TRUE, warn.conflicts = FALSE)
 
-# Tidyverse Packages
+# Logging and performance monitoring
+library(profvis)
+library(pryr)
+library(rlog)
+
+# Tidyverse packages
 library(tidyverse, quietly = TRUE, warn.conflicts = FALSE)
 library(stringr, quietly = TRUE, warn.conflicts = FALSE)
 library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
@@ -25,7 +30,7 @@ library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 library(glue, quietly = TRUE, warn.conflicts = FALSE)
 library(DT, quietly = TRUE, warn.conflicts = FALSE)
 
-# Additional Backend Packages
+# Additional backend packages
 library(presto, quietly = TRUE, warn.conflicts = FALSE)
 library(R.devices, quietly = TRUE, warn.conflicts = FALSE)
 
@@ -867,6 +872,39 @@ server <- function(input, output, session){
     deleteFile=FALSE
     )
   
+  # Observe statement to determine memory usage of all objects in the environment
+  # observe({
+  #   env <- .GlobalEnv
+  #   units <- "MB"
+  #   
+  #   env_size(env, units)
+  # })
+  
+  observe({
+    print("ls()")
+    print(ls())
+    print("ls(sys.frame())")
+    print(ls(sys.frame()))
+    print("ls(parent.frame())")
+    print(ls(parent.frame()))
+    print("ls .GlobalEnv")
+    print(ls(.GlobalEnv))
+    print("environment()")
+    print(ls(environment()))
+    # print(session)
+    # print(names(session))
+    # cat("\n")
+    # print(ls(session$userData))
+  })
+  
+  observeEvent(
+    object(),
+    {
+      rlog::log_info(
+        print(glue("Memory used after loading current object: {mem_used()/10^9} GB"))
+        )
+      })
+  
   # DEBUG: UI to test object and config file are properly rendered
   # output$verify_object <- 
   #   renderUI({
@@ -924,4 +962,9 @@ server <- function(input, output, session){
 }
 
 # Run the application 
-shinyApp(ui = ui, server = server)
+# profvis: generates a report giving memory usage by each process run in app
+app <- shinyApp(ui = ui, server = server)
+
+profvis({
+  runApp(app)
+})

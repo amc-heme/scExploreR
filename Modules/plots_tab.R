@@ -597,5 +597,12 @@ plots_tab_server <- function(id,
                    unique_metadata = unique_metadata
                    )
                  
+                 observeEvent(
+                   plots_subset(),
+                   {
+                     print("Memory used after creating subset in plots tab")
+                     print(mem_used())
+                   })
+                 
                })
   }
