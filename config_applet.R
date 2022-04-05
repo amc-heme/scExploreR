@@ -517,7 +517,7 @@ options_server <- function(id,
             list(
               `assay` = category_name,
               `key` = Key(sobj[[category_name]]),
-              `suffix_human` = if(input$include_label==TRUE) input$hr else "",
+              `suffix_human` = if (input$include_label==TRUE) input$hr else "",
               `dropdown_title` = input$hr)
             })
         

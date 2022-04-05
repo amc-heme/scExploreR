@@ -351,6 +351,16 @@ server <- function(input, output, session){
   # opened (lazy evaluation))
   update_features <- makeReactiveTrigger()
   
+  ###
+  # reactiveValues list for main server function
+  main_server <- 
+    reactiveValues(
+      # modules_created: stores the keys of the module server instances created
+      modules_created = list(),
+      dge_modules_created = list()
+    )
+  ###
+  
   # 1. Reactively load object and config file ----------------------------------
   # Initialize a reactiveVal for storing the key of the last dataset loaded
   dataset_info <- reactiveValues()
@@ -801,55 +811,98 @@ server <- function(input, output, session){
       })
   
   ## 3.2 Server instances ####
-  # Separate instances of each tab server are created for each dataset to avoid 
-  # namespace collisions between datasets that share metadata category names
+  # A separate module instance is needed for each dataset to avoid namespace 
+  # collisions, but only one module should be created for each dataset. The 
+  # observer below will initialize modules for each tab if they have not already 
+  # been created.
   
-  ### 3.2.1. Plots Tab Server Module #####
+  ### 3.2.1. Plots tab server ####
+  observe(
+    label = "Create Module Servers",
+    {
+      current_key <- dataset_info$last_object_key
+      
+      print("State of modules_created")
+      print(main_server$modules_created)
+      print("Current dataset key")
+      print(current_key)
+      print(
+        glue(
+          "Key included in modules_created: {current_key %in% main_server$modules_created}"
+          )
+        )
+      
+      # If the current key is not in the list of module servers created, create
+      # server instances for each tab.
+      if (!current_key %in% main_server$modules_created){
+        print(glue("New module for plots tab (key = {current_key})"))
+        plots_tab_server(
+          id = glue("{current_key}_plots"),
+          object = session$userData$object,
+          metadata_config = metadata_config,
+          assay_config = assay_config,
+          meta_categories = meta_categories,
+          category_labels = category_labels,
+          unique_metadata = unique_metadata,
+          valid_features = valid_features,
+          error_list = error_list,
+          n_cells_original = n_cells_original,
+          xlim_orig = xlim_orig,
+          ylim_orig = ylim_orig
+          )
+        
+        # Add current key to list of modules created so module is not re-created
+        main_server$modules_created <- 
+          c(main_server$modules_created, current_key)
+        }
+      })
+
+  ### 3.2.2. DGE Tab Server ####
   observe({
-    plots_tab_server(
-      id = glue("{dataset_info$last_object_key}_plots"),
-      object = session$userData$object,
-      metadata_config = metadata_config,
-      assay_config = assay_config,
-      meta_categories = meta_categories,
-      category_labels = category_labels,
-      unique_metadata = unique_metadata,
-      valid_features = valid_features,
-      error_list = error_list,
-      n_cells_original = n_cells_original,
-      xlim_orig = xlim_orig,
-      ylim_orig = ylim_orig
+    current_key <- dataset_info$last_object_key
+    
+    if (!current_key %in% main_server$dge_modules_created){
+      print(glue("New module for dge tab (key = {current_key})"))
+      dge_tab_server(
+        id = glue("{current_key}_dge"),
+        object = session$userData$object,
+        metadata_config = metadata_config,
+        meta_categories = meta_categories,
+        unique_metadata = unique_metadata,
+        meta_choices = meta_choices
       )
+      
+      # Add current key to list of modules created so module is not re-created
+      main_server$dge_modules_created <- 
+        c(main_server$dge_modules_created, current_key)
+      }
     })
   
-  ### 3.2.2. DGE Tab Server Module ####
+  ### 3.2.3. Correlations Tab Server ####
   observe({
-    dge_tab_server(
-      id = glue("{dataset_info$last_object_key}_dge"),
-      object = session$userData$object,
-      metadata_config = metadata_config,
-      meta_categories = meta_categories,
-      unique_metadata = unique_metadata,
-      meta_choices = meta_choices
+    current_key <- dataset_info$last_object_key
+    
+    if(!current_key %in% main_server$corr_modules_created){
+      print(glue("New module for correlations tab (key = {current_key})"))
+      corr_tab_server(
+        id = glue("{current_key}_corr"),
+        object = session$userData$object,
+        metadata_config = metadata_config,
+        meta_categories = meta_categories,
+        unique_metadata = unique_metadata,
+        n_cells_original = n_cells_original,
+        nonzero_threshold = nonzero_threshold,
+        meta_choices = meta_choices,
+        valid_features = valid_features,
+        error_list = error_list,
+        update_features = update_features
       )
-    })
-  
-  ### 3.2.3. Correlations Tab Server Module ####
-  observe({
-    corr_tab_server(
-      id = glue("{dataset_info$last_object_key}_corr"),
-      object = session$userData$object,
-      metadata_config = metadata_config,
-      meta_categories = meta_categories,
-      unique_metadata = unique_metadata,
-      n_cells_original = n_cells_original,
-      nonzero_threshold = nonzero_threshold,
-      meta_choices = meta_choices,
-      valid_features = valid_features,
-      error_list = error_list,
-      update_features = update_features
-      )
-    })
+      
+      # Add current key to list of modules created so module is not re-created
+      main_server$corr_modules_created <- 
+        c(main_server$corr_modules_created, current_key)
+    }
+  })
   
   # 4. Dataset Description in modal UI ####
   # Render text for the dataset modal that displays a description of the dataset
