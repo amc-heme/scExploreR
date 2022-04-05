@@ -401,7 +401,7 @@ plots_tab_server <- function(id,
                  # UMAP Plot
                  plot_module_server(
                    id = "umap",
-                   object = plots_subset, # Reactive
+                   object = session$userData$plots_subset, # Reactive
                    # plot_switch: uses the input$make_umap switch
                    plot_switch = reactive({input$make_umap}),
                    plot_label = "UMAP", # Reactive
@@ -415,7 +415,7 @@ plots_tab_server <- function(id,
                  # Feature Plot
                  plot_module_server(
                    id = "feature",
-                   object = plots_subset, # Reactive
+                   object = session$userData$plots_subset, # Reactive
                    # plot_switch: uses the input$make_feature switch
                    plot_switch = reactive({input$make_feature}),
                    features_entered = reactive({input$text_features}),
@@ -431,7 +431,7 @@ plots_tab_server <- function(id,
                  # Violin Plot
                  plot_module_server(
                    id = "violin",
-                   object = plots_subset, # Reactive
+                   object = session$userData$plots_subset, # Reactive
                    # plot_switch: uses the input$make_vln switch
                    plot_switch = reactive({input$make_vln}),
                    plot_label = "Violin Plot", # Non-reactive
@@ -444,7 +444,7 @@ plots_tab_server <- function(id,
                  # Dot plot
                  plot_module_server(
                    id = "dot",
-                   object = plots_subset, # Reactive
+                   object = session$userData$plots_subset, # Reactive
                    # plot_switch: uses the input$make_dot switch
                    plot_switch = reactive({input$make_dot}),
                    features_entered = reactive({input$text_features}),
@@ -509,13 +509,12 @@ plots_tab_server <- function(id,
                      object_trigger$trigger()
                    })
                  
-                 plots_subset <-
+                 session$userData$plots_subset <-
                    eventReactive(
-                     # Reacts to the object also (plots_subset must produce a 
-                     # new "subset" each time the object is loaded, even though
-                     # the subset is the full object initially. All downstream
-                     # operations in the plots tab respond to the subset instead
-                     # of the main object.)
+                     # Also reacts to the object. All downstream functions in 
+                     # the plots tab respond to the "subset" object, so the 
+                     # subset must be created each time a new object is loaded 
+                     # to avoid downstream errors. 
                      c(input$subset_submit, object_trigger$depend()),
                      ignoreNULL=FALSE,
                      label = "Plots Subset",
@@ -592,16 +591,20 @@ plots_tab_server <- function(id,
                  # current subset/object
                  subset_summary_server(
                    id = "subset_summary",
-                   object = plots_subset,
+                   object = session$userData$plots_subset,
                    category_labels = category_labels,
                    unique_metadata = unique_metadata
                    )
                  
                  observeEvent(
-                   plots_subset(),
+                   session$userData$plots_subset(),
                    {
                      print("Memory used after creating subset in plots tab")
                      print(mem_used())
+                     print("Class of subset variable")
+                     print(is(session$userData$plots_subset))
+                     print("is.reactive test")
+                     print(is.reactive(session$userData$plots_subset))
                    })
                  
                })

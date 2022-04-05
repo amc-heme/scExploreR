@@ -3,7 +3,8 @@
 #Accepts inputs from plots_selections module and outputs a Seurat DimPlot from 
 #the Seurat object passed to it. 
 
-# object: a Seurat object. This can be either the full object or a subset.
+# object: a Seurat object. This can be either the full object or a subset. This 
+# is a reactive-agnostic parameter (can be either reactive or non-reactive).
 # group_by: user specified group_by metadata category
 # split_by: user specified split_by metadata category
 # show_label: user choice as to whether labels should be shown on the plot
@@ -32,7 +33,7 @@ shiny_umap <- function(object, #Reactive
   # is NULL (no cells in subset)
   validate(
     need(
-      object(),
+      if (is.reactive(object)) object() else object,
       # No message displayed (a notification is already 
       # displayed) (*was displayed*)
       message = ""
@@ -43,7 +44,8 @@ shiny_umap <- function(object, #Reactive
   if (split_by() == "none"){
     umap_plot <- 
       DimPlot(
-        object(),
+        # Object or subset (reactive-agnostic)
+        if (is.reactive(object)) object() else object,
         group.by = group_by(),
         #TRUE if "label groups" is checked, FALSE otherwise
         label = show_label(), 
@@ -55,7 +57,8 @@ shiny_umap <- function(object, #Reactive
     #UMAP with split.by defined and no special subset
     umap_plot <- 
       DimPlot(
-        object(),
+        # Object or subset (reactive-agnostic)
+        if (is.reactive(object)) object() else object,
         group.by = group_by(),
         split.by = split_by() ,
         label = show_label(),

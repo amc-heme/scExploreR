@@ -3,7 +3,8 @@
 # Accepts inputs from plots_selections module and outputs a Seurat FeaturePlot
 # from the Seurat object passed to it. 
 
-# object: a Seurat object. This can be either the full object or a subset.
+# object: a Seurat object. This can be either the full object or a subset. This 
+# is a reactive-agnostic parameter (can be either reactive or non-reactive).
 # features_entered: a character vector giving the features entered by the user.
 # group_by: user specified group_by metadata category
 # split_by: user specified split_by metadata category
@@ -26,7 +27,7 @@ shiny_vln <- function(
     # is NULL (no cells in subset)
     validate(
       need(
-        object(),
+        if (is.reactive(object)) object() else object,
         # No message displayed (a notification is already displayed) 
         # (*was displayed*)
         message = ""
@@ -35,7 +36,8 @@ shiny_vln <- function(
     
     vln_plot <- 
       VlnPlot(
-        object(),
+        # Object or subset (reactive-agnostic)
+        if (is.reactive(object)) object() else object,
         features = features_entered(),
         group.by = group_by(),
         # Split.by: NULL if user selects "none", otherwise equal 

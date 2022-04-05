@@ -3,7 +3,8 @@
 # Accepts inputs from plots_selections module and outputs a Seurat FeaturePlot
 # from the Seurat object passed to it. 
 
-# object: a Seurat object. This can be either the full object or a subset.
+# object: a Seurat object. This can be either the full object or a subset. This 
+# is a reactive-agnostic parameter (can be either reactive or non-reactive).
 # features_entered: a character vector giving the features entered by the user.
 # split_by: user specified split_by metadata category
 # show_label: user choice as to whether labels should be shown on the plot
@@ -16,7 +17,7 @@
 # at app startup
 # ylim_orig: the original y limits for the umap, computed from full object at 
 # app startup
-shiny_feature <- function(object, #Reactive
+shiny_feature <- function(object, #Reactive-agnostic
                           features_entered, #Reactive
                           split_by, #Reactive
                           show_label, #Reactive
@@ -34,7 +35,7 @@ shiny_feature <- function(object, #Reactive
     # is NULL (no cells in subset)
     validate(
       need(
-        object(),
+        if (is.reactive(object)) object() else object,
         # No message displayed (a notification is already 
         # displayed) (*was displayed*)
         message = ""
@@ -47,7 +48,8 @@ shiny_feature <- function(object, #Reactive
       # the split.by argument
       feature_plot <- 
         FeaturePlot(
-          object(),
+          # Object or subset (reactive-agnostic)
+          if (is.reactive(object)) object() else object,
           features = features_entered(),
           # Reduction: uses the input for reduction if it exists, otherwise
           # it is set to NULL and will use default settings.
@@ -70,7 +72,8 @@ shiny_feature <- function(object, #Reactive
       # If a split by category is defined, use that category
       feature_plot <- 
         FeaturePlot(
-          object(), 
+          # Object or subset (reactive-agnostic)
+          if (is.reactive(object)) object() else object,
           features = features_entered(),
           split.by = split_by(),
           # Reduction: uses the input for reduction if it exists, otherwise

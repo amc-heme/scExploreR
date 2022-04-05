@@ -249,7 +249,7 @@ corr_tab_server <- function(id,
 
                  ## 3.2 Form subset based on chosen criteria ####
                  # Store in reactive variable
-                 subset <- 
+                 session$userData$corr_subset <- 
                    eventReactive(
                      submit_button(),
                      label = "Corr: Make Subset",
@@ -263,7 +263,7 @@ corr_tab_server <- function(id,
                  
                  ## TEMP: Check Memory usage after making subset
                  observeEvent(
-                   subset(),
+                   session$userData$corr_subset(),
                    {
                      print("Memory used after creating subset in corr tab")
                      print(mem_used())
@@ -272,21 +272,21 @@ corr_tab_server <- function(id,
                  ## 3.3 Determine if the subset created is a subset ####
                  is_subset <- 
                    eventReactive(
-                     subset(),
+                     session$userData$corr_subset(),
                      label = "Corr: Determine if Object is a Subset",
                      {
                        #print("3.3 is_subset")
                        # Print an error if the subset does not exist or is NULL
                        validate(
                          need(
-                           subset(),
+                           session$userData$corr_subset(),
                            message = "subset is NULL"
                          )
                        )
                        
                        # Compute number of cells in subset
                        n_cells_subset <-
-                         subset() |>
+                         session$userData$corr_subset() |>
                          Cells() |>
                          length()
                        
@@ -300,7 +300,7 @@ corr_tab_server <- function(id,
                  subset_stats_server(
                    id = "stats",
                    tab = "corr",
-                   subset = subset,
+                   subset = session$userData$corr_subset,
                    meta_categories = meta_categories,
                    # Reactive expressions in module will execute after 
                    # is_subset is computed
@@ -313,7 +313,7 @@ corr_tab_server <- function(id,
                  # Calculations used depend on whether the object is a subset
                  corr_table_content <-
                    eventReactive(
-                     subset(),
+                     session$userData$corr_subset(),
                      label = "Corr: Corr table",
                      {
                        #print("3.5 Compute Correlation Tables")
@@ -334,7 +334,7 @@ corr_tab_server <- function(id,
                          table_subset <- 
                            compute_correlation(
                              gene_selected = corr_main_gene,
-                             object = subset,
+                             object = session$userData$corr_subset,
                              colnames = 
                                c("Feature",
                                  "Correlation_Subset")
@@ -359,7 +359,7 @@ corr_tab_server <- function(id,
                          corr_table <- 
                            compute_correlation(
                              gene_selected = corr_main_gene,
-                             object = subset,
+                             object = session$userData$corr_subset,
                              colnames = c("Feature","Correlation_Subset")
                            )
                        }
@@ -699,14 +699,14 @@ corr_tab_server <- function(id,
                          (!identical(input$corr_table_rows_selected,character(0)))&
                          (!is.null(input$corr_table_rows_selected))
                          ){
-                         rows_selected=TRUE
+                         rows_selected = TRUE
                          } else {
                            # If a row is deselected or the table is re-computed, 
                            # this must be set back to 
                            #FALSE to keep the scatterplot from running 
                            #when a feature is not selected, which will 
                            #cause an error
-                           rows_selected=FALSE
+                           rows_selected = FALSE
                            }
                                    
                        return(rows_selected)
@@ -727,11 +727,11 @@ corr_tab_server <- function(id,
                      c(input$corr_table_rows_selected,
                        rows_selected(),
                        input$scatter_group_by),
-                     label="Correlation Scatterplot Content (Subset)",
+                     label = "Correlation Scatterplot Content (Subset)",
                      {
                        row_idx <- input$corr_table_rows_selected
                        # Take action only if a row is selected
-                       if (rows_selected()==TRUE){
+                       if (rows_selected() == TRUE){
                          # Record gene name of row selected
                          # Superassignment ensures value is accessible elsewhere in app
                          corr_secondary_gene <<- reactive({
@@ -739,12 +739,14 @@ corr_tab_server <- function(id,
                            })
                          
                          # Make and store scatterplot
-                         FeatureScatter(subset(), 
-                                        feature1 = corr_main_gene(),
-                                        feature2 = corr_secondary_gene(),
-                                        # group.by and split.by 
-                                        # according to user input
-                                        group.by = input$scatter_group_by)
+                         FeatureScatter(
+                           session$userData$corr_subset(), 
+                           feature1 = corr_main_gene(),
+                           feature2 = corr_secondary_gene(),
+                           # group.by and split.by 
+                           # according to user input
+                           group.by = input$scatter_group_by
+                           )
                          }
                        })
                  
@@ -754,11 +756,11 @@ corr_tab_server <- function(id,
                      c(input$corr_table_rows_selected, 
                        rows_selected(),
                        input$scatter_group_by),
-                     label="Correlation Scatterplot Content (Global)",
+                     label = "Correlation Scatterplot Content (Global)",
                      {
                        row_idx <- input$corr_table_rows_selected
                        # Take action only if a row is selected 
-                       if (rows_selected()==TRUE){
+                       if (rows_selected() == TRUE){
                          # TODO: REMOVE NESTED REACTIVE
                          # Record gene name of row selected
                          # Superassignment ensures value is 
@@ -828,41 +830,41 @@ corr_tab_server <- function(id,
                  # 8. Download Handlers ----------------------------------------
                  # Correlations Table
                  output$download_table <- downloadHandler(
-                   filename=function(){
+                   filename = function(){
                      glue("Corr_table_{corr_main_gene()}.csv")
                    },
                    content=function(file){
                      write.csv(corr_table_content(),
-                               file=file,
+                               file = file,
                                row.names=FALSE)
                    },
-                   contentType="text/csv"
+                   contentType = "text/csv"
                  ) # End downloadHandler 
                  
                  # Scatterplot (for selected subset)
                  output$download_scatter_subset <- downloadHandler(
-                   filename=function(){
+                   filename = function(){
                      glue("Corr_scatter_{corr_main_gene()}-vs-{corr_secondary_gene()}_subset.png")
                    },
                    content=function(file){
                      ggsave(file, 
-                            plot=subset_scatterplot(), 
-                            device="png",
-                            bg="#FFFFFF")
+                            plot = subset_scatterplot(), 
+                            device = "png",
+                            bg = "#FFFFFF")
                    },
                    contentType = "image/png"
                  )# End downloadHandler
                  
                  # Scatterplot (for full data)
                  output$download_scatter_global <- downloadHandler(
-                   filename=function(){
+                   filename = function(){
                      glue("Corr_scatter_{corr_main_gene()}-vs-{corr_secondary_gene()}_global.png")
                    },
                    content=function(file){
                      ggsave(file, 
-                            plot=full_data_scatterplot(), 
-                            device="png",
-                            bg="#FFFFFF")
+                            plot = full_data_scatterplot(), 
+                            device = "png",
+                            bg = "#FFFFFF")
                    },
                    contentType = "image/png"
                   )# End downloadHandler

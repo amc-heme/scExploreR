@@ -356,7 +356,7 @@ server <- function(input, output, session){
   dataset_info <- reactiveValues()
   dataset_info$last_object_key <- NULL
   # Initialize reactiveVal for storing the seurat object
-  object <- reactiveVal(NULL)
+  session$userData$object <- reactiveVal(NULL)
   config <- reactiveVal(NULL)
   
   # Startup: a reactive value created to get eventReactive expression for
@@ -461,7 +461,7 @@ server <- function(input, output, session){
       app_spinner$show()
       # Load seurat object using defined path and set "object" 
       # reactiveVal to the object
-      object(readRDS(path))
+      session$userData$object(readRDS(path))
 
       app_spinner$hide()
       })
@@ -565,7 +565,7 @@ server <- function(input, output, session){
       {
         valid_features <- 
           feature_list_all(
-            object = object,
+            object = session$userData$object,
             assay_config = assay_config,
             # include_numeric_metadata: a boolean variable 
             # that is hard-coded for now and will be 
@@ -649,7 +649,7 @@ server <- function(input, output, session){
           # Use sobj@meta.data[[category]] instead of object()[[category]] 
           # to return a vector (sobj[[category]] returns a dataframe)
           unique_metadata[[category]] <- 
-            unique(object()@meta.data[[category]])
+            unique(session$userData$object()@meta.data[[category]])
           # If the metadata category is a factor, convert to a vector with 
           # levels to avoid integers appearing in place of the 
           # unique values themselves
@@ -668,22 +668,22 @@ server <- function(input, output, session){
   # x and y limits of the plot
   umap_orig <- 
     reactive({
-      req(object())
+      req(session$userData$object())
       DimPlot(
-        object()
+        session$userData$object()
       )
     })
   
   # Record limits
   xlim_orig <- 
     reactive({
-      req(object())
+      req(session$userData$object())
       layer_scales(umap_orig())$x$range$range
     })
     
   ylim_orig <- 
     reactive({
-      req(object())
+      req(session$userData$object())
       layer_scales(umap_orig())$y$range$range
     })
   
@@ -691,15 +691,15 @@ server <- function(input, output, session){
   # TODO: does this apply to non-CITEseq datasets?
   n_cells_original <- 
     reactive({
-      req(object())
-      ncol(object())
+      req(session$userData$object())
+      ncol(session$userData$object())
     })
   
   ## 2.9 Reductions in object ####
   reductions <- 
     reactive({
-      req(object())
-      reductions <- names(object()@reductions)
+      req(session$userData$object())
+      reductions <- names(session$userData$object()@reductions)
       
       # Order UMAP reduction first by default, if it exists
       if ("umap" %in% reductions){
@@ -753,7 +753,7 @@ server <- function(input, output, session){
   dge_tab_ui_dynamic <-
     eventReactive(
       # UI should only update when the object and config files are switched
-      c(object(), config()),
+      c(session$userData$object(), config()),
       label = "DGE Tab Dynamic UI",
       ignoreNULL = FALSE,
       {
@@ -769,7 +769,7 @@ server <- function(input, output, session){
   corr_tab_ui_dynamic <-
     eventReactive(
       # UI should only update when the object and config files are switched
-      c(object(), config()),
+      c(session$userData$object(), config()),
       label = "Correlations Tab Dynamic UI",
       ignoreNULL = FALSE,
       {
@@ -808,7 +808,7 @@ server <- function(input, output, session){
   observe({
     plots_tab_server(
       id = glue("{dataset_info$last_object_key}_plots"),
-      object = object,
+      object = session$userData$object,
       metadata_config = metadata_config,
       assay_config = assay_config,
       meta_categories = meta_categories,
@@ -826,7 +826,7 @@ server <- function(input, output, session){
   observe({
     dge_tab_server(
       id = glue("{dataset_info$last_object_key}_dge"),
-      object = object,
+      object = session$userData$object,
       metadata_config = metadata_config,
       meta_categories = meta_categories,
       unique_metadata = unique_metadata,
@@ -838,7 +838,7 @@ server <- function(input, output, session){
   observe({
     corr_tab_server(
       id = glue("{dataset_info$last_object_key}_corr"),
-      object = object,
+      object = session$userData$object,
       metadata_config = metadata_config,
       meta_categories = meta_categories,
       unique_metadata = unique_metadata,
@@ -880,25 +880,8 @@ server <- function(input, output, session){
   #   env_size(env, units)
   # })
   
-  observe({
-    print("ls()")
-    print(ls())
-    print("ls(sys.frame())")
-    print(ls(sys.frame()))
-    print("ls(parent.frame())")
-    print(ls(parent.frame()))
-    print("ls .GlobalEnv")
-    print(ls(.GlobalEnv))
-    print("environment()")
-    print(ls(environment()))
-    # print(session)
-    # print(names(session))
-    # cat("\n")
-    # print(ls(session$userData))
-  })
-  
   observeEvent(
-    object(),
+    session$userData$object(),
     {
       rlog::log_info(
         print(glue("Memory used after loading current object: {mem_used()/10^9} GB"))
@@ -963,8 +946,11 @@ server <- function(input, output, session){
 
 # Run the application 
 # profvis: generates a report giving memory usage by each process run in app
-app <- shinyApp(ui = ui, server = server)
 
-profvis({
-  runApp(app)
-})
+#app <- shinyApp(ui = ui, server = server)
+
+#profvis({
+#  runApp(app)
+#})
+
+shinyApp(ui = ui, server = server)
