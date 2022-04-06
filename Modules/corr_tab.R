@@ -249,7 +249,7 @@ corr_tab_server <- function(id,
 
                  ## 3.2 Form subset based on chosen criteria ####
                  # Store in reactive variable
-                 session$userData$corr_subset <- 
+                 subset <- 
                    eventReactive(
                      submit_button(),
                      label = "Corr: Make Subset",
@@ -263,7 +263,7 @@ corr_tab_server <- function(id,
                  
                  ## TEMP: Check Memory usage after making subset
                  observeEvent(
-                   session$userData$corr_subset(),
+                   subset(),
                    {
                      print("Memory used after creating subset in corr tab")
                      print(mem_used())
@@ -272,21 +272,21 @@ corr_tab_server <- function(id,
                  ## 3.3 Determine if the subset created is a subset ####
                  is_subset <- 
                    eventReactive(
-                     session$userData$corr_subset(),
+                     subset(),
                      label = "Corr: Determine if Object is a Subset",
                      {
                        #print("3.3 is_subset")
                        # Print an error if the subset does not exist or is NULL
                        validate(
                          need(
-                           session$userData$corr_subset(),
+                           subset(),
                            message = "subset is NULL"
                          )
                        )
                        
                        # Compute number of cells in subset
                        n_cells_subset <-
-                         session$userData$corr_subset() |>
+                         subset() |>
                          Cells() |>
                          length()
                        
@@ -300,7 +300,7 @@ corr_tab_server <- function(id,
                  subset_stats_server(
                    id = "stats",
                    tab = "corr",
-                   subset = session$userData$corr_subset,
+                   subset = subset,
                    meta_categories = meta_categories,
                    # Reactive expressions in module will execute after 
                    # is_subset is computed
@@ -313,7 +313,7 @@ corr_tab_server <- function(id,
                  # Calculations used depend on whether the object is a subset
                  corr_table_content <-
                    eventReactive(
-                     session$userData$corr_subset(),
+                     subset(),
                      label = "Corr: Corr table",
                      {
                        #print("3.5 Compute Correlation Tables")
@@ -334,7 +334,7 @@ corr_tab_server <- function(id,
                          table_subset <- 
                            compute_correlation(
                              gene_selected = corr_main_gene,
-                             object = session$userData$corr_subset,
+                             object = subset,
                              colnames = 
                                c("Feature",
                                  "Correlation_Subset")
@@ -359,7 +359,7 @@ corr_tab_server <- function(id,
                          corr_table <- 
                            compute_correlation(
                              gene_selected = corr_main_gene,
-                             object = session$userData$corr_subset,
+                             object = subset,
                              colnames = c("Feature","Correlation_Subset")
                            )
                        }
@@ -740,7 +740,7 @@ corr_tab_server <- function(id,
                          
                          # Make and store scatterplot
                          FeatureScatter(
-                           session$userData$corr_subset(), 
+                           subset(), 
                            feature1 = corr_main_gene(),
                            feature2 = corr_secondary_gene(),
                            # group.by and split.by 

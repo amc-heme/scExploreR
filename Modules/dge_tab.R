@@ -239,7 +239,7 @@ dge_tab_server <- function(id,
                  ## 3.3. Form subset
                  # Store in session$userData to ensure only one copy of the 
                  # subset exists for the DGE tab across datasets
-                 session$userData$dge_subset <-
+                 subset <-
                    eventReactive(
                      dge_subset_criteria(),
                      label = "DGE: Subset",
@@ -257,7 +257,7 @@ dge_tab_server <- function(id,
 
                  ## TEMP: Check Memory usage after making subset
                  observeEvent(
-                   session$userData$dge_subset(),
+                   subset(),
                    {
                      print("Memory used after creating subset in dge tab")
                      print(mem_used())
@@ -268,9 +268,9 @@ dge_tab_server <- function(id,
                    subset_stats_server(
                      id = "subset_stats",
                      tab = "dge",
-                     subset = session$userData$dge_subset,
+                     subset = subset,
                      meta_categories = meta_categories,
-                     event_expr = session$userData$dge_subset,
+                     event_expr = subset,
                      group_by_category = group_by_category
                      )
                  
@@ -287,7 +287,7 @@ dge_tab_server <- function(id,
                        dge_table <-
                          # Run presto on the subset, using the group by category
                          wilcoxauc(
-                           session$userData$dge_subset(), 
+                           subset(), 
                            group_by = group_by_category()
                            ) %>%
                          # Explicitly coerce to tibble
@@ -344,7 +344,7 @@ dge_tab_server <- function(id,
                        # Slice for the first row (the unique values)
                        n_panel <-
                          unique(
-                           session$userData$dge_subset()[[group_by_category()]]
+                           subset()[[group_by_category()]]
                            # Take first column of unique() results
                            )[,1] |>
                          length()
@@ -367,7 +367,7 @@ dge_tab_server <- function(id,
 
                        #Create UMAP of subsetted object
                        umap <- DimPlot(
-                         session$userData$dge_subset(),
+                         subset(),
                          #Split by thgroup by category
                          split.by = group_by_category(),
                          #Group by variable set in UMAP options panel
@@ -382,7 +382,7 @@ dge_tab_server <- function(id,
                  dge_ui <-
                    eventReactive(
                      #UI now renders once all computations are complete
-                     session$userData$dge_subset(),
+                     subset(),
                      label = "DGE Main UI (Define Content)",
                      #Do not render main UI at startup to avoid errors
                      #ignoreInit=TRUE,
@@ -492,7 +492,7 @@ dge_tab_server <- function(id,
                  # 6. Dynamic UI: Options Panel for UMAP -----------------------
                  umap_options <-
                    eventReactive(
-                     session$userData$dge_subset(),
+                     subset(),
                      label = "DGE: UMAP Options Panel",
                      #ignoreNULL = FALSE,
                      {
@@ -560,7 +560,7 @@ dge_tab_server <- function(id,
                  #   subset_selections()
                  # })
                  # output$subset_info_output <- renderPrint({
-                 #   session$userData$dge_subset()
+                 #   subset()
                  # })
                  # output$subset_stats_output<- renderPrint({
                  #   subset_stats()
