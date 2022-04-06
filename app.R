@@ -159,7 +159,8 @@ datasets <-
     `d0_d30` = 
       list(
         `label` = "Longitudinal Data",
-        `object` = "./Seurat_Objects/longitudinal_samples_20211025.rds",
+        `object` = 
+          readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds"),
         `config` = "./Seurat_Objects/d0-d30-config.rds",
         `description` = 
           "Contains 3 normal bone marrow samples, and longitudinal samples from 
@@ -170,7 +171,8 @@ datasets <-
     `AML_samples` = 
       list(
         `label` = "AML (Pheresis) Dataset",
-        `object` = "./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds",
+        `object` = 
+          readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds"),
         `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
         `description` = 
           "Contains 3 normal bone marrow samples, and 23 AML samples.",
@@ -366,7 +368,7 @@ server <- function(input, output, session){
   dataset_info <- reactiveValues()
   dataset_info$last_object_key <- NULL
   # Initialize reactiveVal for storing the seurat object
-  session$userData$object <- reactiveVal(NULL)
+  object <- reactiveVal(NULL)
   config <- reactiveVal(NULL)
   
   # Startup: a reactive value created to get eventReactive expression for
@@ -466,12 +468,10 @@ server <- function(input, output, session){
     label = "Load/Update Object",
     ignoreNULL = FALSE,
     {
-      path <- datasets[[selected_key()]]$object
-      
       app_spinner$show()
-      # Load seurat object using defined path and set "object" 
-      # reactiveVal to the object
-      session$userData$object(readRDS(path))
+      # Fetch Seurat object from datasets list defined at startup and set 
+      # "object" reactiveVal to the result
+      object(datasets[[selected_key()]]$object)
 
       app_spinner$hide()
       })
@@ -575,7 +575,7 @@ server <- function(input, output, session){
       {
         valid_features <- 
           feature_list_all(
-            object = session$userData$object,
+            object = object,
             assay_config = assay_config,
             # include_numeric_metadata: a boolean variable 
             # that is hard-coded for now and will be 
@@ -659,7 +659,7 @@ server <- function(input, output, session){
           # Use sobj@meta.data[[category]] instead of object()[[category]] 
           # to return a vector (sobj[[category]] returns a dataframe)
           unique_metadata[[category]] <- 
-            unique(session$userData$object()@meta.data[[category]])
+            unique(object()@meta.data[[category]])
           # If the metadata category is a factor, convert to a vector with 
           # levels to avoid integers appearing in place of the 
           # unique values themselves
@@ -678,22 +678,22 @@ server <- function(input, output, session){
   # x and y limits of the plot
   umap_orig <- 
     reactive({
-      req(session$userData$object())
+      req(object())
       DimPlot(
-        session$userData$object()
+        object()
       )
     })
   
   # Record limits
   xlim_orig <- 
     reactive({
-      req(session$userData$object())
+      req(object())
       layer_scales(umap_orig())$x$range$range
     })
     
   ylim_orig <- 
     reactive({
-      req(session$userData$object())
+      req(object())
       layer_scales(umap_orig())$y$range$range
     })
   
@@ -701,15 +701,15 @@ server <- function(input, output, session){
   # TODO: does this apply to non-CITEseq datasets?
   n_cells_original <- 
     reactive({
-      req(session$userData$object())
-      ncol(session$userData$object())
+      req(object())
+      ncol(object())
     })
   
   ## 2.9 Reductions in object ####
   reductions <- 
     reactive({
-      req(session$userData$object())
-      reductions <- names(session$userData$object()@reductions)
+      req(object())
+      reductions <- names(object()@reductions)
       
       # Order UMAP reduction first by default, if it exists
       if ("umap" %in% reductions){
@@ -763,7 +763,7 @@ server <- function(input, output, session){
   dge_tab_ui_dynamic <-
     eventReactive(
       # UI should only update when the object and config files are switched
-      c(session$userData$object(), config()),
+      c(object(), config()),
       label = "DGE Tab Dynamic UI",
       ignoreNULL = FALSE,
       {
@@ -779,7 +779,7 @@ server <- function(input, output, session){
   corr_tab_ui_dynamic <-
     eventReactive(
       # UI should only update when the object and config files are switched
-      c(session$userData$object(), config()),
+      c(object(), config()),
       label = "Correlations Tab Dynamic UI",
       ignoreNULL = FALSE,
       {
@@ -838,7 +838,7 @@ server <- function(input, output, session){
         print(glue("New module for plots tab (key = {current_key})"))
         plots_tab_server(
           id = glue("{current_key}_plots"),
-          object = session$userData$object,
+          object = object,
           metadata_config = metadata_config,
           assay_config = assay_config,
           meta_categories = meta_categories,
@@ -865,7 +865,7 @@ server <- function(input, output, session){
       print(glue("New module for dge tab (key = {current_key})"))
       dge_tab_server(
         id = glue("{current_key}_dge"),
-        object = session$userData$object,
+        object = object,
         metadata_config = metadata_config,
         meta_categories = meta_categories,
         unique_metadata = unique_metadata,
@@ -886,7 +886,7 @@ server <- function(input, output, session){
       print(glue("New module for correlations tab (key = {current_key})"))
       corr_tab_server(
         id = glue("{current_key}_corr"),
-        object = session$userData$object,
+        object = object,
         metadata_config = metadata_config,
         meta_categories = meta_categories,
         unique_metadata = unique_metadata,
@@ -934,7 +934,7 @@ server <- function(input, output, session){
   # })
   
   observeEvent(
-    session$userData$object(),
+    object(),
     {
       rlog::log_info(
         print(glue("Memory used after loading current object: {mem_used()/10^9} GB"))
