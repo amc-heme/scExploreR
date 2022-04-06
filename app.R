@@ -154,6 +154,7 @@ add_error_notification(
 
 # Datasets: a list of available datasets with paths to object and config files,
 # as well as a description
+log_info("R process initialization: loading datasets")
 datasets <- 
   list(
     `d0_d30` = 
@@ -194,6 +195,7 @@ datasets <-
     #     `plot` = "./www/aml_UMAP.png"
     #     )
     )
+log_info("Datasets successfully loaded")
 
 # Table of Contents ------------------------------------------------------------
 # TODO: Add module tree here
