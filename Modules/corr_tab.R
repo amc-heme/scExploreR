@@ -263,10 +263,19 @@ corr_tab_server <- function(id,
                  
                  ## TEMP: Check Memory usage after making subset
                  observeEvent(
+                   label = "Corr: Subset Memory Query",
                    subset(),
                    {
-                     print("Memory used after creating subset in corr tab")
+                     print(
+                       glue(
+                         "{id}: Memory used after creating subset in corr tab"
+                       )
+                     )
                      print(mem_used())
+                     print(glue("{id}: Memory used by subset"))
+                     print(object.size(subset()), units = "GB")
+                     print(glue("{id}: Memory used by object"))
+                     print(object.size(object()), units = "GB")
                    })
                  
                  ## 3.3 Determine if the subset created is a subset ####

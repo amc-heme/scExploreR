@@ -89,7 +89,21 @@ dge_tab_ui <- function(id,
 }
 
 
-#dge_tab_server
+# dge_tab_server
+#
+# Arguments
+# id: Used to match server component of module to UI component
+# object: The Seurat Object defined in the main server function
+# metadata_config: the metadata section of the config file corresponding 
+# to the current object.
+# meta_categories: metadata categories retrieved from the config file
+# unique_metadata: a list of all the unique metadata values in the current 
+# object for the categories defined in the config file.
+# meta_choices: a named vector with name-value pairs for the display name of 
+# the metadata category and the key used to access the category in the Seurat 
+# Object. 
+# object_trigger: a reactive trigger that invalidates downstream reactives when 
+# the object is changed.
 dge_tab_server <- function(id,
                            object,
                            metadata_config,
@@ -98,7 +112,8 @@ dge_tab_server <- function(id,
                            # information used)
                            meta_categories,
                            unique_metadata,
-                           meta_choices
+                           meta_choices,
+                           object_trigger
                            ){
   moduleServer(id,
                 function(input,output,session){
@@ -119,8 +134,8 @@ dge_tab_server <- function(id,
                      hide_on_render = FALSE
                      )
 
-                 #Spinner for main panel
-                 #Displays until hidden at the end of computation
+                 # Spinner for main panel
+                 # Displays until hidden at the end of computation
                  main_spinner <-
                    Waiter$new(
                      id = ns("main_panel"),
@@ -163,7 +178,7 @@ dge_tab_server <- function(id,
                      metadata_config = metadata_config,
                      meta_categories = meta_categories,
                      hide_menu = group_by_category
-                   )
+                     )
 
                  # 3. Calculations ran after submit button is pressed ----------
                  # Includes table, stats, and UMAP
@@ -237,53 +252,135 @@ dge_tab_server <- function(id,
                      })
 
                  ## 3.3. Form subset
-                 # Store in session$userData to ensure only one copy of the 
-                 # subset exists for the DGE tab across datasets
+                 # object_init: a reactive value set to TRUE when a new object 
+                 # is loaded. The currently saved subset will be cleared when
+                 # object_init is set to TRUE
+                 object_init <- reactiveVal(FALSE)
+                 
+                 # Create a reactive trigger (triggers reset of subset when
+                 # new object is loaded)
+                 subset_trigger <- makeReactiveTrigger()
+                 
+                 # Set object_init to TRUE when an object is loaded, 
+                 # and trigger the subset eventReactive to run
+                 observeEvent(
+                   # Reacts to object_trigger defined in main server function
+                   object_trigger$depend(),
+                   label = "DGE: object_init(TRUE)",
+                   # Must use ignoreNULL = FALSE for reactive triggers
+                   ignoreNULL = FALSE,
+                   # Don't want this to run at startup or upon module creation
+                   ignoreInit = TRUE,
+                   {
+                     object_init(TRUE)
+                     subset_trigger$trigger()
+                   })
+                 
                  subset <-
                    eventReactive(
-                     dge_subset_criteria(),
+                     c(dge_subset_criteria(), subset_trigger$depend()),
                      label = "DGE: Subset",
                      ignoreNULL = FALSE,
                      {
-                       # Create subset from selections and return
-                       subset <-
-                         make_subset(
-                           object = object,
-                           criteria_list = dge_subset_criteria()
-                           )
+                       print(glue("{id}: DGE subset triggered"))
+                       
+                       # If object_init == TRUE, set the subset equal to 
+                       # the full object
+                       if (object_init() == TRUE){
+                         subset <- object()
+                         # Also, set object_init() back to FALSE
+                         #object_init(FALSE)
+                       } else {
+                         # Otherwise, create subset from selections and return
+                         subset <-
+                           make_subset(
+                             object = object,
+                             criteria_list = dge_subset_criteria()
+                             )
+                       }
 
+                       # Return subset from eventReactive
                        return(subset)
                        })
 
                  ## TEMP: Check Memory usage after making subset
                  observeEvent(
+                   label = "DGE: Subset Memory Query",
                    subset(),
+                   ignoreNULL = FALSE,
                    {
-                     print("Memory used after creating subset in dge tab")
+                     print(
+                       glue(
+                         "{id}: Memory used after creating subset in dge tab"
+                         )
+                       )
                      print(mem_used())
+                     print(glue("{id}: Memory used by subset"))
+                     print(object.size(subset()), units = "GB")
+                     print(glue("{id}: Memory used by object"))
+                     print(object.size(object()), units = "GB")
                    })
                  
-                 ## 3.4. Compute subset stats
+                 ## 3.4: DGE Continuation Conditional
+                 # After subset is computed, downstream computations should only 
+                 # proceed if the subset has been created as a result of 
+                 # pressing the submit button, and not as a result of the reset 
+                 # that ocurrs when switching tabs. 
+                 
+                 # Create reactive trigger: proceeds with computation if the 
+                 # subset is reset due to switching tabs 
+                 # (when object_init()==TRUE)
+                 continue <- makeReactiveTrigger()
+                 
+                 observeEvent(
+                   label = "DGE: Continuation Conditional",
+                   subset(),
+                   {
+                     print("Condtional conditional: state of object_init()")
+                     print(object_init())
+                     if (object_init() == FALSE){
+                       # If object_init == FALSE, continue with DGE calculations
+                       print("Continuation conditional: Trigger")
+                       continue$trigger()
+                     } else {
+                       # If object_init == TRUE, do not continue.
+                       
+                       # Set object_init() back to FALSE in this case
+                       object_init(FALSE)
+                       
+                       # In case spinners are displayed, remove them
+                       sidebar_spinner$hide()
+                       main_spinner$hide()
+                     }
+                       
+                   })
+                 
+                 ## 3.5. Compute subset stats
                  subset_stats <- 
                    subset_stats_server(
                      id = "subset_stats",
                      tab = "dge",
                      subset = subset,
                      meta_categories = meta_categories,
-                     event_expr = subset,
+                     # Responds to continuation conditional 
+                     event_expr = dge_table_content,
                      group_by_category = group_by_category
                      )
                  
-                 ## 3.5. Run Presto
+                 ## 3.6. Run Presto
                  dge_table_content <-
                    eventReactive(
                      # Chose the first reactive variable in the subset stats list
                      # (all are updated simultaneously, and it is desired for
                      # presto to run after stats are computed)
-                     subset_stats$n_cells(),
+                     continue$depend(),
                      label = "DGE: Run Presto",
                      ignoreNULL = FALSE,
+                     #ignoreInit = TRUE,
                      {
+                       print("DGE 3.6: Run Presto")
+                       print("Recorded Subset")
+                       print(subset())
                        dge_table <-
                          # Run presto on the subset, using the group by category
                          wilcoxauc(
@@ -307,10 +404,10 @@ dge_tab_server <- function(id,
                    }
                  )
 
-                 ## 3.6. DGE table, as DT for viewing
+                 ## 3.7. DGE table, as DT for viewing
                  dge_DT_content <-
                    eventReactive(
-                     dge_table_content(),
+                     subset_stats$n_cells(),
                      label = "DGE: DT Generation",
                      ignoreNULL=FALSE,
                      {
@@ -330,7 +427,7 @@ dge_tab_server <- function(id,
                          formatSignif(3:8, 5)
                        })
 
-                 ## 3.7. UMAP of DE Selected Groups
+                 ## 3.8. UMAP of DE Selected Groups
                  dge_umap <-
                    eventReactive(
                      c(dge_DT_content(), input$umap_group_by),
@@ -567,7 +664,6 @@ dge_tab_server <- function(id,
                  # })
 
                  # 8. Hide Spinners --------------------------------------------
-                 #Placement
                  observeEvent(
                    umap_options(),
                    label = "DGE: Hide Spinner",

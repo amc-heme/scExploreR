@@ -186,7 +186,7 @@ datasets <-
     # `AML_NA_Test` =
     #   list(
     #     `label` = "NA Test Object",
-    #     `object` = "./Seurat_Objects/NA_example.rds",
+    #     `object` = readRDS("./Seurat_Objects/NA_example.rds"),
     #     `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
     #     `description` =
     #       "Seurat Object used purely to test the handling of NA values. This
@@ -454,6 +454,7 @@ server <- function(input, output, session){
           # b. Dataset requested is different
           if (previous_key != selected_key()){
             # Activate Reactive trigger to load dataset
+            print("Dataset change trigger")
             dataset_change$trigger()
             } 
           
@@ -461,6 +462,21 @@ server <- function(input, output, session){
           # the dataset is the same. Do not proceed with dataset loading 
           # in this case
           }
+      })
+  
+  # TEMP: Inspect dataset trigger
+  observeEvent(
+    dataset_change$depend(),
+    label = "Dataset Trigger",
+    # The depend() function always evaluates to NULL when printed regardless
+    # of its true server value. Therefore, ignoreNULL must be used for the 
+    # observer to respond to the trigger.
+    ignoreNULL = FALSE,
+    # Do not want the observer to run upon startup or module creation
+    ignoreInit = TRUE,
+    {
+      print("Dataset trigger in main server ")
+      print(dataset_change$depend())
       })
   
   ## 1.4. Load/Update Object ####
@@ -824,16 +840,6 @@ server <- function(input, output, session){
     {
       current_key <- dataset_info$last_object_key
       
-      print("State of modules_created")
-      print(main_server$modules_created)
-      print("Current dataset key")
-      print(current_key)
-      print(
-        glue(
-          "Key included in modules_created: {current_key %in% main_server$modules_created}"
-          )
-        )
-      
       # If the current key is not in the list of module servers created, create
       # server instances for each tab.
       if (!current_key %in% main_server$modules_created){
@@ -871,7 +877,8 @@ server <- function(input, output, session){
         metadata_config = metadata_config,
         meta_categories = meta_categories,
         unique_metadata = unique_metadata,
-        meta_choices = meta_choices
+        meta_choices = meta_choices,
+        object_trigger = dataset_change
       )
       
       # Add current key to list of modules created so module is not re-created
@@ -1001,11 +1008,10 @@ server <- function(input, output, session){
 
 # Run the application 
 # profvis: generates a report giving memory usage by each process run in app
-
 #app <- shinyApp(ui = ui, server = server)
 
-#profvis({
-#  runApp(app)
-#})
+# profvis({
+#   runApp(shinyApp(ui = ui, server = server))
+# })
 
 shinyApp(ui = ui, server = server)

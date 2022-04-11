@@ -313,9 +313,15 @@ plots_tab_ui <- function(id,
 # Arguments
 # id: Used to match server component of module to UI component
 # object: The Seurat Object defined in the main server function
-# assay_config: the assays section of the config file loaded at app startup.
+# metadata_config: the metadata section of the config file corresponding 
+# to the current object.
+# assay_config: the assays section of the config file corresponding to the 
+# current object.
+# meta_categories: metadata categories retrieved from the config file
 # category_labels: list of labels for each metadata category, generated in main
 # server at startup.
+# unique_metadata: a list of all the unique metadata values in the current 
+# object for the categories defined in the config file.
 # valid_features: a list giving the valid features that can be selected from 
 # each assay. This is generated from the config file in the main server function
 # error_list: a list of error messages to use in a tryCatch expression. This is 
@@ -476,24 +482,6 @@ plots_tab_server <- function(id,
                  # instead of a subset the first time a new dataset is loaded.
                  object_init <- reactiveVal(FALSE)
                  
-                 # Reactive trigger function
-                 # Creates an action button which is programmatically 
-                 # triggered instead of triggered by the user
-                 # Code adapted from thread by Joe Cheng, the Author of Shiny.
-                 # https://community.rstudio.com/t/shiny-reactivetriggers-in-observeevent/42769
-                 makeReactiveTrigger <- function(){
-                   rv <- reactiveValues(a = 0)
-                   list(
-                     depend = function() {
-                       rv$a
-                       invisible()
-                     },
-                     trigger = function() {
-                       rv$a <- isolate(rv$a + 1)
-                     }
-                   )
-                 }
-                 
                  # Create a reactive trigger 
                  object_trigger <- makeReactiveTrigger()
                  
@@ -503,7 +491,7 @@ plots_tab_server <- function(id,
                    # Respond to downstream variable (results in less lag time 
                    # between removal of loading screen and rendering of UMAP)
                    metadata_config(),
-                   label = "object_init(TRUE)",
+                   label = "Plots: object_init(TRUE)",
                    {
                      object_init(TRUE)
                      object_trigger$trigger()
@@ -574,7 +562,7 @@ plots_tab_server <- function(id,
                                    # reactive inside
                                    criteria_list = plots_subset_selections()
                                  )
-                               }
+                             }
                              }
                            )#End tryCatch
 
@@ -598,13 +586,16 @@ plots_tab_server <- function(id,
                  
                  observeEvent(
                    subset(),
+                   ignoreInit = TRUE,
+                   ignoreNULL = FALSE,
+                   label = "Post-subset Memory Query",
                    {
-                     print("Memory used after creating subset in plots tab")
+                     print(glue("{id}: Memory used after creating subset in plots tab"))
                      print(mem_used())
-                     print("Class of subset variable")
-                     print(is(subset))
-                     print("is.reactive test")
-                     print(is.reactive(subset))
+                     print(glue("{id}: Memory used by subset"))
+                     print(object.size(subset()), units = "GB")
+                     print(glue("{id}: Memory used by object"))
+                     print(object.size(object()), units = "GB")
                    })
                  
                })
