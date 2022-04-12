@@ -904,7 +904,8 @@ server <- function(input, output, session){
         meta_choices = meta_choices,
         valid_features = valid_features,
         error_list = error_list,
-        update_features = update_features
+        update_features = update_features,
+        object_trigger = dataset_change
       )
       
       # Add current key to list of modules created so module is not re-created

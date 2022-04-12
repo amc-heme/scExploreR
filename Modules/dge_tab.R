@@ -252,6 +252,9 @@ dge_tab_server <- function(id,
                      })
 
                  ## 3.3. Form subset
+                 # Initialize variables to control reset of subset when the 
+                 # object is changed
+                 
                  # object_init: a reactive value set to TRUE when a new object 
                  # is loaded. The currently saved subset will be cleared when
                  # object_init is set to TRUE
@@ -261,8 +264,8 @@ dge_tab_server <- function(id,
                  # new object is loaded)
                  subset_trigger <- makeReactiveTrigger()
                  
-                 # Set object_init to TRUE when an object is loaded, 
-                 # and trigger the subset eventReactive to run
+                 # Upon object change: Set object_init to TRUE when an object 
+                 # is loaded, and trigger the subset eventReactive to run
                  observeEvent(
                    # Reacts to object_trigger defined in main server function
                    object_trigger$depend(),
@@ -288,8 +291,6 @@ dge_tab_server <- function(id,
                        # the full object
                        if (object_init() == TRUE){
                          subset <- object()
-                         # Also, set object_init() back to FALSE
-                         #object_init(FALSE)
                        } else {
                          # Otherwise, create subset from selections and return
                          subset <-
@@ -319,9 +320,13 @@ dge_tab_server <- function(id,
                      print(object.size(subset()), units = "GB")
                      print(glue("{id}: Memory used by object"))
                      print(object.size(object()), units = "GB")
+                     print("Address of subset")
+                     print(address(subset()))
+                     print("Address of object")
+                     print(address(object()))
                    })
                  
-                 ## 3.4: DGE Continuation Conditional
+                 ## 3.4. DGE Continuation Conditional
                  # After subset is computed, downstream computations should only 
                  # proceed if the subset has been created as a result of 
                  # pressing the submit button, and not as a result of the reset 
@@ -336,11 +341,8 @@ dge_tab_server <- function(id,
                    label = "DGE: Continuation Conditional",
                    subset(),
                    {
-                     print("Condtional conditional: state of object_init()")
-                     print(object_init())
                      if (object_init() == FALSE){
                        # If object_init == FALSE, continue with DGE calculations
-                       print("Continuation conditional: Trigger")
                        continue$trigger()
                      } else {
                        # If object_init == TRUE, do not continue.

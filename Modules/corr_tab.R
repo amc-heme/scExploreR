@@ -107,6 +107,8 @@ corr_tab_ui <- function(id,
 # function. The trigger is created in the main server function and ensures that
 # the feature selection input is updated after the input is created (input will
 # have no choices otherwise.)
+# object_trigger: a reactive trigger that invalidates downstream reactives when 
+# the object is changed.
 corr_tab_server <- function(id,
                             object,
                             metadata_config,
@@ -120,7 +122,8 @@ corr_tab_server <- function(id,
                             meta_choices,
                             valid_features,
                             error_list,
-                            update_features
+                            update_features,
+                            object_trigger
                             ){
 
   #Function to initialize module server
@@ -223,7 +226,9 @@ corr_tab_server <- function(id,
                      input$submit,
                      label = "Corr: Submit Button (Show Spinners)",
                      ignoreNULL = FALSE,
+                     ignoreInit = TRUE,
                      {
+                       #print("3.1. Show Spinners")
                        # Show spinners if the submit button is pressed and a 
                        # feature has been selected (requirement to begin 
                        # calculation)
@@ -248,17 +253,57 @@ corr_tab_server <- function(id,
                      )
 
                  ## 3.2 Form subset based on chosen criteria ####
+                 # Initialize variables to control reset of subset when the 
+                 # object is changed
+                 
+                 # object_init: a reactive value set to TRUE when a new object 
+                 # is loaded. The currently saved subset will be cleared when
+                 # object_init is set to TRUE
+                 object_init <- reactiveVal(FALSE)
+                 
+                 # Create a reactive trigger (triggers reset of subset when
+                 # new object is loaded)
+                 subset_trigger <- makeReactiveTrigger()
+                 
+                 # Upon object change: set object_init to TRUE and trigger 
+                 # subset eventReactive
+                 observeEvent(
+                   # Reacts to object_trigger defined in main server function
+                   object_trigger$depend(),
+                   label = "DGE: object_init(TRUE)",
+                   # Must use ignoreNULL = FALSE for reactive triggers
+                   ignoreNULL = FALSE,
+                   # Don't want this to run at startup or upon module creation
+                   ignoreInit = TRUE,
+                   {
+                     print("Object_init trigger")
+                     object_init(TRUE)
+                     subset_trigger$trigger()
+                   })
+                 
                  # Store in reactive variable
                  subset <- 
                    eventReactive(
-                     submit_button(),
-                     label = "Corr: Make Subset",
+                     c(submit_button(), subset_trigger$depend()),
+                     label = "Corr: Subset",
+                     ignoreNULL = FALSE,
+                     ignoreInit = TRUE,
                      {
                        #print("3.2 make subset")
-                       make_subset(
-                         object,
-                         criteria_list = subset_selections
-                         ) 
+                       
+                       if (object_init() == TRUE){
+                         # If object_init==TRUE, set subset equal to the full 
+                         # object
+                         return(object())
+                       } else {
+                         # Otherwise, create subset from selections and return
+                         return(
+                           make_subset(
+                             object = object,
+                             criteria_list = subset_selections
+                             )
+                           )
+                         }
                        })
                  
                  ## TEMP: Check Memory usage after making subset
@@ -278,13 +323,50 @@ corr_tab_server <- function(id,
                      print(object.size(object()), units = "GB")
                    })
                  
-                 ## 3.3 Determine if the subset created is a subset ####
+                 ## 3.3. Correlations Tab Continuation Conditional ####
+                 # After subset is computed, downstream computations should only 
+                 # proceed if the subset has been created as a result of 
+                 # pressing the submit button, and not as a result of the reset 
+                 # that ocurrs when switching tabs.
+                 
+                 # Reactive trigger: proceeds with computation if the subset is 
+                 # reset due to switching tabs (when object_init()==TRUE)
+                 continue <- makeReactiveTrigger()
+                 
+                 observeEvent(
+                   label = "Corr: Continuation Conditional",
+                   subset(),
+                   ignoreNULL = FALSE,
+                   # Does not work properly when ignoreInit == TRUE
+                   ignoreInit = FALSE,
+                   {
+                     #print("3.3. Continuation Conditional")
+                     if (object_init() == FALSE){
+                       print("continuation trigger")
+                       # If object_init == FALSE, continue with DGE calculations
+                       continue$trigger()
+                     } else {
+                       # If object_init == TRUE, do not continue.
+                       
+                       # Set object_init() back to FALSE in this case
+                       object_init(FALSE)
+                       
+                       # In case spinners are displayed, remove them
+                       sidebar_spinner$hide()
+                       main_spinner$hide()
+                     }
+                     
+                   })
+                 
+                 ## 3.4. Determine if the subset created is a subset ####
                  is_subset <- 
                    eventReactive(
-                     subset(),
+                     continue$depend(),
+                     ignoreNULL = FALSE,
+                     ignoreInit = TRUE,
                      label = "Corr: Determine if Object is a Subset",
                      {
-                       #print("3.3 is_subset")
+                       #print("3.4 is_subset")
                        # Print an error if the subset does not exist or is NULL
                        validate(
                          need(
@@ -305,7 +387,7 @@ corr_tab_server <- function(id,
                        n_cells_original() != n_cells_subset
                        })
                  
-                 ## 3.4 Subset Stats Module ####
+                 ## 3.5. Subset Stats Module ####
                  subset_stats_server(
                    id = "stats",
                    tab = "corr",
@@ -318,14 +400,17 @@ corr_tab_server <- function(id,
                    nonzero_threshold = nonzero_threshold
                  )
                  
-                 ## 3.5 Compute correlation tables ####
+                 ## 3.6. Compute correlation tables ####
                  # Calculations used depend on whether the object is a subset
                  corr_table_content <-
                    eventReactive(
-                     subset(),
-                     label = "Corr: Corr table",
+                     is_subset(),
+                     label = "Corr: Corr Table",
+                     ignoreNULL = FALSE,
+                     # Does not execute properly when ignoreInit == TRUE
+                     ignoreInit = FALSE,
                      {
-                       #print("3.5 Compute Correlation Tables")
+                       #print("3.6 Compute Correlation Tables")
                        if (is_subset() == TRUE){
                          # Subset is selected: compute tables for full object 
                          # and subset, then merge
@@ -377,15 +462,16 @@ corr_tab_server <- function(id,
                        corr_table
                      })
 
-                 ## 3.6. Store table in DT format for display in app ####
+                 ## 3.7. Store table in DT format for display in app ####
+                 # Reactive trigger to remove spinners upon completion
+                 remove_spinners <- makeReactiveTrigger()
                  corr_DT_content <- 
                    eventReactive(
-                     c(submit_button(),
-                       is_subset()),
+                     corr_table_content(),
                      label = "Corr: DT Content",
                      ignoreNULL = FALSE,
                      {
-                       #print("3.6. DT Table")
+                       #print("3.7. DT Table")
                        # Define header for datatable using HTML
                        if (is_subset() == TRUE){
                          # If a subset is selected, the header will have three 
@@ -443,14 +529,15 @@ corr_tab_server <- function(id,
                              ) # End table tag
                            }
                        
-                       datatable(
-                         corr_table_content(),
-                         class = "compact stripe cell-border hover",
-                         selection = "single",
-                         filter = "top",
-                         rownames = FALSE,
-                         container = header
-                         ) %>%
+                       DT <-
+                         datatable(
+                           corr_table_content(),
+                           class = "compact stripe cell-border hover",
+                           selection = "single",
+                           filter = "top",
+                           rownames = FALSE,
+                           container = header
+                           ) %>%
                          # Use 5 sig figs for pearson coefficientcolumn(s). If a 
                          # subset is used, this will be columns 2 and 3; 
                          # if not, this will be column 2.
@@ -458,13 +545,21 @@ corr_tab_server <- function(id,
                            columns = if (is_subset() == TRUE) c(2,3) else 2,
                            digits = 5
                            )
+                       
+                       remove_spinners$trigger()
+                       
+                       # Return DT datatable
+                       DT
                        })
                  
-                 # 3.7 Hide spinners after the DT datatable is computed ####
+                 # 3.8 Hide spinners after the DT datatable is computed ####
                  observeEvent(
-                   corr_DT_content(),
+                   remove_spinners$depend(),
                    label="Corr: Hide Spinners",
+                   ignoreNULL = FALSE,
+                   ignoreInit = TRUE,
                    {
+                     #print("3.8. Hide spinners")
                      # Hide loading screen
                      main_spinner$hide()
                      sidebar_spinner$hide()
