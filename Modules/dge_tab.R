@@ -203,8 +203,12 @@ dge_tab_server <- function(id,
                        hideElement(id = ns("main_panel_ui"))
 
                        # Display spinners
+                       log_session(session)
+                       log_info("DGE Tab: Submit button pressed")
                        sidebar_spinner$show()
                        main_spinner$show()
+                       log_session(session)
+                       log_info("DGE Tab: Spinners displayed.")
 
                        # Return the value of submit_button()
                        # This makes this eventReactive change each time it is
@@ -285,8 +289,6 @@ dge_tab_server <- function(id,
                      label = "DGE: Subset",
                      ignoreNULL = FALSE,
                      {
-                       print(glue("{id}: DGE subset triggered"))
-                       
                        # If object_init == TRUE, set the subset equal to 
                        # the full object
                        if (object_init() == TRUE){
@@ -310,20 +312,13 @@ dge_tab_server <- function(id,
                    subset(),
                    ignoreNULL = FALSE,
                    {
-                     print(
+                     log_session(session)
+                     log_info(
                        glue(
-                         "{id}: Memory used after creating subset in dge tab"
+                         "Memory used after creating subset in dge tab {to_GB(mem_used())}"
                          )
                        )
-                     print(mem_used())
-                     print(glue("{id}: Memory used by subset"))
-                     print(object.size(subset()), units = "GB")
-                     print(glue("{id}: Memory used by object"))
-                     print(object.size(object()), units = "GB")
-                     print("Address of subset")
-                     print(address(subset()))
-                     print("Address of object")
-                     print(address(object()))
+                     
                    })
                  
                  ## 3.4. DGE Continuation Conditional
@@ -380,9 +375,9 @@ dge_tab_server <- function(id,
                      ignoreNULL = FALSE,
                      #ignoreInit = TRUE,
                      {
-                       print("DGE 3.6: Run Presto")
-                       print("Recorded Subset")
-                       print(subset())
+                       #print("DGE 3.6: Run Presto")
+                       log_session(session)
+                       log_info("DGE Tab: Begin Presto")
                        dge_table <-
                          # Run presto on the subset, using the group by category
                          wilcoxauc(
@@ -401,8 +396,11 @@ dge_tab_server <- function(id,
                          # values are more "significant"). Ascending order is
                          # used for the log fold-change
                          arrange(padj, pval, desc(abs(logFC)))
-
-                     return(dge_table)
+                       
+                       log_session(session)
+                       log_info("DGE Tab: Completed Presto ")
+                       
+                       return(dge_table)
                    }
                  )
 
@@ -675,6 +673,8 @@ dge_tab_server <- function(id,
                      #Hide spinners
                      sidebar_spinner$hide()
                      main_spinner$hide()
+                     log_session(session)
+                     log_info("DGE Tab: Spinners removed.")
                    }
                  )
 

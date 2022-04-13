@@ -562,7 +562,7 @@ plots_tab_server <- function(id,
                                    # reactive inside
                                    criteria_list = plots_subset_selections()
                                  )
-                             }
+                               }
                              }
                            )#End tryCatch
 
@@ -590,12 +590,10 @@ plots_tab_server <- function(id,
                    ignoreNULL = FALSE,
                    label = "Post-subset Memory Query",
                    {
-                     print(glue("{id}: Memory used after creating subset in plots tab"))
-                     print(mem_used())
-                     print(glue("{id}: Memory used by subset"))
-                     print(object.size(subset()), units = "GB")
-                     print(glue("{id}: Memory used by object"))
-                     print(object.size(object()), units = "GB")
+                     log_session(session)
+                     log_info(
+                       glue("Memory used after creating subset in plots tab: {to_GB(mem_used())}")
+                       )
                    })
                  
                })

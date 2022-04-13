@@ -363,7 +363,7 @@ plot_module_server <- function(id,
                          object(),
                          message = "error: subset is NULL"
                          )
-                     )
+                       )
 
                      # Compute number of cells in subset
                      n_cells_subset <-

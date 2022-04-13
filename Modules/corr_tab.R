@@ -240,12 +240,15 @@ corr_tab_server <- function(id,
                        # empty string, which is the value of 
                        # input$feature_selection when it exists and no features 
                        # have been entered)
+                       log_session(session)
+                       log_info("Corr tab: Submit button pressed")
                        if(!is.null(input$feature_selection)){
                          if (input$feature_selection != ""){
+                           log_info("Displaying spinners")
                            sidebar_spinner$show()
                            main_spinner$show()
+                           }
                          }
-                       }
                        
                        # Always return value of submit button
                        input$submit
@@ -276,7 +279,6 @@ corr_tab_server <- function(id,
                    # Don't want this to run at startup or upon module creation
                    ignoreInit = TRUE,
                    {
-                     print("Object_init trigger")
                      object_init(TRUE)
                      subset_trigger$trigger()
                    })
@@ -306,21 +308,17 @@ corr_tab_server <- function(id,
                          }
                        })
                  
-                 ## TEMP: Check Memory usage after making subset
+                 ## 3.2.a. Check Memory usage after making subset
                  observeEvent(
                    label = "Corr: Subset Memory Query",
                    subset(),
                    {
-                     print(
+                     log_session(session)
+                     log_info(
                        glue(
-                         "{id}: Memory used after creating subset in corr tab"
+                         "Memory used after creating subset in corr tab: {to_GB(mem_used())}"
+                         )
                        )
-                     )
-                     print(mem_used())
-                     print(glue("{id}: Memory used by subset"))
-                     print(object.size(subset()), units = "GB")
-                     print(glue("{id}: Memory used by object"))
-                     print(object.size(object()), units = "GB")
                    })
                  
                  ## 3.3. Correlations Tab Continuation Conditional ####
@@ -342,7 +340,6 @@ corr_tab_server <- function(id,
                    {
                      #print("3.3. Continuation Conditional")
                      if (object_init() == FALSE){
-                       print("continuation trigger")
                        # If object_init == FALSE, continue with DGE calculations
                        continue$trigger()
                      } else {
@@ -410,6 +407,8 @@ corr_tab_server <- function(id,
                      # Does not execute properly when ignoreInit == TRUE
                      ignoreInit = FALSE,
                      {
+                       log_session(session)
+                       log_info("Corr tab: Begin correlation computations")
                        #print("3.6 Compute Correlation Tables")
                        if (is_subset() == TRUE){
                          # Subset is selected: compute tables for full object 
@@ -457,6 +456,9 @@ corr_tab_server <- function(id,
                              colnames = c("Feature","Correlation_Subset")
                            )
                        }
+                       
+                       log_session(session)
+                       log_info("Corr tab: Computations complete")
                        
                        # Return the computed table
                        corr_table
@@ -563,6 +565,8 @@ corr_tab_server <- function(id,
                      # Hide loading screen
                      main_spinner$hide()
                      sidebar_spinner$hide()
+                     log_session(session)
+                     log_info("Corr tab: Hide spinners")
                      # Show content in main panel
                      showElement(id = ns("main_panel_ui"))
                    })

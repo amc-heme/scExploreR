@@ -366,6 +366,14 @@ server <- function(input, output, session){
   ###
   
   # 1. Reactively load object and config file ----------------------------------
+  log_info(
+    glue("New Connection \n(session ID: {session$token})")
+    )
+  log_info(
+    glue("Memory usage upon connection: {to_GB(mem_used())}")
+    )
+  log_session(session)
+  
   # Initialize a reactiveVal for storing the key of the last dataset loaded
   dataset_info <- reactiveValues()
   dataset_info$last_object_key <- NULL
@@ -381,7 +389,7 @@ server <- function(input, output, session){
   # Value of startup is not important (though it can't be zero or it will be
   # ignored by observers with ignoreNULL arguments set to TRUE)
   startup(2)
-
+  
   ## 1.1. Event observers to open and close modal ####
   observeEvent(
     input$open_dataset_window,
@@ -914,7 +922,7 @@ server <- function(input, output, session){
     }
   })
   
-  # 4. Dataset Description in modal UI ####
+  # 4. Dataset Description in modal UI -----------------------------------------
   # Render text for the dataset modal that displays a description of the dataset
   # currently selected
   output$dataset_description <-
@@ -946,10 +954,19 @@ server <- function(input, output, session){
   observeEvent(
     object(),
     {
-      rlog::log_info(
-        print(glue("Memory used after loading current object: {mem_used()/10^9} GB"))
+      log_info(
+        glue("Memory used after loading current object: {to_GB(mem_used())}")
         )
       })
+  
+  # 5. Callbacks ---------------------------------------------------------------
+  ## 5.1. Code to run when the user disconnects ####
+  onSessionEnded(
+    function(){
+      log_info(glue("Session {session$token} disconnected."))
+      log_info(glue("Memory usage upon disconnection: {to_GB(mem_used())}"))
+    }
+    )
   
   # DEBUG: UI to test object and config file are properly rendered
   # output$verify_object <- 
@@ -1008,11 +1025,4 @@ server <- function(input, output, session){
 }
 
 # Run the application 
-# profvis: generates a report giving memory usage by each process run in app
-#app <- shinyApp(ui = ui, server = server)
-
-# profvis({
-#   runApp(shinyApp(ui = ui, server = server))
-# })
-
 shinyApp(ui = ui, server = server)
