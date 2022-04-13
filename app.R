@@ -366,6 +366,7 @@ server <- function(input, output, session){
   ###
   
   # 1. Reactively load object and config file ----------------------------------
+  cat("\n")
   log_info(
     glue("New Connection \n(session ID: {session$token})")
     )

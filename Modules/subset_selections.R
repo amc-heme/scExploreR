@@ -61,19 +61,25 @@ subset_selections_ui <- function(id,
         # Define placeholder
         "none-selected-text" = "No Filters Applied"
         )
-    )# End pickerInput
+    ) # End pickerInput
     
     # Append tag to list using tagList
     menus <- tagList(menus, menu_tag)
   }
   
-  # Last element: a reset button that will appear when subset menus 
-  # are filtered  to remove criteria that are mutually exclusive 
-  # with current selections
+  # Elements to display beneath menu tags (appended using tagList)
   menus <- 
     tagList(
       menus,
-      uiOutput(outputId = ns("reset_filter_button"))
+      # Reset button: appears when subset menus are currently being filtered
+      uiOutput(outputId = ns("reset_filter_button")),
+      # Checkbox to enable advanced subsetting
+      checkboxInput(
+        inputId = ns("string_subsetting"), 
+        label = "String subsetting (advanced mode)"
+        ),
+      # If checkbox is selected, show string subsetting menu
+      uiOutput(outputId = ns("string_subsetting_menu"))
     )
   
   # Return list of menu tags
@@ -109,80 +115,32 @@ subset_selections_server <- function(id,
       # Server namespace function: used for UI elements rendered in server
       ns <- session$ns
       
-      # 1. Store all input values from the UI as a reactive list ---------------
-      selections <- 
-        reactive(
-          label = glue("{id}: selections_list"),
+      # 1. UI for String Subsetting --------------------------------------------
+      # Advanced subsetting window
+      string_subset_ui <-
+        eventReactive(
+          input$string_subsetting,
+          ignoreNULL = FALSE,
           {
-            # Store selections for each input in the UI (one menu is created 
-            # for each metadata category in the config file)
-            selections_list <- 
-              lapply(
-                names(metadata_config()),
-                function(category){
-                  # Define input ID for each category 
-                  # Formula: <category>_selection
-                  category_id <- glue("{category}_selection")
-                  
-                  # When menus are empty, no filters are applied.
-                  # Therefore, all unique values should be returned 
-                  # for the category in question
-                  if (is.null(input[[category_id]])){
-                    unique_metadata()[[category]]
-                    } else {
-                      input[[category_id]]
-                      }
-                  }
+            if (input$string_subsetting == TRUE){
+              tagList(
+                # When the checkbox is selected, display UI for string subsetting
+                textAreaInput(
+                  inputId = ns("adv_subset"),
+                  label = NULL,
+                  width = "100%",
+                  rows = 4,
+                  resize = "vertical"
+                  )
                 )
-            
-            # Add categories from metadata file to list names
-            names(selections_list) <- names(metadata_config())
-            
-            # If hide_menu is provided and is a reactive, remove all 
-            # hidden menus from the selections output
-            # is.reactive() is used as a conditional to keep app from crashing
-            # when hide_menu is NULL or not a reactive variable
-            if (!is.null(hide_menu) && is.reactive(hide_menu)){
-              # Remove any categories from the selections list 
-              # that are also in hide_menu
-              selections_list <-
-                selections_list[!names(selections_list) %in% hide_menu()]
               }
-            
-            selections_list
-          })
+            })
       
-      # observeEvent(
-      #   metadata_config(),
-      #   ignoreNULL = FALSE,
-      #   {
-      #     print("Input values") 
-      #     for (category in names(metadata_config())){
-      #       print(glue("input${category}_selection"))
-      #       print(input[[glue("{category}_selection")]])
-      #     }
-      #   })
-      
-      # 1a. Special case: when a new object is loaded, set "selections" equal to
-      # all unique values in the new object
-      # selections <- 
-      #   eventReactive(
-      #     metadata_config(),
-      #     label = glue("{id}: Update Selections on Object Change"),
-      #     ignoreNULL = FALSE,
-      #     {
-      #       # Construct list using all unique values for each category
-      #       all_selected <-
-      #         lapply(
-      #           meta_categories(),
-      #           function(category){unique_metadata()[[category]]}
-      #         )
-      #       
-      #       names(all_selected) <- names(meta_categories())
-      #       
-      #       print("Finished special selections reactive")
-      #       all_selected
-      #     })
+      # Render string subsetting UI
+      output$string_subsetting_menu <- 
+        renderUI({
+          string_subset_ui()
+        })
       
       # 2. UI for Filtering Selection Menus ------------------------------------
       # Subset menus will be filtered for 
@@ -244,6 +202,7 @@ subset_selections_server <- function(id,
       output$reset_filter_button <- renderUI({
         reset_filter_ui()
       })
+      
       
       # 3. For later: filter menus in UI based on selections --------------------
       ## 3.1. Update valid choices in selection menus #### 
@@ -500,8 +459,73 @@ subset_selections_server <- function(id,
             })
       }
       
-      # Return the reactive list of selections 
-      return(selections)
+      # 5. Form Reactive List From Menu Selections -----------------------------
+      selections <- 
+        reactive(
+          label = glue("{id}: selections_list"),
+          {
+            # Store selections for each input in the UI (one menu is created 
+            # for each metadata category in the config file)
+            selections_list <- 
+              lapply(
+                names(metadata_config()),
+                function(category){
+                  # Define input ID for each category 
+                  # Formula: <category>_selection
+                  category_id <- glue("{category}_selection")
+                  
+                  # When menus are empty, no filters are applied.
+                  # Therefore, all unique values should be returned 
+                  # for the category in question
+                  if (is.null(input[[category_id]])){
+                    unique_metadata()[[category]]
+                  } else {
+                    input[[category_id]]
+                  }
+                }
+              )
+            
+            # Add categories from metadata file to list names
+            names(selections_list) <- names(metadata_config())
+            
+            # If hide_menu is provided and is a reactive, remove all 
+            # hidden menus from the selections output
+            # is.reactive() is used as a conditional to keep app from crashing
+            # when hide_menu is NULL or not a reactive variable
+            if (!is.null(hide_menu) && is.reactive(hide_menu)){
+              # Remove any categories from the selections list 
+              # that are also in hide_menu
+              selections_list <-
+                selections_list[!names(selections_list) %in% hide_menu()]
+            }
+            
+            selections_list
+          })
+      
+      # 6. Process Subset String
+      # If entered by the user, record the advanced subsetting string each time 
+      # the 'apply subset' button is pressed
+      user_string <- 
+        reactive({
+          # isTruthy: if the manual subset string entry box does not exist 
+          # (which is the case before the checkbox is selected), return NULL 
+          # for the string
+          if(isTruthy(input$adv_subset)){
+            # If the subset string entry is defined, record the value
+            return(input$adv_subset)
+          } else {
+            return(NULL)
+          }
+          })
+      
+      # 7. Return Menu Selections and Manual String Entry ----------------------
+      return(
+        list(
+          `selections` = selections,
+          # Store advanced string input reactively, if it exists
+          `user_string` = user_string
+          )
+        )
     }
   )
 }

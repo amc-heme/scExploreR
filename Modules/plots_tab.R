@@ -560,7 +560,10 @@ plots_tab_server <- function(id,
                                    # extract from eventReactive before passing 
                                    # it to the function, which will extract the
                                    # reactive inside
-                                   criteria_list = plots_subset_selections()
+                                   criteria_list = 
+                                     plots_subset_selections$selections,
+                                   user_string = 
+                                     plots_subset_selections$user_string
                                  )
                                }
                              }

@@ -248,7 +248,7 @@ dge_tab_server <- function(id,
                        # Retrieve list of subset selections
                        # Must unpack from reactive to avoid modifying the
                        # reactive with the test_selections data above
-                       subset_criteria <- subset_selections()
+                       subset_criteria <- subset_selections$selections()
                        # Append test_selections information to selections list
                        subset_criteria[[group_by_category]] <- choices
 
@@ -298,7 +298,8 @@ dge_tab_server <- function(id,
                          subset <-
                            make_subset(
                              object = object,
-                             criteria_list = dge_subset_criteria()
+                             criteria_list = dge_subset_criteria(),
+                             user_string = subset_selections$user_string
                              )
                        }
 

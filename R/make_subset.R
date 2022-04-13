@@ -1,14 +1,21 @@
-# Subset Creation Function
-
-# Arguments
-# criteria_list: a list of name-value pairs with the name of each category used 
-# as a criterion, and the unique values within that category to include in the 
-# subset. The name of the category must be entered exactly as it appears in the 
-# metadata slot of the Seurat object, and the list object itself must be 
-# reactive, as opposed to each individual item being reactive. The app code 
-# should generate the list in the correct format automatically.  
+#' Subset Creation Function
+#'
+#' @param object a Seurat object.
+#' @param criteria_list a list of name-value pairs with the name of each 
+#' category used as a criterion, and the unique values within that category to 
+#' include in the subset. The name of the category must be entered exactly as it
+#' appears in the metadata slot of the Seurat object, and the list object itself
+#' must be reactive, as opposed to each individual item being reactive. The app
+#'  code should generate the list in the correct format automatically.  
+#' @param user_string if the user enables the entry of a subset string, the 
+#' value of the string should be passed to this variable. The string passed will
+#' be added to the end of the string generated from criteria_list, with the '&'
+#' operator separating the string.
+#'
+#' @return A Seurat object subsetted for the criteria entered.
 make_subset <- function(object, 
-                        criteria_list
+                        criteria_list,
+                        user_string = NULL
                         ){
   # Define sub-function vector_code (generates code to be passed as a string 
   # to the subset function)
@@ -78,6 +85,19 @@ make_subset <- function(object,
     # Add the criterion to the subset string
     subset_str <- paste0(subset_str, criterion)
   }
+  
+  # Test if user_string is reactive (the default for this argument is
+  # a non-reactive NULL value)
+  if (is.reactive(user_string)){
+    # If the value is reactive and not currently equal to NULL, append the 
+    # value to the subset string created from the criteria list.
+    if (!is.null(user_string())){
+      # Add user string in parentheses and link it to conditionals in subset 
+      # string with "&" operator
+      subset_str <- glue('{subset_str} & ({user_string()})')
+    }
+  }
+  
   
   # Subset using the subset string 
   subset <- eval(parse(text=paste0("subset(object(), subset = ", subset_str, ")")))
