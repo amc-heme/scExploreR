@@ -17,17 +17,18 @@
 # at app startup
 # ylim_orig: the original y limits for the umap, computed from full object at 
 # app startup
-shiny_feature <- function(object, #Reactive-agnostic
-                          features_entered, #Reactive
-                          split_by, #Reactive
-                          show_label, #Reactive
-                          show_legend, #Reactive
-                          is_subset, #Reactive
-                          original_limits, #Reactive
-                          assay_config, #Reactive
-                          xlim_orig, #Reactive
-                          ylim_orig, #Reactive
-                          reduction = NULL #Reactive
+shiny_feature <- function(object, # Reactive-agnostic
+                          features_entered, # Reactive
+                          split_by, # Reactive
+                          order, # Reactive
+                          show_label, # Reactive
+                          show_legend, # Reactive
+                          is_subset, # Reactive
+                          original_limits, # Reactive
+                          assay_config, # Reactive
+                          xlim_orig, # Reactive
+                          ylim_orig, # Reactive
+                          reduction = NULL # Reactive
 ){
   # At least one feature must be entered to avoid errors when computing plot
   if (length(features_entered()) > 0){
@@ -51,6 +52,8 @@ shiny_feature <- function(object, #Reactive-agnostic
           # Object or subset (reactive-agnostic)
           if (is.reactive(object)) object() else object,
           features = features_entered(),
+          # Order: whether to plot cells in order by expression
+          order = if (is.null(order())) FALSE else order(),
           # Reduction: uses the input for reduction if it exists, otherwise
           # it is set to NULL and will use default settings.
           reduction = if(!is.null(reduction)) reduction() else NULL
@@ -76,6 +79,8 @@ shiny_feature <- function(object, #Reactive-agnostic
           if (is.reactive(object)) object() else object,
           features = features_entered(),
           split.by = split_by(),
+          # Order: whether to plot cells in order by expression
+          order = if (is.null(order())) FALSE else order(),
           # Reduction: uses the input for reduction if it exists, otherwise
           # it is set to NULL and will use default settings.
           reduction = if(!is.null(reduction)) reduction() else NULL

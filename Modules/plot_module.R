@@ -1,41 +1,62 @@
-# Plot Module
-# Displays selections menus for an individual plot, builds the plot, and 
-# displays it to the screen
-
-# plot_module_ui
-# The module UI has two components: "options", which builds the selection menus 
-# for plot options, and "plot", which contains the output for the plot itself. 
-# The UI component needs to be called twice, once in the desired location for 
-# the menus using ui_component="options", and again in the desired location for 
-# the plot output with ui_component="plot". For the plot component, the only 
-# arguments that need to be set are id and the ui_component; all other arguments
-# are used for the options tab
-
-# Arguments
-# id: ID to use for module elements. IDs for the options and plot UI components,
-# and the server component, must match.
-# ui_component: determines which UI component is to be plotted. Use "options" 
-# to create the input menus for plot options, and "plot" to create the output
-# container for the plot.
-# plot_label: a human readable name for the plot that will appear in the menus.
-# The name should make sense by itself (i.e. "Feature Plot" should be entered
-# instead of "Feature").
-# reductions: a vector giving all the reductions used in the Seurat object. 
-# must be supplied if reductions_menu == TRUE
-# group_by: if TRUE, display a menu with metadata categories to group by.
-# split_by: if TRUE, display a menu with metadata categories to split by.
-# ncol_slider: if TRUE, display a slider to specify the number of columns to use
-# for the plot. This only works for UMAP and violin plots. 
-# label_checkbox: if TRUE, display a checkbox for including labels on the plot.
-# legend_checkbox: if TRUE, display a checkbox for including a legend.
-# limits_checkbox: if TRUE, display a checkbox for the use of original axes.
-# limits when a subset is plotted. This only works for UMAP and Feature plots.
-# manual_dimensions: if TRUE, display an interface to specify manual height and
-# width parameters for the plot.
-# separate_features: if TRUE, display a checkbox to enter separate features 
-# for the plot. A text entry will be created if the checkbox is selected.
-# download_button: if TRUE, display a download button that will save a .png 
-# image of the plot to disk.
+#' Plot Module
+#' 
+#' Displays selections menus for an individual plot, builds the plot, and 
+#' displays it to the screen.
+#' 
+#' This module has two UI components, both of which must be called with the 
+#' same ID for the module to display plots properly. The UI created with 
+#' \code{plot_module_ui(ui_component = "options")} will give a list of menus used
+#' for selecting options that apply to the plot created by the module, and the
+#' UI created by \code{plot_module_ui(ui_component = "plot")} will display the 
+#' plot itself.
+#'
+#' plot_module_ui
+#'
+#' The module UI has two components: "options", which builds the selection menus 
+#' for plot options, and "plot", which contains the output for the plot itself. 
+#' 
+#' The UI component needs to be called twice, once in the desired location for 
+#' the menus using ui_component="options", and again in the desired location for 
+#' the plot output with ui_component="plot". For the plot component, the only
+#' arguments that need to be set are id and the ui_component; all other
+#' arguments are used for the options tab.
+#'
+#' @param id ID to use for module elements. IDs for the options and plot UI 
+#' components, and the server component, must match.
+#' @param ui_component Determines which UI component is to be plotted. Use 
+#' "options" to create the input menus for plot options, and "plot" to create 
+#' the output container for the plot.
+#' @param meta_choices A named vector generated in the main server function 
+#' giving the choices of metadata categories to split and group plots by.
+#' @param plot_label A human readable name for the plot that will appear in the
+#' menus. The name should make sense by itself (i.e. "Feature Plot" should be 
+#' entered instead of "Feature").
+#' @param reductions A vector giving all the reductions used in the Seurat
+#' object. Must be supplied if reductions_menu == TRUE
+#' @param reductions_menu if TRUE, display a menu with reduction options to 
+#' choose for the plot
+#' @param group_by If TRUE, display a menu with metadata categories to group by.
+#' @param split_by If TRUE, display a menu with metadata categories to split by.
+#' @param ncol_slider If TRUE, display a slider to specify the number of columns
+#' to use for the plot. This only works for UMAP and violin plots. 
+#' @param order_checkbox if TRUE, display a checkbox to plot cells in order of 
+#' expression (for feature plots). This may be useful if a few cells with high 
+#' expression are being obscured by neighboring cells with low expression, but 
+#' it may over represent the percentage of cells expressing a feature.
+#' @param label_checkbox If TRUE, display a checkbox for including labels on 
+#' the plot.
+#' @param legend_checkbox If TRUE, display a checkbox for including a legend.
+#' @param limits_checkbox If TRUE, display a checkbox for the use of original 
+#' axes. Limits when a subset is plotted. This only works for UMAP and 
+#' Feature plots.
+#' @param manual_dimensions If TRUE, display an interface to specify manual 
+#' height and width parameters for the plot.
+#' @param separate_features If TRUE, display a checkbox to enter separate 
+#' features for the plot. A text entry will be created if the checkbox 
+#' is selected.
+#' @param download_button If TRUE, display a download button that will save a
+#' .png image of the plot to disk.
+#'
 plot_module_ui <- function(id,
                            # The plot_module UI consists of the options
                            # panels and the plot output, which exist in 
@@ -52,6 +73,7 @@ plot_module_ui <- function(id,
                            group_by =           FALSE,
                            split_by =           FALSE,
                            ncol_slider =        FALSE,
+                           order_checkbox =     FALSE,
                            label_checkbox =     FALSE,
                            legend_checkbox =    FALSE,
                            limits_checkbox =    FALSE,
@@ -122,6 +144,16 @@ plot_module_ui <- function(id,
       if (ncol_slider == TRUE){
         #Dynamic UI (appears when split_by != "none")
         uiOutput(outputId = ns("ncol_slider"))
+      } else NULL,
+      
+      # Checkbox to order cells by expression (feature plots only)
+      if (order_checkbox == TRUE){
+        checkboxInput(
+          inputId = ns("order"),
+          label = "Order Cells by Expression",
+          # Order should be FALSE by default
+          value = FALSE
+        )
       } else NULL,
       
       # Checkbox to add/remove labels
@@ -221,28 +253,40 @@ plot_module_ui <- function(id,
   }
 }
 
-#plot_module_server
-
-# Arguments
-# manual_dimensions: creates a server instance for specifying manual dimensions 
-# if TRUE. This should be set to TRUE if manual_dimensions is also true in the UI
-# Object: the Seurat object to be used for plotting. It may be a subset or the 
-# full object.
-# plot_switch: Switch in the plots tab specifying whether the user wishes to see
-# the plot created in this server function 
-# plot_label: The name for this plot type, in a format desired for display
-# n_cells_original: The number of cells 
-# manual_dimensions: a boolean specifying whether to create an instance of the 
-# manual_dimensions server. This should be true when manual_dimensions is TRUE
-# in the UI function for this module.
-# plot_type: the type of plot to create from the selected options.
-# xlim_orig: the x limits of the dimplot of the full Seurat object (before a
-# subset is created). This only applies to dimplots and feature plots.
-# ylim_orig: the y limits of the dimplot of the full Seurat object.
-# assay_config: the assays section of the config file loaded at app startup.
-# separate_features_separate: a boolean giving whether server code to process 
-# separate features (features specific to the plot created by this module) 
-# should be ran
+#' plot_module_server
+#'
+#' Server function to run alongside the corresponding UI function
+#'
+#' @param id The module ID used for namespacing. This should match the ID used
+#' in the UI components for the plot module.
+#' @param object The Seurat object to be used for plotting. It may be a subset 
+#' or the full object.
+#' @param plot_switch Switch in the plots tab specifying whether the user wishes 
+#' to see the plot created in this server function 
+#' @param plot_label The name for this plot type. Will display as entered 
+#' in the app
+#' @param n_cells_original The number of cells in the original object. This is
+#' set in the main server function each time a new object is loaded.
+#' @param features_entered 
+#' @param manual_dimensions Creates a server instance for specifying manual 
+#' dimensions if TRUE. This should be set to TRUE if manual_dimensions is also 
+#' TRUE in the UI
+#' @param plot_type The type of plot to create from the selected options.
+#' @param valid_features 
+#' @param xlim_orig The x limits of the dimplot of the full Seurat object 
+#' (before a subset is created). This only applies to dimplots and feature plots.
+#' @param ylim_orig The y axis limits of the dimplot of the full Seurat object.
+#' @param assay_config The assay section of the config file loaded in the main
+#' server function
+#' @param separate_features_server A boolean giving whether server code to 
+#' process separate features (features specific to the plot created by this 
+#' module) should be ran. This should be TRUE for all plots where the user can 
+#' enter features that apply just to that plot.
+#'
+#' @return
+#' @export
+#'
+#' @examples
 plot_module_server <- function(id,
                                object, #Reactive
                                plot_switch, #Reactive
@@ -321,6 +365,13 @@ plot_module_server <- function(id,
                                } else NULL
                              })
                            },
+                     
+                     # Order cells by expression
+                     `order` = reactive({
+                       if ("order" %in% isolate(names(input))){
+                         input$order
+                       } else NULL
+                     }),
                      
                      # Include legend
                      `legend` = reactive({
@@ -793,6 +844,7 @@ plot_module_server <- function(id,
                          object = object,
                          features_entered = features_entered, 
                          split_by = plot_selections$split_by,
+                         order = plot_selections$order,
                          show_label = plot_selections$label,
                          show_legend = plot_selections$legend,
                          is_subset = is_subset,
