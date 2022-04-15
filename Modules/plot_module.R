@@ -196,26 +196,30 @@ plot_module_ui <- function(id,
           conditionalPanel(
             condition = glue("input['{ns('custom_colors')}'] == true"), 
             tagList(
-              colourInput(
-                inputId = ns("min_color"),
-                label = "Color to use for lowest expression values",
-                #palette = "limited",
-                #allowedCols = color_choices,
-                value = "#E1E1E1"
-              ),
-              colourInput(
-                inputId = ns("max_color"),
-                label = "Color to use for highest expression values",
-                #palette = "limited",
-                #allowedCols = color_choices,
-                value = "#000000"
+              div(
+                class = "two-color-input-left",
+                colourInput(
+                  inputId = ns("min_color"),
+                  label = "Low Expression",
+                  # palette = "limited",
+                  # allowedCols = color_choices,
+                  value = "#E1E1E1"
+                  )
+                ),
+              div(
+                class = "two-color-input-right",
+                colourInput(
+                  inputId = ns("max_color"),
+                  label = "High Expression",
+                  # palette = "limited",
+                  # allowedCols = color_choices,
+                  value = "#000000"
+                  )
                 )
               )
-            )#,
-          #uiOutput(outputId = ns("custom_colors_ui"))
-        )
-        
-      } else NULL,
+            )
+          )
+        } else NULL,
       
       # UI for user control of plot dimensions
       if (manual_dimensions == TRUE){
@@ -275,10 +279,31 @@ plot_module_ui <- function(id,
       
       # UI for download button
       if (download_button == TRUE){
-        downloadButton(
-          outputId = ns("download"), 
-          label=glue("Download {plot_label}")
+        div(
+          class = "plot-download-button",
+          dropdownButton(
+            inputId = ns("download"),
+            status = "info",
+            up = TRUE,
+            label = "",
+            size = "sm",
+            icon = icon("download"),
+            div(
+              selectInput(
+                inputId = ns("file_type"),
+                label = "Select File Type",
+                choices = c(".png" = "png", ".svg" = "svg"),
+                selected = "png"
+              ),
+              downloadButton(
+                outputId = ns("confirm_download"),
+                label = "Download",
+                class = "confirm-download",
+                icon = NULL
+              )
+            )
           )
+        )
       } else NULL
     )
     
@@ -868,13 +893,6 @@ plot_module_server <- function(id,
                      })
                  }
                  
-                 # TEMP
-                 observe({
-                   print("Colors selected")
-                   print(input$min_color)
-                   print(input$max_color)
-                 })
-                 
                  # 6. Plot -----------------------------------------------------
                  ## 6.1 Define Features to use (all plots except UMAP) ####
                  # Uses either the general feature entry (features_entered()),
@@ -1010,45 +1028,60 @@ plot_module_server <- function(id,
                  })
                  
                  # 7. Download Handler -----------------------------------------
-                 output$download <- downloadHandler(
-                   # Filename: takes the label and replaces 
-                   # spaces with underscores
-                   filename = glue("{sub(' ','_',plot_label)}.png"),
-                   content = function(file){
-                     # Conditional: manual dimensions are specified
-                     if (
-                       (!is.null(manual_dim$width())) && 
-                       (!is.null(manual_dim$height()))
-                     ){
-                       # If manual dimensions are specified, apply them to 
-                       # height and width arguments
-                       ggsave(
-                         file,
-                         plot = plot(),
-                         device = "png",
-                         width = manual_dim$width(),
-                         height = manual_dim$height(),
-                         # Set dpi to 72 so proportions of downloaded plot 
-                         # match the plot in the app
-                         dpi = 72,
-                         units = "px",
-                         # Set background color to white (background is 
-                         # transparent on some plots)
-                         bg="#FFFFFF"
+                 output$confirm_download <- 
+                   downloadHandler(
+                     # Filename: takes the label and replaces 
+                     # spaces with underscores
+                     filename = function(){
+                       if (input$file_type == "png"){
+                         glue("{sub(' ','_',plot_label)}.png")
+                       } else if (input$file_type == "svg"){
+                         glue("{sub(' ','_',plot_label)}.svg")
+                         }
+                       },
+                     content = function(file){
+                       # Conditional: manual dimensions are specified
+                       if (
+                         (!is.null(manual_dim$width())) && 
+                         (!is.null(manual_dim$height()))
+                       ){
+                         # If manual dimensions are specified, apply them to 
+                         # height and width arguments
+                         ggsave(
+                           file,
+                           plot = plot(),
+                           # Either 'png' or 'svg'
+                           device = input$file_type,
+                           width = manual_dim$width(),
+                           height = manual_dim$height(),
+                           # Set dpi to 72 so proportions of downloaded plot 
+                           # match the plot in the app
+                           dpi = 72,
+                           units = "px",
+                           # Set background color to white (background is 
+                           # transparent on some plots)
+                           bg="#FFFFFF"
                          )
-                     } else {
-                       ggsave(
-                         file,
-                         plot = plot(),
-                         device = "png",
-                         # Set background color to white (background is 
-                         # transparent on some plots)
-                         bg ="#FFFFFF"
+                       } else {
+                         ggsave(
+                           file,
+                           plot = plot(),
+                           # Either 'png' or 'svg'
+                           device = input$file_type,
+                           # Set background color to white (background is 
+                           # transparent on some plots)
+                           bg ="#FFFFFF"
                          )
                        }
                      },#End content function
-                   contentType = "image/png"
-                 ) #End downloadHandler function
+                     contentType = 
+                       # contentType: uses MIME types
+                       if (input$file_type == "png"){
+                         "image/png"
+                         } else if (input$file_type == "svg"){
+                           "image/svg+xml"
+                           }
+                   ) #End downloadHandler function
                  
                  })
   }

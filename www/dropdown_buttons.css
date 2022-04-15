@@ -79,3 +79,22 @@
 	color: #333;
 	text-decoration: none;
 }
+
+/******************************************************************************/
+/* Download Button for Plots */
+/* Use selectors to apply styles below to dropDownButton wrapped in div with
+   .plot-download-button class*/
+.plot-download-button > div > button {
+  width: 80px !important;
+  border-radius: 15px !important;
+  background-color: #4E7CE0 !important;
+  border-color: #333BE6 !important;
+}
+
+.plot-download-button > div > button:hover {
+  background-color: #7796D9 !important;
+}
+
+.plot-download-button > div > button.btn:active {
+  background-color: #7796D9 !important;
+}

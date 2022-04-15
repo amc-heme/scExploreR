@@ -45,10 +45,6 @@ shiny_feature <- function(object, # Reactive-agnostic
         )
       )
     
-    print("Values of colors")
-    print(color_lower())
-    print(color_upper())
-    
     # Creation of plot
     if (split_by() == "none"){
       # If no split.by category is specified, create a feature plot without 

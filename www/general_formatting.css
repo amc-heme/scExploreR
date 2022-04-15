@@ -127,3 +127,35 @@ h2, h3 {
   color: #444455;
   font-weight: bold;
 }
+
+/* Color Inputs */
+/* two-color-input: applied to division elements that contain two colourPicker
+   inputs. This causes the inputs to appear condensed and on one line. */
+.two-color-input-left,
+.two-color-input-right {
+  display: inline-block;
+}
+
+.two-color-input-left > div.shiny-input-container,
+.two-color-input-right > div.shiny-input-container {
+  width: 80px;
+  display: inline-block;
+}
+
+.two-color-input-left >
+  .shiny-input-container >
+  .colourpicker >
+  .colourpicker-input-container >
+  input,
+.two-color-input-right >
+  .shiny-input-container >
+  .colourpicker >
+  .colourpicker-input-container >
+  input {
+  font-size: 0.95em;
+  padding: 3px 6px;
+}
+
+.two-color-input-right > .shiny-input-container > .colourpicker > .colourpicker-input-container > .colourpicker-panel {
+  left: -80px;
+}
