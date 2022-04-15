@@ -12,15 +12,14 @@ library(shinycssloaders, quietly = TRUE, warn.conflicts = FALSE)
 library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
 # library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
 
-
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
 options(shiny.reactlog=TRUE, warn.conflicts = FALSE)
 
 # Logging and performance monitoring
-library(profvis)
-library(pryr)
-library(rlog)
+library(profvis, quietly = TRUE, warn.conflicts = FALSE)
+library(pryr, quietly = TRUE, warn.conflicts = FALSE)
+library(rlog, quietly = TRUE, warn.conflicts = FALSE)
 
 # Tidyverse packages
 library(tidyverse, quietly = TRUE, warn.conflicts = FALSE)
@@ -29,6 +28,11 @@ library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
 library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 library(glue, quietly = TRUE, warn.conflicts = FALSE)
 library(DT, quietly = TRUE, warn.conflicts = FALSE)
+
+# Plotting
+library(RColorBrewer, quietly = TRUE, warn.conflicts = FALSE)
+library(viridisLite, quietly = TRUE, warn.conflicts = FALSE)
+library(colourpicker, quietly = TRUE, warn.conflicts = FALSE)
 
 # Additional backend packages
 library(presto, quietly = TRUE, warn.conflicts = FALSE)

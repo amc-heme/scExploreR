@@ -28,6 +28,8 @@ shiny_feature <- function(object, # Reactive-agnostic
                           assay_config, # Reactive
                           xlim_orig, # Reactive
                           ylim_orig, # Reactive
+                          color_lower, # Reactive
+                          color_upper, # Reactive
                           reduction = NULL # Reactive
 ){
   # At least one feature must be entered to avoid errors when computing plot
@@ -42,6 +44,10 @@ shiny_feature <- function(object, # Reactive-agnostic
         message = ""
         )
       )
+    
+    print("Values of colors")
+    print(color_lower())
+    print(color_upper())
     
     # Creation of plot
     if (split_by() == "none"){
@@ -117,6 +123,14 @@ shiny_feature <- function(object, # Reactive-agnostic
                 scale_x_continuous(limits = xlim_orig()),
                 scale_y_continuous(limits = ylim_orig())
                 )
+        },
+        
+        # Element D: Custom colors
+        # When provided, represent expression with user-selected colors 
+        if (isTruthy(color_lower()) & isTruthy(color_upper())){
+          scale_color_gradientn(
+            colors = c(color_lower(), color_upper())
+          )
         }
       )
     

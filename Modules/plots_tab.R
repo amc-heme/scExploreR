@@ -186,6 +186,7 @@ plots_tab_ui <- function(id,
                label_checkbox =    TRUE,
                legend_checkbox =   TRUE,
                limits_checkbox =   TRUE,
+               custom_colors =     FALSE,
                manual_dimensions = TRUE,
                download_button =   TRUE
              )
@@ -213,6 +214,7 @@ plots_tab_ui <- function(id,
                label_checkbox =    FALSE,
                legend_checkbox =   TRUE,
                limits_checkbox =   TRUE,
+               custom_colors =     TRUE,
                manual_dimensions = TRUE,
                download_button =   TRUE
              )
@@ -238,6 +240,7 @@ plots_tab_ui <- function(id,
                label_checkbox =    FALSE,
                legend_checkbox =   TRUE,
                limits_checkbox =   FALSE,
+               custom_colors =     FALSE,
                manual_dimensions = TRUE,
                download_button =   TRUE
              )
@@ -263,6 +266,7 @@ plots_tab_ui <- function(id,
                label_checkbox =    FALSE,
                legend_checkbox =   TRUE,
                limits_checkbox =   FALSE,
+               custom_colors =     FALSE,
                manual_dimensions = TRUE,
                separate_features = TRUE,
                download_button =   TRUE

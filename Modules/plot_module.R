@@ -49,6 +49,8 @@
 #' @param limits_checkbox If TRUE, display a checkbox for the use of original 
 #' axes. Limits when a subset is plotted. This only works for UMAP and 
 #' Feature plots.
+#' @param custom_colors If TRUE, display UI for adding custom colors to 
+#' the current plot
 #' @param manual_dimensions If TRUE, display an interface to specify manual 
 #' height and width parameters for the plot.
 #' @param separate_features If TRUE, display a checkbox to enter separate 
@@ -77,6 +79,7 @@ plot_module_ui <- function(id,
                            label_checkbox =     FALSE,
                            legend_checkbox =    FALSE,
                            limits_checkbox =    FALSE,
+                           custom_colors =      FALSE,
                            manual_dimensions =  FALSE,
                            separate_features =  FALSE,
                            download_button =    FALSE
@@ -178,6 +181,40 @@ plot_module_ui <- function(id,
       if (limits_checkbox == TRUE){
         # Dynamic UI: displays when a subset is selected
         uiOutput(outputId = ns("limits_checkbox"))
+      } else NULL,
+      
+      # Checkbox for custom colors on Feature plot
+      if (custom_colors == TRUE){
+        tagList(
+          # Checkbox to select custom colors 
+          checkboxInput(
+            inputId = ns("custom_colors"),
+            label = "Use Custom Colors",
+            # FALSE by default
+            value = FALSE
+          ),
+          conditionalPanel(
+            condition = glue("input['{ns('custom_colors')}'] == true"), 
+            tagList(
+              colourInput(
+                inputId = ns("min_color"),
+                label = "Color to use for lowest expression values",
+                #palette = "limited",
+                #allowedCols = color_choices,
+                value = "#E1E1E1"
+              ),
+              colourInput(
+                inputId = ns("max_color"),
+                label = "Color to use for highest expression values",
+                #palette = "limited",
+                #allowedCols = color_choices,
+                value = "#000000"
+                )
+              )
+            )#,
+          #uiOutput(outputId = ns("custom_colors_ui"))
+        )
+        
       } else NULL,
       
       # UI for user control of plot dimensions
@@ -373,6 +410,21 @@ plot_module_server <- function(id,
                        } else NULL
                      }),
                      
+                     # Colors for min and max values
+                     `min_color` = reactive({
+                       # Pass color values if the custom colors checkbox 
+                       # exists and is selected
+                       if (isTruthy(input$custom_colors)){
+                         input$min_color
+                       } else NULL
+                     }),
+                     
+                     `max_color` = reactive({
+                       if (isTruthy(input$custom_colors)){
+                         input$max_color
+                       } else NULL
+                     }),
+                     
                      # Include legend
                      `legend` = reactive({
                        if("legend" %in% isolate(names(input))){
@@ -539,7 +591,40 @@ plot_module_server <- function(id,
 
                        })
                  
-                 ## 4.3. Dynamic UI for plot output ####
+                 color_choices <-
+                   c(magma(16), 
+                     turbo(16),
+                     brewer.pal(8, "YlGnBu"),
+                     brewer.pal(8, "PuBuGn"),
+                     brewer.pal(8, "RdPu"),
+                     brewer.pal(8, "GnBu")
+                     )
+                 
+                 ## 4.3. UI to Choose Custom Color Scale ####
+                 # custom_colors_ui <- 
+                 #   reactive({
+                 #     # Render UI when the checkbox exists and is selected
+                 #     if(isTruthy(input$custom_colors)){
+                 #       tagList(
+                 #         colourInput(
+                 #           inputId = ns("min_color"),
+                 #           label = "Color to use for lowest expression values",
+                 #           #palette = "limited",
+                 #           #allowedCols = color_choices,
+                 #           value = "#E1E1E1"
+                 #         ),
+                 #         colourInput(
+                 #           inputId = ns("max_color"),
+                 #           label = "Color to use for highest expression values",
+                 #           #palette = "limited",
+                 #           #allowedCols = color_choices,
+                 #           value = "#000000"
+                 #         )
+                 #       )
+                 #     } else NULL
+                 #     })
+                 
+                 ## 4.4. Dynamic UI for plot output ####
                  # UI display depends on the plot type and whether the plot 
                  # has a separate features option
                  if (
@@ -713,6 +798,11 @@ plot_module_server <- function(id,
                      limits_checkbox()
                      })
                  
+                 # output$custom_colors_ui <-
+                 #   renderUI({
+                 #     custom_colors_ui()
+                 #   })
+                 
                  output$plot_output_ui <- 
                    renderUI({
                      plot_output_ui()
@@ -777,6 +867,13 @@ plot_module_server <- function(id,
                        }
                      })
                  }
+                 
+                 # TEMP
+                 observe({
+                   print("Colors selected")
+                   print(input$min_color)
+                   print(input$max_color)
+                 })
                  
                  # 6. Plot -----------------------------------------------------
                  ## 6.1 Define Features to use (all plots except UMAP) ####
@@ -852,6 +949,8 @@ plot_module_server <- function(id,
                          assay_config = assay_config,
                          xlim_orig = xlim_orig,
                          ylim_orig = ylim_orig,
+                         color_lower = plot_selections$min_color,
+                         color_upper = plot_selections$max_color,
                          reduction = plot_selections$reduction
                          )
                        })
