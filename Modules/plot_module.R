@@ -72,12 +72,14 @@ plot_module_ui <- function(id,
                            # TEMP: conditionals vertically aligned
                            # for multi-cursor editing
                            reductions_menu =    FALSE,
+                           scatterplot_ui =     FALSE,
                            group_by =           FALSE,
                            split_by =           FALSE,
                            ncol_slider =        FALSE,
                            order_checkbox =     FALSE,
                            label_checkbox =     FALSE,
                            legend_checkbox =    FALSE,
+                           display_coeff =       FALSE,
                            limits_checkbox =    FALSE,
                            custom_colors =      FALSE,
                            manual_dimensions =  FALSE,
@@ -94,6 +96,41 @@ plot_module_ui <- function(id,
     # properly and was unable to process NULL
     tagList(
       # Add menus if their corresponding arguments are TRUE 
+      # Two-feature entry menu specific to scatterplot
+      if (scatterplot_ui == TRUE){
+        tagList(
+          # First feature
+          selectizeInput(
+            inputId = ns("scatter_1"),
+            label = "Feature for X-axis",
+            choices = NULL,
+            selected = NULL,
+            # Add remove button to inputs
+            options = list(
+              'plugins' = list('remove_button'),
+              # Do not allow user to input features not
+              # in the list of options
+              'create'= FALSE
+              )
+            ),
+          
+          # Second feature
+          selectizeInput(
+            inputId = ns("scatter_2"),
+            label = "Feature for Y-axis",
+            choices = NULL,
+            selected = NULL,
+            # Add remove button to inputs
+            options = list(
+              'plugins' = list('remove_button'),
+              # Do not allow user to input features not
+              # in the list of options
+              'create'= FALSE
+              )
+            )
+          )
+      } else NULL,
+      
       # Group by menu
       if (group_by == TRUE){
         # Choices for group by selection: should exclude "none"
@@ -107,7 +144,7 @@ plot_module_ui <- function(id,
           choices = group_by_choices, 
           # First option selected by default 
           selected = group_by_choices[1]
-        )
+          )
         # Do not add element if FALSE
       } else NULL,
       
@@ -120,7 +157,7 @@ plot_module_ui <- function(id,
           choices = meta_choices(),  
           #"none" selected by default
           selected = "none"
-        )
+         )
       } else NULL,
       
       # Reductions menu
@@ -140,7 +177,7 @@ plot_module_ui <- function(id,
           inputId = ns("reduction"),
           label = "Choose Projection",
           choices = reductions()
-        )
+          )
       } else NULL,
       
       # Slider to adjust number of columns
@@ -156,7 +193,7 @@ plot_module_ui <- function(id,
           label = "Order Cells by Expression",
           # Order should be FALSE by default
           value = FALSE
-        )
+          )
       } else NULL,
       
       # Checkbox to add/remove labels
@@ -165,7 +202,7 @@ plot_module_ui <- function(id,
           inputId = ns("label"),
           label = "Label Groups",
           value = TRUE
-        )
+          )
       } else NULL,
       
       # Checkbox to add or remove Legend
@@ -174,7 +211,16 @@ plot_module_ui <- function(id,
           inputId = ns("legend"),
           label = "Include Legend",
           value = TRUE
-        )
+          )
+      } else NULL,
+      
+      # Checkbox to remove title from plot
+      if (display_coeff == TRUE){
+        checkboxInput(
+          inputId = ns("display_coeff"),
+          label = "Show Pearson Coefficient",
+          value = TRUE
+          )
       } else NULL,
       
       # Checkbox to specify original axes limits
@@ -226,7 +272,7 @@ plot_module_ui <- function(id,
         #If TRUE, call module for manual adjustment of plot dimensions
         manual_dimensions_ui(id = ns("manual_dim"))
       } else NULL,
-      
+
       # UI to request use of separate features for plot
       if (separate_features == TRUE){
         # Store namespaced ID of use separate features check box
@@ -359,7 +405,8 @@ plot_module_server <- function(id,
                                plot_type = c("dimplot",
                                              "feature",
                                              "violin",
-                                             "dot"), #Non-reactive
+                                             "dot",
+                                             "scatter"), #Non-reactive
                                valid_features = NULL, #Reactive
                                xlim_orig = NULL, #Reactive
                                ylim_orig = NULL, #Reactive
@@ -377,27 +424,51 @@ plot_module_server <- function(id,
                    manual_dim <- manual_dimensions_server(id = "manual_dim")
                    }
                  
-                 # 2. Record plot options --------------------------------------
+                 # 2. Fill Feature Selection (Scatterplots Only) ---------------
+                 if (plot_type == "scatter"){
+                   if (!is.reactive(valid_features)){
+                     warning("For scatterplots, valid_features must be specified as a reactive to plot_module_server.")
+                   }
+                   
+                   # Upon module initialization, set up feature inputs 
+                   # for the scatterplot 
+                   # Use for loop to avoid duplication of code
+                   for (input_id in c("scatter_1", "scatter_2")){
+                     # Update selectize inputs for scatter_1 and scatter_2
+                     updateSelectizeInput(
+                       session,
+                       # Do not namespace IDs in update* functions
+                       inputId = input_id, 
+                       # Use list of valid features generated at startup
+                       choices = valid_features(), 
+                       # Select none by default
+                       selected = character(0),
+                       server = TRUE
+                       )
+                     }
+                   }
+                 
+                 # 3. Record plot options --------------------------------------
                  #list of reactives for storing selected inputs
                  plot_selections <- 
                    list(
                      # Group_by
                      `group_by` = reactive({
-                       if("group_by" %in% isolate(names(input))){
+                       if ("group_by" %in% isolate(names(input))){
                          input$group_by
                          } else NULL
                        }),
                      
                      # Split_by
                      `split_by` = reactive({
-                       if("split_by" %in% isolate(names(input))){
+                       if ("split_by" %in% isolate(names(input))){
                          input$split_by
                          } else NULL
                      }),
                      
                      # Reduction
                      `reduction` = reactive({
-                       if("reduction" %in% isolate(names(input))){
+                       if ("reduction" %in% isolate(names(input))){
                          input$reduction
                        } else NULL
                      }),
@@ -452,14 +523,14 @@ plot_module_server <- function(id,
                      
                      # Include legend
                      `legend` = reactive({
-                       if("legend" %in% isolate(names(input))){
+                       if ("legend" %in% isolate(names(input))){
                          input$legend
                        } else NULL
                      }),
                      
                      # Label groups
                      `label` = reactive({
-                       if("label" %in% isolate(names(input))){
+                       if ("label" %in% isolate(names(input))){
                          input$label
                        } else NULL
                      }),
@@ -471,13 +542,34 @@ plot_module_server <- function(id,
                      # the checkbox exists, or NULL if it does not. A suitable
                      # existence test is !is.null(input$original_limits)
                      `limits` = reactive({
-                       if(!is.null(input$original_limits)){
+                       if (!is.null(input$original_limits)){
                          input$original_limits
+                       } else NULL
+                     }),
+                     
+                     # X-axis feature for scatterplots
+                     `scatter_1` = reactive({
+                       if (plot_type == "scatter"){
+                         input$scatter_1
+                       } else NULL
+                     }),
+                     
+                     # Y-axis feature for scatterplots
+                     `scatter_2` = reactive({
+                       if (plot_type == "scatter"){
+                         input$scatter_2
+                       } else NULL
+                     }),
+                     
+                     # Remove Title 
+                     `display_coeff` = reactive({
+                       if (!is.null(input$display_coeff)){
+                         input$display_coeff
                        } else NULL
                      })
                    )
                  
-                 # 3. Determine if a subset has been used  ----------------------
+                 # 4. Determine if a subset has been used  ----------------------
                  # This variable will be a boolean used in downstream 
                  # computations
                  is_subset <- eventReactive(
@@ -505,8 +597,8 @@ plot_module_server <- function(id,
                      n_cells_original() != n_cells_subset
                  })
                  
-                 # 4. Conditional UI -------------------------------------------
-                 ## 4.1. ncol slider ####
+                 # 5. Conditional UI -------------------------------------------
+                 ## 5.1. ncol slider ####
                  # Conditions under which ncol slider appear differ based on 
                  # plot type
                  if (plot_type == "dimplot"){
@@ -594,7 +686,7 @@ plot_module_server <- function(id,
                        })
                  }
     
-                 ## 4.2. Checkbox to Specify Original Axis Limits ####
+                 ## 5.2. Checkbox to Specify Original Axis Limits ####
                  limits_checkbox <-
                    reactive(
                      label = glue("{plot_label}: Limits UI"),
@@ -616,203 +708,369 @@ plot_module_server <- function(id,
 
                        })
                  
-                 color_choices <-
-                   c(magma(16), 
-                     turbo(16),
-                     brewer.pal(8, "YlGnBu"),
-                     brewer.pal(8, "PuBuGn"),
-                     brewer.pal(8, "RdPu"),
-                     brewer.pal(8, "GnBu")
-                     )
-                 
-                 ## 4.3. UI to Choose Custom Color Scale ####
-                 # custom_colors_ui <- 
-                 #   reactive({
-                 #     # Render UI when the checkbox exists and is selected
-                 #     if(isTruthy(input$custom_colors)){
-                 #       tagList(
-                 #         colourInput(
-                 #           inputId = ns("min_color"),
-                 #           label = "Color to use for lowest expression values",
-                 #           #palette = "limited",
-                 #           #allowedCols = color_choices,
-                 #           value = "#E1E1E1"
-                 #         ),
-                 #         colourInput(
-                 #           inputId = ns("max_color"),
-                 #           label = "Color to use for highest expression values",
-                 #           #palette = "limited",
-                 #           #allowedCols = color_choices,
-                 #           value = "#000000"
-                 #         )
-                 #       )
-                 #     } else NULL
-                 #     })
-                 
-                 ## 4.4. Dynamic UI for plot output ####
+                 ## 5.3. Dynamic UI for plot output ####
                  # UI display depends on the plot type and whether the plot 
                  # has a separate features option
-                 if (
-                   plot_type == "dimplot"
-                   ){
-                   # UI for dimplots (separate features are not possible for 
-                   # this type)
-                   plot_output_ui <- 
-                     reactive(
-                       label = glue("{plot_label}: Plot Output UI"),
-                       {
-                         # UI only computes if the switch for the plot is
-                         # enabled  
-                         req(plot_switch())
+                 plot_output_ui <-
+                   reactive(
+                     label = glue("{plot_label}: Plot Output UI"),
+                     {
+                       # Only render UI when the switch corresponding to the 
+                       # current plot is enabled
+                       req(plot_switch())
+                       
+                       # input_error: set to TRUE or FALSE based on conditionals
+                       input_error = FALSE
+                       # message: message to display to user when 
+                       # inputs are incorrect
+                       message = NULL
+                      
+                       ### 5.3.1. Test for correct inputs #### 
+                       # UI displayed depends on if inputs have been entered
+                       # correctly. "Correct" inputs depend on plot type
+                       # input_error is set to TRUE or FALSE based on input 
+                       # conditions. 
+                       if (plot_type == "dimplot"){
+                         # All input scenarios are "correct" for dimplots
+                         input_error = FALSE
                          
-                         # If manual dimensions are specified, they must be 
-                         # specified here. If they are only given to renderPlot,
-                         # the plot will overlap with other elements on the page 
-                         # if its dimensions are changed with the manual 
-                         # dimensions inputs.
+                       } else if (plot_type == "scatter") {
+                         # Scatterplots: both features must be entered for a
+                         # "correct" input
+                         if (
+                           !isTruthy(input$scatter_1) | 
+                           !isTruthy(input$scatter_2)
+                         ){
+                           # Scatterplot and neither features defined
+                           input_error = TRUE
+                           message = 
+                             glue(
+                               'Please enter two features under 
+                               "{tolower(plot_label)} Options" to 
+                                view {tolower(plot_label)}.'
+                               )
+                             
+                         # } else if (
+                         #   isTruthy(input$scatter_1) & 
+                         #   !isTruthy(input$scatter_2)
+                         # ){
+                         #   # Scatterplot and only the y-axis feature is defined
+                         #   input_error = TRUE
+                         #   message = 
+                         #     glue(
+                         #       'Please enter a feature for the y-axis
+                         #       to view {tolower(plot_label)}.'
+                         #       )
+                         # } else if (
+                         #   !isTruthy(input$scatter_1) & 
+                         #   isTruthy(input$scatter_2)
+                         # ){
+                         #   # Scatterplot and only the x-axis feature is defined
+                         #   input_error = TRUE
+                         #   message = 
+                         #     glue(
+                         #      'Please enter a feature for the x-axis
+                         #      to view {tolower(plot_label)}.'
+                         #      )
+                         } else if (
+                           isTruthy(input$scatter_1) & 
+                           isTruthy(input$scatter_2)
+                         ){
+                           # Scatterplot and both features are defined
+                           input_error = FALSE
+                         }
+                         # End scatterplot conditionals
+                         
+                       } else if (plot_type %in% c("feature", "violin")) {
+                         # Feature and violin plots: "Correct" input depends 
+                         # on state of features_entered()
+                         if (isTruthy(features_entered())){
+                           # When features are entered, inputs are "correct"
+                           input_error = FALSE
+                         } else {
+                           # When features are not entered, display message
+                           # directing user to enter input
+                           input_error = TRUE
+                           message = 
+                             glue(
+                               "Please enter a feature to view 
+                               {tolower(plot_label)}."
+                               )
+                           }
+                         } else if (plot_type == "dot"){
+                           # Dot plots: "correct" input depends on state of 
+                           # features_entered() and input$use_separate_features
+                           if (
+                             input$use_separate_features == FALSE &
+                             length(features_entered()) == 0
+                           ){
+                             input_error = TRUE
+                             message = 
+                               glue(
+                                 "Please enter a feature to view 
+                                 {tolower(plot_label)}."
+                                 )
+                           } else if (
+                             input$use_separate_features == TRUE &
+                             length(input$separate_features) == 0
+                           ){
+                             input_error = TRUE
+                             message = 
+                               glue(
+                                 'Please specify at least one 
+                               {tolower(plot_label)} specific feature to view 
+                               plot. To use the same features as for other 
+                               plots, please uncheck "use separate features".'
+                               )
+                           } else {
+                             input_error = FALSE
+                             }
+                         }
+                       
+                       ### 5.3.2. Display message or plot based on inputs ####
+                       if (input_error == TRUE){
+                         # Message: use message defined in conditonal structure
+                         ui <- 
+                           tags$h3(
+                             message, 
+                             style="margin-bottom: 10em;"
+                             )
+                       } else if (input_error == FALSE){
+                         # Plot: UI depends on whether manual 
+                         # dimensions are specified
                          if (
                            (!is.null(manual_dim$width())) && 
                            (!is.null(manual_dim$height()))
                          ){
-                           # If manual dimensions are specified, pass the values
-                           # specified by the user to plotOutput
-                           plotOutput(
-                             outputId = ns("plot"),
-                             width = manual_dim$width(),
-                             height = manual_dim$height()
-                           )
+                           # If manual dimensions are specified, pass the 
+                           # values specified by the user to plotOutput
+                           ui <- 
+                             plotOutput(
+                               outputId = ns("plot"),
+                               width = manual_dim$width(),
+                               height = manual_dim$height()
+                               )
                          } else {
                            # Otherwise, call plotOutput without defining 
                            # width and height
-                           plotOutput(
-                             outputId = ns("plot")
-                           )
-                         }
-                       })
-                 } else if (
-                   plot_type!="dimplot" &
-                   separate_features_server == FALSE
-                   ){
-                   # UI for all other plot types that do not have a separate
-                   # features option
-                   plot_output_ui <- 
-                     reactive(
-                       label = glue("{plot_label}: Plot Output UI"),
-                       {
-                         # UI only computes if the switch for the plot is enabled  
-                         req(plot_switch())
-                         
-                         # Test if features have been entered
-                         if (length(features_entered())==0){
-                           # If no features are entered, generate a message 
-                           # instructing the user to enter features.
-                           # The string passed to plot_label should make sense
-                           # when written on it's own (i.e. 'violin plot' 
-                           # instead of 'violin')
-                           tags$h3(
-                             glue(
-                               "Please enter a feature to view 
-                               {tolower(plot_label)}."
-                               ), 
-                             style="margin-bottom: 10em;"
-                             )
-                         } else {
-                           # Display UI as normal if features are entered
-                           
-                           # Second conditional: check if manual dimensions are
-                           # specified
-                           if (
-                             (!is.null(manual_dim$width())) && 
-                             (!is.null(manual_dim$height()))
-                           ){
-                             # If manual dimensions are specified, pass the values
-                             # specified by the user to plotOutput
-                             plotOutput(
-                               outputId = ns("plot"),
-                               width = manual_dim$width(),
-                               height = manual_dim$height()
-                             )
-                           } else {
-                             # Otherwise, call plotOutput without defining 
-                             # width and height
+                           ui <-
                              plotOutput(
                                outputId = ns("plot")
-                             )
-                           }
+                               )
                          }
-                       })
-                 } else if (
-                   plot_type != "dimplot" &
-                   separate_features_server == TRUE
-                 ){
-                   # Reactive to use for plots other than dimplots with a 
-                   # separate features option
-                   plot_output_ui <- 
-                     reactive(
-                       label = glue("{plot_label}: Plot Output UI"),
-                       {
-                         # UI only computes if the switch for the plot is enabled  
-                         req(plot_switch())
-                         
-                         # Display either the plot or a message depending on 
-                         # whether features have been entered and whether 
-                         # the use of separate features is indicated
-                         if (
-                           input$use_separate_features == FALSE &
-                           length(features_entered()) == 0
-                           ){
-                           # If no features are entered, generate a message 
-                           # instructing the user to enter features.
-                           tags$h3(
-                             glue(
-                               "Please enter a feature to view 
-                               {tolower(plot_label)}."
-                             ), 
-                             style="margin-bottom: 10em;"
-                           )
-                         } else if (
-                           input$use_separate_features == TRUE &
-                           length(input$separate_features) == 0
-                         ){
-                           # Screen to display when separate features are 
-                           # desired, but none are entered
-                           tags$h3(
-                             glue(
-                               'Please specify at least one 
-                               {tolower(plot_label)} specific feature to view 
-                               plot. To use the same features as for other 
-                               plots, please uncheck "use separate features".'
-                             ), 
-                             style="margin-bottom: 10em;"
-                             )
-                         } else {
-                           # Display UI as normal if features are entered
                            
-                           # Second conditional: check if manual dimensions are
-                           # specified
-                           if (
-                             (!is.null(manual_dim$width())) && 
-                             (!is.null(manual_dim$height()))
-                           ){
-                             # If manual dimensions are specified, pass the values
-                             # specified by the user to plotOutput
-                             plotOutput(
-                               outputId = ns("plot"),
-                               width = manual_dim$width(),
-                               height = manual_dim$height()
-                             )
-                           } else {
-                             # Otherwise, call plotOutput without defining 
-                             # width and height
-                             plotOutput(
-                               outputId = ns("plot")
-                             )
-                           }
-                         }
-                       })
-                 }
+                       }
+                       
+                       # Return UI to plot_output_ui
+                       ui
+                     })
                  
-                 ## 4.4. Render Dynamic UI ####
+                 # if (
+                 #   # Spacial case for dimplots
+                 #   plot_type == "dimplot"
+                 #   ){
+                 #   plot_output_ui <- 
+                 #     reactive(
+                 #       label = glue("{plot_label}: Plot Output UI"),
+                 #       {
+                 #         # UI only computes if the switch for the plot is
+                 #         # enabled  
+                 #         req(plot_switch())
+                 #         
+                 #         # If manual dimensions are specified, they must be 
+                 #         # specified here. If they are only given to renderPlot,
+                 #         # the plot will overlap with other elements on the page 
+                 #         # if its dimensions are changed with the manual 
+                 #         # dimensions inputs.
+                 #         if (
+                 #           (!is.null(manual_dim$width())) && 
+                 #           (!is.null(manual_dim$height()))
+                 #         ){
+                 #           # If manual dimensions are specified, pass the values
+                 #           # specified by the user to plotOutput
+                 #           plotOutput(
+                 #             outputId = ns("plot"),
+                 #             width = manual_dim$width(),
+                 #             height = manual_dim$height()
+                 #           )
+                 #         } else {
+                 #           # Otherwise, call plotOutput without defining 
+                 #           # width and height
+                 #           plotOutput(
+                 #             outputId = ns("plot")
+                 #           )
+                 #         }
+                 #       })
+                 # } else if(
+                 #   # Special case for scatterplots
+                 #   plot_type == "scatter"
+                 # ){
+                 #   
+                 #   
+                 #   
+                 #   # Display UI only when switch is enabled
+                 #   req(plot_switch())
+                 #   
+                 #   # Conditional: both features must be defined to display plot
+                 #   if (
+                 #     !(isTruthy(input$scatter_1) & isTruthy(input$scatter_2))
+                 #   ){
+                 #     # Display message if either or both inputs are undefined
+                 #     tags$h3(
+                 #       glue(
+                 #         "Please choose two features 
+                 #         to view {tolower(plot_label)}.", 
+                 #         style="margin-bottom: 10em;"
+                 #       )
+                 #     )
+                 #   } else {
+                 #     # Normal case: features are defined
+                 #     # Use manual dimensions if box is checked, otherwise do not
+                 #     if (
+                 #       (!is.null(manual_dim$width())) && 
+                 #       (!is.null(manual_dim$height()))
+                 #     ){
+                 #       # If manual dimensions are specified, pass the values
+                 #       # specified by the user to plotOutput
+                 #       plotOutput(
+                 #         outputId = ns("plot"),
+                 #         width = manual_dim$width(),
+                 #         height = manual_dim$height()
+                 #       )
+                 #     } else {
+                 #       # Otherwise, call plotOutput without defining 
+                 #       # width and height
+                 #       plotOutput(
+                 #         outputId = ns("plot")
+                 #       )
+                 #     }
+                 #   }
+                 # }else if (
+                 #   # For all other plot types: UI depends on whether 
+                 #   # separate_featues_server is set to TRUE for the module
+                 #   (!(plot_type %in% c("dimplot", "scatter"))) &
+                 #   separate_features_server == FALSE
+                 #   ){
+                 #   # UI for all other plot types that do not have a separate
+                 #   # features option
+                 #   plot_output_ui <- 
+                 #     reactive(
+                 #       label = glue("{plot_label}: Plot Output UI"),
+                 #       {
+                 #         # UI only computes if the switch for the plot is enabled  
+                 #         req(plot_switch())
+                 #         
+                 #         # Test if features have been entered
+                 #         if (length(features_entered())==0){
+                 #           # If no features are entered, generate a message 
+                 #           # instructing the user to enter features.
+                 #           # The string passed to plot_label should make sense
+                 #           # when written on it's own (i.e. 'violin plot' 
+                 #           # instead of 'violin')
+                 #           tags$h3(
+                 #             glue(
+                 #               "Please enter a feature to view 
+                 #               {tolower(plot_label)}."
+                 #               ), 
+                 #             style="margin-bottom: 10em;"
+                 #             )
+                 #         } else {
+                 #           # Display UI as normal if features are entered
+                 #           
+                 #           # Second conditional: check if manual dimensions are
+                 #           # specified
+                 #           if (
+                 #             (!is.null(manual_dim$width())) && 
+                 #             (!is.null(manual_dim$height()))
+                 #           ){
+                 #             # If manual dimensions are specified, pass the values
+                 #             # specified by the user to plotOutput
+                 #             plotOutput(
+                 #               outputId = ns("plot"),
+                 #               width = manual_dim$width(),
+                 #               height = manual_dim$height()
+                 #             )
+                 #           } else {
+                 #             # Otherwise, call plotOutput without defining 
+                 #             # width and height
+                 #             plotOutput(
+                 #               outputId = ns("plot")
+                 #             )
+                 #           }
+                 #         }
+                 #       })
+                 # } else if (
+                 #   (!(plot_type %in% c("dimplot", "scatter"))) &
+                 #   separate_features_server == TRUE
+                 # ){
+                 #   # Reactive to use for plots other than dimplots with a 
+                 #   # separate features option
+                 #   plot_output_ui <- 
+                 #     reactive(
+                 #       label = glue("{plot_label}: Plot Output UI"),
+                 #       {
+                 #         # UI only computes if the switch for the plot is enabled  
+                 #         req(plot_switch())
+                 #         
+                 #         # Display either the plot or a message depending on 
+                 #         # whether features have been entered and whether 
+                 #         # the use of separate features is indicated
+                 #         if (
+                 #           input$use_separate_features == FALSE &
+                 #           length(features_entered()) == 0
+                 #           ){
+                 #           # If no features are entered, generate a message 
+                 #           # instructing the user to enter features.
+                 #           tags$h3(
+                 #             glue(
+                 #               "Please enter a feature to view 
+                 #               {tolower(plot_label)}."
+                 #             ), 
+                 #             style="margin-bottom: 10em;"
+                 #           )
+                 #         } else if (
+                 #           input$use_separate_features == TRUE &
+                 #           length(input$separate_features) == 0
+                 #         ){
+                 #           # Screen to display when separate features are 
+                 #           # desired, but none are entered
+                 #           tags$h3(
+                 #             glue(
+                 #               'Please specify at least one 
+                 #               {tolower(plot_label)} specific feature to view 
+                 #               plot. To use the same features as for other 
+                 #               plots, please uncheck "use separate features".'
+                 #             ), 
+                 #             style="margin-bottom: 10em;"
+                 #             )
+                 #         } else {
+                 #           # Display UI as normal if features are entered
+                 #           
+                 #           # Second conditional: check if manual dimensions are
+                 #           # specified
+                 #           if (
+                 #             (!is.null(manual_dim$width())) && 
+                 #             (!is.null(manual_dim$height()))
+                 #           ){
+                 #             # If manual dimensions are specified, pass the values
+                 #             # specified by the user to plotOutput
+                 #             plotOutput(
+                 #               outputId = ns("plot"),
+                 #               width = manual_dim$width(),
+                 #               height = manual_dim$height()
+                 #             )
+                 #           } else {
+                 #             # Otherwise, call plotOutput without defining 
+                 #             # width and height
+                 #             plotOutput(
+                 #               outputId = ns("plot")
+                 #             )
+                 #           }
+                 #         }
+                 #       })
+                 # }
+                 
+                 ## 5.4. Render Dynamic UI ####
                  output$ncol_slider <- 
                    renderUI({
                      ncol_slider()
@@ -833,11 +1091,11 @@ plot_module_server <- function(id,
                      plot_output_ui()
                      })
 
-                 # 5. Separate Features Entry: Dynamic Update ------------------
+                 # 6. Separate Features Entry: Dynamic Update ------------------
                  # Observers for separate features only update for server 
                  # instances where features_entered
                  if (separate_features_server ==  TRUE){
-                   ## 5.1 Update Separate Features in Background ####
+                   ## 6.1 Update Separate Features in Background ####
                    # Before the checkbox to select separate features is checked, 
                    # update the text entry in the background so it is synced
                    # when it appears after the box is checked. 
@@ -860,7 +1118,7 @@ plot_module_server <- function(id,
                          }
                      })
                    
-                   ## 5.2 Reset Separate Features Upon Checkbox Toggle ####
+                   ## 6.2 Reset Separate Features Upon Checkbox Toggle ####
                    # If the "use separate features" checkbox is toggled and the
                    # features entered in the separate features text entry differ
                    # from the general features selected, update the separate
@@ -893,13 +1151,14 @@ plot_module_server <- function(id,
                      })
                  }
                  
-                 # 6. Plot -----------------------------------------------------
-                 ## 6.1 Define Features to use (all plots except UMAP) ####
+                 # 7. Plot -----------------------------------------------------
+                 ## 7.1 Define Features to use ####
+                 # For all plots except dimplot, scatterplot 
                  # Uses either the general feature entry (features_entered()),
                  # or the separate features text entry depending on whether
                  # separate features are used in the module and whether the 
                  # checkbox to use them is selected.
-                 if (plot_type != "dimplot"){
+                 if (!plot_type %in% c("dimplot", "scatter")){
                    features <-
                      reactive(
                        label = glue("{plot_label}: Features for Plot"),            
@@ -926,88 +1185,108 @@ plot_module_server <- function(id,
                        })
                  }
                  
-                 ## 6.2 Construct Plot ####
+                 ## 7.2 Construct Plot ####
                  # Plot created based on the type specified when this server 
                  # function is called
                  if (plot_type == "dimplot"){
-                   plot <- reactive(
-                     label = glue("{plot_label}: Create Plot"),
-                     {
-                     # Create a UMAP plot using shiny_umap()
-                     shiny_umap(
-                       object = object,
-                       group_by = plot_selections$group_by,
-                       split_by = plot_selections$split_by,
-                       show_label = plot_selections$label,
-                       show_legend = plot_selections$legend,
-                       ncol = plot_selections$ncol,
-                       is_subset = is_subset,
-                       original_limits = plot_selections$limits,
-                       xlim_orig = xlim_orig,
-                       ylim_orig = ylim_orig,
-                       reduction = plot_selections$reduction
-                       )
-                   })
-                   
-                 } else if (plot_type == "feature") {
-                   plot <- reactive(
-                     label = glue("{plot_label}: Create Plot"),
-                     {
-                       # Feature plot using arguments relevant to 
-                       # shiny_feature()
-                       shiny_feature(
+                   plot <- 
+                     reactive(
+                       label = glue("{plot_label}: Create Plot"),
+                       {
+                       # Create a UMAP plot using shiny_umap()
+                       shiny_umap(
                          object = object,
-                         features_entered = features_entered, 
+                         group_by = plot_selections$group_by,
                          split_by = plot_selections$split_by,
-                         order = plot_selections$order,
                          show_label = plot_selections$label,
                          show_legend = plot_selections$legend,
+                         ncol = plot_selections$ncol,
                          is_subset = is_subset,
                          original_limits = plot_selections$limits,
-                         assay_config = assay_config,
                          xlim_orig = xlim_orig,
                          ylim_orig = ylim_orig,
-                         color_lower = plot_selections$min_color,
-                         color_upper = plot_selections$max_color,
                          reduction = plot_selections$reduction
                          )
-                       })
+                     })
+                   
+                 } else if (plot_type == "feature") {
+                   plot <- 
+                     reactive(
+                       label = glue("{plot_label}: Create Plot"),
+                       {
+                         # Feature plot using arguments relevant to 
+                         # shiny_feature()
+                         shiny_feature(
+                           object = object,
+                           features_entered = features_entered, 
+                           split_by = plot_selections$split_by,
+                           order = plot_selections$order,
+                           show_label = plot_selections$label,
+                           show_legend = plot_selections$legend,
+                           is_subset = is_subset,
+                           original_limits = plot_selections$limits,
+                           assay_config = assay_config,
+                           xlim_orig = xlim_orig,
+                           ylim_orig = ylim_orig,
+                           color_lower = plot_selections$min_color,
+                           color_upper = plot_selections$max_color,
+                           reduction = plot_selections$reduction
+                           )
+                         })
                    
                  } else if (plot_type == "violin") {
-                   plot <- reactive(
-                     label = glue("{plot_label}: Create Plot"),
-                     {
-                       # Violin plot using arguments relevant to shiny_vln()
-                       shiny_vln(
-                         object = object,
-                         features_entered = features_entered, 
-                         group_by = plot_selections$group_by,
-                         split_by = plot_selections$split_by,
-                         show_legend = plot_selections$legend,
-                         ncol = plot_selections$ncol,
-                         assay_config = assay_config
-                         )
-                     })
+                   plot <- 
+                     reactive(
+                       label = glue("{plot_label}: Create Plot"),
+                       {
+                         # Violin plot using arguments relevant to shiny_vln()
+                         shiny_vln(
+                           object = object,
+                           features_entered = features_entered, 
+                           group_by = plot_selections$group_by,
+                           split_by = plot_selections$split_by,
+                           show_legend = plot_selections$legend,
+                           ncol = plot_selections$ncol,
+                           assay_config = assay_config
+                           )
+                       })
+                   
                  } else if (plot_type == "dot") {
                    # Dot plot using arguments relevant to shiny_dot()
-                   plot <- reactive(
-                     label = glue("{plot_label}: Create Plot"),
-                     {
-                       shiny_dot(
-                         object = object,
-                         # Features argument: uses value returned by reactive
-                         features = features,
-                         # use_separate_features = 
-                         #   reactive({input$use_separate_features}),
-                         # separate_features = 
-                         #   reactive({input$separate_features}),
-                         group_by = plot_selections$group_by,
-                         show_legend = plot_selections$legend
-                         )
-                     })
+                   plot <- 
+                     reactive(
+                       label = glue("{plot_label}: Create Plot"),
+                       {
+                         shiny_dot(
+                           object = object,
+                           # Features argument: uses value returned by reactive
+                           features = features,
+                           # use_separate_features = 
+                           #   reactive({input$use_separate_features}),
+                           # separate_features = 
+                           #   reactive({input$separate_features}),
+                           group_by = plot_selections$group_by,
+                           show_legend = plot_selections$legend
+                           )
+                         })
+                 } else if (plot_type == "scatter"){
+                   # Scatterplot using relevant inputs
+                   plot <- 
+                     reactive(
+                       label = glue("{plot_label}: Create Plot"),
+                       {
+                         shiny_scatter(
+                           object = object,
+                           feature_1 = plot_selections$scatter_1,
+                           feature_2 = plot_selections$scatter_2,
+                           group_by = plot_selections$group_by,
+                           show_legend = plot_selections$legend,
+                           display_coeff = plot_selections$display_coeff
+                           )
+                       })
                    }
                  
-                 ## 6.3. Render plot ####
+                 ## 7.3. Render plot ####
                  # Height and width arguments are left undefined
                  # If undefined, they will use the values from plotOutput, which
                  # respond to the manual dimensions inputs.
@@ -1027,7 +1306,7 @@ plot_module_server <- function(id,
                    plot()
                  })
                  
-                 # 7. Download Handler -----------------------------------------
+                 # 8. Download Handler -----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 

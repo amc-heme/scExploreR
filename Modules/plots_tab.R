@@ -46,7 +46,7 @@ plots_tab_ui <- function(id,
            div(
              class="two_column",
              style="float: left;",
-             #Specify if UMAP Plot is desired
+             # Switch for Dimplot
              materialSwitch(
                inputId = ns("make_umap"),
                label = "UMAP plot", 
@@ -55,19 +55,28 @@ plots_tab_ui <- function(id,
                status = "default"
              ),
              
-             #Specify if feature plot is desired
+             # Switch for feature plot
              materialSwitch(
                inputId = ns("make_feature"),
                label = "Feature Plot", 
                value = FALSE,
                right = TRUE,
                status = "default"
+             ),
+             
+             # Switch for scatterplot
+             materialSwitch(
+               inputId = ns("make_scatter"),
+               label = "Scatterplot", 
+               value = FALSE,
+               right = TRUE,
+               status = "default"
              )
-           ),#End div
+           ),# End div
            # Right column
            div(
              class="two_column",
-             #Specify if violin plot is desired
+             # Switch for violin plot
              materialSwitch(
                inputId = ns("make_vln"),
                label = "Violin Plot", 
@@ -75,7 +84,7 @@ plots_tab_ui <- function(id,
                right = TRUE,
                status = "default"
              ),
-             #Specify if dot plot is desired
+             # Switch for dot plot
              materialSwitch(
                inputId = ns("make_dot"),
                label = "Dot Plot", 
@@ -272,7 +281,36 @@ plots_tab_ui <- function(id,
                download_button =   TRUE
                )
              )
-           ) #End 1.7
+           ), #End 1.7
+         
+         ## 1.8. Scatterplot Options ####
+         conditionalPanel(
+           condition = glue("input['{ns('make_scatter')}'] == true"),
+           collapsible_panel(
+             inputId = ns("scatter_collapsible"),
+             label = "Scatterplot Specific Options",
+             active = FALSE,
+             plot_module_ui(
+               id = ns("scatter"),
+               ui_component = "options",
+               meta_choices = meta_choices,
+               plot_label = "Scatterplot",
+               scatterplot_ui =    TRUE,
+               group_by =          TRUE,
+               split_by =          FALSE,
+               ncol_slider =       FALSE,
+               order_checkbox =    FALSE,
+               label_checkbox =    FALSE,
+               legend_checkbox =   TRUE,
+               limits_checkbox =   FALSE,
+               display_coeff =     TRUE,
+               custom_colors =     FALSE,
+               manual_dimensions = TRUE,
+               separate_features = FALSE,
+               download_button =   TRUE            
+               )
+           )
+         )
          ), #End 1.
        
        # 2. Main panel for displaying plot output ------------------------------
@@ -308,6 +346,12 @@ plots_tab_ui <- function(id,
            ## 2.4. Dot plot panel
            plot_module_ui(
              id = ns("dot"),
+             ui_component = "plot"
+           ),
+           
+           ## 2.5. Scatterplot panel
+           plot_module_ui(
+             id = ns("scatter"),
              ui_component = "plot"
            )
          ) # End div
@@ -467,6 +511,19 @@ plots_tab_server <- function(id,
                    plot_type = "dot",
                    valid_features = valid_features,
                    separate_features_server = TRUE
+                   )
+                 
+                 # Scatterplot
+                 plot_module_server(
+                   id = "scatter",
+                   object = subset, # Reactive
+                   # plot_switch: uses the input$make_scatter switch
+                   plot_switch = reactive({input$make_scatter}),
+                   plot_label = "Scatterplot", # Non-reactive
+                   # Instructs server on which plot function to run
+                   plot_type = "scatter",
+                   # Valid features, for displaying choices for x- and y- axes
+                   valid_features = valid_features
                    )
                  
                  # 3. Process Subset -------------------------------------------

@@ -82,7 +82,7 @@ css_files <-
 # Create list of style tags for each CSS file
 css_list <- lapply(css_files,includeCSS)
 
-# Load Javasctipt files for app: find all .js files in www/ directory
+# Load Javascript files for app: find all .js files in www/ directory
 # and create a list of script() tags using includeScript().
 # Get list of .js files in www/ directory
 js_files <- 
