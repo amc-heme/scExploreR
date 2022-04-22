@@ -147,18 +147,10 @@ categorical_palettes <-
     `Star Trek` = pal_startrek()(7),
     # CU palette
     `CU_Palette` = cu_extended,
-    # University of Chicago
-    #`Univ_chicago` = pal_uchicago("dark")(9),
-    # JAMA
-    #`JAMA` = pal_jama()(7),
     # Journal of Clinical Ontology
     `JCO` = pal_jco()(10),
     # Lancet
     `Lancet` = pal_lancet()(9)
-    # NEJM
-    #`NEJM` = pal_nejm()(8),
-    # IGV
-    # `IGV` = pal_igv()(20),
   )
 
 # Error Handling: define possible errors ---------------------------------------

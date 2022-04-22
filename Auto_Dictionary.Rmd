@@ -1,0 +1,145 @@
+---
+output: html_document
+params:
+  object: NA
+---
+
+```{r libraries, echo = FALSE, message = FALSE, warning = FALSE}
+# Import libraries
+library(Seurat)
+library(shiny)
+library(stats)
+
+library(glue)
+```
+
+```{r load parameters, echo = FALSE, message = FALSE, warning = FALSE}
+# Import parameters from app
+#object <- params$object
+
+# Temporary: load object instead of importing from app
+object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+```
+
+---
+title: "Object Dictionary"
+---
+
+```{r global variables, echo = FALSE, message = FALSE, warning = FALSE}
+# Extract metadata table as a variable
+meta_table <- object@meta.data
+
+# Define searchable metadata categories 
+all_meta_cols <- names(meta_table)
+
+ # Build list with information on each metadata category
+  metadata_properties <- list()
+  for (category in all_meta_cols){
+    # Form vector of values for current category
+    category_vector <- meta_table[[category]]
+    
+    # Class of data in metadata category
+    class <- class(category_vector)
+    
+    # Description of metadata: a string, depends on class
+    if (class == "character"){
+    # Character vectors: use unique()
+    values <- unique(category_vector)
+  } else if (class == "factor"){
+    # Factors: use levels()
+    values <- levels(category_vector)
+  } else if (class %in% c("numeric")) {
+    # For numeric metadata, compute stats
+    num_stats <- summary(category_vector)
+    
+    
+    
+    # min <- min(category_vector)
+    # # First quartile - use 0.25 for probs argument 
+    # q1 <- 
+    #   quantile(category_vector, probs = 0.25) |>
+    #   # Remove '25%' added as a name 
+    #   unname()
+    # median <- median(category_vector)
+    # mean <- mean(category_vector)
+    # # Third quartile - use 0.75 for probs argument 
+    # q3 <-
+    #   quantile(category_vector, 0.75) |> 
+    #   unname()
+    # max <- max(category_vector)
+    # Numeric metadata: show summary statistics
+    #values <- summary(category_vector)
+  } else if (class %in% c("logical")) {
+    # Logical metadata: instruct user to enter either TRUE or FALSE to subset
+    values <- c("TRUE, FALSE")
+  }
+    
+    metadata_properties[[category]] <-
+      list(
+        `class` = class,
+        # For categorical and logical metadata only
+        `description` = values,
+        # For numeric metadata only
+        `num_stats` = num_stats
+        )
+    }
+```
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+#html <- tagList()
+
+# Create a list of tags
+tagList(
+  # Iterate through each metadata column
+  lapply(
+    names(metadata_properties),
+    function(category){
+      # Extract metadata properties for current category
+      metadata_entry <- metadata_properties[[category]]
+      
+      tagList(
+        tags$h4(
+          style = 'color: #880000;',
+          category
+          ),
+        tags$p(
+          glue("Class: {metadata_entry$class}")
+        ),
+        tags$p(
+          paste(metadata_entry$description, collapse = ", ")
+        ),
+        tags$br()
+      )
+    }
+  )
+)
+
+
+
+# tagList(
+#   lapply(
+#     names(metadata_properties),
+#     function(category){
+#       # Extract metadata properties for current category
+#       metadata_entry <- metadata_properties[[category]]
+#       
+#       tagList(
+#         tags$h4(
+#           style = 'color: #880000;',
+#           category
+#           ),
+#         tags$p(
+#           glue("Class: {metadata_entry$class}")
+#         ),
+#         tags$p(
+#           paste(metadata_entry$description, collapse = ", ")
+#         ),
+#         tags$br()
+#       )
+#     }
+#   )
+# )
+```
+
+
+
