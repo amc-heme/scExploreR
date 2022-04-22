@@ -432,7 +432,7 @@ options_server <- function(id,
                     remove_button = TRUE,
                     temp_choices = 
                       str_sort(
-                        unique( sobj@meta.data[[category_name]]),
+                        unique(sobj@meta.data[[category_name]]),
                         numeric=TRUE
                         )
                     )

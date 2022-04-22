@@ -384,6 +384,8 @@ plot_module_ui <- function(id,
 #' @param xlim_orig The x limits of the dimplot of the full Seurat object 
 #' (before a subset is created). This only applies to dimplots and feature plots.
 #' @param ylim_orig The y axis limits of the dimplot of the full Seurat object.
+#' @param palette A palette of colors currently selected by the user, to be used 
+#' on the plot.
 #' @param assay_config The assay section of the config file loaded in the main
 #' server function
 #' @param separate_features_server A boolean giving whether server code to 
@@ -410,6 +412,7 @@ plot_module_server <- function(id,
                                valid_features = NULL, #Reactive
                                xlim_orig = NULL, #Reactive
                                ylim_orig = NULL, #Reactive
+                               palette = NULL, # Reactive
                                #Currently only needed for feature plots
                                assay_config = NULL,
                                separate_features_server = FALSE #Non-reactive
@@ -865,211 +868,6 @@ plot_module_server <- function(id,
                        ui
                      })
                  
-                 # if (
-                 #   # Spacial case for dimplots
-                 #   plot_type == "dimplot"
-                 #   ){
-                 #   plot_output_ui <- 
-                 #     reactive(
-                 #       label = glue("{plot_label}: Plot Output UI"),
-                 #       {
-                 #         # UI only computes if the switch for the plot is
-                 #         # enabled  
-                 #         req(plot_switch())
-                 #         
-                 #         # If manual dimensions are specified, they must be 
-                 #         # specified here. If they are only given to renderPlot,
-                 #         # the plot will overlap with other elements on the page 
-                 #         # if its dimensions are changed with the manual 
-                 #         # dimensions inputs.
-                 #         if (
-                 #           (!is.null(manual_dim$width())) && 
-                 #           (!is.null(manual_dim$height()))
-                 #         ){
-                 #           # If manual dimensions are specified, pass the values
-                 #           # specified by the user to plotOutput
-                 #           plotOutput(
-                 #             outputId = ns("plot"),
-                 #             width = manual_dim$width(),
-                 #             height = manual_dim$height()
-                 #           )
-                 #         } else {
-                 #           # Otherwise, call plotOutput without defining 
-                 #           # width and height
-                 #           plotOutput(
-                 #             outputId = ns("plot")
-                 #           )
-                 #         }
-                 #       })
-                 # } else if(
-                 #   # Special case for scatterplots
-                 #   plot_type == "scatter"
-                 # ){
-                 #   
-                 #   
-                 #   
-                 #   # Display UI only when switch is enabled
-                 #   req(plot_switch())
-                 #   
-                 #   # Conditional: both features must be defined to display plot
-                 #   if (
-                 #     !(isTruthy(input$scatter_1) & isTruthy(input$scatter_2))
-                 #   ){
-                 #     # Display message if either or both inputs are undefined
-                 #     tags$h3(
-                 #       glue(
-                 #         "Please choose two features 
-                 #         to view {tolower(plot_label)}.", 
-                 #         style="margin-bottom: 10em;"
-                 #       )
-                 #     )
-                 #   } else {
-                 #     # Normal case: features are defined
-                 #     # Use manual dimensions if box is checked, otherwise do not
-                 #     if (
-                 #       (!is.null(manual_dim$width())) && 
-                 #       (!is.null(manual_dim$height()))
-                 #     ){
-                 #       # If manual dimensions are specified, pass the values
-                 #       # specified by the user to plotOutput
-                 #       plotOutput(
-                 #         outputId = ns("plot"),
-                 #         width = manual_dim$width(),
-                 #         height = manual_dim$height()
-                 #       )
-                 #     } else {
-                 #       # Otherwise, call plotOutput without defining 
-                 #       # width and height
-                 #       plotOutput(
-                 #         outputId = ns("plot")
-                 #       )
-                 #     }
-                 #   }
-                 # }else if (
-                 #   # For all other plot types: UI depends on whether 
-                 #   # separate_featues_server is set to TRUE for the module
-                 #   (!(plot_type %in% c("dimplot", "scatter"))) &
-                 #   separate_features_server == FALSE
-                 #   ){
-                 #   # UI for all other plot types that do not have a separate
-                 #   # features option
-                 #   plot_output_ui <- 
-                 #     reactive(
-                 #       label = glue("{plot_label}: Plot Output UI"),
-                 #       {
-                 #         # UI only computes if the switch for the plot is enabled  
-                 #         req(plot_switch())
-                 #         
-                 #         # Test if features have been entered
-                 #         if (length(features_entered())==0){
-                 #           # If no features are entered, generate a message 
-                 #           # instructing the user to enter features.
-                 #           # The string passed to plot_label should make sense
-                 #           # when written on it's own (i.e. 'violin plot' 
-                 #           # instead of 'violin')
-                 #           tags$h3(
-                 #             glue(
-                 #               "Please enter a feature to view 
-                 #               {tolower(plot_label)}."
-                 #               ), 
-                 #             style="margin-bottom: 10em;"
-                 #             )
-                 #         } else {
-                 #           # Display UI as normal if features are entered
-                 #           
-                 #           # Second conditional: check if manual dimensions are
-                 #           # specified
-                 #           if (
-                 #             (!is.null(manual_dim$width())) && 
-                 #             (!is.null(manual_dim$height()))
-                 #           ){
-                 #             # If manual dimensions are specified, pass the values
-                 #             # specified by the user to plotOutput
-                 #             plotOutput(
-                 #               outputId = ns("plot"),
-                 #               width = manual_dim$width(),
-                 #               height = manual_dim$height()
-                 #             )
-                 #           } else {
-                 #             # Otherwise, call plotOutput without defining 
-                 #             # width and height
-                 #             plotOutput(
-                 #               outputId = ns("plot")
-                 #             )
-                 #           }
-                 #         }
-                 #       })
-                 # } else if (
-                 #   (!(plot_type %in% c("dimplot", "scatter"))) &
-                 #   separate_features_server == TRUE
-                 # ){
-                 #   # Reactive to use for plots other than dimplots with a 
-                 #   # separate features option
-                 #   plot_output_ui <- 
-                 #     reactive(
-                 #       label = glue("{plot_label}: Plot Output UI"),
-                 #       {
-                 #         # UI only computes if the switch for the plot is enabled  
-                 #         req(plot_switch())
-                 #         
-                 #         # Display either the plot or a message depending on 
-                 #         # whether features have been entered and whether 
-                 #         # the use of separate features is indicated
-                 #         if (
-                 #           input$use_separate_features == FALSE &
-                 #           length(features_entered()) == 0
-                 #           ){
-                 #           # If no features are entered, generate a message 
-                 #           # instructing the user to enter features.
-                 #           tags$h3(
-                 #             glue(
-                 #               "Please enter a feature to view 
-                 #               {tolower(plot_label)}."
-                 #             ), 
-                 #             style="margin-bottom: 10em;"
-                 #           )
-                 #         } else if (
-                 #           input$use_separate_features == TRUE &
-                 #           length(input$separate_features) == 0
-                 #         ){
-                 #           # Screen to display when separate features are 
-                 #           # desired, but none are entered
-                 #           tags$h3(
-                 #             glue(
-                 #               'Please specify at least one 
-                 #               {tolower(plot_label)} specific feature to view 
-                 #               plot. To use the same features as for other 
-                 #               plots, please uncheck "use separate features".'
-                 #             ), 
-                 #             style="margin-bottom: 10em;"
-                 #             )
-                 #         } else {
-                 #           # Display UI as normal if features are entered
-                 #           
-                 #           # Second conditional: check if manual dimensions are
-                 #           # specified
-                 #           if (
-                 #             (!is.null(manual_dim$width())) && 
-                 #             (!is.null(manual_dim$height()))
-                 #           ){
-                 #             # If manual dimensions are specified, pass the values
-                 #             # specified by the user to plotOutput
-                 #             plotOutput(
-                 #               outputId = ns("plot"),
-                 #               width = manual_dim$width(),
-                 #               height = manual_dim$height()
-                 #             )
-                 #           } else {
-                 #             # Otherwise, call plotOutput without defining 
-                 #             # width and height
-                 #             plotOutput(
-                 #               outputId = ns("plot")
-                 #             )
-                 #           }
-                 #         }
-                 #       })
-                 # }
-                 
                  ## 5.4. Render Dynamic UI ####
                  output$ncol_slider <- 
                    renderUI({
@@ -1205,7 +1003,8 @@ plot_module_server <- function(id,
                          original_limits = plot_selections$limits,
                          xlim_orig = xlim_orig,
                          ylim_orig = ylim_orig,
-                         reduction = plot_selections$reduction
+                         reduction = plot_selections$reduction,
+                         palette = palette
                          )
                      })
                    
@@ -1247,7 +1046,8 @@ plot_module_server <- function(id,
                            split_by = plot_selections$split_by,
                            show_legend = plot_selections$legend,
                            ncol = plot_selections$ncol,
-                           assay_config = assay_config
+                           assay_config = assay_config,
+                           palette = palette
                            )
                        })
                    
@@ -1281,7 +1081,8 @@ plot_module_server <- function(id,
                            feature_2 = plot_selections$scatter_2,
                            group_by = plot_selections$group_by,
                            show_legend = plot_selections$legend,
-                           display_coeff = plot_selections$display_coeff
+                           display_coeff = plot_selections$display_coeff,
+                           palette = palette
                            )
                        })
                    }

@@ -20,7 +20,8 @@ plots_tab_ui <- function(id,
                          unique_metadata,
                          category_labels,
                          metadata_config,
-                         reductions
+                         reductions,
+                         categorical_palettes
                          ){
    # Namespace function: prevents conflicts with 
    # inputs/outputs defined in other modules 
@@ -49,7 +50,7 @@ plots_tab_ui <- function(id,
              # Switch for Dimplot
              materialSwitch(
                inputId = ns("make_umap"),
-               label = "UMAP plot", 
+               label = "DimPlot", 
                value = TRUE,
                right = TRUE,
                status = "default"
@@ -93,6 +94,28 @@ plots_tab_ui <- function(id,
                status = "default"
              )
            ),#End div
+         ),
+         
+         ## 1.2. Palette pickers for plots ####
+         # Categorical data
+         pickerInput(
+           inputId = ns("categorical_palette"),
+           label = "Palette (Categorical Data)",
+           # Use the names of the palettes for choices (names will be
+           # server values of selections)
+           choices = names(categorical_palettes),
+           selected = "default",
+           choicesOpt =
+             list(
+               content =
+                 # Define HTML to display for each choice
+                 sapply(
+                   categorical_palettes,
+                   function(palette){
+                     palette_html(palette, n = 8, output_html = TRUE)
+                     }
+                   )
+               )
          ),
          
          ## 1.2. Feature Text Entry. #### 
@@ -398,7 +421,8 @@ plots_tab_server <- function(id,
                              error_list,
                              n_cells_original,
                              xlim_orig,
-                             ylim_orig
+                             ylim_orig,
+                             categorical_palettes
                              ){
   moduleServer(id,
                function(input,output,session){
@@ -454,20 +478,71 @@ plots_tab_server <- function(id,
                        )
                    })
                  
+                 # 1. Palettes for Categorical Data ----------------------------
+                 # Retrieve palette selected
+                 observe({
+                   print(glue("{ns('')}"))
+                   print("Server value of selected palette")
+                   print(input$categorical_palette)
+                 })
+                 
+                 selected_categorical_palette <-
+                   reactive(
+                     label = "Plots: Store selected palette (categorical)",
+                     {
+                       # Require input$categorical_palette to be defined before
+                       # proceeding
+                       
+                       #req(input$categorical_palette)
+                       # print(glue("{ns('')}"))
+                       # print("Server value of selected palette")
+                       # print(input$categorical_palette)
+                       # Stores the palette selected in the pickerInput
+                       
+                       if (isTruthy(input$categorical_palette)){
+                         if (input$categorical_palette == "default"){
+                           # Returning NULL will direct plotting functions to use
+                           # the default palette
+                           return(NULL)
+                         } else {
+                           # Return the palette corresponding to the selection
+                           # (in this case, it is a character vector of 
+                           # hex codes)
+                           return(
+                             categorical_palettes[[input$categorical_palette]]
+                           )
+                         }
+                       } else {
+                         # If input$categorical_palette is NULL, pass NULL to 
+                         # this reactive expression. Default palettes will be 
+                         # used when the output is NULL.
+                         return(NULL)
+                         }
+                       
+                       })
+                 
+                 # observe({
+                 #   print("Selected palette")
+                 #   print(selected_categorical_palette())
+                 # })
+                 
                  # 2. Plot Modules ---------------------------------------------
                  # A server instance of the plot_module is created for each plot
-                 # UMAP Plot
+                 # Dimplot
                  plot_module_server(
                    id = "umap",
                    object = subset, # Reactive
                    # plot_switch: uses the input$make_umap switch
                    plot_switch = reactive({input$make_umap}),
-                   plot_label = "UMAP", # Reactive
+                   plot_label = "DimPlot", # Reactive
                    n_cells_original = n_cells_original, # Non-reactive
                    # Instructs server on which plot function to run
                    plot_type = "dimplot",
                    xlim_orig = xlim_orig,
-                   ylim_orig = ylim_orig
+                   ylim_orig = ylim_orig,
+                   # DimPlots use categorical palettes
+                   # Pass categorical palette selected by user to the server
+                   palette = selected_categorical_palette
                    )
                  
                  # Feature Plot
@@ -496,7 +571,9 @@ plots_tab_server <- function(id,
                    features_entered = reactive({input$text_features}),
                    # Instructs server on which plot function to run
                    plot_type = "violin",
-                   assay_config = assay_config
+                   assay_config = assay_config,
+                   # Use categorical palettes for violin plot
+                   palette = selected_categorical_palette
                    )
                  
                  # Dot plot
@@ -523,7 +600,9 @@ plots_tab_server <- function(id,
                    # Instructs server on which plot function to run
                    plot_type = "scatter",
                    # Valid features, for displaying choices for x- and y- axes
-                   valid_features = valid_features
+                   valid_features = valid_features,
+                   # Use categorical palettes for scatterplot
+                   palette = selected_categorical_palette
                    )
                  
                  # 3. Process Subset -------------------------------------------

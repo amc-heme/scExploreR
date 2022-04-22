@@ -33,6 +33,8 @@ library(DT, quietly = TRUE, warn.conflicts = FALSE)
 library(RColorBrewer, quietly = TRUE, warn.conflicts = FALSE)
 library(viridisLite, quietly = TRUE, warn.conflicts = FALSE)
 library(colourpicker, quietly = TRUE, warn.conflicts = FALSE)
+library(ggsci, quietly = TRUE, warn.conflicts = FALSE)
+library(scales, quietly = TRUE, warn.conflicts = FALSE)
 
 # Additional backend packages
 library(presto, quietly = TRUE, warn.conflicts = FALSE)
@@ -106,6 +108,59 @@ js_list <- lapply(js_files, includeScript)
 # gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
+## Color palettes for plotting categorical variables ####
+# Define available palettes
+
+# CU Palette 
+# Created using official CU colors, along with other colors symbolic of CU
+cu_extended <-
+  colors <- c(
+    # Uses three of the four official CU colors
+    # First four: official CU Colors
+    "#CFB87C", 
+    "#000000", 
+    "#565A5C", 
+    #"#A2A4A3",
+    # Color of walls on CU Boulder campus buildings 
+    "#AD7B64",
+    # Color of CU Boulder campus roofs
+    "#9A4A3A",
+    # Color of pine trees in Flatirons
+    "#3A553A",
+    # Color of the sunny Colorado sky
+    "#529FDF"
+  )
+
+# Palettes are from ggsci, a package with palettes inspired by
+# scientific journals and science fiction
+categorical_palettes <- 
+  list(
+    # Default Palette used by Seurat (from ggplot2)
+    `default` = hue_pal()(8),
+    # D3 (20-color palette)
+    `D3` = pal_d3("category20")(20),
+    # LocusZoom
+    `LocusZoom` = pal_locuszoom()(7),
+    # Rick and Morty (yes, that Rick and Morty) ;)
+    `Rick and Morty` = pal_rickandmorty("schwifty")(12),
+    # Star Trek
+    `Star Trek` = pal_startrek()(7),
+    # CU palette
+    `CU_Palette` = cu_extended,
+    # University of Chicago
+    #`Univ_chicago` = pal_uchicago("dark")(9),
+    # JAMA
+    #`JAMA` = pal_jama()(7),
+    # Journal of Clinical Ontology
+    `JCO` = pal_jco()(10),
+    # Lancet
+    `Lancet` = pal_lancet()(9)
+    # NEJM
+    #`NEJM` = pal_nejm()(8),
+    # IGV
+    # `IGV` = pal_igv()(20),
+  )
+
 # Error Handling: define possible errors ---------------------------------------
 # Errors are defined in a list using the functions in "./R/error_handling.R". 
 # The error_handler() function is executed in a tryCatch() statement and checks
@@ -122,7 +177,7 @@ error_list <- list(
         the left, and feel free to", 
         github_link(display_text = "let us know"),
         " ", # Space after link
-        "if you repeatedly recieve this error.")#End tagList
+        "if you repeatedly recieve this error.") #End tagList
       ), # End icon_notification_ui
     notification_id = "mem_error"
     ), # End add_error_notification
@@ -781,7 +836,8 @@ server <- function(input, output, session){
             unique_metadata = unique_metadata,
             category_labels = category_labels,
             metadata_config = metadata_config,
-            reductions = reductions
+            reductions = reductions,
+            categorical_palettes = categorical_palettes
             )
         
         # Hide spinner and return module UI
@@ -869,7 +925,8 @@ server <- function(input, output, session){
           error_list = error_list,
           n_cells_original = n_cells_original,
           xlim_orig = xlim_orig,
-          ylim_orig = ylim_orig
+          ylim_orig = ylim_orig,
+          categorical_palettes = categorical_palettes
           )
         
         # Add current key to list of modules created so module is not re-created

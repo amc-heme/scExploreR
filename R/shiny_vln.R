@@ -19,7 +19,8 @@ shiny_vln <- function(
   split_by, # Reactive
   show_legend, # Reactive
   ncol, # Reactive
-  assay_config # Non-reactive
+  assay_config, # Reactive
+  palette #Reactive
 ){
   # At least one feature must be entered to avoid errors when computing plot
   if (length(features_entered()) > 0){
@@ -34,15 +35,38 @@ shiny_vln <- function(
       )
     )
     
+    # Make function reactive-agnostic (will use either a non-reactive object, 
+    # or a reactive object unpacked to a non-reactive variable within 
+    # this function) 
+    if (is.reactive(object)){
+      object <- object()
+      } 
+    
+    # Palette: must determine number of colors to create from provided palette
+    # The number of colors is equal to the number of unique values in 
+    # the group.by category
+    n_colors <- 
+      object@meta.data[[group_by()]] |>
+      unique() |> 
+      length()
+    
     vln_plot <- 
       VlnPlot(
-        # Object or subset (reactive-agnostic)
-        if (is.reactive(object)) object() else object,
+        # Object or subset
+        object,
         features = features_entered(),
         group.by = group_by(),
         # Split.by: NULL if user selects "none", otherwise equal 
         # to user selection
         split.by = if (split_by() == "none") NULL else split_by(),
+        # Cols: use user defined palette, or the defaults if palette() == NULL 
+        cols = 
+          if (!is.null(palette())){
+            # colorRampPalette() extends or contracts the given palette to 
+            # produce exactly the required number of colors
+            colorRampPalette(palette())(n_colors)
+            # Use ggplot2 defaults if palette() is unspecified
+          } else NULL, 
         # ncol: use value of ncol defined in plot_module when more than
         # one feature is entered
         ncol = if (length(features_entered())==1) NULL else ncol()
