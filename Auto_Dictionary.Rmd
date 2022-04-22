@@ -1,8 +1,11 @@
 ---
 output: html_document
+title: "Data Dictionary"
 params:
   object: NA
 ---
+
+<!-- Load libraries -->
 
 ```{r libraries, echo = FALSE, message = FALSE, warning = FALSE}
 # Import libraries
@@ -21,125 +24,203 @@ library(glue)
 object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 ```
 
----
-title: "Object Dictionary"
----
+```{css Document CSS, echo = FALSE}
+.title {
+  color: #000066;
+  font-weight: bold;
+}
 
-```{r global variables, echo = FALSE, message = FALSE, warning = FALSE}
+/* category-info */
+/* Class for div wrapping info printed for each class */
+.category-info {
+  border-style: solid none none none;
+  border-width: 1px 0px;
+  border-color: #000000;
+  padding: 10px 20px;
+}
+```
+
+<!-- Begin markdown document -->
+<!-- Use a tabset panel. -->
+<!-- Dictionary is in the first tab, string subsetting help is in second tab-->
+
+# Document {.tabset}
+
+## Data Dictionary {.active}
+
+```{r Data Dictionary, echo = FALSE, message = FALSE, warning = FALSE}
 # Extract metadata table as a variable
 meta_table <- object@meta.data
 
 # Define searchable metadata categories 
 all_meta_cols <- names(meta_table)
 
- # Build list with information on each metadata category
-  metadata_properties <- list()
-  for (category in all_meta_cols){
-    # Form vector of values for current category
-    category_vector <- meta_table[[category]]
-    
-    # Class of data in metadata category
-    class <- class(category_vector)
-    
-    # Description of metadata: a string, depends on class
-    if (class == "character"){
-    # Character vectors: use unique()
-    values <- unique(category_vector)
-  } else if (class == "factor"){
-    # Factors: use levels()
-    values <- levels(category_vector)
-  } else if (class %in% c("numeric")) {
-    # For numeric metadata, compute stats
-    num_stats <- summary(category_vector)
-    
-    
-    
-    # min <- min(category_vector)
-    # # First quartile - use 0.25 for probs argument 
-    # q1 <- 
-    #   quantile(category_vector, probs = 0.25) |>
-    #   # Remove '25%' added as a name 
-    #   unname()
-    # median <- median(category_vector)
-    # mean <- mean(category_vector)
-    # # Third quartile - use 0.75 for probs argument 
-    # q3 <-
-    #   quantile(category_vector, 0.75) |> 
-    #   unname()
-    # max <- max(category_vector)
-    # Numeric metadata: show summary statistics
-    #values <- summary(category_vector)
-  } else if (class %in% c("logical")) {
-    # Logical metadata: instruct user to enter either TRUE or FALSE to subset
-    values <- c("TRUE, FALSE")
-  }
-    
-    metadata_properties[[category]] <-
+# First iteration: build list with information on each metadata category ##### 
+metadata_properties <-
+  lapply(
+    all_meta_cols,
+    function(category){
+      # Form vector of values for current category
+      category_vector <- meta_table[[category]]
+
+      # Class of data in metadata category
+      class <- class(category_vector)
+      
+      # Summary of metadata for printing: depends on class
+      if (class == "character"){
+        # Character vectors: use unique()
+        summary <- unique(category_vector)
+        
+        } else if (class == "factor"){
+          # Factors: use levels()
+          summary <- levels(category_vector)
+        
+        } else if (class %in% c("numeric", "integer")) {
+          # For numeric metadata, compute stats
+          summary <- summary(category_vector)
+        
+        } else if (class %in% c("logical")) {
+          # Logical metadata: provide TRUE and FALSE, without quotes
+          summary <- "TRUE, FALSE"
+          }
+      
+      # For each value, return a list with the class and description
       list(
         `class` = class,
-        # For categorical and logical metadata only
-        `description` = values,
-        # For numeric metadata only
-        `num_stats` = num_stats
+        `summary` = summary
         )
-    }
-```
+      } # End lapply function
+    )
 
-```{r echo = FALSE, message = FALSE, warning = FALSE}
-#html <- tagList()
+# Add category names to the list of properties
+names(metadata_properties) <- all_meta_cols
+
+# Second iteration: create HTML tags from properties list ########
 
 # Create a list of tags
 tagList(
-  # Iterate through each metadata column
   lapply(
-    names(metadata_properties),
+    # Iterate through each metadata category
+    all_meta_cols,
     function(category){
-      # Extract metadata properties for current category
+      #Extract metadata properties for current category
       metadata_entry <- metadata_properties[[category]]
+    
+      # Define class of metadata category
+      class <- metadata_entry$class
       
-      tagList(
+      # List of tags to print for each category
+      div(
+        class = "category-info",
+        # Name of category
         tags$h4(
-          style = 'color: #880000;',
+          class = 'category-header',
+          style = 'color: #000088;',
           category
           ),
+        # Class of category
         tags$p(
-          glue("Class: {metadata_entry$class}")
+          tags$b("Class: "),
+          class
         ),
-        tags$p(
-          paste(metadata_entry$description, collapse = ", ")
-        ),
-        tags$br()
+        # Tags for Discription of values: depends on class of category
+        if (class %in% c("character", "factor")){
+          # Categorical metadata: collapse unique values into a string
+          tags$p(
+            tags$b("Unique Values: "),
+            paste(metadata_entry$summary, collapse = ", ")
+          )
+        } else if (class %in% c("numeric", "integer")){
+          # Numeric metadata
+          # Display sumamary statistics
+          tagList(
+            tags$p(
+              tags$b("Min:"),
+              metadata_entry$summary[1]
+              ),
+            tags$p(
+              tags$b("Q1:"),
+              metadata_entry$summary[2]
+              ),
+            tags$p(
+              tags$b("Median:"),
+              metadata_entry$summary[3]
+              ),
+            tags$p(
+              tags$b("Mean:"),
+              metadata_entry$summary[4]
+              ),
+            tags$p(
+              tags$b("Q3:"),
+              metadata_entry$summary[5]
+              ),
+            tags$p(
+              tags$b("Max:"),
+              metadata_entry$summary[6]
+              )
+          )
+        } else if (class == "logical"){
+          tags$p(
+            tags$b("Values: "),
+            # Print the summary string (already displays both choices)
+            metadata_entry$summary
+          )
+        } else {
+          # Unforeseen classes
+          tags$p(
+            style = "color: #804040;",
+            "Description unavailable (unforseen datatype)."
+          )
+        }
       )
     }
   )
 )
 
-
-
-# tagList(
-#   lapply(
-#     names(metadata_properties),
-#     function(category){
-#       # Extract metadata properties for current category
-#       metadata_entry <- metadata_properties[[category]]
-#       
-#       tagList(
-#         tags$h4(
-#           style = 'color: #880000;',
-#           category
-#           ),
-#         tags$p(
-#           glue("Class: {metadata_entry$class}")
-#         ),
-#         tags$p(
-#           paste(metadata_entry$description, collapse = ", ")
-#         ),
-#         tags$br()
-#       )
-#     }
-#   )
-# )
 ```
 
+<!-- How-to tabset panel -->
+## How to Use String Subsetting
 
+The data dictionary displays a list of the metadata categories in the current object, with their unique values (if they are categorical) or their ranges (if they are numeric). To use string subsetting, the metadata categories and their values **must be entered exactly as they display in the dictionary**.
+
+### Subsetting for categorical data
+
+To subset on categorical data, enter the metadata category as it displays in the data dictionary, **without quotes**. Next, enter `%in%`, followed by the list of values you would like to subset for. 
+
+The list of values must use standard R notation for vectors. This includes:
+
+* Quotes around each value
+* Commas between values
+* Enclosure of the list with `c()`. 
+
+Example subsetting command for categorical data:
+```
+clusters_long %in% c("Dendritic Cells", "Megakaryocytes", "B Cells")
+```
+`clusters_long` is the category to subset based on, and vector notation is used to select dendritic cells, megakaryocytes, and B cells.
+
+### Subsetting for numeric metadata 
+
+To subset on numeric metadata, string subsetting can be used to specify upper and lower bounds for the metadata in question. 
+
+### Subsetting for feature expression 
+
+Feature expression can be used to form subsets using the same syntax as for numeric metadata. Simply use syntax for numeric metadata to define ranges based on feature expression. Gene signatures and surface proteins can also be used with this method.
+
+### Subsetting based on multiple criteria
+
+The use of the logical operators AND (`&`) and OR (`|`) can be used to specify as many conditions as you would like. 
+
+```
+# AND example
+```
+
+```
+# OR example
+```
+With the use of the AND operator, it is possible to specify criteria that do not match any cells. If no cells are returned for the subset entered, try performing the subset again with broader criteria.
+
+<!-- End tabset panel -->
+# {-}
 
