@@ -1,9 +1,45 @@
 ---
 output: html_document
 title: "Data Dictionary"
+# Add Shiny components to document
+runtime: shiny
 params:
   object: NA
+  valid_features: NA
 ---
+
+```{r Summary HTML function, include = FALSE, echo = FALSE, message = FALSE, warning = FALSE}
+summary_tags <- 
+  function(summary_results){
+    tagList(
+      tags$p(
+        tags$b("Min:"),
+        summary_results[1]
+        ),
+      tags$p(
+        tags$b("Q1:"),
+        summary_results[2]
+        ),
+      tags$p(
+        tags$b("Median:"),
+        summary_results[3]
+        ),
+      tags$p(
+        tags$b("Mean:"),
+        summary_results[4]
+        ),
+      tags$p(
+        tags$b("Q3:"),
+        summary_results[5]
+        ),
+      tags$p(
+        tags$b("Max:"),
+        summary_results[6]
+        )
+      )
+  }
+```
+
 
 <!-- Load libraries -->
 
@@ -12,8 +48,11 @@ params:
 library(Seurat)
 library(shiny)
 library(stats)
+library(shinyWidgets)
 
+# Libraries for formatting text
 library(glue)
+library(tools)
 ```
 
 ```{r load parameters, echo = FALSE, message = FALSE, warning = FALSE}
@@ -22,21 +61,60 @@ library(glue)
 
 # Temporary: load object instead of importing from app
 object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+
+# Temp: load valid features based on config. Will be handled in app later
+config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
+assay_config <- config$assays
+
+source("./R/feature_list_all.R")
+
+valid_features <- 
+  feature_list_all(
+            object = object,
+            assay_config = assay_config,
+            numeric_metadata = FALSE
+            )
 ```
 
 ```{css Document CSS, echo = FALSE}
+/* Define CSS variables*/
+:root {
+  /* Specific blue color used by title text and entry headers */
+  --text_accent: #082E6B;
+  /* Background color for every second metadata entry */
+  --even_background: #E1E1E1;
+}
+
 .title {
-  color: #000066;
+  color: var(--text_accent, blue);
   font-weight: bold;
+}
+
+/* Class for category titles */
+.category-header {
+  color: var(--text_accent, blue);
 }
 
 /* category-info */
 /* Class for div wrapping info printed for each class */
 .category-info {
-  border-style: solid none none none;
-  border-width: 1px 0px;
-  border-color: #000000;
   padding: 10px 20px;
+}
+
+/* Change background color of every even entry*/
+.category-info.even{
+  background-color: var(--even_background, gray);
+}
+
+/* Text formatting classes */
+/* Turns text bold and blue*/
+.bold-blue {
+  color: var(--text_accent, blue);
+  font-weight: bold;
+}
+
+.large {
+  font-size: 1.3em;
 }
 ```
 
@@ -44,9 +122,17 @@ object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 <!-- Use a tabset panel. -->
 <!-- Dictionary is in the first tab, string subsetting help is in second tab-->
 
-# Document {.tabset}
+# {.tabset}
 
-## Data Dictionary {.active}
+## Metadata {.active}
+
+### Metadata in Current Object
+
+Below is a summary of each metadata category in the current object. The ID of the category is shown in bold, and the data class (according to R) is shown beneath the ID.
+
+Beneath the class, a summary of the metadata category is given. For categorical data types, unique values are displayed, and for numeric data types, summary statistics are shown. This summary is intended to give an overview of the range of values in each category, to aid in subsetting.
+
+To use string subsetting, the metadata categories and their values **must be entered exactly as they display below**. For more information, see the "How to use String subsetting" tab.
 
 ```{r Data Dictionary, echo = FALSE, message = FALSE, warning = FALSE}
 # Extract metadata table as a variable
@@ -97,8 +183,22 @@ names(metadata_properties) <- all_meta_cols
 
 # Second iteration: create HTML tags from properties list ########
 
+# Even: a variable used to apply classes to every even entry in lapply
+even <- FALSE
+
 # Create a list of tags
 tagList(
+  # Print subtitle first
+  # tags$h3(
+  #   class = "bold-blue;", 
+  #   "Metadata in Current Object"
+  # ),
+  # tags$p(
+  #   ""
+  #   ),
+  # tags$p(
+  #   ""
+  #   ),
   lapply(
     # Iterate through each metadata category
     all_meta_cols,
@@ -110,18 +210,25 @@ tagList(
       class <- metadata_entry$class
       
       # List of tags to print for each category
-      div(
-        class = "category-info",
+      tag <-
+        div(
+          class = 
+          if (even == FALSE){
+            "category-info"
+          } else {
+            "category-info even"  
+            },
         # Name of category
         tags$h4(
           class = 'category-header',
-          style = 'color: #000088;',
+          #style = 'color: #000088;',
           category
           ),
         # Class of category
         tags$p(
-          tags$b("Class: "),
-          class
+          class = "bold-blue",
+          # Put class in title case (tools::toTitleCase)
+          glue("({toTitleCase(class)})")
         ),
         # Tags for Discription of values: depends on class of category
         if (class %in% c("character", "factor")){
@@ -173,20 +280,108 @@ tagList(
           )
         }
       )
+      
+      # After defining tag, change value of even to alternate classes between 
+      # entries
+      if (even == TRUE){
+        even <<- FALSE
+      } else {
+        even <<- TRUE
+      }
+      
+      # Return tag and continue iteration 
+      tag
     }
   )
 )
 
 ```
 
+<!-- Feature search bar -->
+## Feature Search
+```{r Feature Search, echo = FALSE, message = FALSE, warning = FALSE}
+tags$p(
+  tags$b("Enter a feature to view feature ID and summary statistics:")
+  )
+selectizeInput(
+  inputId = "feature",
+  label = NULL,
+  choices = NULL,
+  selected = NULL,
+  options = 
+    list(
+      # Add remove button to inputs
+      'plugins' = list('remove_button'),
+      # Do not allow user to input features not
+      # in the list of options
+      'create' = FALSE,
+      'placeholder' = "enter a feature here"
+      )
+  )
+```
+
+<!-- Text to display beneath input widget -->
+"When using string subsetting for features, enter the ID below exactly as it appears, and without quotes (see "How to use string subsetting" for more details)."
+
+```{r Server-side update of features, echo = FALSE, message = FALSE, warning = FALSE, results = FALSE}
+# results = FALSE used in this chunk to prevent output of server info
+updateSelectizeInput(
+  session,
+  inputId = "feature",
+  choices = valid_features,
+  selected = NULL,
+  server = TRUE,
+  options = 
+    list(
+      # Add remove button to inputs
+      'plugins' = list('remove_button'),
+      # Do not allow user to input features not
+      # in the list of options
+      'create' = FALSE,
+      'placeholder' = "enter a feature here"
+      )
+  )
+```
+
+```{r Feature Output, echo = FALSE, message = FALSE, warning = FALSE}
+# UI Output displaying information for current feature
+renderUI({
+  feature_summary <-
+    FetchData(
+      object,
+      vars = input$feature
+      )[,1] |> 
+    summary()
+  
+  # Print UI below
+  tagList(
+    # Feature ID
+    tags$p(
+      class = "bold-blue large",
+      tags$b(
+        "Feature ID:"
+        ),
+      input$feature
+      ),
+    # Summary Statistics
+    summary_tags(feature_summary)
+    )
+  })
+```
+
+
 <!-- How-to tabset panel -->
-## How to Use String Subsetting
+## How to Use String Subsetting 
 
-The data dictionary displays a list of the metadata categories in the current object, with their unique values (if they are categorical) or their ranges (if they are numeric). To use string subsetting, the metadata categories and their values **must be entered exactly as they display in the dictionary**.
+### Overview
 
-### Subsetting for categorical data
+String subsetting allows you to specify a manual subset of the data using conditions based on metadata or features in the object. Cells that match the conditions specified in the string will be returned for downstream analysis in the app. Among other things, this allows for the selection of cells that express a given surface protein above or below a specified value, or within a specified range.
 
-To subset on categorical data, enter the metadata category as it displays in the data dictionary, **without quotes**. Next, enter `%in%`, followed by the list of values you would like to subset for. 
+While string subsetting is very capable at selecting specific groups of cells, the entry must follow R syntax rules for subsetting to function properly. A description of the syntax to use for common conditions is given below, along with examples of proper syntax. 
+
+### Subsetting for Categorical Data
+
+To subset on categorical data, enter the metadata category exactly as it displays in the list under the "Metadata" tab, **without quotes**. Next, enter `%in%`, followed by the list of values you would like to subset for. 
 
 The list of values must use standard R notation for vectors. This includes:
 
@@ -194,32 +389,52 @@ The list of values must use standard R notation for vectors. This includes:
 * Commas between values
 * Enclosure of the list with `c()`. 
 
+The values in the data dictionary are displayed without quotes, so you will need to add quotes when entering them using this format.
+
 Example subsetting command for categorical data:
 ```
-clusters_long %in% c("Dendritic Cells", "Megakaryocytes", "B Cells")
+clusters %in% c("DCs", "Megakaryocytes", "B Cells")
 ```
-`clusters_long` is the category to subset based on, and vector notation is used to select dendritic cells, megakaryocytes, and B cells.
 
-### Subsetting for numeric metadata 
+Here, `clusters` is the category to subset based on, and vector notation is used to select DCs, megakaryocytes, and B cells. Cells that have a `clusters` annotation that matches either of these three clusters will be selected.
+
+### Subsetting for Numeric Metadata 
 
 To subset on numeric metadata, string subsetting can be used to specify upper and lower bounds for the metadata in question. 
 
-### Subsetting for feature expression 
+As with categorical metadata, the metadata category should be entered as it appears under the "Metadata" tab, without quotes. To specify an upper bound, use the `<` operator, and to specify a lower bound, use the `>` operator.
+
+For example, `percent.mt < 10` will select cells with a mitochondrial DNA content less than 10 percent. `percent.mt > 2` would select cells with a content of at least 2 percent. To include the threshold in the selection, use `>=` and `<=` (greater than or equal to and less than or equal to, respectively). 
+
+### Subsetting for Feature Expression 
 
 Feature expression can be used to form subsets using the same syntax as for numeric metadata. Simply use syntax for numeric metadata to define ranges based on feature expression. Gene signatures and surface proteins can also be used with this method.
 
-### Subsetting based on multiple criteria
+The desired feature must be entered using its ID, which includes its designation as a gene, surface protein, or gene signature. Please use the selection menu in the "Feature Search" tab to obtain the proper ID for the feature you are looking for. A range of normalized expression values is also given for the feature of interest in this tab, and can be used to assist in specifying your threshold for string subsetting. 
+
+### Subsetting Based on Multiple Criteria
 
 The use of the logical operators AND (`&`) and OR (`|`) can be used to specify as many conditions as you would like. 
 
-```
-# AND example
-```
+#### AND Operator 
+
+The AND (`&`) operator is often used to select cells based on multiple types of metadata. For example, say the object has annotations for patient ID, response to treatment, and clusters. To select cells based on a combination of these three criteria, the following string can be entered:
 
 ```
-# OR example
+(id %in% c("12778", "27828", "57578")) & (response %in% c("response","no response")) & (clusters %in% c("CD8 T/NK", "CD4 T"))
 ```
-With the use of the AND operator, it is possible to specify criteria that do not match any cells. If no cells are returned for the subset entered, try performing the subset again with broader criteria.
+
+The selection above would return cells with metadata for `id`, `response`, and `clusters` matching the values specified. Cells must match the values listed in all three categories to be included in the subset.
+
+With the use of the `&` operator on categorical metadata, it is possible to specify criteria that do not match any cells. If no cells are returned for the subset entered, try performing the subset again with broader criteria.
+
+For features and numeric metadata, the `&` operator can be used to specify ranges with lower and upper bounds. For example `(rna_TP53 > 1) & (rna_TP53 < 2)` will select cells that have a normalized expression value for TP53 between 1 and 2. 
+
+#### OR Operator
+
+The OR (`|`) operator can be used to select cells that match one set of criteria or the other. For numeric metadata, this can be used to select both cells below one defined threshold, and above another. For example `(rna_IL6 < 1) | (rna_IL6 > 3)` would select cells where the normalized expression of IL6 is less than 1 or greater than 3.
+
+You may notice that parentheses enclose conditionals between the `&` and `|` operators  in the examples above. While this is not required, this syntax is recommended to prevent errors. 
 
 <!-- End tabset panel -->
 # {-}
