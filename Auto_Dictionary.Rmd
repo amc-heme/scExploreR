@@ -2,7 +2,7 @@
 output: html_document
 title: "Data Dictionary"
 # Add Shiny components to document
-runtime: shiny
+#runtime: shiny
 params:
   object: NA
   valid_features: NA
@@ -57,23 +57,24 @@ library(tools)
 
 ```{r load parameters, echo = FALSE, message = FALSE, warning = FALSE}
 # Import parameters from app
-#object <- params$object
+object <- params$object
+valid_features <- params$valid_features
 
 # Temporary: load object instead of importing from app
-object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+#object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
 # Temp: load valid features based on config. Will be handled in app later
-config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
-assay_config <- config$assays
+#config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
+#assay_config <- config$assays
 
-source("./R/feature_list_all.R")
+#source("./R/feature_list_all.R")
 
-valid_features <- 
-  feature_list_all(
-            object = object,
-            assay_config = assay_config,
-            numeric_metadata = FALSE
-            )
+# valid_features <-
+#   feature_list_all(
+#             object = object,
+#             assay_config = assay_config,
+#             numeric_metadata = FALSE
+#             )
 ```
 
 ```{css Document CSS, echo = FALSE}
@@ -298,8 +299,11 @@ tagList(
 ```
 
 <!-- Feature search bar -->
-## Feature Search
-```{r Feature Search, echo = FALSE, message = FALSE, warning = FALSE}
+<!-- Uses Shiny components -->
+<!-- This has been disabled for now to avoid running an app from the app -->
+
+<!-- ## Feature Search -->
+```{r Feature Search, echo = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
 tags$p(
   tags$b("Enter a feature to view feature ID and summary statistics:")
   )
@@ -315,21 +319,22 @@ selectizeInput(
       # Do not allow user to input features not
       # in the list of options
       'create' = FALSE,
-      'placeholder' = "enter a feature here"
+      'placeholder' = "enter feature"
       )
   )
 ```
+-->
 
 <!-- Text to display beneath input widget -->
-"When using string subsetting for features, enter the ID below exactly as it appears, and without quotes (see "How to use string subsetting" for more details)."
+<!-- "When using string subsetting for features, enter the ID below exactly as it appears, and without quotes (see "How to use string subsetting" for more details)." -->
 
-```{r Server-side update of features, echo = FALSE, message = FALSE, warning = FALSE, results = FALSE}
+```{r Server-side update of features, echo = FALSE, message = FALSE, warning = FALSE, results = FALSE, eval = FALSE}
 # results = FALSE used in this chunk to prevent output of server info
 updateSelectizeInput(
   session,
   inputId = "feature",
   choices = valid_features,
-  selected = NULL,
+  selected = character(0),
   server = TRUE,
   options = 
     list(
@@ -338,14 +343,16 @@ updateSelectizeInput(
       # Do not allow user to input features not
       # in the list of options
       'create' = FALSE,
-      'placeholder' = "enter a feature here"
+      'placeholder' = "enter feature"
       )
   )
 ```
 
-```{r Feature Output, echo = FALSE, message = FALSE, warning = FALSE}
+```{r Feature Output, echo = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
 # UI Output displaying information for current feature
 renderUI({
+  req(input$feature)
+  
   feature_summary <-
     FetchData(
       object,
@@ -368,7 +375,6 @@ renderUI({
     )
   })
 ```
-
 
 <!-- How-to tabset panel -->
 ## How to Use String Subsetting 

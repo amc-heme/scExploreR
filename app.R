@@ -801,6 +801,38 @@ server <- function(input, output, session){
       reductions
     })
     
+  ## 2.10 Auto-Generated Object Dictionary ####
+  # Data dictionary
+  # The data dictionary gives the names of all metadata in the object as a 
+  # guide for string subsetting.
+  # When object is changed, render a new data dictionary to www/
+  observeEvent(
+    object(),
+    #ignoreNULL = FALSE,
+    #ignoreInit = TRUE,
+    {
+      print("Rendering new data dictionary")
+      
+      # Gather parameters used by document
+      params <-
+        list(
+          object = object(),
+          valid_features = valid_features()
+        )
+      
+      # Execute Rmarkdown document
+      rmarkdown::render(
+        # Rmd document to render
+        input = "./Auto_Dictionary.Rmd",
+        # Must export HTML to www/ directory for the app to find the file
+        output_dir = "./www/",
+        # pass parameters to report
+        params = params,
+        # Set up a new environment that is the child of the global envrionment
+        # (isolates document environment from app)
+        envir = new.env(parent = globalenv())
+        )
+    })
   
   # 3. Initialize Modules ------------------------------------------------------
   ## 3.1. Dynamic UI ####

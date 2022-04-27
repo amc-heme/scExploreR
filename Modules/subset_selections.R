@@ -125,6 +125,14 @@ subset_selections_server <- function(id,
             if (input$string_subsetting == TRUE){
               tagList(
                 # When the checkbox is selected, display UI for string subsetting
+                # Link to the auto-generated object dictionary
+                tags$a(
+                  "More Information",
+                  href = "Auto_Dictionary.html",
+                  target="_blank", 
+                  rel="noopener noreferrer"
+                ),
+                # textAreaInput for entering string subset
                 textAreaInput(
                   inputId = ns("adv_subset"),
                   label = NULL,
@@ -132,6 +140,8 @@ subset_selections_server <- function(id,
                   rows = 4,
                   resize = "vertical"
                   )
+                
+                
                 )
               }
             })
