@@ -78,9 +78,94 @@ subset_selections_ui <- function(id,
         inputId = ns("string_subsetting"), 
         label = "String subsetting (advanced mode)"
         ),
+      # Advanced string subsetting
+      # Hidden initially, then shown using shinyjs when the checkbox above is 
+      # selected (ensures inputs are avilable upon initiation of module, so
+      # updateSelectizeInput will work)
+      shinyjs::hidden(
+        div(
+          id = ns("string_subsetting_ui"),
+          # Feature Search Dropdown
+          dropdownButton(
+            inputId = ns("feature_search_dropup"),
+            label = "",
+            size = "sm",
+            status = "feature_search_btn",
+            icon = icon("search"), 
+            up = TRUE,
+            # Dropdown content
+            div(
+              class = "feature_statistics_container",
+              onclick="event.stopPropagation()",
+              selectizeInput(
+                inputId = ns("search_feature"),
+                label = "Feature Search:",
+                choices = NULL,
+                selected = character(0),
+                options = 
+                  list(
+                    # Add remove button to inputs
+                    'plugins' = list('remove_button'),
+                    # Do not allow user to input features not
+                    # in the list of options
+                    'create' = FALSE,
+                    'placeholder' = "enter feature"
+                    )
+              ),
+              # Feature statistics: summary stats based on feature entered
+              uiOutput(ns("feature_statistics")),
+              tags$a(
+                "Object Metadata and Help",
+                href = "Auto_Dictionary.html",
+                target = "_blank",
+                rel = "noopener noreferrer",
+                class = "blue_hover underline underline-hover left",
+                # Decrease padding around link
+                style = "padding: 3px 6px;"
+              )
+            )
+          ),
+          
+          # Option B: display information in a modal
+          # dropdownButton(
+          #   inputId = ns("adv_subset_dropdown"),
+          #   label = "",
+          #   size = "xs",
+          #   icon = icon("bars"),
+          #   style = "border-radius: 10px;",
+          #   # Dropdown content
+          #   tagList(
+          #     # Link to the auto-generated object dictionary
+              # tags$a(
+              #   "Metadata guide and help",
+              #   href = "Auto_Dictionary.html",
+              #   target = "_blank",
+              #   rel = "noopener noreferrer",
+              #   class = "blue_hover"
+              # ),
+          #     # Opens modal for statistics by feature
+          #     actionLink(
+          #       inputId = "feature_dictionary_modal",
+          #       label = "Feature Search",
+          #       class = "blue_hover"
+          #       )
+          #   )
+          # ),
+          
+          # textAreaInput for entering string subset
+          textAreaInput(
+            inputId = ns("adv_subset"),
+            label = NULL,
+            width = "100%",
+            rows = 4,
+            resize = "vertical"
+            )
+        )
+      )
+      
       # If checkbox is selected, show string subsetting menu
-      uiOutput(outputId = ns("string_subsetting_menu"))
-    )
+      #uiOutput(outputId = ns("string_subsetting_menu"))
+     )
   
   # Return list of menu tags
   menus
@@ -104,6 +189,7 @@ subset_selections_server <- function(id,
                                      unique_metadata,
                                      metadata_config,
                                      meta_categories,
+                                     valid_features,
                                      hide_menu = NULL,
                                      set_menu = NULL
                                      ){
@@ -116,40 +202,20 @@ subset_selections_server <- function(id,
       ns <- session$ns
       
       # 1. UI for String Subsetting --------------------------------------------
-      # Advanced subsetting window
-      string_subset_ui <-
-        eventReactive(
-          input$string_subsetting,
-          ignoreNULL = FALSE,
-          {
-            if (input$string_subsetting == TRUE){
-              tagList(
-                # When the checkbox is selected, display UI for string subsetting
-                # Link to the auto-generated object dictionary
-                tags$a(
-                  "More Information",
-                  href = "Auto_Dictionary.html",
-                  target="_blank", 
-                  rel="noopener noreferrer"
-                ),
-                # textAreaInput for entering string subset
-                textAreaInput(
-                  inputId = ns("adv_subset"),
-                  label = NULL,
-                  width = "100%",
-                  rows = 4,
-                  resize = "vertical"
-                  )
-                
-                
-                )
-              }
-            })
-      
-      # Render string subsetting UI
-      output$string_subsetting_menu <- 
-        renderUI({
-          string_subset_ui()
+      # Use shinyjs to show and hide menus based on whether the adv. subsetting
+      # checkbox is checked (this ensures inputs exist and can be updated 
+      # properly, and improves performance)
+      observeEvent(
+        input$string_subsetting,
+        # Must ignore NULL values for the conditional to run without errors
+        ignoreNULL = TRUE,
+        {
+          # Show or hide string subsetting UI based on state of checkbox
+          if (input$string_subsetting == TRUE){
+            shinyjs::show("string_subsetting_ui")
+          } else {
+            shinyjs::hide("string_subsetting_ui")
+          }
         })
       
       # 2. UI for Filtering Selection Menus ------------------------------------
@@ -469,7 +535,76 @@ subset_selections_server <- function(id,
             })
       }
       
-      # 5. Form Reactive List From Menu Selections -----------------------------
+      # 5. Feature Statistics --------------------------------------------------
+      # Used for string subsetting
+      # Assists user by displaying feature name as it should be entered into the
+      # subset function (using the assay key prefix), along with summary
+      # statistics for the feature to aid in choosing bounds when subsetting.
+      
+      ## 5.1. Update feature search choices ####
+      # Updates occur each time the object is changed
+      observeEvent(
+        valid_features(),
+        {
+          updateSelectizeInput(
+            session,
+            inputId = "search_feature",
+            choices = valid_features(),
+            selected = character(0),
+            server = TRUE,
+            options = 
+              list(
+                # Add remove button to inputs
+                'plugins' = list('remove_button'),
+                # Do not allow user to input features not
+                # in the list of options
+                'create' = FALSE,
+                'placeholder' = "enter feature"
+                )
+            ) 
+        })
+      
+      ## 5.2. Define UI for Feature Statistics ####
+      feature_stats_ui <-
+        reactive({
+          req(input$search_feature)
+          
+          # Obtain summary stats for feature
+          feature_summary <-
+            # Uses Seurat::FetchData to pull data matrix for the feature
+            # Data slot is pulled by default; this can be changed
+            FetchData(
+              object(),
+              vars = input$search_feature
+            )[,1] |> 
+            summary()
+          
+          # Print UI below
+          tagList(
+            # Feature ID
+            tags$p(
+              class = "bold-blue large",
+              tags$b(
+                "Feature ID:"
+                ),
+              input$search_feature
+              ),
+            tags$p("(This must be entered exactly as it displays above)"),
+            # Summary Statistics
+            summary_tags(
+              feature_summary,
+              header_class = "bold-blue"
+              )
+            )
+        })
+      
+      ## 5.3. Render Feature Statistics UI ####
+      output$feature_statistics <- 
+        renderUI({
+          feature_stats_ui()
+        })
+      
+      # 6. Form Reactive List From Menu Selections -----------------------------
       selections <- 
         reactive(
           label = glue("{id}: selections_list"),

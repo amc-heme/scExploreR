@@ -1,3 +1,4 @@
+/* -------------------------------------------------------------------------- */
 /* Formatting for text and other elements */
 
 /* Body: padding on top responds to media width. When the window is smaller than
@@ -30,6 +31,11 @@ h2, h3 {
   display: block;
 }
 
+.left {
+  text-align: left;
+  display: block;
+}
+
 /* Small font */
 .small {
   font-size: 0.85em;
@@ -44,6 +50,17 @@ h2, h3 {
 .x-large{
   font-size: 1.3em;
 }
+
+/* underline */
+.underline {
+  text-decoration: underline;
+}
+
+/* Underline upon hover */
+.underline-hover:hover {
+  text-decoration: underline;
+}
+
 
 /* Spacing before element */
 .space-top{
@@ -92,6 +109,15 @@ h2, h3 {
   float: right;
 }
 
+.bold-blue {
+  /* Uses text format from auto_dictionary.Rmd */
+  color: var(--markdown_blue, #000088);
+  font-weight: bold;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Input container classes */
+
 /* Shiny input containers within a container with this class will have no margin */
 .input-no-margin > .shiny-input-container {
   margin: 0px;
@@ -116,9 +142,20 @@ h2, h3 {
   vertical-align: top;
 }
 
-/* Set height of group name text box for consistency with the group metadata to the right */
+/* -------------------------------------------------------------------------- */
+/* Other Containers */
+
+/* Set height of group name text box for consistency with the group metadata
+   to the right */
 #options_group_name {
   height: 34px;
+}
+
+.feature_statistics_container {
+  min-height: 150px;
+  max-height: 400px;
+  /* width: 150px; */
+  overflow-y: scroll;
 }
 
 /* spinner_text class: for text that appears beneath spinner*/

@@ -334,6 +334,7 @@ plot_module_ui <- function(id,
             label = "",
             size = "sm",
             icon = icon("download"),
+            # Dropdown content
             div(
               selectInput(
                 inputId = ns("file_type"),

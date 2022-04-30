@@ -141,6 +141,8 @@ categorical_palettes <-
     `D3` = pal_d3("category20")(20),
     # LocusZoom
     `LocusZoom` = pal_locuszoom()(7),
+    # Stepped (from Seurat::DiscretePalette)
+    `stepped` = DiscretePalette(20, palette = "stepped"),
     # Rick and Morty (yes, that Rick and Morty) ;)
     `Rick and Morty` = pal_rickandmorty("schwifty")(12),
     # Star Trek
@@ -301,43 +303,44 @@ ui <- tagList(
     # Dropdown menu content
     # Header
     tagList(
-      tags$p("Help and Background",
-             style=
-               "color: #888888; 
-            margin-bottom: 0px;
-            font-size: 1.17em;"
-      ),
+      tags$p(
+        "Help and Background",
+        style=
+        "color: #888888; 
+        margin-bottom: 0px;
+        font-size: 1.17em;"
+        ),
       
       # Interpreting scRNA-seq plots
       tags$a(
         "Interpereting scRNA-seq Plots",
-        href="scRNA_Plots_Explained.html",
-        class="blue_hover",
+        href = "scRNA_Plots_Explained.html",
+        class = "blue_hover",
         # Opens link in new tab
-        target="_blank", 
+        target = "_blank", 
         # Cybersecurity measure for links that 
         # open in new tab: prevents tabnapping
-        rel="noopener noreferrer" 
+        rel = "noopener noreferrer" 
         ),
       
       # Tutorial Document
       tags$a(
         "Tutorial Vignette",
-        href="Shiny_Vignette.html",
-        class="blue_hover",
+        href = "Shiny_Vignette.html",
+        class = "blue_hover",
         # Opens link in new tab
-        target="_blank", 
-        rel="noopener noreferrer" 
+        target = "_blank", 
+        rel = "noopener noreferrer" 
         ), # End Detailed Walkthrough link
       
       # File issue on github
       tags$a(
         "Report a Bug",
-        href="https://github.com/amc-heme/DataExploreShiny/issues",
-        class="blue_hover",
+        href = "https://github.com/amc-heme/DataExploreShiny/issues",
+        class = "blue_hover",
         # Opens link in new tab
-        target="_blank", 
-        rel="noopener noreferrer"
+        target = "_blank", 
+        rel = "noopener noreferrer"
         )
     )# End tagList
   ), #End Help Button
@@ -972,6 +975,7 @@ server <- function(input, output, session){
         meta_categories = meta_categories,
         unique_metadata = unique_metadata,
         meta_choices = meta_choices,
+        valid_features = valid_features,
         object_trigger = dataset_change
       )
       

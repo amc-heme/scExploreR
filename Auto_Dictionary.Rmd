@@ -8,36 +8,8 @@ params:
   valid_features: NA
 ---
 
-```{r Summary HTML function, include = FALSE, echo = FALSE, message = FALSE, warning = FALSE}
-summary_tags <- 
-  function(summary_results){
-    tagList(
-      tags$p(
-        tags$b("Min:"),
-        summary_results[1]
-        ),
-      tags$p(
-        tags$b("Q1:"),
-        summary_results[2]
-        ),
-      tags$p(
-        tags$b("Median:"),
-        summary_results[3]
-        ),
-      tags$p(
-        tags$b("Mean:"),
-        summary_results[4]
-        ),
-      tags$p(
-        tags$b("Q3:"),
-        summary_results[5]
-        ),
-      tags$p(
-        tags$b("Max:"),
-        summary_results[6]
-        )
-      )
-  }
+```{r Summary HTML function, eval = FALSE, include = FALSE, echo = FALSE, message = FALSE, warning = FALSE}
+# Source summary_tags.R if this function is needed in the future
 ```
 
 
@@ -61,14 +33,14 @@ object <- params$object
 valid_features <- params$valid_features
 
 # Temporary: load object instead of importing from app
-#object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
-
-# Temp: load valid features based on config. Will be handled in app later
-#config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
-#assay_config <- config$assays
-
-#source("./R/feature_list_all.R")
-
+# object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+# 
+# # Temp: load valid features based on config. Will be handled in app later
+# config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
+# assay_config <- config$assays
+# 
+# source("./R/feature_list_all.R")
+# 
 # valid_features <-
 #   feature_list_all(
 #             object = object,
@@ -323,7 +295,7 @@ selectizeInput(
       )
   )
 ```
--->
+
 
 <!-- Text to display beneath input widget -->
 <!-- "When using string subsetting for features, enter the ID below exactly as it appears, and without quotes (see "How to use string subsetting" for more details)." -->

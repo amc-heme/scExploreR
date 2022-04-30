@@ -113,6 +113,7 @@ dge_tab_server <- function(id,
                            meta_categories,
                            unique_metadata,
                            meta_choices,
+                           valid_features,
                            object_trigger
                            ){
   moduleServer(id,
@@ -177,6 +178,7 @@ dge_tab_server <- function(id,
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config,
                      meta_categories = meta_categories,
+                     valid_features = valid_features,
                      hide_menu = group_by_category
                      )
 
