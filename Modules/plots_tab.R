@@ -540,6 +540,7 @@ plots_tab_server <- function(id,
                    plot_type = "dimplot",
                    xlim_orig = xlim_orig,
                    ylim_orig = ylim_orig,
+                   metadata_config = metadata_config,
                    # DimPlots use categorical palettes
                    # Pass categorical palette selected by user to the server
                    palette = selected_categorical_palette

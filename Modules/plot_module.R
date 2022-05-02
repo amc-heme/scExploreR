@@ -414,6 +414,7 @@ plot_module_server <- function(id,
                                xlim_orig = NULL, #Reactive
                                ylim_orig = NULL, #Reactive
                                palette = NULL, # Reactive
+                               metadata_config = NULL,
                                #Currently only needed for feature plots
                                assay_config = NULL,
                                separate_features_server = FALSE #Non-reactive
@@ -1004,6 +1005,12 @@ plot_module_server <- function(id,
                          original_limits = plot_selections$limits,
                          xlim_orig = xlim_orig,
                          ylim_orig = ylim_orig,
+                         plot_title =
+                           # Human-readable plot title
+                           # Uses the label for the metadata caetegory defined 
+                           # in the config file. The group_by category will be
+                           # used if this is NULL.
+                           metadata_config()[[plot_selections$group_by()]]$label,
                          reduction = plot_selections$reduction,
                          palette = palette
                          )

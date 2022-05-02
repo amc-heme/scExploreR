@@ -19,6 +19,8 @@
 #' object at app startup
 #' @param ylim_orig The original y limits for the umap, computed from full 
 #' object at app startup
+#' @param hr_title The plot title, using the human-readable format defined in
+#' the config file. 
 #' @param reduction The reduction (UMAP, t-SNE, etc.) to use for plotting
 #' @param palette The palette to use for coloring groups. If the palette passed
 #' to this function is NULL, the default (hue_pal()) is used.
@@ -32,10 +34,10 @@ shiny_umap <- function(object, #Reactive
                        original_limits, #Reactive
                        xlim_orig, #Reactive
                        ylim_orig, #Reactive
+                       plot_title = NULL, #Non-reactive
                        reduction = NULL, #Reactive
                        palette = NULL #Reactive
                        ){
-  
   # validate will keep plot code from running if the subset 
   # is NULL (no cells in subset)
   validate(
@@ -128,6 +130,12 @@ shiny_umap <- function(object, #Reactive
           scale_x_continuous(limits = xlim_orig()),
           scale_y_continuous(limits = ylim_orig())
           )
+      },
+      # D: Title: Use label from config file if it is defined
+      if (!is.null(plot_title)){
+        list(
+          labs(title = plot_title)
+        )
       }
     )
 
