@@ -19,7 +19,7 @@
 #' object at app startup
 #' @param ylim_orig The original y limits for the umap, computed from full 
 #' object at app startup
-#' @param hr_title The plot title, using the human-readable format defined in
+#' @param plot_title The plot title, using the human-readable format defined in
 #' the config file. 
 #' @param reduction The reduction (UMAP, t-SNE, etc.) to use for plotting
 #' @param palette The palette to use for coloring groups. If the palette passed
@@ -34,6 +34,7 @@ shiny_umap <- function(object, #Reactive
                        original_limits, #Reactive
                        xlim_orig, #Reactive
                        ylim_orig, #Reactive
+                       show_title = TRUE, #Non-reacive
                        plot_title = NULL, #Non-reactive
                        reduction = NULL, #Reactive
                        palette = NULL #Reactive
@@ -132,11 +133,17 @@ shiny_umap <- function(object, #Reactive
           )
       },
       # D: Title: Use label from config file if it is defined
-      if (!is.null(plot_title)){
+      # If label is undefined, plot_title will be NULL
+      # this would remove the title if not properly handled
+      # Must control whether to remove the title, or use the default based on
+      # the circumstances in which NULL is specified
+      
+      # Conditional below passes NULL to labs() only when show_title == FALSE 
+      if (!is.null(plot_title) | show_title == FALSE ){
         list(
           labs(title = plot_title)
         )
-      }
+      } # Otherwise, labs() is not run and the Seurat default is used
     )
 
   # Modify the plot using the layers defined above
