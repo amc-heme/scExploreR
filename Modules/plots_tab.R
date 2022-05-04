@@ -46,7 +46,7 @@ plots_tab_ui <- function(id,
              style="float: left;",
              # Switch for Dimplot
              materialSwitch(
-               inputId = ns("make_umap"),
+               inputId = ns("make_dimplot"),
                label = "DimPlot", 
                value = TRUE,
                right = TRUE,
@@ -189,20 +189,20 @@ plots_tab_ui <- function(id,
          ), # End 1.3
          
          ### Plot Specific Options ###
-         ## 1.4. UMAP Options ####
-         # Panel will display if "Make UMAP" switch is on
+         ## 1.4. DimPlot Options ####
+         # Panel will display if "Make DimPlot" switch is on
          conditionalPanel(
            # Javascript expression for condition in which to show panel
            # Input is accesses using bracket notation
            # Must use {ns('id')} (with quotes) to get the namespaced id,
            # and that id must be within quotes 
-           condition = glue("input['{ns('make_umap')}'] == true"),
+           condition = glue("input['{ns('make_dimplot')}'] == true"),
            collapsible_panel(
-             inputId = ns("umap_collapsible"),
-             label = "UMAP Specific Options",
+             inputId = ns("dimplot_collapsible"),
+             label = "DimPlot Specific Options",
              active = TRUE,
              plot_module_ui(
-               id = ns("umap"),
+               id = ns("dimplot"),
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "DimPlot",
@@ -346,9 +346,9 @@ plots_tab_ui <- function(id,
            class = "spinner-container-main",
            # Panels for plots: display if checkboxes corresponding to 
            # each type are checked
-           ## 2.1. UMAP plot panel
+           ## 2.1. DimPlot plot panel
            plot_module_ui(
-             id = ns("umap"),
+             id = ns("dimplot"),
              ui_component = "plot"
            ),
            
@@ -404,9 +404,9 @@ plots_tab_ui <- function(id,
 # defined in the main server function at startup
 # n_cells_original: Number of cells in full Seurat object. Calculated in main 
 # server function.
-# xlim_orig: x-limits of a UMAP plot of the full data. Applied when "use 
-# original axes limits" is checked in the UMAP options after a subset is plotted
-# ylim_orig: y-limits of a UMAP plot of the full data.
+# xlim_orig: x-limits of a DimPlot of the full data. Applied when "use original 
+# axes limits" is checked in the DimPlot options after a subset is plotted
+# ylim_orig: y-limits of a DimPlot plot of the full data.
 
 # TODO: replace metadata_config in the subset selections module with a more 
 # specific variable
@@ -531,10 +531,10 @@ plots_tab_server <- function(id,
                  # A server instance of the plot_module is created for each plot
                  # Dimplot
                  plot_module_server(
-                   id = "umap",
+                   id = "dimplot",
                    object = subset, # Reactive
-                   # plot_switch: uses the input$make_umap switch
-                   plot_switch = reactive({input$make_umap}),
+                   # plot_switch: uses the input$make_dimplot switch
+                   plot_switch = reactive({input$make_dimplot}),
                    plot_label = "DimPlot", # Reactive
                    n_cells_original = n_cells_original, # Non-reactive
                    # Instructs server on which plot function to run
@@ -636,7 +636,7 @@ plots_tab_server <- function(id,
                  # and trigger the plots_subset eventReactive to run
                  observeEvent(
                    # Respond to downstream variable (results in less lag time 
-                   # between removal of loading screen and rendering of UMAP)
+                   # between removal of loading screen and rendering of DimPlot)
                    metadata_config(),
                    label = "Plots: object_init(TRUE)",
                    {
