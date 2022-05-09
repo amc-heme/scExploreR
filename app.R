@@ -133,6 +133,7 @@ cu_extended <-
 
 # Palettes are from ggsci, a package with palettes inspired by
 # scientific journals and science fiction
+# Package by Nan Xiao (https://nanx.me/ggsci/articles/ggsci.html)
 categorical_palettes <- 
   list(
     # Default Palette used by Seurat (from ggplot2)
@@ -154,6 +155,23 @@ categorical_palettes <-
     # Lancet
     `Lancet` = pal_lancet()(9)
   )
+
+# Continuous palettes 
+# Taken from viridisLite package, created by Simon Garnier
+# https://sjmgarnier.github.io/viridisLite/
+continuous_palettes <-
+  list(
+    # Seurat Default: two colors
+    `default` = c("lightgrey", "blue"),
+    # viridisLite palettes
+    `inferno` = inferno(42, direction = -1),
+    `plasma` = plasma(42, direction = -1),
+    `rocket` = rocket(42, direction = -1),
+    `viridis` = viridis(42, begin = 0.1, direction = -1),
+    `cividis` = cividis(42, direction = -1),
+    `mako` = mako(42, direction = -1)
+  )
+
 
 # Error Handling: define possible errors ---------------------------------------
 # Errors are defined in a list using the functions in "./R/error_handling.R". 
@@ -864,7 +882,8 @@ server <- function(input, output, session){
             category_labels = category_labels,
             metadata_config = metadata_config,
             reductions = reductions,
-            categorical_palettes = categorical_palettes
+            categorical_palettes = categorical_palettes,
+            continuous_palettes = continuous_palettes
             )
         
         # Hide spinner and return module UI
@@ -953,7 +972,8 @@ server <- function(input, output, session){
           n_cells_original = n_cells_original,
           xlim_orig = xlim_orig,
           ylim_orig = ylim_orig,
-          categorical_palettes = categorical_palettes
+          categorical_palettes = categorical_palettes,
+          continuous_palettes = continuous_palettes
           )
         
         # Add current key to list of modules created so module is not re-created

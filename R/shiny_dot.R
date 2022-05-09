@@ -6,22 +6,38 @@
 # group_by: user specified group_by metadata category
 # split_by: user specified split_by metadata category
 # show_legend: user choice as to whether a legend should be shown
-shiny_dot <- function(
-  object, # Reactive-agnostic
-  features, # Reactive
-  group_by, # Reactive
-  show_legend # Reactive
-){
-  if(length(features()) > 0){
-    #Create plot if at least one feature is passed to shiny_dot()
-    DotPlot(
-      # Seurat object or subset (reactive-agnostic)
-      if (is.reactive(object)) object() else object, 
-      features = features(),
-      group.by = group_by()
-      ) + 
-      RotatedAxis() +
-      #Legend position: "right" if a legend is desired, and "none" if not
-      theme(legend.position = if (show_legend() == TRUE) "right" else "none")
+shiny_dot <- 
+  function(
+    object, # Reactive-agnostic
+    features, # Reactive
+    group_by, # Reactive
+    show_legend, # Reactive
+    palette = NULL #Reactive
+    ){
+    if(length(features()) > 0){
+      #Create plot if at least one feature is passed to shiny_dot()
+      plot <- 
+        DotPlot(
+          # Seurat object or subset (reactive-agnostic)
+          if (is.reactive(object)) object() else object, 
+          features = features(),
+          group.by = group_by()
+          ) + 
+          RotatedAxis() +
+          #Legend position: "right" if a legend is desired, and "none" if not
+          theme(legend.position = if (show_legend() == TRUE) "right" else "none")
+      
+      # If a palette is defined, apply it to the plot
+      if (!is.null(palette())){
+        plot <-
+          #suppressMessages()
+          plot +
+          scale_color_gradientn(
+            colors = palette()
+          )
+      }
+      
+      # Return plot
+      plot
+    }
   }
-}

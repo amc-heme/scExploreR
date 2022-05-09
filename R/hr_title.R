@@ -1,6 +1,6 @@
 #hr_title: for feature plots with no split.by argument and violin plots, 
 #converts the title from the default machine-readable name to a human-readable name.
-hr_title <- function(patchwork,n_patches, assay_config){
+hr_title <- function(patchwork, n_patches, assay_config){
   for (i in 1:n_patches){
     #Fetch title of plot
     title_machine <- patchwork[[i]]$labels$title

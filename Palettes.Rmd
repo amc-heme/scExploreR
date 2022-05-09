@@ -248,7 +248,11 @@ show_col(cu_extended)
 show_col(colorRampPalette(cu_extended)(20))
 ```
 
-```{r}
+## Continuous Palettes
 
+### ViridisLite
+
+```{r}
+show_col(c("black", "#DF536B", "#61D04F", "#2297E6", "#28E2E5", "#CD0BBC", "#F5C710", "gray62"))
 ```
 

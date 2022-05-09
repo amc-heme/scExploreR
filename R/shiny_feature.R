@@ -17,125 +17,173 @@
 # at app startup
 # ylim_orig: the original y limits for the umap, computed from full object at 
 # app startup
-shiny_feature <- function(object, # Reactive-agnostic
-                          features_entered, # Reactive
-                          split_by, # Reactive
-                          order, # Reactive
-                          show_label, # Reactive
-                          show_legend, # Reactive
-                          is_subset, # Reactive
-                          original_limits, # Reactive
-                          assay_config, # Reactive
-                          xlim_orig, # Reactive
-                          ylim_orig, # Reactive
-                          color_lower, # Reactive
-                          color_upper, # Reactive
-                          reduction = NULL # Reactive
+shiny_feature <- function(object, 
+                          features_entered, 
+                          assay_config, 
+                          split_by = NULL, 
+                          order = FALSE, 
+                          #show_label = FALSE, 
+                          show_legend = TRUE, 
+                          is_subset = FALSE, 
+                          original_limits = FALSE, 
+                          xlim_orig = NULL, 
+                          ylim_orig = NULL,
+                          custom_titles = NULL, 
+                          ncol = NULL, 
+                          palette = NULL, 
+                          blend = FALSE, 
+                          reduction = NULL
 ){
+  if (length(features_entered) == 1){
+    # Use FeaturePlotSingle.R for single-feature plots
+    print("Arguments passed to FeaturePlotSingle")
+    print(glue("metadata_column: {split_by}"))
+    print(glue("colors:"))
+    print(palette)
+    print(glue("ncol: {ncol}"))
+    print(glue("custom_titles: {custom_titles}"))
+    print(glue("reduction: {reduction}"))
+    print(glue("show_legend: {show_legend}"))
+    #print(glue("label: {show_label}"))
+    print(glue("order: {order}"))
+    print(glue("original_limits: {original_limits}"))
+    
+    FeaturePlotSingle(
+      object,
+      feature = features_entered,
+      metadata_column = if (split_by != "none") split_by else NULL,
+      # Colors: set to colors passed in the palette. 
+      # If NULL, Seurat defaults are used
+      colors = if (!is.null(palette)) palette,
+      ncol = ncol,
+      custom_titles = custom_titles,
+      reduction = 
+        if (!is.null(reduction)) reduction else NULL,
+      xlim = 
+        if (isTruthy(original_limits)){
+          xlim_orig
+        } else NULL,
+      ylim = 
+        if (isTruthy(original_limits)){
+          ylim_orig
+        } else NULL,
+      show_legend = show_legend,
+      # Arguments passed to FeaturePlot
+      #label = show_label,
+      order = order
+      )
+  } else if (length(features_entered) > 1 & blend == FALSE) {
+    
+  } 
+  
+  
+  
+  
+  
   # At least one feature must be entered to avoid errors when computing plot
-  if (length(features_entered()) > 0){
-    # validate will keep plot code from running if the subset 
-    # is NULL (no cells in subset)
-    validate(
-      need(
-        if (is.reactive(object)) object() else object,
-        # No message displayed (a notification is already 
-        # displayed) (*was displayed*)
-        message = ""
-        )
-      )
-    
-    # Creation of plot
-    if (split_by() == "none"){
-      # If no split.by category is specified, create a feature plot without 
-      # the split.by argument
-      feature_plot <- 
-        FeaturePlot(
-          # Object or subset (reactive-agnostic)
-          if (is.reactive(object)) object() else object,
-          features = features_entered(),
-          # Order: whether to plot cells in order by expression
-          order = if (is.null(order())) FALSE else order(),
-          # Reduction: uses the input for reduction if it exists, otherwise
-          # it is set to NULL and will use default settings.
-          reduction = if(!is.null(reduction)) reduction() else NULL
-          )
-      # Clean up title: this changes the feature names on each plot 
-      # to a human-readable format
-      # Determine number of plots created
-      n_patches <- n_patches(feature_plot)
-      # Iterate through each plot, correcting the title
-      feature_plot <- 
-        hr_title(
-          feature_plot,
-          n_patches,
-          assay_config
-          )
-    }
-    
-    else {
-      # If a split by category is defined, use that category
-      feature_plot <- 
-        FeaturePlot(
-          # Object or subset (reactive-agnostic)
-          if (is.reactive(object)) object() else object,
-          features = features_entered(),
-          split.by = split_by(),
-          # Order: whether to plot cells in order by expression
-          order = if (is.null(order())) FALSE else order(),
-          # Reduction: uses the input for reduction if it exists, otherwise
-          # it is set to NULL and will use default settings.
-          reduction = if(!is.null(reduction)) reduction() else NULL
-          )
-    }
-    
-    # Modify plot after creation with ggplot layers according 
-    # to user input
-    # 'layers' is a list of layers that is applied to the plot
-    layers <- 
-      c(list(
-        # Element A 
-        # Legend position: "right" if a legend is desired, 
-        # and "none" if not
-        theme(
-          legend.position = 
-            if (show_legend()==TRUE) {
-              "right"
-            } else "none")),
-        
-        # Elements B-C. Axis limits: 
-        # Use limits from full dataset if specified.
-        # The conditional is tied to a reactive value 
-        # instead of the input to avoid an error that
-        # occurs when this function is evaluated
-        # before the input is #defined.
-        # First, simultaneously test if subset is
-        # present and if the corresponding
-        # original_limits reactive is truthy
-        # (i.e. both present and checked).
-        if (is_subset() & isTruthy(original_limits())){
-          # If so, add original limits to the list
-              list(
-                scale_x_continuous(limits = xlim_orig()),
-                scale_y_continuous(limits = ylim_orig())
-                )
-        },
-        
-        # Element D: Custom colors
-        # When provided, represent expression with user-selected colors 
-        if (isTruthy(color_lower()) & isTruthy(color_upper())){
-          scale_color_gradientn(
-            colors = c(color_lower(), color_upper())
-          )
-        }
-      )
-    
-    # Modify the plot using the layers defined above
-    feature_plot <- 
-      feature_plot &
-      layers
-    
-    # Return finished plot
-    feature_plot
-  }
+  # if (length(features_entered()) > 0){
+  #   # validate will keep plot code from running if the subset 
+  #   # is NULL (no cells in subset)
+  #   validate(
+  #     need(
+  #       if (is.reactive(object)) object() else object,
+  #       # No message displayed (a notification is already 
+  #       # displayed) (*was displayed*)
+  #       message = ""
+  #       )
+  #     )
+  #   
+  #   # Creation of plot
+  #   if (split_by() == "none"){
+  #     # If no split.by category is specified, create a feature plot without 
+  #     # the split.by argument
+  #     feature_plot <- 
+  #       FeaturePlot(
+  #         # Object or subset (reactive-agnostic)
+  #         if (is.reactive(object)) object() else object,
+  #         features = features_entered(),
+  #         # Order: whether to plot cells in order by expression
+  #         order = if (is.null(order())) FALSE else order(),
+  #         # Reduction: uses the input for reduction if it exists, otherwise
+  #         # it is set to NULL and will use default settings.
+  #         reduction = if(!is.null(reduction)) reduction() else NULL
+  #         )
+  #     # Clean up title: this changes the feature names on each plot 
+  #     # to a human-readable format
+  #     # Determine number of plots created
+  #     n_patches <- n_patches(feature_plot)
+  #     # Iterate through each plot, correcting the title
+  #     feature_plot <- 
+  #       hr_title(
+  #         feature_plot,
+  #         n_patches,
+  #         assay_config
+  #         )
+  #   }
+  #   
+  #   else {
+  #     # If a split by category is defined, use that category
+  #     feature_plot <- 
+  #       FeaturePlot(
+  #         # Object or subset (reactive-agnostic)
+  #         if (is.reactive(object)) object() else object,
+  #         features = features_entered(),
+  #         split.by = split_by(),
+  #         # Order: whether to plot cells in order by expression
+  #         order = if (is.null(order())) FALSE else order(),
+  #         # Reduction: uses the input for reduction if it exists, otherwise
+  #         # it is set to NULL and will use default settings.
+  #         reduction = if(!is.null(reduction)) reduction() else NULL
+  #         )
+  #   }
+  #   
+  #   # Modify plot after creation with ggplot layers according 
+  #   # to user input
+  #   # 'layers' is a list of layers that is applied to the plot
+  #   layers <- 
+  #     c(list(
+  #       # Element A 
+  #       # Legend position: "right" if a legend is desired, 
+  #       # and "none" if not
+  #       theme(
+  #         legend.position = 
+  #           if (show_legend()==TRUE) {
+  #             "right"
+  #           } else "none")),
+  #       
+  #       # Elements B-C. Axis limits: 
+  #       # Use limits from full dataset if specified.
+  #       # The conditional is tied to a reactive value 
+  #       # instead of the input to avoid an error that
+  #       # occurs when this function is evaluated
+  #       # before the input is #defined.
+  #       # First, simultaneously test if subset is
+  #       # present and if the corresponding
+  #       # original_limits reactive is truthy
+  #       # (i.e. both present and checked).
+  #       if (is_subset() & isTruthy(original_limits())){
+  #         # If so, add original limits to the list
+  #             list(
+  #               scale_x_continuous(limits = xlim_orig()),
+  #               scale_y_continuous(limits = ylim_orig())
+  #               )
+  #       },
+  #       
+  #       # Element D: Custom colors
+  #       # When provided, represent expression with user-selected colors 
+  #       if (isTruthy(color_lower()) & isTruthy(color_upper())){
+  #         scale_color_gradientn(
+  #           colors = c(color_lower(), color_upper())
+  #         )
+  #       }
+  #     )
+  #   
+  #   # Modify the plot using the layers defined above
+  #   feature_plot <- 
+  #     feature_plot &
+  #     layers
+  #   
+  #   # Return finished plot
+  #   feature_plot
+  # }
 }

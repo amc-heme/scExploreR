@@ -18,7 +18,8 @@ plots_tab_ui <- function(id,
                          category_labels,
                          metadata_config,
                          reductions,
-                         categorical_palettes
+                         categorical_palettes,
+                         continuous_palettes
                          ){
    # Namespace function: prevents conflicts with 
    # inputs/outputs defined in other modules 
@@ -39,7 +40,9 @@ plots_tab_ui <- function(id,
          # becomes larger than the other column)
          div(
            class = "two-column-container",
-           style = "height: 110px;",
+           # Height must be defined for feature selection box beneath the 
+           # element to display correctly
+           style = "height: 165px;",
            #Left column
            div(
              class="two_column",
@@ -93,28 +96,6 @@ plots_tab_ui <- function(id,
            ),#End div
          ),
          
-         ## 1.2. Palette pickers for plots ####
-         # Categorical data
-         pickerInput(
-           inputId = ns("categorical_palette"),
-           label = "Palette (Categorical Data)",
-           # Use the names of the palettes for choices (names will be
-           # server values of selections)
-           choices = names(categorical_palettes),
-           selected = "default",
-           choicesOpt =
-             list(
-               content =
-                 # Define HTML to display for each choice
-                 sapply(
-                   categorical_palettes,
-                   function(palette){
-                     palette_html(palette, n = 8, output_html = TRUE)
-                     }
-                   )
-               )
-         ),
-         
          ## 1.2. Feature Text Entry. #### 
          # Applies to feature, violin, and dot plots unless the user specifies 
          # the use of different features for each plot (this is currently only 
@@ -144,12 +125,65 @@ plots_tab_ui <- function(id,
                  # Do not allow user to input features not
                  # in the list of options
                  'create'= FALSE
-                 )
                )
              )
-           ),# End 1.2.
+           )
+         ),# End 1.2.
          
-         ## 1.3. Subsets for Plots ####
+         
+         ## 1.3. Palette pickers for plots ####
+         collapsible_panel(
+           inputId = ns("palettes"), 
+           label = "Palettes",
+           active = TRUE,
+           ### 1.3.1 Categorical data ####
+           pickerInput(
+             inputId = ns("categorical_palette"),
+             label = "Palette (Categorical Data)",
+             # Use the names of the palettes for choices (names will be
+             # server values of selections)
+             choices = names(categorical_palettes),
+             selected = "default",
+             choicesOpt =
+               list(
+                 content =
+                   # Define HTML to display for each choice
+                   sapply(
+                     categorical_palettes,
+                     function(palette){
+                       palette_html(palette, n = 8, output_html = TRUE)
+                     }
+                   )
+               )
+           ),
+           
+           ### 1.3.2. Continuous Data ####
+           pickerInput(
+             inputId = ns("continuous_palette"),
+             label = "Palette (Continuous Data)",
+             # Use the names of the palettes for choices (names will be
+             # server values of selections)
+             choices = names(continuous_palettes),
+             selected = "default",
+             choicesOpt =
+               list(
+                 content =
+                   # Define HTML to display for each choice
+                   sapply(
+                     continuous_palettes,
+                     function(palette){
+                       palette_html(
+                         palette,
+                         type="continuous",
+                         output_html = TRUE
+                         )
+                     }
+                   )
+               )
+           )
+         ),
+         
+         ## 1.4. Subsets for Plots ####
          collapsible_panel(
            inputId = ns("subset_collapsible"),
            label = "Subset Options",
@@ -157,7 +191,7 @@ plots_tab_ui <- function(id,
            # div for spinner that displays over the full subset options panel
            div(
              id = ns("subset_panel"),
-             # 1.3.1 div for spinner that displays over the subset summary only
+             # 1.4.1 div for spinner that displays over the subset summary only
              div(
                id = ns("subset_stats"),
                # Header for subset summary
@@ -173,23 +207,23 @@ plots_tab_ui <- function(id,
                  )
                ), # End subset_stats div
 
-             # 1.3.2. Subset selection menus
+             # 1.4.2. Subset selection menus
              subset_selections_ui(
                id = ns("subset_selections"),
                unique_metadata = unique_metadata,
                metadata_config = metadata_config
                ),
 
-             # 1.3.3. Submit button for subset
+             # 1.4.3. Submit button for subset
              actionButton(
                inputId = ns("subset_submit"),
                label="Apply Subset"
                )
              ) # End subset_panel div
-         ), # End 1.3
+         ), # End 1.4
          
          ### Plot Specific Options ###
-         ## 1.4. DimPlot Options ####
+         ## 1.5. DimPlot Options ####
          # Panel will display if "Make DimPlot" switch is on
          conditionalPanel(
            # Javascript expression for condition in which to show panel
@@ -223,7 +257,7 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.5. Feature Plot Options ####
+         ## 1.6. Feature Plot Options ####
          conditionalPanel(
            condition = glue("input['{ns('make_feature')}'] == true"),
            collapsible_panel(
@@ -252,7 +286,7 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.6. Violin Plot Options ####
+         ## 1.7. Violin Plot Options ####
          conditionalPanel(
            condition = glue("input['{ns('make_vln')}'] == true"),
            collapsible_panel(
@@ -279,7 +313,7 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.7. Dot Plot Options ####
+         ## 1.8. Dot Plot Options ####
          conditionalPanel(
            condition = glue("input['{ns('make_dot')}'] == true"),
            collapsible_panel(
@@ -305,9 +339,9 @@ plots_tab_ui <- function(id,
                download_button =   TRUE
                )
              )
-           ), #End 1.7
+           ), #End 1.8
          
-         ## 1.8. Scatterplot Options ####
+         ## 1.9. Scatterplot Options ####
          conditionalPanel(
            condition = glue("input['{ns('make_scatter')}'] == true"),
            collapsible_panel(
@@ -334,7 +368,7 @@ plots_tab_ui <- function(id,
                download_button =   TRUE            
                )
            )
-         )
+         ) # End 1.9.
          ), #End 1.
        
        # 2. Main panel for displaying plot output ------------------------------
@@ -423,7 +457,8 @@ plots_tab_server <- function(id,
                              n_cells_original,
                              xlim_orig,
                              ylim_orig,
-                             categorical_palettes
+                             categorical_palettes,
+                             continuous_palettes
                              ){
   moduleServer(id,
                function(input,output,session){
@@ -479,14 +514,9 @@ plots_tab_server <- function(id,
                        )
                    })
                  
-                 # 1. Palettes for Categorical Data ----------------------------
-                 # Retrieve palette selected
-                 observe({
-                   print(glue("{ns('')}"))
-                   print("Server value of selected palette")
-                   print(input$categorical_palette)
-                 })
-                 
+                 # 1. Palettes -------------------------------------------------
+                 # Store selected palettes
+                 ## 1.1. Categorical Palette ####
                  selected_categorical_palette <-
                    reactive(
                      label = "Plots: Store selected palette (categorical)",
@@ -522,14 +552,37 @@ plots_tab_server <- function(id,
                        
                        })
                  
-                 # observe({
-                 #   print("Selected palette")
-                 #   print(selected_categorical_palette())
-                 # })
+                 ## 1.2. Continuous palette ####
+                 selected_continuous_palette <-
+                   reactive(
+                     label = "Plots: Store selected palette (continuous)",
+                     {
+                       # Require input$continuous_palette to be defined before
+                       # proceeding
+                       if (isTruthy(input$continuous_palette)){
+                         if (input$continuous_palette == "default"){
+                           # Returning NULL will direct plotting functions to use
+                           # the default palette
+                           return(NULL)
+                         } else {
+                           # Return the palette corresponding to the selection,
+                           # as a character vector of hex codes
+                           return(
+                             continuous_palettes[[input$continuous_palette]]
+                           )
+                         }
+                       } else {
+                         # If input$continuous_palette is NULL, pass NULL to 
+                         # this reactive expression. Default palettes will be 
+                         # used when the output is NULL.
+                         return(NULL)
+                       }
+                       
+                     })
                  
                  # 2. Plot Modules ---------------------------------------------
                  # A server instance of the plot_module is created for each plot
-                 # Dimplot
+                 ## 2.1. Dimplot ####
                  plot_module_server(
                    id = "dimplot",
                    object = subset, # Reactive
@@ -547,7 +600,7 @@ plots_tab_server <- function(id,
                    palette = selected_categorical_palette
                    )
                  
-                 # Feature Plot
+                 ## 2.2. Feature Plot ####
                  plot_module_server(
                    id = "feature",
                    object = subset, # Reactive
@@ -560,10 +613,11 @@ plots_tab_server <- function(id,
                    plot_type = "feature",
                    assay_config = assay_config,
                    xlim_orig = xlim_orig,
-                   ylim_orig = ylim_orig
+                   ylim_orig = ylim_orig,
+                   palette = selected_continuous_palette
                    )
                  
-                 # Violin Plot
+                 ## 2.3. Violin Plot ####
                  plot_module_server(
                    id = "violin",
                    object = subset, # Reactive
@@ -578,7 +632,7 @@ plots_tab_server <- function(id,
                    palette = selected_categorical_palette
                    )
                  
-                 # Dot plot
+                 ## 2.4. Dot plot ####
                  plot_module_server(
                    id = "dot",
                    object = subset, # Reactive
@@ -589,10 +643,12 @@ plots_tab_server <- function(id,
                    # Instructs server on which plot function to run
                    plot_type = "dot",
                    valid_features = valid_features,
-                   separate_features_server = TRUE
+                   separate_features_server = TRUE,
+                   # Use continuous palettes for dot plot
+                   palette = selected_continuous_palette
                    )
                  
-                 # Scatterplot
+                 ## 2.5. Scatterplot ####
                  plot_module_server(
                    id = "scatter",
                    object = subset, # Reactive

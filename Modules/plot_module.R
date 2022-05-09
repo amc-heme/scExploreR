@@ -1282,23 +1282,64 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
+                         # Reactives to pass to 
+                         print("split_by")
+                         print(plot_selections$split_by())
+                         print("order")
+                         print(plot_selections$order())
+                         print("show_label")
+                         print(plot_selections$label())
+                         print("show_legend")
+                         print(plot_selections$legend())
+                         print("is_subset")
+                         print(is_subset())
+                         print("original_limits")
+                         print(plot_selections$limits())
+                         print("xlim_orig")
+                         print(xlim_orig())
+                         print("ylim_orig")
+                         print(ylim_orig())
+                         print("palette")
+                         if (
+                           isTruthy(plot_selections$min_color()) & 
+                           isTruthy(plot_selections$max_color())
+                         ){
+                           c(plot_selections$min_color(), 
+                             plot_selections$max_color()) |> print()
+                         } else if (isTruthy(palette())) {
+                           palette() |> print()
+                         } else print("NULL")
+                         print("reduction")
+                         print(plot_selections$reduction())
+                         
                          # Feature plot using arguments relevant to 
                          # shiny_feature()
                          shiny_feature(
-                           object = object,
-                           features_entered = features_entered, 
-                           split_by = plot_selections$split_by,
-                           order = plot_selections$order,
-                           show_label = plot_selections$label,
-                           show_legend = plot_selections$legend,
-                           is_subset = is_subset,
-                           original_limits = plot_selections$limits,
-                           assay_config = assay_config,
-                           xlim_orig = xlim_orig,
-                           ylim_orig = ylim_orig,
-                           color_lower = plot_selections$min_color,
-                           color_upper = plot_selections$max_color,
-                           reduction = plot_selections$reduction
+                           object = object(),
+                           features_entered = features_entered(), 
+                           assay_config = assay_config(),
+                           split_by = plot_selections$split_by(),
+                           order = plot_selections$order(),
+                           #show_label = plot_selections$label(),
+                           show_legend = plot_selections$legend(),
+                           is_subset = is_subset(),
+                           original_limits = plot_selections$limits(),
+                           xlim_orig = xlim_orig(),
+                           ylim_orig = ylim_orig(),
+                           palette = 
+                             # Use custom colors if defined; if not, use the 
+                             # palette if defined; if not, pass NULL to use 
+                             # Seurat defaults.
+                             if (
+                               isTruthy(plot_selections$min_color()) & 
+                               isTruthy(plot_selections$max_color())
+                               ){
+                               c(plot_selections$min_color(), 
+                                 plot_selections$max_color())
+                             } else if (isTruthy(palette())) {
+                               palette()
+                             } else NULL,
+                           reduction = plot_selections$reduction()
                            )
                          })
                    
@@ -1335,7 +1376,8 @@ plot_module_server <- function(id,
                            # separate_features = 
                            #   reactive({input$separate_features}),
                            group_by = plot_selections$group_by,
-                           show_legend = plot_selections$legend
+                           show_legend = plot_selections$legend,
+                           palette = palette
                            )
                          })
                  } else if (plot_type == "scatter"){
