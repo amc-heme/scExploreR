@@ -722,7 +722,7 @@ plot_module_server <- function(id,
                        # Conditions under which ncol should be defined vary 
                        # based on plot type. Separate reactive expressions are
                        # created based on the plot type used for the module.
-                       if (plot_type == "dimplot"){
+                       if (plot_type %in% c("dimplot", "feature")){
                          # Condition to record ncol for UMAP
                          # Equal to conditions where there are multiple panels
                          reactive({
@@ -847,8 +847,7 @@ plot_module_server <- function(id,
                    ncol_slider <-
                      eventReactive(
                        c(plot_selections$split_by(),
-                         object()
-                       ),
+                         object()),
                        label = glue("{plot_label}: Make ncol Slider"),
                        ignoreNULL = TRUE,
                        {
@@ -856,40 +855,69 @@ plot_module_server <- function(id,
                          if (plot_selections$split_by() == "none"){
                            NULL
                          } else {
-                           # Number of panels: used to set bounds of ncol slider
-                           # Number of panels is equal to the number of unique
-                           # values for the chosen metadata category
-                           n_panel <-
-                             object()@meta.data[[plot_selections$split_by()]] |>
-                             unique() |>
-                             length()
-                           
-                           # Determine default value for ncol
-                           # For less than four panels, this is equal to the
-                           # number of panels.
-                           if (n_panel < 4){
-                             default_col <- n_panel
-                             # For 4 or more panels, the default value is 2
-                           } else {
-                             default_col <- 2
-                           }
+                           # Define min, max, and default values for slider
+                           ncol_settings <-
+                             ncol_settings(
+                               object = object(),
+                               rule = "split_by",
+                               split_by = plot_selections$split_by()
+                             )
                            
                            # Create slider input
                            sliderInput(
                              inputId = ns("ncol"),
                              label = "Number of Columns: ",
-                             min = 1,
+                             min = ncol_settings[1],
                              # Max value: equal to the number of levels
                              # in the given variable
-                             max = n_panel,
+                             max = ncol_settings[2],
                              # Only allow integer values
                              step = 1,
                              ticks = FALSE,
-                             value = default_col
+                             # Default value (3rd element)
+                             value = ncol_settings[3]
                            )
                          } # End else
                        })
                    
+                 } else if (plot_type == "feature"){
+                   # Feature plots: appears when only one feature is entered
+                   # and split by is defined
+                   ncol_slider <-
+                     eventReactive(
+                       c(plot_selections$split_by(),
+                         object()),
+                       label = glue("{plot_label}: Make ncol slider"),
+                       ignoreNULL = TRUE,
+                       {
+                         if (!is.null(features_entered())){
+                           if (length(features_entered()) == 1 & 
+                               plot_selections$split_by() != "none"){
+                             # Define min, max, and default values for slider
+                             ncol_settings <-
+                               ncol_settings(
+                                 object = object(),
+                                 rule = "split_by",
+                                 split_by = plot_selections$split_by()
+                                 )
+                             
+                             # Create slider input
+                             sliderInput(
+                               inputId = ns("ncol"),
+                               label = "Number of Columns: ",
+                               min = ncol_settings[1],
+                               # Max value: equal to the number of levels
+                               # in the given variable
+                               max = ncol_settings[2],
+                               # Only allow integer values
+                               step = 1,
+                               ticks = FALSE,
+                               # Default value (3rd element)
+                               value = ncol_settings[3]
+                               )
+                             } else NULL # No slider when conditions not 
+                           }
+                       })
                  } else if (plot_type == "violin"){
                    # Violin plots: appears when multiple features are entered
                    ncol_slider <-
@@ -902,26 +930,28 @@ plot_module_server <- function(id,
                          # plots. Slider is needed only when more than one 
                          # feature is entered
                          if(length(features_entered()) > 1){
-                           # Default number of columns: equal to the number of
-                           # panels if there are less than four, otherwise equal 
-                           # to two
-                           if (length(features_entered()) < 4){
-                             default_col <- length(features_entered())
-                           } else {
-                             default_col <- 2
-                           }
+                           # Define min, max, and default values for slider
+                           # (depends on number of features entered)
+                           ncol_settings <-
+                             ncol_settings(
+                               object = object(),
+                               rule = "features",
+                               features_entered = features_entered()
+                             )
                            
                            # Create/update slider input
                            sliderInput(
                              inputId = ns("ncol"),
-                             label = "Number of columns: ",
-                             min = 1,
-                             #Max value: equal to the number of features entered
-                             max = length(features_entered()),
-                             #Only allow integer values
-                             step = 1, 
+                             label = "Number of Columns: ",
+                             min = ncol_settings[1],
+                             # Max value: equal to the number of levels
+                             # in the given variable
+                             max = ncol_settings[2],
+                             # Only allow integer values
+                             step = 1,
                              ticks = FALSE,
-                             value = default_col
+                             # Default value (3rd element)
+                             value = ncol_settings[3]
                              )
                          } else NULL
                        })
@@ -1293,6 +1323,8 @@ plot_module_server <- function(id,
                          print(plot_selections$legend())
                          print("is_subset")
                          print(is_subset())
+                         print("ncol")
+                         print(plot_selections$ncol())
                          print("original_limits")
                          print(plot_selections$limits())
                          print("xlim_orig")
@@ -1322,6 +1354,7 @@ plot_module_server <- function(id,
                            order = plot_selections$order(),
                            #show_label = plot_selections$label(),
                            show_legend = plot_selections$legend(),
+                           ncol = plot_selections$ncol(),
                            is_subset = is_subset(),
                            original_limits = plot_selections$limits(),
                            xlim_orig = xlim_orig(),
