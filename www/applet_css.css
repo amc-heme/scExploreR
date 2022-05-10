@@ -33,6 +33,11 @@
   display: block;
 }
 
+/* Apply to options cards that comprise the full page (currently unused) */
+/*.wide {
+  width: 900px;
+}*/
+
 /* Make multi-select fill the page */
 .multi-wrapper
 .non-selected-wrapper,
@@ -42,6 +47,14 @@
   /* Displays scrollbars only when necessary (default is to display always)*/
   overflow-y: auto;
 }
+
+/* Assay options multi-select: make shorter  (doesn't work) */
+/*[id*="assays_selected"] > .multi-wrapper
+[id*="assays_selected"] > .non-selected-wrapper,
+[id*="assays_selected"] > .multi-wrapper
+[id*="assays_selected"] > .multi-wrapper {
+  height: 350 px;
+} */
 
 /* Class used for the buttons to remove fields when defining
 categories of metadata values */

@@ -22,6 +22,9 @@ right_panel.style.float = "right";
 /* Set height of right_panel to 50 px (height of navbar panel) to allow elements
    to be vertically centered on the panel */
 right_panel.style.height = "50px";
+// Padding-top: 7px value centers buttons on navbar right_panel
+right_panel.style["padding-top"] = "7px";
+right_panel.style["padding-bottom"] = "7px";
 
 // Create container to be placed inside right_panel, which will contain the help button
 let help_div = document.createElement("div");
