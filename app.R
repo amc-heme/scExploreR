@@ -771,40 +771,7 @@ server <- function(input, output, session){
         unique_metadata
         })
   
-  ## 2.8. UMAP Dimensions of full object ####
-  # This is used to allow plotting of subsets with original axes scales
-  # Plot a UMAP of the full data, store it to memory, and record the
-  # x and y limits of the plot
-  umap_orig <- 
-    reactive({
-      req(object())
-      DimPlot(
-        object()
-      )
-    })
-  
-  # Record limits
-  xlim_orig <- 
-    reactive({
-      req(object())
-      layer_scales(umap_orig())$x$range$range
-    })
-    
-  ylim_orig <- 
-    reactive({
-      req(object())
-      layer_scales(umap_orig())$y$range$range
-    })
-  
-  # Store number of cells: used to determine if it is a subset
-  # TODO: does this apply to non-CITEseq datasets?
-  n_cells_original <- 
-    reactive({
-      req(object())
-      ncol(object())
-    })
-  
-  ## 2.9 Reductions in object ####
+  ## 2.8 Reductions in object ####
   reductions <- 
     reactive({
       req(object())
@@ -817,9 +784,89 @@ server <- function(input, output, session){
             reductions[reductions=="umap"],
             reductions[!reductions=="umap"]
             )
-        }
+      }
       
       reductions
+    })
+  
+  ## 2.9. Original Axes limits by reduction ####
+  # Original axes limits must be calculated for each reduction
+  # Current method is to use the min and max values for coordinates in 
+  # the cell embeddings for each reduction
+  
+  #xmin <- min(obj@reductions[[reduction]]@cell.embeddings[,1])
+  #xmax <- max(obj@reductions[[reduction]]@cell.embeddings[,1])
+  
+  lim_orig <-
+    eventReactive(
+      reductions(),
+      ignoreNULL = FALSE,
+      label = "Setup: Define orignal axes limits",
+      {
+        req(reductions())
+        
+        lim_orig <- 
+          lapply(
+            reductions(),
+            function(reduction, object){
+              # limits calculation: uses cell embeddings
+              # Same as default method in FeaturePlotWrapper.R
+              # `object` does not require parentheses if called with them below
+              xmin <- min(object@reductions[[reduction]]@cell.embeddings[,1])
+              xmax <- max(object@reductions[[reduction]]@cell.embeddings[,1])
+              ymin <- min(object@reductions[[reduction]]@cell.embeddings[,2])
+              ymax <- max(object@reductions[[reduction]]@cell.embeddings[,2]) 
+              
+              return(
+                list(
+                  xlim_orig = c(xmin, xmax),
+                  ylim_orig = c(ymin, ymax)
+                )
+              )
+            },
+            # Object must called with parentheses here (if not, parentheses
+            # would be required in the function above)
+            object()
+          )
+        
+        # Set names of list to names of reductions
+        names(lim_orig) <- reductions()
+        
+        # Return list of original limits
+        lim_orig
+      })
+
+  
+  # This is used to allow plotting of subsets with original axes scales
+  # Plot a UMAP of the full data, store it to memory, and record the
+  # x and y limits of the plot
+  # umap_orig <- 
+  #   reactive({
+  #     req(object())
+  #     DimPlot(
+  #       object()
+  #     )
+  #   })
+  
+  # Record limits
+  # xlim_orig <- 
+  #   reactive({
+  #     req(object())
+  #     layer_scales(umap_orig())$x$range$range
+  #   })
+  #   
+  # ylim_orig <- 
+  #   reactive({
+  #     req(object())
+  #     layer_scales(umap_orig())$y$range$range
+  #   })
+  
+  # Store number of cells: used to determine if it is a subset
+  # TODO: does this apply to non-CITEseq datasets?
+  n_cells_original <- 
+    reactive({
+      req(object())
+      ncol(object())
     })
     
   ## 2.10 Auto-Generated Object Dictionary ####
@@ -970,8 +1017,7 @@ server <- function(input, output, session){
           valid_features = valid_features,
           error_list = error_list,
           n_cells_original = n_cells_original,
-          xlim_orig = xlim_orig,
-          ylim_orig = ylim_orig,
+          lim_orig = lim_orig,
           categorical_palettes = categorical_palettes,
           continuous_palettes = continuous_palettes
           )

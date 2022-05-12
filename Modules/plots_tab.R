@@ -438,9 +438,7 @@ plots_tab_ui <- function(id,
 # defined in the main server function at startup
 # n_cells_original: Number of cells in full Seurat object. Calculated in main 
 # server function.
-# xlim_orig: x-limits of a DimPlot of the full data. Applied when "use original 
-# axes limits" is checked in the DimPlot options after a subset is plotted
-# ylim_orig: y-limits of a DimPlot plot of the full data.
+# lim_orig: a list of original axes limits for each reduction currently enabled.
 
 # TODO: replace metadata_config in the subset selections module with a more 
 # specific variable
@@ -455,8 +453,7 @@ plots_tab_server <- function(id,
                              valid_features,
                              error_list,
                              n_cells_original,
-                             xlim_orig,
-                             ylim_orig,
+                             lim_orig,
                              categorical_palettes,
                              continuous_palettes
                              ){
@@ -592,8 +589,7 @@ plots_tab_server <- function(id,
                    n_cells_original = n_cells_original, # Non-reactive
                    # Instructs server on which plot function to run
                    plot_type = "dimplot",
-                   xlim_orig = xlim_orig,
-                   ylim_orig = ylim_orig,
+                   lim_orig = lim_orig,
                    metadata_config = metadata_config,
                    # DimPlots use categorical palettes
                    # Pass categorical palette selected by user to the server
@@ -612,8 +608,7 @@ plots_tab_server <- function(id,
                    # Instructs server on which plot function to run
                    plot_type = "feature",
                    assay_config = assay_config,
-                   xlim_orig = xlim_orig,
-                   ylim_orig = ylim_orig,
+                   lim_orig = lim_orig,
                    palette = selected_continuous_palette
                    )
                  

@@ -431,10 +431,10 @@ plot_module_ui <- function(id,
 #' TRUE in the UI
 #' @param plot_type The type of plot to create from the selected options.
 #' @param valid_features 
-#' @param xlim_orig The x limits of the dimplot of the full Seurat object 
-#' (before a subset is created). This only applies to dimplots and feature plots.
-#' @param ylim_orig The y axis limits of the dimplot of the full Seurat object.
-#' @param palette A palette of colors currently selected by the user, to be used 
+#' @param lim_orig A list with the original x- and y- axes limits for each 
+#' reuction enabled for the current object. The list is generated at app 
+#' startup.
+#' @param palette A palette of colors currently selected by the user, to be used
 #' on the plot.
 #' @param assay_config The assay section of the config file loaded in the main
 #' server function
@@ -460,8 +460,7 @@ plot_module_server <- function(id,
                                              "dot",
                                              "scatter"), #Non-reactive
                                valid_features = NULL, #Reactive
-                               xlim_orig = NULL, #Reactive
-                               ylim_orig = NULL, #Reactive
+                               lim_orig = lim_orig, # Reactive
                                palette = NULL, # Reactive
                                metadata_config = NULL,
                                #Currently only needed for feature plots
@@ -1259,52 +1258,60 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
-                       # Create a UMAP plot using shiny_umap()
-                       shiny_umap(
-                         object = object,
-                         group_by = plot_selections$group_by,
-                         split_by = plot_selections$split_by,
-                         show_label = plot_selections$label,
-                         show_legend = plot_selections$legend,
-                         ncol = plot_selections$ncol,
-                         is_subset = is_subset,
-                         original_limits = plot_selections$limits,
-                         xlim_orig = xlim_orig,
-                         ylim_orig = ylim_orig,
-                         show_title =
-                           # show_title controls how NULL values for plot_title
-                           # are interpereted (NULL will remove the label by 
-                           # default, but plot_title will be NULL if a label is
-                           # not set in the config file (want the default title
-                           # to be used in this case))
-                           if (input$title_settings == "none"){
-                             FALSE
-                           } else TRUE,
-                         plot_title =
-                           # Human-readable plot title
-                           # Depends on title_settings
-                           if (isTruthy(input$title_settings)){
-                             if (input$title_settings == "default"){
-                               # Default behavior is to use the `label` property
-                               # for the category in the config file
-                               metadata_config()[[plot_selections$group_by()]]$label
-                             } else if (input$title_settings == "custom"){
-                               # Use the custom title entered by the user
-                               # in this case
-                               input$custom_title
-                             } else if (input$title_settings == "none"){
-                               # NULL is passed to the title argument,
-                               # removing it
-                               NULL
-                             }
-                           } else{
-                             # Use default behavior if selection menu
-                             # does not exist
-                             metadata_config()[[plot_selections$group_by()]]$label
-                           },
-                         reduction = plot_selections$reduction,
-                         palette = palette
-                         )
+                         # Create a UMAP plot using shiny_umap()
+                         shiny_umap(
+                           object = object(),
+                           group_by = plot_selections$group_by(),
+                           split_by = plot_selections$split_by(),
+                           show_label = plot_selections$label(),
+                           show_legend = plot_selections$legend(),
+                           ncol = plot_selections$ncol(),
+                           is_subset = is_subset(),
+                           original_limits = plot_selections$limits(),
+                           # Original x- and y- axis limits: use the values 
+                           # for the currently selected reduction
+                           xlim_orig = 
+                             lim_orig()[[
+                               plot_selections$reduction()]]$xlim_orig,
+                           ylim_orig = 
+                             lim_orig()[[
+                               plot_selections$reduction()]]$ylim_orig,
+                           show_title =
+                             # show_title controls how NULL values for 
+                             # plot_title are interpreted (NULL will remove the 
+                             # label by default, but plot_title will be NULL if 
+                             # a label is not set in the config file (want the 
+                             # default title to be used in this case))
+                             if (input$title_settings == "none"){
+                               FALSE
+                             } else TRUE,
+                           plot_title =
+                             # Human-readable plot title
+                             # Depends on title_settings
+                             if (isTruthy(input$title_settings)){
+                               if (input$title_settings == "default"){
+                                 # Default behavior is to use the `label` property
+                                 # for the category in the config file
+                                 metadata_config()[[
+                                   plot_selections$group_by()]]$label
+                               } else if (input$title_settings == "custom"){
+                                 # Use the custom title entered by the user
+                                 # in this case
+                                 input$custom_title
+                               } else if (input$title_settings == "none"){
+                                 # NULL is passed to the title argument,
+                                 # removing it
+                                 NULL
+                               }
+                             } else{
+                               # Use default behavior if selection menu
+                               # does not exist
+                               metadata_config()[[
+                                 plot_selections$group_by()]]$label
+                             },
+                           reduction = plot_selections$reduction(),
+                           palette = palette()
+                           )
                      })
                    
                  } else if (plot_type == "feature") {
@@ -1312,38 +1319,6 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
-                         # Reactives to pass to 
-                         print("split_by")
-                         print(plot_selections$split_by())
-                         print("order")
-                         print(plot_selections$order())
-                         print("show_label")
-                         print(plot_selections$label())
-                         print("show_legend")
-                         print(plot_selections$legend())
-                         print("is_subset")
-                         print(is_subset())
-                         print("ncol")
-                         print(plot_selections$ncol())
-                         print("original_limits")
-                         print(plot_selections$limits())
-                         print("xlim_orig")
-                         print(xlim_orig())
-                         print("ylim_orig")
-                         print(ylim_orig())
-                         print("palette")
-                         if (
-                           isTruthy(plot_selections$min_color()) & 
-                           isTruthy(plot_selections$max_color())
-                         ){
-                           c(plot_selections$min_color(), 
-                             plot_selections$max_color()) |> print()
-                         } else if (isTruthy(palette())) {
-                           palette() |> print()
-                         } else print("NULL")
-                         print("reduction")
-                         print(plot_selections$reduction())
-                         
                          # Feature plot using arguments relevant to 
                          # shiny_feature()
                          shiny_feature(
@@ -1357,8 +1332,12 @@ plot_module_server <- function(id,
                            ncol = plot_selections$ncol(),
                            is_subset = is_subset(),
                            original_limits = plot_selections$limits(),
-                           xlim_orig = xlim_orig(),
-                           ylim_orig = ylim_orig(),
+                           # Original x- and y- axis limits: use the values 
+                           # for the currently selected reduction
+                           xlim_orig = 
+                             lim_orig()[[plot_selections$reduction()]]$xlim_orig,
+                           ylim_orig = 
+                             lim_orig()[[plot_selections$reduction()]]$ylim_orig,
                            palette = 
                              # Use custom colors if defined; if not, use the 
                              # palette if defined; if not, pass NULL to use 

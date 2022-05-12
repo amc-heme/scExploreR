@@ -24,66 +24,60 @@
 #' @param reduction The reduction (UMAP, t-SNE, etc.) to use for plotting
 #' @param palette The palette to use for coloring groups. If the palette passed
 #' to this function is NULL, the default (hue_pal()) is used.
-shiny_umap <- function(object, #Reactive
-                       group_by, #Reactive
-                       split_by, #Reactive
-                       show_label, #Reactive
-                       show_legend, #Reactive
-                       ncol, #Reactive
-                       is_subset, #Reactive
-                       original_limits, #Reactive
-                       xlim_orig, #Reactive
-                       ylim_orig, #Reactive
-                       show_title = TRUE, #Non-reacive
-                       plot_title = NULL, #Non-reactive
-                       reduction = NULL, #Reactive
-                       palette = NULL #Reactive
+shiny_umap <- function(object, 
+                       group_by, 
+                       split_by, 
+                       show_label, 
+                       show_legend, 
+                       ncol, 
+                       is_subset, 
+                       original_limits, 
+                       xlim_orig = NULL, 
+                       ylim_orig = NULL, 
+                       show_title = TRUE, 
+                       plot_title = NULL, 
+                       reduction = NULL, 
+                       palette = NULL 
                        ){
   # validate will keep plot code from running if the subset 
   # is NULL (no cells in subset)
   validate(
     need(
-      if (is.reactive(object)) object() else object,
+      object,
       # No message displayed (a notification is already 
       # displayed) (*was displayed*)
       message = ""
       )
     )
-  
-  # Make function reactive-agnostic (will use either a non-reactive object, or
-  # a reactive object unpacked to a non-reactive variable within this function) 
-  if (is.reactive(object)){
-    object <- object()
-  } 
 
   # Palette: must determine number of colors to create from provided palette
   # The number of colors is equal to the number of unique values in 
   # the group.by category
   n_colors <- 
-    object@meta.data[[group_by()]] |>
+    object@meta.data[[group_by]] |>
     unique() |> 
     length()
     
   # Produce a single UMAP plot if no features to split by are specified
-  if (split_by() == "none"){
+  if (split_by == "none"){
     umap_plot <- 
       DimPlot(
         # Object or subset (reactive-agnostic)
         object,
-        group.by = group_by(),
+        group.by = group_by,
         # Cols: use user defined palette, or the defaults if palette() == NULL 
         cols = 
-          if (!is.null(palette())){
+          if (!is.null(palette)){
             # colorRampPalette() extends or contracts the given palette to 
             # produce exactly the required number of colors
-            colorRampPalette(palette())(n_colors)
+            colorRampPalette(palette)(n_colors)
             # Use ggplot2 defaults if palette() is unspecified
           } else NULL, 
         #TRUE if "label groups" is checked, FALSE otherwise
-        label = show_label(), 
+        label = show_label, 
         # Reduction: uses the input for reduction if it exists, otherwise
         # it is set to NULL and will use default settings.
-        reduction = if(!is.null(reduction)) reduction() else NULL
+        reduction = if(!is.null(reduction)) reduction else NULL
         ) 
   } else {
     #UMAP with split.by defined and no special subset
@@ -91,18 +85,18 @@ shiny_umap <- function(object, #Reactive
       DimPlot(
         # Object or subset (reactive-agnostic)
         object,
-        group.by = group_by(),
-        split.by = split_by(),
+        group.by = group_by,
+        split.by = split_by,
         cols = 
-          if (!is.null(palette())){
+          if (!is.null(palette)){
             # colorRampPalette() extends or contracts the given palette to 
             # produce exactly the required number of colors
-            colorRampPalette(palette())(n_colors)
+            colorRampPalette(palette)(n_colors)
             # Use ggplot2 defaults if palette() is unspecified
           } else NULL, 
-        label = show_label(),
-        ncol = ncol(),
-        reduction = if(!is.null(reduction)) reduction() else NULL
+        label = show_label,
+        ncol = ncol,
+        reduction = if(!is.null(reduction)) reduction else NULL
         ) 
   }
   
@@ -117,7 +111,7 @@ shiny_umap <- function(object, #Reactive
       list(
         theme(
           legend.position = 
-            if (show_legend()==TRUE) {
+            if (show_legend==TRUE) {
               "right"
             } else "none")
         ),
@@ -125,11 +119,11 @@ shiny_umap <- function(object, #Reactive
       # specified
       # First, simultaneously test if subset is present and if the corresponding
       # original_limits reactive is truthy (i.e. both present and checked).
-      if (is_subset() & isTruthy(original_limits())){
+      if (is_subset & isTruthy(original_limits)){
         # If so, add original limits to the list
         list(
-          scale_x_continuous(limits = xlim_orig()),
-          scale_y_continuous(limits = ylim_orig())
+          scale_x_continuous(limits = xlim_orig),
+          scale_y_continuous(limits = ylim_orig)
           )
       },
       # D: Title: Use label from config file if it is defined

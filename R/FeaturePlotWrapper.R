@@ -75,7 +75,6 @@ FeaturePlotSingle<-
       colors <- c('lightgrey', 'blue')
     }
     
-    
     # Handling color_lower and color_upper inputs: form colors 
     # vector and warn user 
     if (!is.null(color_lower) & !is.null(color_upper)){
@@ -131,7 +130,7 @@ FeaturePlotSingle<-
     ymax <- max(obj@reductions[[reduction]]@cell.embeddings[,2]) 
   } else {
     ymin <- ylim[1]
-    ymax <- ymax[2]
+    ymax <- ylim[2]
   }
   
   
@@ -224,6 +223,7 @@ FeaturePlotSingle<-
         FeaturePlot(
           obj, 
           features = feature, 
+          reduction = reduction,
           ...
         ) +
           coord_cartesian(
@@ -276,4 +276,4 @@ FeaturePlotSingle<-
       
   }
   
-}
+  }

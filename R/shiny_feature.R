@@ -36,18 +36,6 @@ shiny_feature <- function(object,
 ){
   if (length(features_entered) == 1){
     # Use FeaturePlotSingle.R for single-feature plots
-    print("Arguments passed to FeaturePlotSingle")
-    print(glue("metadata_column: {split_by}"))
-    print(glue("colors:"))
-    print(palette)
-    print(glue("ncol: {ncol}"))
-    print(glue("custom_titles: {custom_titles}"))
-    print(glue("reduction: {reduction}"))
-    print(glue("show_legend: {show_legend}"))
-    #print(glue("label: {show_label}"))
-    print(glue("order: {order}"))
-    print(glue("original_limits: {original_limits}"))
-    
     FeaturePlotSingle(
       object,
       feature = features_entered,
