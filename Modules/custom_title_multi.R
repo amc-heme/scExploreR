@@ -36,7 +36,7 @@ custom_title_multi_server <- function(id,
       ns <- session$ns
       
       # Create list for storing observers
-      observers <- list()
+      rv <- reactiveValues(observers = list())
       
       # Vector of split by Groups ####
       # Generate vector of groups (must match method used in the feature plot 
@@ -77,7 +77,7 @@ custom_title_multi_server <- function(id,
                         # Id contains multi-entry-reset for easy 
                         # access by CSS selectors 
                         inputId = 
-                          ns(paste0("multi-entry-reset", as.character(i))),
+                          ns(paste0("multi_entry_reset", as.character(i))),
                         label = "",
                         icon = icon("redo-alt")
                         )
@@ -98,9 +98,94 @@ custom_title_multi_server <- function(id,
       # Create Observers for individual reset buttons
       observeEvent(
         groups_vector(),
-        ignoreNULL = FALSE,
         {
+          # Clear any observers that currently exist, if they exist
+          # For diagnostic purposes
+          n_destroy <- 0 
+          print("Observer query")
+          for (observer in rv$observers){
+            print(class(observer))
+            if ("Observer" %in% class(observer)){
+              n_destroy <- n_destroy + 1
+              print("Observer detected and marked for destruction.")
+              observer$destroy()
+            }
+          }
+          print(glue("Total Number of observers destroyed: {n_destroy}"))
           
+          # if (!is.null(observers)){
+          #   if (length(observers) > 1){
+          #     for (i in 1:length(observers)){
+          #       print(glue("Destroying observer {i}"))
+          #       print("Content")
+          #       print(observers[[as.character(i)]])
+          #       print("Class")
+          #       print(class(observers[[as.character(i)]]))
+          #       #observers[[as.character(i)]]$destroy()
+          #     }
+          #   }
+          # }
+          
+          if (!is.null(groups_vector())){
+            
+            # Create an observer for each text input currently displayed
+            rv$observers <-
+              lapply(
+                1:length(groups_vector()),
+                function(i, groups_vector){
+                  observeEvent(
+                    # Observer responds to the individual 
+                    # reset button of text field i
+                    input[[paste0("multi_entry_reset", as.character(i))]],
+                    label = 
+                      glue("multi_entry Reset Button: Field {as.character(i)}"),
+                    ignoreNULL = FALSE,
+                    ignoreInit = TRUE,
+                    {
+                      print("Reset observer triggered")
+                      print(glue("ID: {id}"))
+                      print(glue("Observer {as.character(i)}"))
+                      updateTextInput(
+                        session = session,
+                        inputId = paste0("entry", as.character(i)),
+                        value = groups_vector[i]
+                        )
+                    })
+                },
+                groups_vector()
+              )
+            
+            # for (i in 1:length(groups_vector())){
+            #   print("Observer creation")
+            #   print(glue("i = {i}"))
+            #   print(
+            #     glue(
+            #       'eventExpr = input[[{paste0("multi_entry_reset", as.character(i))}]]'
+            #     )
+            #   )
+            #   
+            #   rv$observers[[as.character(i)]] <-
+            #     observeEvent(
+            #       # Observer responds to the individual reset button 
+            #       # of text field i
+            #       input[[paste0("multi_entry_reset", as.character(i))]],
+            #       label = 
+            #         glue("multi_entry Reset Button: Field {as.character(i)}"),
+            #       ignoreNULL = FALSE,
+            #       ignoreInit = TRUE,
+            #       {
+            #         print("Reset observer triggered")
+            #         print(glue("ID: {id}"))
+            #         print(glue("Observer {as.character(i)}"))
+            #         updateTextInput(
+            #           session = session,
+            #           inputId = paste0("entry", as.character(i)),
+            #           value = groups_vector()[i]
+            #         )
+            #       })
+            #   
+            # }
+          }
         })
       
       # Observer for Reset All Button ####

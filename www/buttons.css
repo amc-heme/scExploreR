@@ -9,10 +9,12 @@
 
 .button-primary:hover{
   background-color: var(--mid-blue-hover);
+  color: #FFFFFF;
 }
 
 .button-primary:active{
   background-color: var(--mid-blue-active);
+  color: #FFFFFF;
 }
 
 /******************************************************************************/

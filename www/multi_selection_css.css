@@ -7,7 +7,7 @@
 }
 
 /* Reset Button for Individual Entry */
-[id *= "multi-entry-reset"]{
+[id *= "multi_entry_reset"]{
   display: inline-block;
   border-radius: 50%;
   padding: 0px;
