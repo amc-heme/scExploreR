@@ -14,7 +14,7 @@ library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
 
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
-options(shiny.reactlog=TRUE, warn.conflicts = FALSE)
+options(shiny.reactlog=TRUE)
 
 # Logging and performance monitoring
 library(profvis, quietly = TRUE, warn.conflicts = FALSE)
@@ -835,33 +835,9 @@ server <- function(input, output, session){
         # Return list of original limits
         lim_orig
       })
-
   
-  # This is used to allow plotting of subsets with original axes scales
-  # Plot a UMAP of the full data, store it to memory, and record the
-  # x and y limits of the plot
-  # umap_orig <- 
-  #   reactive({
-  #     req(object())
-  #     DimPlot(
-  #       object()
-  #     )
-  #   })
-  
-  # Record limits
-  # xlim_orig <- 
-  #   reactive({
-  #     req(object())
-  #     layer_scales(umap_orig())$x$range$range
-  #   })
-  #   
-  # ylim_orig <- 
-  #   reactive({
-  #     req(object())
-  #     layer_scales(umap_orig())$y$range$range
-  #   })
-  
-  # Store number of cells: used to determine if it is a subset
+  ## 2.10 Store number of cells in full object ####
+  # used to determine if a subset is selected.
   # TODO: does this apply to non-CITEseq datasets?
   n_cells_original <- 
     reactive({
@@ -869,7 +845,7 @@ server <- function(input, output, session){
       ncol(object())
     })
     
-  ## 2.10 Auto-Generated Object Dictionary ####
+  ## 2.11 Auto-Generated Object Dictionary ####
   # Data dictionary
   # The data dictionary gives the names of all metadata in the object as a 
   # guide for string subsetting.

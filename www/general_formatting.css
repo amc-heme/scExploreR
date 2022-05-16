@@ -111,7 +111,7 @@ h2, h3 {
 
 .bold-blue {
   /* Uses text format from auto_dictionary.Rmd */
-  color: var(--markdown_blue, #000088);
+  color: var(--markdown-blue, #000088);
   font-weight: bold;
 }
 

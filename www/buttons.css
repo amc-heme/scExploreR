@@ -1,3 +1,37 @@
+/******************************************************************************/
+/* CSS for Primary Button */
+.button-primary{
+  background-color: var(--mid-blue);
+  color: #FFFFFF;
+  border-color: var(--markdown-blue);
+  border-radius: var(--button-border-radius);
+}
+
+.button-primary:hover{
+  background-color: var(--mid-blue-hover);
+}
+
+.button-primary:active{
+  background-color: var(--mid-blue-active);
+}
+
+/******************************************************************************/
+/* Secondary (ghost) button */
+.button-ghost{
+  background-color: #FFFFFF;
+  color: #000000;
+  border-color: var(--markdown-blue);
+  border-radius: var(--button-border-radius);
+}
+
+.button-ghost:hover{
+  border-color: var(--mid-blue-hover);
+}
+
+.button-ghost:active{
+  border-color: var(--mid-blue-active);
+}
+
 /* CSS for styling the help button and its dropdown menu*/
 #help {
   z-index: 1200; /* Navbar has a z-index of 1,000 */
@@ -87,14 +121,14 @@
 .plot-download-button > div > button {
   width: 80px !important;
   border-radius: 15px !important;
-  background-color: #4E7CE0 !important;
+  background-color: var(--mid-blue) !important;
   border-color: #333BE6 !important;
 }
 
 .plot-download-button > div > button:hover {
-  background-color: #7796D9 !important;
+  background-color: var(--mid-blue-hover) !important;
 }
 
 .plot-download-button > div > button.btn:active {
-  background-color: #7796D9 !important;
+  background-color: var(--mid-blue-active) !important;
 }
