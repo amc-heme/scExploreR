@@ -10,17 +10,17 @@ custom_title_multi_ui <- function(id
     uiOutput(outputId = ns("multi_ui")),
     # Update button to return vector from choices made in the table of inputs
     actionButton(
+      inputId = ns("reset_all"),
+      label = "Reset All",
+      icon = icon("redo-alt"),
+      class = "button-ghost multi-reset-all"
+    ),
+    actionButton(
       inputId = ns("update"),
       label = "Update",
       icon = icon("sync"),
       class = "button-primary multi-update"
-      ),
-     actionButton(
-       inputId = ns("reset_all"),
-       label = "Reset All",
-       icon = icon("redo-alt"),
-       class = "button-ghost multi-reset-all"
-       )
+      )
     )
 }
 
@@ -210,15 +210,25 @@ custom_title_multi_server <- function(id,
       # Return Vector of Input Values ####
       vector <-
         eventReactive(
-          input$update,
+          c(input$update, groups_vector()),
           ignoreNULL = FALSE,
-          ignoreInit = TRUE,
           {
             if (isTruthy(groups_vector())){
               sapply(
                 1:length(groups_vector()),
                 function(i){
-                  input[[paste0("entry", as.character(i))]]
+                  # Input id of current iteration
+                  id <- paste0("entry", as.character(i))
+                  
+                  # If input i is defined, return the input
+                  if (!is.null(input[[id]])){
+                    input[[id]]
+                  } else {
+                    # Otherwise, return the default entry for position i,
+                    # as defined in groups_vector()
+                    groups_vector()[i]
+                  }
+                  
                 })
             } else {
               NULL

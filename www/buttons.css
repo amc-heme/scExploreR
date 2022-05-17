@@ -22,7 +22,7 @@
 .button-ghost{
   background-color: #FFFFFF;
   color: #000000;
-  border-color: var(--markdown-blue);
+  border-color: #000000;
   border-radius: var(--button-border-radius);
 }
 

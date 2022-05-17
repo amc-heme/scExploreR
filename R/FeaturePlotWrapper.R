@@ -19,11 +19,18 @@ library(stringr)
 #' @param color_upper This is deprecated, please use `colors` instead.
 #' @param ncol The number of columns to use when plotting multiple panels 
 #' (applies when metadata_column is defined)
+#' @param show_title If TRUE, display titles on each panel of the plot.
 #' @param custom_titles A vector of titles to use for each panel of the plot. 
 #' If NULL, default titles will be used (defaults to name of each split by
 #' category if metadata_column is defined, or the name of the feature if no 
-#' split.by category is defined). If an empty string (""), no titles will be 
-#' shown.
+#' split.by category is defined). 
+#' @param legend_title 
+#' 
+#' If "default", display feature name above legend. If 
+#' "right", display feature name vertically on the right-hand side of the plot. 
+#' If "none", do not display a title. If NULL, legend_title is set to "default".
+#' @param super_title If TRUE, display the feature name above all panels. This 
+#' argument is ignored when metadata_column is NULL.
 #' @param reduction The dimensionality reduction to use for plotting cell 
 #' coordinates.
 #' @param xlim If specified, custom limits to use for the x-axis of the feature 
@@ -58,7 +65,10 @@ FeaturePlotSingle<-
     color_lower = NULL,
     color_upper = NULL,
     ncol = NULL,
+    show_title = TRUE,
     custom_titles = NULL, 
+    legend_title = "feature",
+    super_title = FALSE,
     reduction = NULL,
     xlim = NULL,
     ylim = NULL,
@@ -74,6 +84,15 @@ FeaturePlotSingle<-
     if (is.null(colors)){
       colors <- c('lightgrey', 'blue')
     }
+    # If legend_title is NULL, set it to "default"
+    if (is.null(legend_title)){
+      legend_title <- "default"
+    }
+    
+    # Legend title options
+    # if (!legend_title %in% c("default", "right", "none")){
+    #   stop("Invalid value for legend_title. Please enter one of `default`, `right`, or `none`, or input NULL for default behavior.")
+    # }
     
     # Handling color_lower and color_upper inputs: form colors 
     # vector and warn user 
@@ -135,7 +154,17 @@ FeaturePlotSingle<-
   
   
   # Put feature name on top of colorbar legend
-  legend_title <- feature
+  # Choices for name on legend title
+  legend_title <- 
+    if (legend_title == "feature"){
+      feature
+    } else if (legend_title == "assay_score"){
+      # Assay score: short description of what is being measured in the assay
+      # (expression, enrichment, etc.). Will be set in config file
+      "Expression"
+    } else if (legend_title == "none"){
+      NULL
+    }
   
   # If a split.by (metadata) column is defined, create a plot for each group 
   ps <- list()
@@ -167,24 +196,27 @@ FeaturePlotSingle<-
         ) 
       
       # Title: use custom titles if defined, otherwise use the group name
-      if (is.null(custom_titles)){
-        # custom_titles is NULL: use default behavior (group names)
-        p <-
-          p +
-          ggtitle(group)
-      } else if (custom_titles == ""){
-        # custom_titles is an empty string: remove titles
+      if (show_title == TRUE){
+        # If show_title is TRUE, use either default or custom titles
+        if (is.null(custom_titles)){
+          # custom_titles is NULL: use default behavior (group names)
+          p <-
+            p +
+            ggtitle(group)
+        } else {
+          # custom_titles is not NULL: use custom titles 
+          # (custom titles should be a character vector)
+          p <-
+            p +
+            ggtitle(custom_titles[i])
+        }
+      } else {
+        # If show_title is FALSE, remove titles
         p <-
           p +
           ggtitle(NULL)
-      } else {
-        # All other cases: use custom titles (custom titles should be a 
-        # character vector)
-        p <-
-          p +
-          ggtitle(custom_titles[i])
       }
-      
+
       ps[[group]] <- p
       
     }
@@ -211,6 +243,24 @@ FeaturePlotSingle<-
               if (show_legend == TRUE) "right" else "none"
             )
       )
+    
+    # If super_title is TRUE, add feature name above all panels.
+    if (super_title == TRUE){
+      plot <-
+        plot +
+        plot_annotation(
+          title = feature,
+          theme = 
+            theme(
+              plot.title = 
+                element_text(
+                  face = "bold",
+                  hjust = 0.5,
+                  size = 16
+                )
+            )
+        ) 
+    }
     
     return(plot)
     
@@ -243,25 +293,30 @@ FeaturePlotSingle<-
             )
       )
     
-    # Title: depends on custom titles argument
-    if (is.null(custom_titles)){
-      # custom_titles is NULL: use default behavior
-      # Default behavior for single-group plots: use feature title
-      p <-
-        p +
-        ggtitle(feature)
-    } else if (custom_titles == ""){
-      # custom_titles is an empty string: remove titles
+    # Title: use custom titles if defined, otherwise use the group name
+    if (show_title == TRUE){
+      # If show_title is TRUE, use either default or custom titles
+      if (is.null(custom_titles)){
+        # custom_titles is NULL: use default behavior
+        # Default behavior for single-group plots: use feature title
+        p <-
+          p +
+          ggtitle(feature)
+      } else {
+        # custom_titles is not NULL: use custom titles
+        # Custom titles should be a single-element character vector in this case
+        p <-
+          p +
+          ggtitle(custom_titles)
+      }
+    } else {
+      # If show_title is FALSE, remove titles
       p <-
         p +
         ggtitle(NULL)
-    } else {
-      # All other cases: use custom titles
-      p <-
-        p +
-        # Custom titles should be a single-element character vector in this case
-        ggtitle(custom_titles)
     }
+    
+    
     
     
     # Apply title theme  

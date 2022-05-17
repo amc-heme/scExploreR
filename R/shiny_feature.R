@@ -28,7 +28,9 @@ shiny_feature <- function(object,
                           original_limits = FALSE, 
                           xlim_orig = NULL, 
                           ylim_orig = NULL,
-                          custom_titles = NULL, 
+                          show_title = TRUE, 
+                          custom_titles = NULL,
+                          legend_title = NULL,
                           ncol = NULL, 
                           palette = NULL, 
                           blend = FALSE, 
@@ -43,8 +45,10 @@ shiny_feature <- function(object,
       # Colors: set to colors passed in the palette. 
       # If NULL, Seurat defaults are used
       colors = if (!is.null(palette)) palette,
+      show_title = show_title,
       # Use custom titles if defined
       custom_titles = if (!is.null(custom_titles)) custom_titles else NULL,
+      legend_title = legend_title,
       ncol = ncol,
       reduction = 
         if (!is.null(reduction)) reduction else NULL,

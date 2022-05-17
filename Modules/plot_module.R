@@ -76,6 +76,7 @@ plot_module_ui <- function(id,
                            group_by =           FALSE,
                            split_by =           FALSE,
                            title_menu =         FALSE,
+                           legend_title_menu =  FALSE,
                            ncol_slider =        FALSE,
                            order_checkbox =     FALSE,
                            label_checkbox =     FALSE,
@@ -91,13 +92,14 @@ plot_module_ui <- function(id,
   ns <- NS(id)
   
   if (ui_component == "options"){
-    # UI for plot options
+    # UI for plot options ####
     # Elements are added to tagList if specified when calling the module ui 
     # Attempted to use ifelse() for this; ifelse() did not print Shiny tags 
     # properly and was unable to process NULL
     tagList(
       # Add menus if their corresponding arguments are TRUE 
       # Two-feature entry menu specific to scatterplot
+      ## Scatterplot Features #### 
       if (scatterplot_ui == TRUE){
         tagList(
           # First feature
@@ -132,7 +134,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      # Group by menu
+      ## Group by menu ####
       if (group_by == TRUE){
         # Choices for group by selection: should exclude "none"
         group_by_choices <- meta_choices()[!meta_choices() %in% "none"]
@@ -149,7 +151,7 @@ plot_module_ui <- function(id,
         # Do not add element if FALSE
       } else NULL,
       
-      # Split by menu
+      ## Split by menu ####
       if (split_by == TRUE){
         selectInput(
           inputId = ns("split_by"), 
@@ -161,7 +163,7 @@ plot_module_ui <- function(id,
          )
       } else NULL,
       
-      # Reductions menu
+      ## Reductions menu ####
       if (reductions_menu == TRUE){
         if (is.null(reductions)){
           # Error handling: return error if reductions is not specified when 
@@ -181,7 +183,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      # Title selection
+      ## Title selection ####
       # User may select default title behavior, a custom title (if available)
       # or none.
       # Available options are updated server-side
@@ -235,13 +237,26 @@ plot_module_ui <- function(id,
           )
       },
       
-      # Slider to adjust number of columns
+      ## Options for Legend Title (feature plots) ####
+      if (legend_title_menu == TRUE){
+        selectInput(
+          inputId = ns("legend_title"),
+          label = "Display Options for Legend Title:",
+          choices = 
+            c("Feature Name" = "feature", 
+              "Expression" = "assay_score",
+              "No Title" = "none"),
+          selected = "default"
+        )
+      } else NULL,
+      
+      ## Slider to adjust number of columns ####
       if (ncol_slider == TRUE){
         #Dynamic UI (appears when split_by != "none")
         uiOutput(outputId = ns("ncol_slider"))
       } else NULL,
       
-      # Checkbox to order cells by expression (feature plots only)
+      ## Checkbox to order cells by expression (feature plots only) ####
       if (order_checkbox == TRUE){
         checkboxInput(
           inputId = ns("order"),
@@ -251,7 +266,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      # Checkbox to add/remove labels
+      ## Checkbox to add/remove labels ####
       if (label_checkbox == TRUE){
         checkboxInput(
           inputId = ns("label"),
@@ -260,7 +275,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      # Checkbox to add or remove Legend
+      ## Checkbox to add or remove Legend ####
       if (legend_checkbox == TRUE){
         checkboxInput(
           inputId = ns("legend"),
@@ -269,7 +284,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      # Checkbox to remove title from plot
+      ## Checkbox to remove title from plot ####
       if (display_coeff == TRUE){
         checkboxInput(
           inputId = ns("display_coeff"),
@@ -278,13 +293,13 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      # Checkbox to specify original axes limits
+      ## Checkbox to specify original axes limits ####
       if (limits_checkbox == TRUE){
         # Dynamic UI: displays when a subset is selected
         uiOutput(outputId = ns("limits_checkbox"))
       } else NULL,
       
-      # Checkbox for custom colors on Feature plot
+      ## Checkbox for custom colors on Feature plot ####
       if (custom_colors == TRUE){
         tagList(
           # Checkbox to select custom colors 
@@ -322,12 +337,13 @@ plot_module_ui <- function(id,
           )
         } else NULL,
       
-      # UI for user control of plot dimensions
+      ## UI for user control of plot dimensions ####
       if (manual_dimensions == TRUE){
         #If TRUE, call module for manual adjustment of plot dimensions
         manual_dimensions_ui(id = ns("manual_dim"))
       } else NULL,
 
+      ## Separate Features UI #### 
       # UI to request use of separate features for plot
       if (separate_features == TRUE){
         # Store namespaced ID of use separate features check box
@@ -378,7 +394,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      # UI for download button
+      ## UI for download button ####
       if (download_button == TRUE){
         div(
           class = "plot-download-button",
@@ -617,26 +633,46 @@ plot_module_server <- function(id,
                    {
                      if (isTruthy(input$title_settings)){
                        if (input$title_settings == "custom"){
-                         #Label to use as default value for searchInput
-                         if (!is.null(plot_selections$group_by())){
-                           config_label <-
-                             metadata_config()[[
-                               plot_selections$group_by()]]$label
-                           
-                           # Define initial value of text entry
-                           initial_value <-
-                             # Use label if it exists
-                             if (!is.null(config_label)){
-                               config_label
+                         # Label to use as default value for searchInput
+                         # Depends on plot type
+                         if (plot_type == "dimplot"){
+                           # For DimPlots: name of group_by category
+                           if (!is.null(plot_selections$group_by())){
+                             config_label <-
+                               metadata_config()[[
+                                 plot_selections$group_by()]]$label
+                             
+                             # Define initial value of text entry
+                             initial_value <-
+                               # Use label if it exists
+                               if (!is.null(config_label)){
+                                 config_label
+                               } else {
+                                 # If a label is not defined, use the name
+                                 # of the group by category
+                                 plot_selections$group_by()
+                               }
+                           } else {
+                             initial_value <- ""
+                           }
+                         } else if (plot_type == "feature"){
+                           # For feature plots: name of feature
+                           if (!is.null(features_entered())){
+                             if (length(features_entered) == 1){
+                               initial_value <- features_entered()
                              } else {
-                               # If a label is not defined, use the name
-                               # of the group by category
-                               plot_selections$group_by()
+                               # For multi-feature plots, there currently is 
+                               # no framework for a single-title entry.
+                               # Set inital_value to "" regardless to avoid 
+                               # errors (may have to change this to improve
+                               # perfomrance)
+                               initial_value <- ""
                              }
-                         } else {
-                           initial_value <- ""
+                           } else {
+                             initial_value <- ""
+                           }
                          }
-                         
+
                          # Update input with initial value
                          updateSearchInput(
                            session,
@@ -697,6 +733,32 @@ plot_module_server <- function(id,
                        )
                  }
                  
+                 ## 3.6. Custom title input to feature plots ####
+                 # Must pass either single or multiple custom title output 
+                 # depending on the current number of panels on the feature 
+                 # plot, or NULL 
+                 if (plot_type == "feature"){
+                   feature_plot_custom_title <-
+                     reactive({
+                       if (input$title_settings == "custom"){
+                         # Determine current menu structure
+                         if (menu_type() == "single"){
+                           # For single_panel plots (menu_type() == "single"), 
+                           # use the single text entry
+                           input$custom_title
+                         } else if (menu_type() == "multiple"){
+                           req(custom_vector())
+                           # For multi-panel plots, use the vector of custom
+                           # title inputs from the custom_title_multi module
+                           custom_vector()
+                         }
+                       } else {
+                         # Pass NULL if custom titles are not specified
+                         NULL
+                         }
+                     })
+                 }
+                 
                  # 4. Record plot_selections -----------------------------------
                  # list of reactives for storing selected inputs
                  plot_selections <- 
@@ -755,6 +817,14 @@ plot_module_server <- function(id,
                        } else NULL
                      }),
                      
+                     # Options for legend title
+                     `legend_title` = 
+                       reactive({
+                         if (isTruthy(input$legend_title)){
+                           input$legend_title
+                         } else NULL
+                       }),
+                     
                      # Colors for min and max values
                      `min_color` = reactive({
                        # Pass color values if the custom colors checkbox 
@@ -769,6 +839,10 @@ plot_module_server <- function(id,
                          input$max_color
                        } else NULL
                      }),
+                     
+                     # Super title checkbox (feature plots with more than one
+                     # split_by category)
+                     
                      
                      # Include legend
                      `legend` = reactive({
@@ -1342,6 +1416,7 @@ plot_module_server <- function(id,
                            show_legend = plot_selections$legend(),
                            ncol = plot_selections$ncol(),
                            is_subset = is_subset(),
+                           legend_title = plot_selections$legend_title(),
                            original_limits = plot_selections$limits(),
                            # Original x- and y- axis limits: use the values 
                            # for the currently selected reduction
@@ -1363,8 +1438,10 @@ plot_module_server <- function(id,
                                palette()
                              } else NULL,
                            reduction = plot_selections$reduction(),
+                           show_title = 
+                             if (input$title_settings == "none") FALSE else TRUE,
                            # From 3.5.
-                           custom_titles = custom_vector()
+                           custom_titles = feature_plot_custom_title()
                            )
                          })
                    
