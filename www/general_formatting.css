@@ -151,6 +151,15 @@ h2, h3 {
   height: 34px;
 }
 
+/* Compact options container: for sub-groups in options panel */
+.compact-options-container{
+  background-color: #CCCCCC;
+  margin: 0px -2px;
+  padding: 10px 7px;
+  border-radius: 10px;
+}
+
+
 .feature_statistics_container {
   min-height: 150px;
   max-height: 400px;

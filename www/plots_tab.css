@@ -8,14 +8,14 @@
 /* Selector: elements containing the id below (allows for application of
    style to multiple menus)*/
 /* Search button for custom title input */
-[id*="custom_title_search"]{
+/* [id*="custom_title_search"]{
   display: none !important;
-}
+} */
 
 /* Reset button for custom title input */
-[id*="custom_title_reset"]{
+/* [id*="custom_title_reset"]{
   height: 30px;
   width: 30px;
   border-radius: 50% !important;
   padding: 0px;
-}
+} */

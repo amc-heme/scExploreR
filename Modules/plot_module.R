@@ -78,6 +78,7 @@ plot_module_ui <- function(id,
                            title_menu =         FALSE,
                            legend_title_menu =  FALSE,
                            ncol_slider =        FALSE,
+                           super_title_menu =   FALSE,
                            order_checkbox =     FALSE,
                            label_checkbox =     FALSE,
                            legend_checkbox =    FALSE,
@@ -142,7 +143,7 @@ plot_module_ui <- function(id,
         # If TRUE, add element
         selectInput(
           inputId = ns("group_by"), 
-          label = "Metadata to Group By:",
+          label = "Metadata to Group By",
           # Can select all options except "none"
           choices = group_by_choices, 
           # First option selected by default 
@@ -155,7 +156,7 @@ plot_module_ui <- function(id,
       if (split_by == TRUE){
         selectInput(
           inputId = ns("split_by"), 
-          label = "Metadata to Split By:",
+          label = "Metadata to Split By",
           # Use vector of included metadata category names from the config file
           choices = meta_choices(),  
           #"none" selected by default
@@ -183,7 +184,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      ## Title selection ####
+      ## Title selection and custom title ####
       # User may select default title behavior, a custom title (if available)
       # or none.
       # Available options are updated server-side
@@ -199,30 +200,51 @@ plot_module_ui <- function(id,
                 "None" = "none"),
             selected = "default"
           ),
-          # UI for entering a custom title: hidden with shinyjs and made visible
-          # when "custom" is selected 
+          # Input for a single custom title
+          # UI is hidden with shinyjs and made visible when "custom" is selected 
           hidden(
             div(
               id = ns("custom_title_div"),
+              class = "compact-options-container",
               tags$b("Enter Custom Title"),
-              tags$p(
-                sytle = "font-size: 0.9em;",
-                "(Press enter to update)"
-              ),
-              searchInput(
+              # tags$p(
+              #   sytle = "font-size: 0.9em;",
+              #   "(Press enter to update)"
+              #   ),
+              # searchInput(
+              #   inputId = ns("custom_title_searchinput"),
+              #   label = NULL,
+              #   # Default value depends on current group-by category and is 
+              #   # set server-side 
+              #   value = "",
+              #   # Search button: must be defined for updateSearchInput 
+              #   # to trigger properly, but will be hidden 
+              #   btnSearch = icon("sync"),
+              #   # Icon for reset button
+              #   btnReset = icon("redo-alt"),
+              #   # resetValue: set to NULL to disable automatic resetting
+              #   # resetting will occur manually via the server function
+              #   resetValue = NULL
+              # ),
+              textInput(
                 inputId = ns("custom_title"),
                 label = NULL,
-                # Default value depends on current group-by category and is 
-                # set server-side 
-                value = "",
-                # Search button: must be defined for updateSearchInput 
-                # to trigger properly, but will be hidden 
-                btnSearch = icon("sync"),
-                # Icon for reset button
-                btnReset = icon("redo-alt"),
-                # resetValue: set to NULL to disable automatic resetting
-                # resetting will occur manually via the server function
-                resetValue = NULL
+                value = ""
+                ),
+              div(
+                id = ns("buttons"),
+                actionButton(
+                  inputId = ns("custom_title_reset"),
+                  label = "Reset",
+                  icon = icon("redo-alt"),
+                  class = "button-ghost compact-button"
+                ),
+                actionButton(
+                  inputId = ns("custom_title_update"),
+                  label = "Update",
+                  icon = icon("sync"),
+                  class = "button-primary compact-button"
+                )
               )
             )
           ),
@@ -231,30 +253,48 @@ plot_module_ui <- function(id,
           hidden(
             div(
               id = ns("custom_title_multi_div"),
-              custom_title_multi_ui(id = ns("custom_title_multi"))
+              custom_title_multi_ui(
+                id = ns("custom_title_multi")
+                )
+              )
             )
-          )
           )
       },
       
       ## Options for Legend Title (feature plots) ####
       if (legend_title_menu == TRUE){
-        selectInput(
-          inputId = ns("legend_title"),
-          label = "Display Options for Legend Title:",
-          choices = 
-            c("Feature Name" = "feature", 
-              "Expression" = "assay_score",
-              "No Title" = "none"),
-          selected = "default"
-        )
-      } else NULL,
+        div(
+          style = "margin-top: 10px;",
+          selectInput(
+            inputId = ns("legend_title"),
+            label = "Display Options for Legend Title",
+            choices = 
+              c("Feature Name" = "feature", 
+                "Expression" = "assay_score",
+                "No Title" = "none"),
+            selected = "default"
+            )
+          )
+        } else NULL,
+      
       
       ## Slider to adjust number of columns ####
       if (ncol_slider == TRUE){
         #Dynamic UI (appears when split_by != "none")
         uiOutput(outputId = ns("ncol_slider"))
       } else NULL,
+      
+      ## Option to display a title above multi-panel plots ####
+      # (feature plots only)
+      if (super_title_menu == TRUE){
+        hidden(
+          checkboxInput(
+            inputId = ns("super_title"),
+            label = "Display Feature Name Above Panels",
+            value = TRUE
+            )
+          )
+        } else NULL,
       
       ## Checkbox to order cells by expression (feature plots only) ####
       if (order_checkbox == TRUE){
@@ -524,242 +564,340 @@ plot_module_server <- function(id,
                    }
                  
                  # 3. Title Settings Menu --------------------------------------
-                 ## 3.1. Update title settings menu ####
-                 # If the menu is present, add the "custom" option if it applies
-                 # menu_type: stores whether a single- or multiple- entry 
-                 # menu may be used
-                 menu_type = reactiveVal(NULL)
-                 
-                 observe({
-                   # Adds reactive dependency on input$title_settings
-                   if (isTruthy(input$title_settings)){
-                     print("Custom title conditional")
-                     # Variable below is set to TRUE when custom titles 
-                     # are possible
-                     enable_custom = FALSE
-                     menu_type("none")
-                     
-                     # Conditional tree to determine if 
-                     # custom titles are possible
-                     if (plot_type == "dimplot"){
-                       # DimPlots: custom titles are always possible
-                       enable_custom = TRUE
-                       # Plot uses a single 
-                       menu_type("single")
-                     } else if (plot_type == "feature"){
-                       # Feature plots: custom titles are currently possible 
-                       # when only one feature is entered.
-                       if (length(features_entered()) == 1){
+                 # Title settings and custom titles are currently only enabled 
+                 # for DimPlots and Feature Plots
+                 if (plot_type %in% c("dimplot", "feature")){
+                   # Reactive trigger for updating single custom title input
+                   update_title_single <- makeReactiveTrigger()
+                   
+                   ## 3.1. Update title settings menu ####
+                   # If the menu is present, add the "custom" option
+                   # if it applies
+                   # menu_type: stores whether a single- or multiple- entry 
+                   # menu may be used
+                   menu_type = reactiveVal(NULL)
+                   
+                   observe({
+                     # Adds reactive dependency on input$title_settings
+                     if (isTruthy(input$title_settings)){
+                       print("Custom title conditional")
+                       # Variable below is set to TRUE when custom titles 
+                       # are possible
+                       enable_custom = FALSE
+                       menu_type("none")
+                       
+                       # Conditional tree to determine if 
+                       # custom titles are possible
+                       if (plot_type == "dimplot"){
+                         # DimPlots: custom titles are always possible
                          enable_custom = TRUE
-                         # Single- or multiple- entry menu: depends on selected
-                         # split_by setting
-                         if (plot_selections$split_by() == "none"){
-                           menu_type("single")
-                         } else {
-                           # Multiple title entry menu is used when a split_by
-                           # setting is specified
-                           menu_type("multiple")
+                         # Plot uses a single 
+                         menu_type("single")
+                       } else if (plot_type == "feature"){
+                         # Feature plots: custom titles are currently possible 
+                         # when only one feature is entered.
+                         if (length(features_entered()) == 1){
+                           enable_custom = TRUE
+                           # Single- or multiple- entry menu: depends 
+                           # on selected split_by setting
+                           if (plot_selections$split_by() == "none"){
+                             menu_type("single")
+                           } else {
+                             # Multiple title entry menu is used when a split_by
+                             # setting is specified
+                             menu_type("multiple")
+                           }
                          }
                        }
+                       
+                       # Update input based on conditionals above
+                       updateSelectInput(
+                         session,
+                         inputId = "title_settings",
+                         choices = 
+                           if (enable_custom == TRUE){
+                             c("Default" = "default", 
+                               "Custom" = "custom", 
+                               "None" = "none")
+                           } else {
+                             c("Default" = "default", 
+                               "None" = "none")
+                           },
+                         selected =
+                           # Preserve selection as long as it is still valid
+                           # ("custom" is the only choice that is potentially 
+                           # invalid)
+                           if (
+                             (enable_custom == TRUE) | 
+                             (enable_custom == FALSE & 
+                              input$title_settings != "custom")
+                           )
+                             input$title_settings
+                       )
                      }
-                     
-                     # Update input based on conditionals above
-                     updateSelectInput(
-                       session,
-                       inputId = "title_settings",
-                       choices = 
-                         if (enable_custom == TRUE){
-                           c("Default" = "default", 
-                             "Custom" = "custom", 
-                             "None" = "none")
-                         } else {
-                           c("Default" = "default", 
-                             "None" = "none")
-                         },
-                       selected =
-                         # Preserve selection as long as it is still valid
-                         # ("custom" is the only choice that is potentially 
-                         # invalid)
-                         if (
-                           (enable_custom == TRUE) | 
-                           (enable_custom == FALSE & 
-                            input$title_settings != "custom")
-                         )
-                           input$title_settings
-                     )
-                   }
                    })
-                 
-                 ## 3.2. Show/hide custom title input ####
-                 # Depends on state of input$title_settings and the current
-                 # group_by category (for DimPlots)
-                 observe({
-                   if (isTruthy(input$title_settings)){
-                     if (input$title_settings == "custom" & 
-                         menu_type() == "single"){
-                       showElement(
-                         id = "custom_title_div", 
-                         anim = TRUE
+                   
+                   ## 3.2. Show/hide custom title input ####
+                   # Depends on state of input$title_settings and the current
+                   # group_by category (for DimPlots)
+                   observe({
+                     if (isTruthy(input$title_settings)){
+                       if (input$title_settings == "custom" & 
+                           menu_type() == "single"){
+                         showElement(
+                           id = "custom_title_div", 
+                           anim = TRUE
                          )
-                     } else {
-                       hideElement(
-                         id = "custom_title_div", 
-                         anim = TRUE
+                       } else {
+                         hideElement(
+                           id = "custom_title_div", 
+                           anim = TRUE
                          )
+                       }
                      }
-                   }
-                 })
-                 
-                 observe({
-                   if (isTruthy(input$title_settings)){
-                     if (input$title_settings == "custom" & 
-                         menu_type() == "multiple"){
-                       showElement(
-                         id = "custom_title_multi_div", 
-                         anim = TRUE
+                   })
+                   
+                   observe({
+                     if (isTruthy(input$title_settings)){
+                       if (input$title_settings == "custom" & 
+                           menu_type() == "multiple"){
+                         showElement(
+                           id = "custom_title_multi_div", 
+                           anim = TRUE
                          )
-                     } else {
-                       hideElement(
-                         id = "custom_title_multi_div", 
-                         anim = TRUE
+                       } else {
+                         hideElement(
+                           id = "custom_title_multi_div", 
+                           anim = TRUE
                          )
                        }
                      } 
                    })
-                 
-                 ## 3.3. Set custom title input based on metadata ####
-                 observe(
-                   label = glue("{id}: 3.3 Set custom title menu"),
-                   {
-                     if (isTruthy(input$title_settings)){
-                       if (input$title_settings == "custom"){
-                         # Label to use as default value for searchInput
-                         # Depends on plot type
-                         if (plot_type == "dimplot"){
-                           # For DimPlots: name of group_by category
-                           if (!is.null(plot_selections$group_by())){
-                             config_label <-
-                               metadata_config()[[
-                                 plot_selections$group_by()]]$label
-                             
-                             # Define initial value of text entry
-                             initial_value <-
-                               # Use label if it exists
-                               if (!is.null(config_label)){
-                                 config_label
-                               } else {
-                                 # If a label is not defined, use the name
-                                 # of the group by category
-                                 plot_selections$group_by()
-                               }
-                           } else {
-                             initial_value <- ""
-                           }
-                         } else if (plot_type == "feature"){
-                           # For feature plots: name of feature
-                           if (!is.null(features_entered())){
-                             if (length(features_entered) == 1){
-                               initial_value <- features_entered()
-                             } else {
-                               # For multi-feature plots, there currently is 
-                               # no framework for a single-title entry.
-                               # Set inital_value to "" regardless to avoid 
-                               # errors (may have to change this to improve
-                               # perfomrance)
-                               initial_value <- ""
-                             }
-                           } else {
-                             initial_value <- ""
-                           }
-                         }
-
-                         # Update input with initial value
-                         updateSearchInput(
-                           session,
-                           inputId = "custom_title",
-                           value = initial_value,
-                           trigger = TRUE
+                   
+                   ## 3.3. Set default custom title input ####
+                   # Triggers when the custom title UI is shown, and when 
+                   # selections that influence the default title change
+                   observeEvent(
+                     # EventExpr depends on plot type
+                     if (plot_type == "dimplot"){
+                       c(input$title_settings,
+                         object(),
+                         plot_selections$group_by()
                          )
+                     } else if (plot_type == "feature"){
+                       c(input$title_settings,
+                         object(),
+                         features_entered()
+                       )
+                     },
+                     label = glue("{id}: 3.3 Set custom title menu"),
+                     {
+                       if (isTruthy(input$title_settings)){
+                         if (input$title_settings == "custom"){
+                           # Compute initial value for custom title input
+                           initial_value <- 
+                             initial_title(
+                               plot_type = plot_type,
+                               group_by = plot_selections$group_by(),
+                               metadata_config = metadata_config(),
+                               features_entered = 
+                                 if (plot_type == "feature"){
+                                   features_entered()
+                                 } else NULL
+                             )
+                           
+                           print(glue("ID: {id}"))
+                           print("Updating input in response to startup")
+                           print("Default value:")
+                           print(initial_value)
+                           
+                           # Update input with initial value
+                           updateTextInput(
+                             session,
+                             inputId = "custom_title",
+                             value = initial_value
+                           )
+                           
+                           # Keeps downstream reactives from processing until
+                           # updateTextInput has completed (update occurrs 
+                           # after all reactives have executed)
+                           freezeReactiveValue(input, "custom_title")
+                           
+                           # Trigger processing of custom title input (3.5.)
+                           #update_title_single$trigger()
+                           # Programmatically click update button 
+                           # to process value
+                           shinyjs::click("custom_title_update")
+                           
+                           # updateSearchInput(
+                           #   session,
+                           #   inputId = "custom_title",
+                           #   value = initial_value,
+                           #   trigger = TRUE
+                           # )
+                         }
+                       }
+                     })
+                   
+                   observe({
+                     print("input$custom_title has changed. New value:")
+                     print(input$custom_title)
+                   })
+                   
+                   ## 3.4. Manual reset of custom title input ####
+                   observeEvent(
+                     input$custom_title_reset,
+                     label = glue("{id}: 3.4. Custom Title Reset"),
+                     {
+                       # Determine default value to reset to 
+                       initial_value <- 
+                         initial_title(
+                           plot_type = plot_type,
+                           group_by = plot_selections$group_by(),
+                           metadata_config = metadata_config(),
+                           features_entered = 
+                             if (plot_type == "feature"){
+                               features_entered()
+                               } else NULL
+                         )
+                       
+                       print("Updating input in response to reset button")
+                       
+                       # Update input
+                       updateTextInput(
+                         session,
+                         inputId = "custom_title",
+                         value = initial_value
+                       )
+                       
+                       # Programmatically click update button to process value
+                       shinyjs::click("custom_title_update")
+                       
+                       # updateSearchInput(
+                       #   session,
+                       #   inputId = "custom_title",
+                       #   value = initial_value,
+                       #   trigger = TRUE
+                       # )
+                     })
+                   
+                   ## 3.5 Process Input of Single Custom Title ####
+                   # Input is updated when the "update" button is pressed.
+                   custom_title_single <-
+                     eventReactive(
+                       # Respond to programmatic trigger
+                       c(input$custom_title_update,
+                         update_title_single$depend()),
+                         
+                         # Make title available before the update button 
+                         # is pressed, and update with the default value 
+                         # in response to changes in the group_by category 
+                         # or the object)
+                         #object(),
+                         #plot_selections$group_by()),
+                       ignoreNULL = FALSE,
+                       ignoreInit = TRUE,
+                       {
+                         print("3.5. Update custom_title_single eventReactive")
+                         print("Value of input$custom_title")
+                         print(input$custom_title)
+                         
+                         # Pass value of custom_title if defined, otherwise pass
+                         # the default value
+                         default_title <-
+                            initial_title(
+                              plot_type = plot_type,
+                              group_by = plot_selections$group_by(),
+                              metadata_config = metadata_config(),
+                              features_entered = features_entered()
+                              )
+
+                         if (isTruthy(input$custom_title)){
+                           return(input$custom_title)
+                         } else {
+                           return(default_title)
+                         }
+                         
+                         # ALTERNATE
+                         # Require input$custom_title to be defined
+                         #req(input$custom_title)
+                         #input$custom_title
+                       })
+                   
+                   # observe({
+                   #   print("Value of custom_title_single:")
+                   #   print(custom_title_single())
+                   # })
+                   
+                   ## 3.6. Server for multiple custom title input ####
+                   # Currently enabled for feature plots only 
+                   if (plot_type == "feature"){
+                     custom_vector <-
+                       custom_title_multi_server(
+                         id = "custom_title_multi",
+                         object = object,
+                         split_by = plot_selections$split_by,
+                         label_header = "Original Value",
+                         input_header = tagList("New Value")
+                       )
+                   }
+                   
+                   ## 3.7. Custom title input to feature plots ####
+                   # Must pass either single or multiple custom title output 
+                   # depending on the current number of panels on the feature 
+                   # plot, or NULL 
+                   if (plot_type == "feature"){
+                     feature_plot_custom_title <-
+                       reactive({
+                         if (input$title_settings == "custom"){
+                           # Determine current menu structure
+                           if (menu_type() == "single"){
+                             # For single_panel plots (menu_type() == "single"), 
+                             # use the single text entry
+                             custom_title_single()
+                           } else if (menu_type() == "multiple"){
+                             req(custom_vector())
+                             # For multi-panel plots, use the vector of custom
+                             # title inputs from the custom_title_multi module
+                             custom_vector()
+                           }
+                         } else {
+                           # Pass NULL if custom titles are not specified
+                           NULL
+                         }
+                       })
+                   }
+                 }
+                 
+                 # 4. Show/Hide Super Title Menu (Feature Plots Only) ----------
+                 if (plot_type == "feature"){
+                   observe({
+                     # Show is set to TRUE when conditionals below are satisfied
+                     show <- FALSE
+                     
+                     # Super-titles (titles above all panels) currently only 
+                     # possible for multi-panel feature plots
+                     if (!is.null(features_entered()) & 
+                         !is.null(plot_selections$split_by())){
+                       if (length(features_entered()) == 1 &
+                           plot_selections$split_by() != "none"){
+                         show <- TRUE
                        }
                      }
-                   })
-                 
-                 ## 3.4. Manual reset of custom title input ####
-                 observeEvent(
-                   input$custom_title_reset,
-                   label = glue("{id}: 3.4. Custom Title Reset"),
-                   {
-                     # Obtain initial value for metadata category,
-                     # then update the input with the value.
-                     #Label to use as default value for searchInput
-                     if (!is.null(plot_selections$group_by())){
-                       config_label <-
-                         metadata_config()[[
-                           plot_selections$group_by()]]$label
-                       
-                       # Define initial value of text entry
-                       initial_value <-
-                         # Use label if it exists
-                         if (!is.null(config_label)){
-                           config_label
-                         } else {
-                           # If a label is not defined, use the name
-                           # of the group by category
-                           plot_selections$group_by()
-                         }
-                     } else {
-                       initial_value <- ""
-                     }
                      
-                     # Update input
-                     updateSearchInput(
-                       session,
-                       inputId = "custom_title",
-                       value = initial_value,
-                       trigger = TRUE
-                     )
-                   })
-                 
-                 ## 3.5. Server for multiple custom title input ####
-                 # Currently enabled for feature plots only 
-                 if (plot_type == "feature"){
-                   custom_vector <-
-                     custom_title_multi_server(
-                       id = "custom_title_multi",
-                       object = object,
-                       split_by = plot_selections$split_by,
-                       label_header = "Original Value",
-                       input_header = tagList("New Value")
+                     if (show == TRUE){
+                       showElement(
+                         id = "super_title"
+                         )
+                     } else {
+                       hideElement(
+                         id = "super_title"
                        )
+                     }
+                   })
                  }
                  
-                 ## 3.6. Custom title input to feature plots ####
-                 # Must pass either single or multiple custom title output 
-                 # depending on the current number of panels on the feature 
-                 # plot, or NULL 
-                 if (plot_type == "feature"){
-                   feature_plot_custom_title <-
-                     reactive({
-                       if (input$title_settings == "custom"){
-                         # Determine current menu structure
-                         if (menu_type() == "single"){
-                           # For single_panel plots (menu_type() == "single"), 
-                           # use the single text entry
-                           input$custom_title
-                         } else if (menu_type() == "multiple"){
-                           req(custom_vector())
-                           # For multi-panel plots, use the vector of custom
-                           # title inputs from the custom_title_multi module
-                           custom_vector()
-                         }
-                       } else {
-                         # Pass NULL if custom titles are not specified
-                         NULL
-                         }
-                     })
-                 }
-                 
-                 # 4. Record plot_selections -----------------------------------
+                 # 5. Record plot_selections -----------------------------------
                  # list of reactives for storing selected inputs
                  plot_selections <- 
                    list(
@@ -810,12 +948,21 @@ plot_module_server <- function(id,
                              })
                            },
                      
+                     # Title above all panels (feature plots)
+                     `super_title` = 
+                       reactive({
+                         if (!is.null(input$super_title)){
+                           input$super_title
+                         } else NULL
+                       }),
+                     
                      # Order cells by expression
-                     `order` = reactive({
-                       if ("order" %in% isolate(names(input))){
-                         input$order
-                       } else NULL
-                     }),
+                     `order` = 
+                       reactive({
+                         if (!is.null(input$order)){
+                           input$order
+                           } else NULL
+                         }),
                      
                      # Options for legend title
                      `legend_title` = 
@@ -846,14 +993,14 @@ plot_module_server <- function(id,
                      
                      # Include legend
                      `legend` = reactive({
-                       if ("legend" %in% isolate(names(input))){
+                       if (!is.null(input$legend)){
                          input$legend
                        } else NULL
                      }),
                      
                      # Label groups
                      `label` = reactive({
-                       if ("label" %in% isolate(names(input))){
+                       if (!is.null(input$label)){
                          input$label
                        } else NULL
                      }),
@@ -892,7 +1039,7 @@ plot_module_server <- function(id,
                      })
                    )
                  
-                 # 5. Determine if a subset has been used  ----------------------
+                 # 6. Determine if a subset has been used  ----------------------
                  # This variable will be a boolean used in downstream 
                  # computations
                  is_subset <- eventReactive(
@@ -920,8 +1067,8 @@ plot_module_server <- function(id,
                      n_cells_original() != n_cells_subset
                  })
                  
-                 # 6. Conditional UI -------------------------------------------
-                 ## 6.1. ncol slider ####
+                 # 7. Conditional UI -------------------------------------------
+                 ## 7.1. ncol slider ####
                  # Conditions under which ncol slider appear differ based on 
                  # plot type
                  if (plot_type == "dimplot"){
@@ -1039,7 +1186,7 @@ plot_module_server <- function(id,
                        })
                  }
     
-                 ## 6.2. Checkbox to Specify Original Axis Limits ####
+                 ## 7.2. Checkbox to Specify Original Axis Limits ####
                  limits_checkbox <-
                    reactive(
                      label = glue("{plot_label}: Limits UI"),
@@ -1061,7 +1208,7 @@ plot_module_server <- function(id,
 
                        })
                  
-                 ## 6.3. Dynamic UI for plot output ####
+                 ## 7.3. Dynamic UI for plot output ####
                  # UI display depends on the plot type and whether the plot 
                  # has a separate features option
                  plot_output_ui <-
@@ -1180,7 +1327,7 @@ plot_module_server <- function(id,
                              }
                          }
                        
-                       ### 6.3.2. Display message or plot based on inputs ####
+                       ### 7.3.2. Display message or plot based on inputs ####
                        if (input_error == TRUE){
                          # Message: use message defined in conditonal structure
                          ui <- 
@@ -1218,7 +1365,7 @@ plot_module_server <- function(id,
                        ui
                      })
                  
-                 ## 6.4. Render Dynamic UI ####
+                 ## 7.4. Render Dynamic UI ####
                  output$ncol_slider <- 
                    renderUI({
                      ncol_slider()
@@ -1239,11 +1386,11 @@ plot_module_server <- function(id,
                      plot_output_ui()
                      })
 
-                 # 7. Separate Features Entry: Dynamic Update ------------------
+                 # 8. Separate Features Entry: Dynamic Update ------------------
                  # Observers for separate features only update for server 
                  # instances where features_entered
                  if (separate_features_server ==  TRUE){
-                   ## 7.1 Update Separate Features in Background ####
+                   ## 8.1. Update Separate Features in Background ####
                    # Before the checkbox to select separate features is checked, 
                    # update the text entry in the background so it is synced
                    # when it appears after the box is checked. 
@@ -1266,7 +1413,7 @@ plot_module_server <- function(id,
                          }
                      })
                    
-                   ## 7.2 Reset Separate Features Upon Checkbox Toggle ####
+                   ## 8.2. Reset Separate Features Upon Checkbox Toggle ####
                    # If the "use separate features" checkbox is toggled and the
                    # features entered in the separate features text entry differ
                    # from the general features selected, update the separate
@@ -1299,8 +1446,8 @@ plot_module_server <- function(id,
                      })
                  }
                  
-                 # 8. Plot -----------------------------------------------------
-                 ## 8.1 Define Features to use ####
+                 # 9. Plot -----------------------------------------------------
+                 ## 9.1 Define Features to use ####
                  # For all plots except dimplot, scatterplot 
                  # Uses either the general feature entry (features_entered()),
                  # or the separate features text entry depending on whether
@@ -1333,10 +1480,10 @@ plot_module_server <- function(id,
                        })
                  }
                  
-                 ## 8.2 Construct Plot ####
+                 ## 9.2. Construct Plot ####
                  # Plot created based on the type specified when this server 
                  # function is called
-                 ### 8.2.1. DimPlot ####
+                 ### 9.2.1. DimPlot ####
                  if (plot_type == "dimplot"){
                    plot <- 
                      reactive(
@@ -1381,7 +1528,7 @@ plot_module_server <- function(id,
                                } else if (input$title_settings == "custom"){
                                  # Use the custom title entered by the user
                                  # in this case
-                                 input$custom_title
+                                 custom_title_single()
                                } else if (input$title_settings == "none"){
                                  # NULL is passed to the title argument,
                                  # removing it
@@ -1398,7 +1545,7 @@ plot_module_server <- function(id,
                            )
                      })
                    
-                   ### 8.2.2. Feature Plot ####
+                   ### 9.2.2. Feature Plot ####
                  } else if (plot_type == "feature") {
                    plot <- 
                      reactive(
@@ -1412,9 +1559,10 @@ plot_module_server <- function(id,
                            assay_config = assay_config(),
                            split_by = plot_selections$split_by(),
                            order = plot_selections$order(),
-                           #show_label = plot_selections$label(),
+                           show_label = plot_selections$label(),
                            show_legend = plot_selections$legend(),
                            ncol = plot_selections$ncol(),
+                           super_title = plot_selections$super_title(),
                            is_subset = is_subset(),
                            legend_title = plot_selections$legend_title(),
                            original_limits = plot_selections$limits(),
@@ -1445,7 +1593,7 @@ plot_module_server <- function(id,
                            )
                          })
                    
-                   ### 8.2.3. Violin Plot ####
+                   ### 9.2.3 Violin Plot ####
                  } else if (plot_type == "violin") {
                    plot <- 
                      reactive(
@@ -1464,7 +1612,7 @@ plot_module_server <- function(id,
                            )
                        })
                    
-                   ### 8.2.4. Dot Plot ####
+                   ### 9.2.4. Dot Plot ####
                  } else if (plot_type == "dot") {
                    # Dot plot using arguments relevant to shiny_dot()
                    plot <- 
@@ -1502,7 +1650,7 @@ plot_module_server <- function(id,
                        })
                    }
                  
-                 ## 8.3. Render plot ####
+                 ## 9.3. Render plot ####
                  # Height and width arguments are left undefined
                  # If undefined, they will use the values from plotOutput, which
                  # respond to the manual dimensions inputs.
@@ -1522,7 +1670,7 @@ plot_module_server <- function(id,
                    plot()
                  })
                  
-                 # 9. Download Handler -----------------------------------------
+                 # 10. Download Handler -----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 

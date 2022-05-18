@@ -27,12 +27,23 @@
 }
 
 .button-ghost:hover{
-  border-color: var(--mid-blue-hover);
+  border-color: #333333;
+  background-color: #E8E8E8
 }
 
 .button-ghost:active{
-  border-color: var(--mid-blue-active);
+  border-color: #4444444;
+  background-color: #E1E1E1
 }
+
+/******************************************************************************/
+/* Additional classes applied to buttons*/
+/* Compact button: decreases margins for better fit */
+.compact-button{
+  padding: 5px 7px;
+}
+
+/******************************************************************************/
 
 /* CSS for styling the help button and its dropdown menu*/
 #help {

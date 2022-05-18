@@ -22,13 +22,14 @@ shiny_feature <- function(object,
                           assay_config, 
                           split_by = NULL, 
                           order = FALSE, 
-                          #show_label = FALSE, 
+                          show_label = FALSE, 
                           show_legend = TRUE, 
                           is_subset = FALSE, 
                           original_limits = FALSE, 
                           xlim_orig = NULL, 
                           ylim_orig = NULL,
                           show_title = TRUE, 
+                          super_title = FALSE,
                           custom_titles = NULL,
                           legend_title = NULL,
                           ncol = NULL, 
@@ -49,6 +50,7 @@ shiny_feature <- function(object,
       # Use custom titles if defined
       custom_titles = if (!is.null(custom_titles)) custom_titles else NULL,
       legend_title = legend_title,
+      super_title = super_title,
       ncol = ncol,
       reduction = 
         if (!is.null(reduction)) reduction else NULL,
@@ -61,8 +63,8 @@ shiny_feature <- function(object,
           ylim_orig
         } else NULL,
       show_legend = show_legend,
-      # Arguments passed to FeaturePlot
-      #label = show_label,
+      # `...` arguments passed to FeaturePlot
+      label = show_label,
       order = order
       )
   } else if (length(features_entered) > 1 & blend == FALSE) {

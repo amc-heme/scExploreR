@@ -4,7 +4,7 @@ custom_title_multi_ui <- function(id
   ns <- NS(id)
   
   div(
-    class = "multi-options-container",
+    class = "compact-options-container",
     tags$b("Enter Custom Titles for Each Panel:"),
     # Conditional ui: a table with labels and text inputs
     uiOutput(outputId = ns("multi_ui")),
@@ -101,17 +101,17 @@ custom_title_multi_server <- function(id,
         {
           # Clear any observers that currently exist, if they exist
           # For diagnostic purposes
-          n_destroy <- 0 
-          print("Observer query")
+          # n_destroy <- 0 
+          # print("Observer query")
           for (observer in rv$observers){
-            print(class(observer))
+            # print(class(observer))
             if ("Observer" %in% class(observer)){
-              n_destroy <- n_destroy + 1
-              print("Observer detected and marked for destruction.")
+              # n_destroy <- n_destroy + 1
+              # print("Observer detected and marked for destruction.")
               observer$destroy()
             }
           }
-          print(glue("Total Number of observers destroyed: {n_destroy}"))
+         # print(glue("Total Number of observers destroyed: {n_destroy}"))
           
           # if (!is.null(observers)){
           #   if (length(observers) > 1){
@@ -142,9 +142,9 @@ custom_title_multi_server <- function(id,
                     ignoreNULL = FALSE,
                     ignoreInit = TRUE,
                     {
-                      print("Reset observer triggered")
-                      print(glue("ID: {id}"))
-                      print(glue("Observer {as.character(i)}"))
+                      # print("Reset observer triggered")
+                      # print(glue("ID: {id}"))
+                      # print(glue("Observer {as.character(i)}"))
                       updateTextInput(
                         session = session,
                         inputId = paste0("entry", as.character(i)),
@@ -197,7 +197,7 @@ custom_title_multi_server <- function(id,
           # Reset each input to the default value for the panel (as defined in
           # the split.by category)
           for (i in 1:length(groups_vector())){
-            print(glue('Update input {paste0("entry", as.character(i))} with value {groups_vector()[i]}'))
+           # print(glue('Update input {paste0("entry", as.character(i))} with value {groups_vector()[i]}'))
             
             updateTextInput(
               session = session,
