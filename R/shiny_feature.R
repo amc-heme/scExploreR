@@ -85,6 +85,8 @@ shiny_feature <- function(object,
         object,
         features = features_entered,
         split.by = if (split_by != "none") split_by else NULL,
+        # ncol: valid when split.by is not defined
+        ncol = ncol,
         # Order: whether to plot cells in order by expression
         # Set to FALSE if undefined
         order = if (is.null(order)) FALSE else order,

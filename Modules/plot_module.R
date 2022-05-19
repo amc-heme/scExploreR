@@ -967,7 +967,17 @@ plot_module_server <- function(id,
                          # Condition to record ncol for UMAP
                          # Equal to conditions where there are multiple panels
                          reactive({
-                           if (input$split_by != "none"){
+                           req(features_entered())
+                           
+                           # Process ncol for single feature plots when split_by
+                           # is set, or for multiple feature plots when a 
+                           # split_by category is not set
+                           if (
+                             (length(features_entered()) == 1 & 
+                             input$split_by != "none") | 
+                             (length(features_entered()) > 1 &
+                              input$split_by == "none")
+                             ){
                              input$ncol
                              } else NULL
                            })
@@ -1148,20 +1158,45 @@ plot_module_server <- function(id,
                    ncol_slider <-
                      eventReactive(
                        c(plot_selections$split_by(),
+                         features_entered(),
                          object()),
                        label = glue("{plot_label}: Make ncol slider"),
                        ignoreNULL = TRUE,
                        {
                          if (!is.null(features_entered())){
-                           if (length(features_entered()) == 1 & 
-                               plot_selections$split_by() != "none"){
+                           # The ncol slider may be used for single feature 
+                           # plots when a split by selection is made
+                           condition_single <- 
+                             length(features_entered()) == 1 & 
+                             plot_selections$split_by() != "none"
+                           
+                           # For multi-feature plots, ncol is only available 
+                           # when there *is not* a split by selection
+                           condition_multiple <- 
+                             length(features_entered()) > 1 & 
+                             plot_selections$split_by() == "none"
+                          
+                           if (condition_single | condition_multiple){
                              # Define min, max, and default values for slider
-                             ncol_settings <-
-                               ncol_settings(
-                                 object = object(),
-                                 rule = "split_by",
-                                 split_by = plot_selections$split_by()
+                             if (condition_single){
+                               # For single-feature plots, ncol limits are 
+                               # based on the number of split_by groups
+                               ncol_settings <-
+                                 ncol_settings(
+                                   object = object(),
+                                   rule = "split_by",
+                                   split_by = plot_selections$split_by()
                                  )
+                             } else if (condition_multiple){
+                               # For multi-feature plots, ncol limits are based
+                               # on the number of features entered
+                               ncol_settings <-
+                                 ncol_settings(
+                                   object = object(),
+                                   rule = "features",
+                                   features_entered = features_entered()
+                                 )
+                             }
                              
                              # Create slider input
                              sliderInput(
