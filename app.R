@@ -26,6 +26,7 @@ library(tidyverse, quietly = TRUE, warn.conflicts = FALSE)
 library(stringr, quietly = TRUE, warn.conflicts = FALSE)
 library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
 library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
+library(gridExtra, quietly = TRUE, warn.conflicts = FALSE)
 library(glue, quietly = TRUE, warn.conflicts = FALSE)
 library(DT, quietly = TRUE, warn.conflicts = FALSE)
 

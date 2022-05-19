@@ -33,10 +33,21 @@ shiny_feature <- function(object,
                           custom_titles = NULL,
                           legend_title = NULL,
                           ncol = NULL, 
-                          palette = NULL, 
+                          palette = NULL,
                           blend = FALSE, 
                           reduction = NULL
 ){
+  # validate will keep plot code from running if the subset
+  # is NULL (no cells in subset)
+  validate(
+    need(
+      if (is.reactive(object)) object() else object,
+      # No message displayed (a notification is already
+      # displayed) (*was displayed*)
+      message = ""
+    )
+  )
+  
   if (length(features_entered) == 1){
     # Use FeaturePlotSingle.R for single-feature plots
     FeaturePlotSingle(
@@ -68,117 +79,91 @@ shiny_feature <- function(object,
       order = order
       )
   } else if (length(features_entered) > 1 & blend == FALSE) {
+    feature_plot <-
+      FeaturePlot(
+        # Object or subset (reactive-agnostic)
+        object,
+        features = features_entered,
+        split.by = if (split_by != "none") split_by else NULL,
+        # Order: whether to plot cells in order by expression
+        # Set to FALSE if undefined
+        order = if (is.null(order)) FALSE else order,
+        # Show/hide cluster labels
+        label = show_label,
+        # Reduction: uses the input for reduction if it exists, otherwise
+        # it is set to NULL and will use default settings.
+        reduction = if(!is.null(reduction)) reduction else NULL
+      ) 
     
+    #+
+      
+      # Creation of plot
+      
+      # Clean up title: this changes the feature names on each plot
+      # to a human-readable format
+      # (used when split.by == NULL)
+      # Determine number of plots created
+      #n_patches <- n_patches(feature_plot)
+      # Iterate through each plot, correcting the title
+      # feature_plot <-
+      #   hr_title(
+    #     feature_plot,
+    #     n_patches,
+    #     assay_config
+    #     )
+    
+    
+    # Modify plot after creation with ggplot layers according
+    # to user input
+    # 'layers' is a list of layers that is applied to the plot
+    layers <-
+      c(list(
+        # Element A
+        # Legend position: "right" if a legend is desired,
+        # and "none" if not
+        theme(
+          legend.position =
+            if (show_legend == TRUE) {
+              "right"
+            } else "none")),
+        
+        # Elements B-C. Axis limits:
+        # Use limits from full dataset if specified.
+        # The conditional is tied to a reactive value
+        # instead of the input to avoid an error that
+        # occurs when this function is evaluated
+        # before the input is #defined.
+        # First, simultaneously test if subset is
+        # present and if the corresponding
+        # original_limits reactive is truthy
+        # (i.e. both present and checked).
+        if (is_subset & isTruthy(original_limits)){
+          # If so, add original limits to the list
+          list(
+            scale_x_continuous(limits = xlim_orig),
+            scale_y_continuous(limits = ylim_orig)
+          )
+        },
+        
+        # Element D: Custom colors
+        # If a palette is entered, use the palette for the plot.
+        # The palette may be a continuous palette selected in the plot tab,
+        # or it may be a pair of user-defined custom colors.
+        if (isTruthy(palette)){
+          scale_color_gradientn(
+            colors = c(palette)
+          )
+        } 
+      )
+    
+    # Modify the plot using the layers defined above
+    suppressMessages(
+      feature_plot <-
+        feature_plot &
+        layers
+    )
+    
+    # Return finished plot for display
+    feature_plot
   } 
-  
-  
-  
-  
-  
-  # At least one feature must be entered to avoid errors when computing plot
-  # if (length(features_entered()) > 0){
-  #   # validate will keep plot code from running if the subset 
-  #   # is NULL (no cells in subset)
-  #   validate(
-  #     need(
-  #       if (is.reactive(object)) object() else object,
-  #       # No message displayed (a notification is already 
-  #       # displayed) (*was displayed*)
-  #       message = ""
-  #       )
-  #     )
-  #   
-  #   # Creation of plot
-  #   if (split_by() == "none"){
-  #     # If no split.by category is specified, create a feature plot without 
-  #     # the split.by argument
-  #     feature_plot <- 
-  #       FeaturePlot(
-  #         # Object or subset (reactive-agnostic)
-  #         if (is.reactive(object)) object() else object,
-  #         features = features_entered(),
-  #         # Order: whether to plot cells in order by expression
-  #         order = if (is.null(order())) FALSE else order(),
-  #         # Reduction: uses the input for reduction if it exists, otherwise
-  #         # it is set to NULL and will use default settings.
-  #         reduction = if(!is.null(reduction)) reduction() else NULL
-  #         )
-  #     # Clean up title: this changes the feature names on each plot 
-  #     # to a human-readable format
-  #     # Determine number of plots created
-  #     n_patches <- n_patches(feature_plot)
-  #     # Iterate through each plot, correcting the title
-  #     feature_plot <- 
-  #       hr_title(
-  #         feature_plot,
-  #         n_patches,
-  #         assay_config
-  #         )
-  #   }
-  #   
-  #   else {
-  #     # If a split by category is defined, use that category
-  #     feature_plot <- 
-  #       FeaturePlot(
-  #         # Object or subset (reactive-agnostic)
-  #         if (is.reactive(object)) object() else object,
-  #         features = features_entered(),
-  #         split.by = split_by(),
-  #         # Order: whether to plot cells in order by expression
-  #         order = if (is.null(order())) FALSE else order(),
-  #         # Reduction: uses the input for reduction if it exists, otherwise
-  #         # it is set to NULL and will use default settings.
-  #         reduction = if(!is.null(reduction)) reduction() else NULL
-  #         )
-  #   }
-  #   
-  #   # Modify plot after creation with ggplot layers according 
-  #   # to user input
-  #   # 'layers' is a list of layers that is applied to the plot
-  #   layers <- 
-  #     c(list(
-  #       # Element A 
-  #       # Legend position: "right" if a legend is desired, 
-  #       # and "none" if not
-  #       theme(
-  #         legend.position = 
-  #           if (show_legend()==TRUE) {
-  #             "right"
-  #           } else "none")),
-  #       
-  #       # Elements B-C. Axis limits: 
-  #       # Use limits from full dataset if specified.
-  #       # The conditional is tied to a reactive value 
-  #       # instead of the input to avoid an error that
-  #       # occurs when this function is evaluated
-  #       # before the input is #defined.
-  #       # First, simultaneously test if subset is
-  #       # present and if the corresponding
-  #       # original_limits reactive is truthy
-  #       # (i.e. both present and checked).
-  #       if (is_subset() & isTruthy(original_limits())){
-  #         # If so, add original limits to the list
-  #             list(
-  #               scale_x_continuous(limits = xlim_orig()),
-  #               scale_y_continuous(limits = ylim_orig())
-  #               )
-  #       },
-  #       
-  #       # Element D: Custom colors
-  #       # When provided, represent expression with user-selected colors 
-  #       if (isTruthy(color_lower()) & isTruthy(color_upper())){
-  #         scale_color_gradientn(
-  #           colors = c(color_lower(), color_upper())
-  #         )
-  #       }
-  #     )
-  #   
-  #   # Modify the plot using the layers defined above
-  #   feature_plot <- 
-  #     feature_plot &
-  #     layers
-  #   
-  #   # Return finished plot
-  #   feature_plot
-  # }
 }

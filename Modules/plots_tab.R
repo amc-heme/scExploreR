@@ -270,6 +270,7 @@ plots_tab_ui <- function(id,
                meta_choices = meta_choices,
                plot_label = "Feature Plot",
                reductions = reductions,
+               # Inputs included or excluded
                reductions_menu =   TRUE,
                title_menu =        TRUE,
                legend_title_menu = TRUE,
@@ -283,7 +284,9 @@ plots_tab_ui <- function(id,
                limits_checkbox =   TRUE,
                custom_colors =     TRUE,
                manual_dimensions = TRUE,
-               download_button =   TRUE
+               download_button =   TRUE,
+               # Default values for inputs
+               label_default =     FALSE
              )
            )
          ),

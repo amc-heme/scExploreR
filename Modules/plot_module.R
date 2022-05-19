@@ -87,7 +87,9 @@ plot_module_ui <- function(id,
                            custom_colors =      FALSE,
                            manual_dimensions =  FALSE,
                            separate_features =  FALSE,
-                           download_button =    FALSE
+                           download_button =    FALSE,
+                           # Default values for inputs
+                           label_default =      TRUE
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -265,6 +267,7 @@ plot_module_ui <- function(id,
       if (legend_title_menu == TRUE){
         div(
           style = "margin-top: 10px;",
+          id = ns("legend_title_div"),
           selectInput(
             inputId = ns("legend_title"),
             label = "Display Options for Legend Title",
@@ -311,7 +314,8 @@ plot_module_ui <- function(id,
         checkboxInput(
           inputId = ns("label"),
           label = "Label Groups",
-          value = TRUE
+          # Default value is TRUE
+          value = label_default
           )
       } else NULL,
       
@@ -869,7 +873,8 @@ plot_module_server <- function(id,
                    }
                  }
                  
-                 # 4. Show/Hide Super Title Menu (Feature Plots Only) ----------
+                 # 4. Show/Hide Feature Plot-Specific Menus --------------------
+                 ## 4.1. Super Title Menu ####
                  if (plot_type == "feature"){
                    observe({
                      # Show is set to TRUE when conditionals below are satisfied
@@ -896,6 +901,34 @@ plot_module_server <- function(id,
                      }
                    })
                  }
+                 
+                 ## 4.2. Legend Title Options ####
+                 if (plot_type == "feature"){
+                   observe({
+                     # show is set to TRUE when conditions are met
+                     show <- FALSE
+                     # ID of legend title container
+                     elem_id <- "legend_title_div"
+                     
+                     # Legend title: appears for single feature plots only
+                     if (!is.null(features_entered())){
+                       if (length(features_entered()) == 1){
+                         show <- TRUE
+                       }
+                     }
+                     
+                     if (show == TRUE){
+                       showElement(
+                         id = elem_id
+                       )
+                     } else {
+                       hideElement(
+                         id = elem_id
+                       )
+                     }
+                   })
+                 }
+                 
                  
                  # 5. Record plot_selections -----------------------------------
                  # list of reactives for storing selected inputs
