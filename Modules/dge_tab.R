@@ -451,8 +451,8 @@ dge_tab_server <- function(id,
 
                        #Set ncol to number of panels if less than four
                        #Panels are created
-                       if (n_panel<4){
-                         ncol=n_panel
+                       if (n_panel < 4){
+                         ncol = n_panel
                          }
 
                        #Use three columns for 4-9 panels

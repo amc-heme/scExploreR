@@ -127,6 +127,31 @@
 	text-decoration: none;
 }
 
+/* Orange_hover: for choices under the elipsis button */
+.orange_hover {
+	display: block;
+    padding: 3px 20px;
+    clear: both;
+    font-weight: 400;
+    line-height: 1.42857143;
+    color: #333;
+    white-space: nowrap;
+  }
+
+.orange_hover:hover{
+	background-color: #EC872D !important;
+  color: #FFFFFF !important;
+	border-radius: 7px !important;
+	/* text-decoration defaults to none (no underline) for dropdown
+     links outside the introBox()*/
+	text-decoration: none;
+}
+
+.orange_hover:focus{
+	color: #333;
+	text-decoration: none;
+}
+
 /******************************************************************************/
 /* Download Button for Plots */
 /* Use selectors to apply styles below to dropDownButton wrapped in div with

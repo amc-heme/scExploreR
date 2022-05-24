@@ -76,13 +76,14 @@ categories of metadata values */
 }
 
 /* Export Configuration Button */
-#export_selections {
+/* Export button has been transformed into a link */
+/*#export_selections {
   background-color: #ED872D;
   color: #FFFFFF;
   border-color: #ED872D;
   border-radius: 10px;
   font-weight: 600;
-}
+} */
 
 /* config_export_div: container created to hold the export configuration button */
 #config_export_div {

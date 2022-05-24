@@ -77,7 +77,7 @@ css_list <-
 # conflicts with 'applet_navbar_wizzard' in the www/applet_js/ directory)
 js_files <- 
   list.files(
-    path = "./www/applet_js", 
+    path = "./www/", 
     # Use regex to search for files ending in .js (double 
     # backslash used to escape '.' character)
     pattern = ".*\\.js", 
@@ -86,14 +86,17 @@ js_files <-
     )
 
 # Add www/collapsible_panel.js file to list
-js_files <- c(js_files,"./www/collapsible_panel.js")
+#js_files <- c(js_files,"./www/collapsible_panel.js")
 
 # Create list of style tags for each CSS file 
 js_list <- lapply(js_files,includeScript)
 
 # Load object (hard-coded for now but will soon be chosen using a file input)
-object <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
+object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 # Need a conditional to test if the loaded object is a Seurat object
+
+# Define Config file path for loading (eventually will use file input)
+config_filename <- "./Seurat_Objects/d0-d30-config.rds"
 
 # Numeric Metadata Columns
 meta_columns <- names(object@meta.data)
@@ -217,10 +220,10 @@ metadata_tab <- function(){
             }
           
           ),
-        # TEMP: add an additional card displaying the outputs from all tabs
+        # TEMP: add an additional card displaying the outputs from the metadata tab
         div(
           class="optcard",
-          verbatimTextOutput(outputId = "all_variables")
+          verbatimTextOutput(outputId = "print_metadata")
           )
         )
       )
@@ -236,9 +239,9 @@ ui <- fluidPage(
   # Main UI
   navbarPage(
     title = "Object Configuration",
-    windowTitle="Configure Seurat Object",
-    position="fixed-top",
-    id="navbar",
+    windowTitle = "Configure Seurat Object",
+    position = "fixed-top",
+    id = "navbar",
     #Tabs are displayed below
     tabPanel(
       title="Assays",
@@ -254,16 +257,16 @@ ui <- fluidPage(
   # Help button
   dropdownButton(
     inputId = "help",
-    status="info",
-    right=TRUE,
+    status = "info",
+    right = TRUE,
     label = "",
-    size="sm",
+    size = "sm",
     icon = icon("question"),
     # Dropdown menu content
     tagList(
       tags$p(
         "Help and Background",
-        style=
+        style =
         "color: #888888; 
         margin-bottom: 0px;
         font-size: 1.17em;"
@@ -280,21 +283,40 @@ ui <- fluidPage(
       # File issue on github
       tags$a(
         "Report a Bug",
-        href="https://github.com/amc-heme/DataExploreShiny/issues",
-        class="blue_hover",
+        href = "https://github.com/amc-heme/DataExploreShiny/issues",
+        class = "blue_hover",
         # Opens link in new tab
-        target="_blank",
-        rel="noopener noreferrer")
+        target = "_blank",
+        rel = "noopener noreferrer")
       )# End tagList
     ), # End Help Button
   
-  # Button to create/export config file
-  downloadButton(
-    outputId = "export_selections",
-    label="Export Configuration",
-    class = "float_right",
-    icon = NULL
+  dropdownButton(
+    inputId = "options",
+    status = "info",
+    right = TRUE,
+    label = "",
+    size = "sm",
+    icon = icon("ellipsis-h"),
+    downloadLink(
+      outputId = "export_selections",
+      label = "Export Config File",
+      class = "orange_hover"
     ),
+    actionLink(
+      inputId = "load_config",
+      label = "Load Config File",
+      class = "orange_hover"
+    )
+  ),
+  
+  # Button to create/export config file
+  # downloadButton(
+  #   outputId = "export_selections",
+  #   label="Export Configuration",
+  #   class = "float_right",
+  #   icon = NULL
+  #   ),
   
   # May be more appropriate to use an action button later for more advanced 
   # behavior (save config file and direct user back to app)
@@ -375,7 +397,7 @@ server <- function(input, output, session) {
   metadata_selected <- 
     eventReactive(
       input$metadata_selected,
-      ignoreNULL=FALSE,
+      ignoreNULL = FALSE,
       {
         input$metadata_selected
         })
@@ -431,27 +453,116 @@ server <- function(input, output, session) {
       })
   
   # TEMP: print all metadata options
-  output$all_variables <-
+  output$print_metadata <-
     renderPrint({
-      # Lapply: fetches each reactive object on the list, prints the result, and
-      # stores all objects in a list
-      all_options
+      all_options$metadata()
       })
   
   ## 3.3. Config File Download Handler ####
   output$export_selections <- 
     downloadHandler(
       filename = "config.rds",
-      content=function(file){
-        # Extract each reactive output from the options module 
-        # and store in a list
-        all_options_list <- lapply(all_options, function(x) x()) 
-        # Download above object as .rds 
-        saveRDS(
-          object = all_options_list,
-          file = file
-          )
+      content = 
+        function(file){
+          # Extract each reactive output from the options module 
+          # and store in a list
+          all_options_list <- lapply(all_options, function(x) x()) 
+          # Download above object as .rds 
+          saveRDS(
+            object = all_options_list,
+            file = file
+            )
+          })
+  
+  ## 3.4. Load Config File ####
+  ### 3.4.1 Load File ####
+  # Loads a previously created config file and imports contents into app
+  # storing in session$userdata makes file visible to all modules
+  session$userData$config <-
+    eventReactive(
+      input$load_config,
+      ignoreNULL = FALSE,
+      ignoreInit = TRUE,
+      {
+        print("Load config pressed")
+        # For now, use a pre-determined config file
+        # will soon be chosen with a file input
+        showNotification(
+          ui =
+            div(
+              style = "width: 350px;",
+              glue('Loading file at {config_filename}')
+            ),
+          duration = NULL,
+          id = "load_config",
+          session=session
+        )
+        
+        readRDS(config_filename)
       })
+  
+  ### 3.4.2. Update inputs in main server function with file contents ####
+  # Assays selected
+  observeEvent(
+    session$userData$config(),
+    {
+      updateMultiInput(
+        session,
+        inputId = "assays_selected",
+        selected = 
+          # Names of assays in config file are the names selected when the 
+          # file was created
+          names(
+            session$userData$config()$assays
+          )
+      )
+    })
+  
+  # Metadata selected
+  observeEvent(
+    session$userData$config(),
+    {
+      updateMultiInput(
+        session,
+        inputId = "metadata_selected",
+        selected = 
+          # Names of assays in config file are the names selected when the 
+          # file was created
+          names(
+            session$userData$config()$metadata
+          )
+      )
+    })
+  
+  # config_file_load <- eventReactive(
+  #   input$load_config,
+  #   ignoreNULL = FALSE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     print("Load config pressed")
+  #     # For now, use a pre-determined config file
+  #     # will soon be chosen with a file input
+  #     icon_notification_ui(
+  #       icon_name = NULL, 
+  #       message = 'Loading file at "./Seurat_Objects/AML_TotalVI_config.rds"'
+  #       )
+  #     readRDS("./Seurat_Objects/AML_TotalVI_config.rds")
+  #   })
+  
+  # observe({
+  #   print("Config file exists:")
+  #   print(!is.null(session$userData$config()))
+  #   print("Contents")
+  #   print(session$userData$config())
+  # })
+  
+  # observeEvent(
+  #   input$load_config,
+  #   ignoreNULL = FALSE,
+  #   {
+  #     print("Load Config Button")
+  #   })
+  
   }
 
 shinyApp(ui, server)

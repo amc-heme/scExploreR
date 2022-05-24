@@ -1,6 +1,8 @@
 ## B.2 Metadata Groups Module (second level)####
 ### Module UI
-metadata_group_fields_ui <- function(id,remove_button=FALSE,temp_choices=NULL){
+metadata_group_fields_ui <- function(id,
+                                     remove_button = FALSE,
+                                     temp_choices = NULL){
   # Namespace function
   ns <- NS(id)
   
@@ -11,7 +13,7 @@ metadata_group_fields_ui <- function(id,remove_button=FALSE,temp_choices=NULL){
     # id: used to delete the line if the remove button is clicked
     # Passing NULL to ns() will make the id equal to the namespace id 
     # passed to the module 
-    id=glue("{ns(NULL)}"),
+    id = glue("{ns(NULL)}"),
     textInput(inputId = ns("group_name"),
               label = NULL,
               width = "120px",
@@ -24,17 +26,17 @@ metadata_group_fields_ui <- function(id,remove_button=FALSE,temp_choices=NULL){
       width = "260px",
       choices = temp_choices,
       selected = NULL,
-      multiple= TRUE,
+      multiple = TRUE,
       options = 
         list(
-          placeholder="Values in Group",
-          size=10
+          placeholder = "Values in Group",
+          size = 10
         )
     ),
-    if(remove_button == TRUE){
+    if (remove_button == TRUE){
       actionButton(
         inputId = ns("remove_module"),
-        label="",
+        label = "",
         icon = icon("times"),
         class = "x-button" 
       )
@@ -94,7 +96,7 @@ metadata_group_fields_server <- function(id,
                      removeUI(selector = glue("#{session$ns(NULL)}"))
                      # Remove shiny input bindings linked to this module 
                      # to optimize performance
-                     remove_shiny_inputs(id,input)
+                     remove_shiny_inputs(id, input)
                      # Notify parent modules that the field has been deleted 
                      print("set deleted to TRUE")
                      deleted <<- TRUE
@@ -106,9 +108,9 @@ metadata_group_fields_server <- function(id,
           label = glue("Return from {session$ns(NULL)}"),
           {
             list(
-              `group_name`=input$group_name,
-              `group_members`=input$group_members,
-              `deleted`=deleted
+              `group_name` = input$group_name,
+              `group_members` = input$group_members,
+              `deleted` = deleted
             )
           })
       )

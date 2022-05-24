@@ -364,7 +364,7 @@ ui <- tagList(
     )# End tagList
   ), #End Help Button
   
-  # Dataset Button ('DNA' icon)
+  # Dataset Button 
   dropdownButton(
     inputId = "options",
     status="info",

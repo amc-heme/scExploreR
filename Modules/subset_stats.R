@@ -282,7 +282,7 @@ subset_stats_server <- function(id,
                          notification_ui <- span(
                            # Warning icon (inline and enlarged)
                            icon("exclamation-triangle",
-                                style="display: inline-block; 
+                                style = "display: inline-block; 
                                 font-size: 1.7em;"),
                            # Notification text with proportion and 
                            # number of non-zero cells
@@ -297,7 +297,7 @@ subset_stats_server <- function(id,
                          
                          # Display notification UI
                          showNotification(
-                           ui=notification_ui,
+                           ui = notification_ui,
                            # Duration=NULL will make the message persist 
                            # until dismissed
                            duration = NULL,
