@@ -255,8 +255,9 @@ plot_module_ui <- function(id,
           hidden(
             div(
               id = ns("custom_title_multi_div"),
-              custom_title_multi_ui(
-                id = ns("custom_title_multi")
+              multi_text_input_ui(
+                id = ns("custom_title_multi"),
+                label = "Enter Custom Titles for Each Panel:"
                 )
               )
             )
@@ -598,8 +599,9 @@ plot_module_server <- function(id,
                          # Plot uses a single 
                          menu_type("single")
                        } else if (plot_type == "feature"){
-                         # Feature plots: custom titles are currently possible 
-                         # when only one feature is entered.
+                         # Feature plots: custom titles can be used when one 
+                         # feature is entered, or when multiple features have
+                         # been entered without a split_by selection
                          if (length(features_entered()) == 1){
                            enable_custom = TRUE
                            # Single- or multiple- entry menu: depends 
@@ -609,6 +611,11 @@ plot_module_server <- function(id,
                            } else {
                              # Multiple title entry menu is used when a split_by
                              # setting is specified
+                             menu_type("multiple")
+                           }
+                         } else if (length(features_entered()) > 1){
+                           if (plot_selections$split_by() == "none"){
+                             enable_custom = TRUE
                              menu_type("multiple")
                            }
                          }
@@ -836,14 +843,52 @@ plot_module_server <- function(id,
                    ## 3.6. Server for multiple custom title input ####
                    # Currently enabled for feature plots only 
                    if (plot_type == "feature"){
+                     # Define default values for inputs
+                     default_titles <-
+                       reactive({
+                         if (!is.null(features_entered())){
+                           if (
+                             length(features_entered()) == 1 &
+                             plot_selections$split_by() != "none"
+                             ){
+                             # Single-feature plots with a split_by selection:
+                             # use split_by groups
+                             req(plot_selections$split_by())
+                             
+                             default_titles <-
+                               object()@meta.data[[
+                                 plot_selections$split_by()]] |> 
+                               unique() |> 
+                               str_sort(numeric = TRUE)
+                             
+                             return(default_titles)
+                           } else if (
+                             length(features_entered()) > 1 &
+                             plot_selections$split_by() == "none"
+                             ){
+                             # Multi-feature plots with no split_by selection:
+                             # use features entered for defaults
+                             default_titles <- features_entered()
+                             return(default_titles)
+                           }
+                         }
+                       })
+                     
+                     # Pass default titles to multi-text input module
                      custom_vector <-
-                       custom_title_multi_server(
+                       multi_text_input_server(
                          id = "custom_title_multi",
-                         object = object,
-                         split_by = plot_selections$split_by,
-                         label_header = "Original Value",
-                         input_header = tagList("New Value")
-                       )
+                         default_vector = default_titles
+                         )
+                     
+                     # custom_vector <-
+                     #   custom_title_multi_server(
+                     #     id = "custom_title_multi",
+                     #     object = object,
+                     #     split_by = plot_selections$split_by,
+                     #     label_header = "Original Value",
+                     #     input_header = tagList("New Value")
+                     #     )
                    }
                    
                    ## 3.7. Custom title input to feature plots ####
@@ -853,6 +898,8 @@ plot_module_server <- function(id,
                    if (plot_type == "feature"){
                      feature_plot_custom_title <-
                        reactive({
+                         req(menu_type())
+                         
                          if (input$title_settings == "custom"){
                            # Determine current menu structure
                            if (menu_type() == "single"){
@@ -963,22 +1010,30 @@ plot_module_server <- function(id,
                        # Conditions under which ncol should be defined vary 
                        # based on plot type. Separate reactive expressions are
                        # created based on the plot type used for the module.
-                       if (plot_type %in% c("dimplot", "feature")){
-                         # Condition to record ncol for UMAP
-                         # Equal to conditions where there are multiple panels
+                       if (plot_type == "dimplot"){
                          reactive({
-                           req(features_entered())
-                           
-                           # Process ncol for single feature plots when split_by
-                           # is set, or for multiple feature plots when a 
-                           # split_by category is not set
-                           if (
-                             (length(features_entered()) == 1 & 
-                             input$split_by != "none") | 
-                             (length(features_entered()) > 1 &
-                              input$split_by == "none")
+                           if (!is.null(input$split_by)){
+                             if (input$split_by != "none"){
+                               input$ncol
+                               } else NULL
+                             } else NULL
+                           })
+                         } else if (plot_type == "feature"){
+                           # ncol applies when multiple panels are created on 
+                           # feature plot
+                           reactive({
+                             req(features_entered())
+
+                             # Process ncol for single feature plots when
+                             # split_by is set, or for multiple feature plots
+                             # when a split_by category is not set
+                             if (
+                               (length(features_entered()) == 1 &
+                                input$split_by != "none") |
+                               (length(features_entered()) > 1 &
+                                input$split_by == "none")
                              ){
-                             input$ncol
+                               input$ncol
                              } else NULL
                            })
                          } else if (plot_type == "violin"){
@@ -1082,7 +1137,7 @@ plot_module_server <- function(id,
                      })
                    )
                  
-                 # 6. Determine if a subset has been used  ----------------------
+                 # 6. Determine if a subset has been used  ---------------------
                  # This variable will be a boolean used in downstream 
                  # computations
                  is_subset <- eventReactive(

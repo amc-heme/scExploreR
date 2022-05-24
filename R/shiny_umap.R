@@ -39,6 +39,38 @@ shiny_umap <- function(object,
                        reduction = NULL, 
                        palette = NULL 
                        ){
+  # print("-----------------------------")
+  # print("shiny_umap arguments")
+  # print("Object")
+  # print(object)
+  # print("group_by")
+  # print(group_by)
+  # print("split_by")
+  # print(split_by)
+  # print("show_label")
+  # print(show_label)
+  # print("show_legend")
+  # print(show_legend)
+  # print("ncol")
+  # print(ncol)
+  # print("is_subset")
+  # print(is_subset)
+  # print("original_limits") 
+  # print(original_limits)
+  # print("xlim_orig")
+  # print(xlim_orig)
+  # print("ylim_orig")
+  # print(ylim_orig)
+  # print("show_title")
+  # print(show_title)
+  # print("plot_title")
+  # print(plot_title)
+  # print("reduction")
+  # print(reduction)
+  # print("palette")
+  # print(palette)
+  # print("-----------------------------")
+  
   # validate will keep plot code from running if the subset 
   # is NULL (no cells in subset)
   validate(

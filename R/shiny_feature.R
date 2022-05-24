@@ -95,7 +95,11 @@ shiny_feature <- function(object,
         # Reduction: uses the input for reduction if it exists, otherwise
         # it is set to NULL and will use default settings.
         reduction = if(!is.null(reduction)) reduction else NULL
-      ) 
+        ) 
+    
+      if (!is.null(custom_titles)){
+        
+      }
     
     #+
       
