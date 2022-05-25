@@ -71,25 +71,30 @@ plot_module_ui <- function(id,
                            reductions = NULL,
                            # TEMP: conditionals vertically aligned
                            # for multi-cursor editing
-                           reductions_menu =    FALSE,
-                           scatterplot_ui =     FALSE,
-                           group_by =           FALSE,
-                           split_by =           FALSE,
-                           title_menu =         FALSE,
-                           legend_title_menu =  FALSE,
-                           ncol_slider =        FALSE,
-                           super_title_menu =   FALSE,
-                           order_checkbox =     FALSE,
-                           label_checkbox =     FALSE,
-                           legend_checkbox =    FALSE,
-                           display_coeff =      FALSE,
-                           limits_checkbox =    FALSE,
-                           custom_colors =      FALSE,
-                           manual_dimensions =  FALSE,
-                           separate_features =  FALSE,
-                           download_button =    FALSE,
+                           reductions_menu =            FALSE,
+                           scatterplot_ui =             FALSE,
+                           group_by =                   FALSE,
+                           split_by =                   FALSE,
+                           title_menu =                 FALSE,
+                           legend_title_menu =          FALSE,
+                           ncol_slider =                FALSE,
+                           share_scale_checkbox =       FALSE,
+                           color_by_feature_checkbox =  FALSE,
+                           super_title_menu =           FALSE,
+                           group_by_label =             FALSE,
+                           order_checkbox =             FALSE,
+                           label_checkbox =             FALSE,
+                           legend_checkbox =            FALSE,
+                           display_coeff =              FALSE,
+                           limits_checkbox =            FALSE,
+                           custom_colors =              FALSE,
+                           manual_dimensions =          FALSE,
+                           separate_features =          FALSE,
+                           download_button =            FALSE,
                            # Default values for inputs
-                           label_default =      TRUE
+                           label_default =              TRUE,
+                           # Plot UI component functions called here
+                           ...
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -161,7 +166,7 @@ plot_module_ui <- function(id,
           label = "Metadata to Split By",
           # Use vector of included metadata category names from the config file
           choices = meta_choices(),  
-          #"none" selected by default
+          # "none" selected by default
           selected = "none"
          )
       } else NULL,
@@ -264,7 +269,7 @@ plot_module_ui <- function(id,
           )
       },
       
-      ## Options for Legend Title (feature plots) ####
+      ## Legend Title (feature plots) ####
       if (legend_title_menu == TRUE){
         div(
           style = "margin-top: 10px;",
@@ -281,14 +286,36 @@ plot_module_ui <- function(id,
           )
         } else NULL,
       
+      ## Group by for Feature Plot Labels ####
+      # Feature plot only. Can't be used with group_by_menu.
+      if (group_by_label == TRUE){
+        if (group_by == TRUE){
+          # Throw error if group_by menu is created (menu uses same ID)
+          stop("`group_by_label` can't be TRUE when `group_by` is TRUE.")
+        } else {
+          # Choices for group by selection: should exclude "none"
+          group_by_choices <- meta_choices()[!meta_choices() %in% "none"]
+          
+          hidden(
+            selectInput(
+              inputId = ns("group_by"),
+              label = "Metadata for Labeling Groups",
+              # Can select all options except "none"
+              choices = group_by_choices, 
+              # First option selected by default 
+              selected = group_by_choices[1]
+            )
+          )
+          }
+      } else NULL,
       
-      ## Slider to adjust number of columns ####
+      ## Number of columns ####
       if (ncol_slider == TRUE){
         #Dynamic UI (appears when split_by != "none")
         uiOutput(outputId = ns("ncol_slider"))
       } else NULL,
       
-      ## Option to display a title above multi-panel plots ####
+      ## Display a title above multi-panel plots ####
       # (feature plots only)
       if (super_title_menu == TRUE){
         hidden(
@@ -300,7 +327,32 @@ plot_module_ui <- function(id,
           )
         } else NULL,
       
-      ## Checkbox to order cells by expression (feature plots only) ####
+      ## Share Scales Checkbox ####
+      # (feature plots with multiple features and no split.by groups)
+      if (share_scale_checkbox == TRUE){
+        hidden(
+          checkboxInput(
+            inputId = ns("share_scale"),
+            label = "Share Scale Between Features",
+            # Value is FALSE by default
+            value = FALSE
+            )
+        )
+      } else NULL,
+      
+      ## Color by Feature Checkbox ####
+      if (color_by_feature_checkbox == TRUE){
+        hidden(
+          checkboxInput(
+            inputId = ns("color_by_feature"),
+            label = "Use Separate Colors for Features",
+            # Value is FALSE by default
+            value = FALSE
+          )
+        )
+      } else NULL,
+      
+      ## Oder cells by expression (feature plots only) ####
       if (order_checkbox == TRUE){
         checkboxInput(
           inputId = ns("order"),
@@ -310,7 +362,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      ## Checkbox to add/remove labels ####
+      ## Add/remove labels ####
       if (label_checkbox == TRUE){
         checkboxInput(
           inputId = ns("label"),
@@ -320,7 +372,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-      ## Checkbox to add or remove Legend ####
+      ## Add or remove Legend ####
       if (legend_checkbox == TRUE){
         checkboxInput(
           inputId = ns("legend"),
@@ -467,7 +519,10 @@ plot_module_ui <- function(id,
             )
           )
         )
-      } else NULL
+      } else NULL,
+      
+      # Add additional UI components requested by the user
+      ...
     )
     
   } else if (ui_component == "plot"){
@@ -527,8 +582,8 @@ plot_module_server <- function(id,
                                              "dot",
                                              "scatter"), #Non-reactive
                                valid_features = NULL, #Reactive
-                               lim_orig = lim_orig, # Reactive
-                               palette = NULL, # Reactive
+                               lim_orig = lim_orig, #Reactive
+                               palette = NULL, #Reactive
                                metadata_config = NULL,
                                #Currently only needed for feature plots
                                assay_config = NULL,
@@ -956,11 +1011,20 @@ plot_module_server <- function(id,
                      show <- FALSE
                      # ID of legend title container
                      elem_id <- "legend_title_div"
+                     # Default value of input: changed based on conditionals
+                     default_value = "feature"
                      
-                     # Legend title: appears for single feature plots only
-                     if (!is.null(features_entered())){
+                     # Appears on single-feature plots, and multi-feature plots
+                     # with no split by category
+                     if (!is.null(features_entered()) &
+                         !is.null(plot_selections$split_by())){
                        if (length(features_entered()) == 1){
                          show <- TRUE
+                       } else if (length(features_entered()) > 1 &
+                                  plot_selections$split_by() == "none"){
+                         show <- TRUE
+                         # In this case, set default value of input to "none"
+                         default_value = "none"
                        }
                      }
                      
@@ -973,9 +1037,154 @@ plot_module_server <- function(id,
                          id = elem_id
                        )
                      }
+                     
+                     # Update input with default value
+                     updateSelectInput(
+                       session,
+                       inputId = "legend_title",
+                       selected = default_value
+                     )
                    })
                  }
                  
+                 ## 4.3 Share Scale Between Features ####
+                 # Show when conditions below are met
+                 # Errors will result unless plot_type is restricted to feature 
+                 # (DimPlots don't process features_entered())
+                 if (plot_type == "feature"){
+                   observe({
+                     # show is set to TRUE when conditions below are met
+                     show <- FALSE
+                     elem_id <- "share_scale"
+                     
+                     if (!is.null(features_entered()) &
+                         !is.null(plot_selections$split_by())){
+                       # Currently visible when multiple features are chosen, 
+                       # and no split by category is selected
+                       if (length(features_entered()) > 1){
+                         if (plot_selections$split_by() == "none"){
+                           show <- TRUE
+                         }
+                       }
+                     }
+                     
+                     # Show/hide based on outcome above
+                     if (show == TRUE){
+                       showElement(
+                         id = elem_id
+                       )
+                     } else {
+                       hideElement(
+                         id = elem_id
+                       )
+                     }
+                   })
+                 }
+                 
+                 ### 4.3.1. Update legend_title based on share_scale ####
+                 # If share_scale == TRUE, "feature" cannot be used for
+                 # share_scale. This option must be removed in this case.
+                 if (plot_type == "feature"){
+                   observe({
+                     if (!is.null(plot_selections$share_scale())){
+                       updateSelectInput(
+                         session,
+                         inputId = "legend_title",
+                         # Choices depend on state of share_scale
+                         choices = 
+                           if (plot_selections$share_scale() == TRUE){
+                             c("Expression" = "assay_score",
+                               "No Title" = "none")
+                           } else {
+                             c("Feature Name" = "feature", 
+                               "Expression" = "assay_score",
+                               "No Title" = "none")
+                           },
+                         selected = 
+                           # Code preserves current selection 
+                           # if it is still valid
+                           if (
+                             # All choices are valid when share_scale == FALSE
+                             plot_selections$share_scale() == FALSE |
+                             # When share_scale == TRUE, current value can be
+                             # preserved if it is not "feature" 
+                             (plot_selections$share_scale() == TRUE &
+                              input$legend_title != "feature")
+                             ){
+                             input$legend_title
+                             }
+                         )
+                       }
+                   })
+                 }
+                 
+                 ## 4.4. Color by Feature ####
+                 # Available for feature plots when multiple 
+                 # features are entered and split_by is "none"
+                 if (plot_type == "feature"){
+                   observe({
+                     # show is set to TRUE when conditions below are met
+                     show <- FALSE
+                     elem_id <- "color_by_feature"
+                     
+                     if (!is.null(features_entered()) &
+                         !is.null(plot_selections$split_by())){
+                       if (length(features_entered()) > 1 &
+                           plot_selections$split_by() == "none"){
+                         # Color by feature cannot be used when
+                         # share_scale is TRUE
+                         if (plot_selections$share_scale() == TRUE){
+                           show <- FALSE
+                         } else {
+                           show <- TRUE
+                           }
+                         }
+                     }
+                     
+                     # Show/hide based on outcome above
+                     if (show == TRUE){
+                       showElement(
+                         id = elem_id
+                       )
+                     } else {
+                       hideElement(
+                         id = elem_id
+                       )
+                       
+                       # Set value to FALSE when hiding to avoid interference
+                       # with share_scale setting
+                       updateCheckboxInput(
+                         session,
+                         inputId = elem_id,
+                         value = FALSE
+                       )
+                     }
+                   })
+                 }
+                 
+                 ## 4.5. Group by menu for labels ####
+                 if (plot_type == "feature"){
+                   observe({
+                     # Show menu when "label groups" is selected
+                     show <- FALSE
+                     elem_id <- "group_by"
+                     
+                     if (plot_selections$label() == TRUE){
+                       show <- TRUE
+                     }
+                     
+                     # Show/hide based on outcome above
+                     if (show == TRUE){
+                       showElement(
+                         id = elem_id
+                       )
+                     } else {
+                       hideElement(
+                         id = elem_id
+                       )
+                       }
+                   })
+                 }
                  
                  # 5. Record plot_selections -----------------------------------
                  # list of reactives for storing selected inputs
@@ -1051,6 +1260,22 @@ plot_module_server <- function(id,
                        reactive({
                          if (!is.null(input$super_title)){
                            input$super_title
+                         } else NULL
+                       }),
+                     
+                     # Share scale between features
+                     `share_scale` = 
+                       reactive({
+                         if (!is.null(input$share_scale)){
+                           input$share_scale
+                         } else NULL
+                       }),
+                     
+                     # Use Different Colors for Features
+                     `color_by_feature` = 
+                       reactive({
+                         if (!is.null(input$color_by_feature)){
+                           input$color_by_feature
                          } else NULL
                        }),
                      
@@ -1680,12 +1905,17 @@ plot_module_server <- function(id,
                            object = object(),
                            features_entered = features_entered(), 
                            assay_config = assay_config(),
+                           # Group by: influences label placement
+                           group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
                            order = plot_selections$order(),
                            show_label = plot_selections$label(),
                            show_legend = plot_selections$legend(),
                            ncol = plot_selections$ncol(),
                            super_title = plot_selections$super_title(),
+                           share_scale = plot_selections$share_scale(),
+                           color_by_feature = 
+                             plot_selections$color_by_feature(),
                            is_subset = is_subset(),
                            legend_title = plot_selections$legend_title(),
                            original_limits = plot_selections$limits(),
@@ -1696,18 +1926,22 @@ plot_module_server <- function(id,
                            ylim_orig = 
                              lim_orig()[[plot_selections$reduction()]]$ylim_orig,
                            palette = 
-                             # Use custom colors if defined; if not, use the 
-                             # palette if defined; if not, pass NULL to use 
-                             # Seurat defaults.
-                             if (
-                               isTruthy(plot_selections$min_color()) & 
-                               isTruthy(plot_selections$max_color())
+                             if (plot_selections$color_by_feature() == FALSE){
+                               # Use custom colors if defined; if not, use the 
+                               # palette if defined; if not, pass NULL to use 
+                               # Seurat defaults.
+                               if (
+                                 isTruthy(plot_selections$min_color()) & 
+                                 isTruthy(plot_selections$max_color())
                                ){
-                               c(plot_selections$min_color(), 
-                                 plot_selections$max_color())
-                             } else if (isTruthy(palette())) {
-                               palette()
-                             } else NULL,
+                                 c(plot_selections$min_color(), 
+                                   plot_selections$max_color())
+                               } else if (isTruthy(palette())) {
+                                 palette$continuous_palette()
+                               } else NULL
+                             } else {
+                               palette$categorical_palette()
+                             },
                            reduction = plot_selections$reduction(),
                            show_title = 
                              if (input$title_settings == "none") FALSE else TRUE,

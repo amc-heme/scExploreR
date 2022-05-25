@@ -285,7 +285,7 @@ options_server <- function(id,
           # Add additional fields if the "Add Group" button is clicked
           observeEvent(
             c(input$add_group),
-            label = "{category_name}: add Field Button",
+            label = glue("{category_name}: add Field Button"),
             # When the ns(add-group) button is created or when the options 
             # server module is created it will trigger this observer. The 
             # ignore* parameters are set to TRUE to make the observer respond 
