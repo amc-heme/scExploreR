@@ -65,6 +65,8 @@ plot_module_ui <- function(id,
                            # different places in the app. This argument will
                            # allow the module server to update components in
                            # different locations
+                           # Plot UI component functions called here
+                           #...
                            ui_component = c("options", "plot"),
                            meta_choices = NULL,
                            plot_label = "",
@@ -92,9 +94,7 @@ plot_module_ui <- function(id,
                            separate_features =          FALSE,
                            download_button =            FALSE,
                            # Default values for inputs
-                           label_default =              TRUE,
-                           # Plot UI component functions called here
-                           ...
+                           label_default =              TRUE#,
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -295,14 +295,14 @@ plot_module_ui <- function(id,
         } else {
           # Choices for group by selection: should exclude "none"
           group_by_choices <- meta_choices()[!meta_choices() %in% "none"]
-          
+
           hidden(
             selectInput(
               inputId = ns("group_by"),
               label = "Metadata for Labeling Groups",
               # Can select all options except "none"
-              choices = group_by_choices, 
-              # First option selected by default 
+              choices = group_by_choices,
+              # First option selected by default
               selected = group_by_choices[1]
             )
           )
@@ -522,7 +522,7 @@ plot_module_ui <- function(id,
       } else NULL,
       
       # Add additional UI components requested by the user
-      ...
+      #...
     )
     
   } else if (ui_component == "plot"){
@@ -1169,7 +1169,7 @@ plot_module_server <- function(id,
                      show <- FALSE
                      elem_id <- "group_by"
                      
-                     if (plot_selections$label() == TRUE){
+                     if (isTruthy(plot_selections$label())){
                        show <- TRUE
                      }
                      
