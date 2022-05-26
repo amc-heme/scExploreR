@@ -904,6 +904,7 @@ server <- function(input, output, session){
             meta_choices = meta_choices,
             unique_metadata = unique_metadata,
             category_labels = category_labels,
+            assay_config = assay_config,
             metadata_config = metadata_config,
             reductions = reductions,
             categorical_palettes = categorical_palettes,

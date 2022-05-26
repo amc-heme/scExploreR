@@ -805,10 +805,10 @@ plot_module_server <- function(id,
                        }
                      })
                    
-                   observe({
-                     print("input$custom_title has changed. New value:")
-                     print(input$custom_title)
-                   })
+                   # observe({
+                   #   print("input$custom_title has changed. New value:")
+                   #   print(input$custom_title)
+                   # })
                    
                    ## 3.4. Manual reset of custom title input ####
                    observeEvent(

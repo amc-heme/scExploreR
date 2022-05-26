@@ -16,6 +16,7 @@ plots_tab_ui <- function(id,
                          meta_choices,
                          unique_metadata,
                          category_labels,
+                         assay_config,
                          metadata_config,
                          reductions,
                          categorical_palettes,
@@ -108,6 +109,31 @@ plots_tab_ui <- function(id,
            # Content of conditionalPanel
            # Label
            tags$p(tags$strong("Enter features to display on plots:")),
+           # Collapsible panel for types of features that may be entered
+           collapsible_panel(
+             inputId = ns("which_features"),
+             label = "What Can I Enter Here?",
+             active = FALSE,
+             transparent = TRUE,
+             size = "s",
+             "The following types of features are available for this object:",
+             tags$ul(
+               lapply(
+                 # Fetch assay labels from config file
+                 assay_config(),
+                 function (assay_entry) {
+                   # Use label if defined, otherwise use `assay` field
+                   if (!is.null(assay_entry$dropdown_title)){
+                     tags$li(assay_entry$dropdown_title)
+                   } else {
+                     tags$li(assay_entry$assay)
+                   }
+                   
+                   }
+                 )
+               )
+             ),
+           
            # Inline text entry and update button
            div(
              #Class below reduces margin beneath selectizeInput to 5px
