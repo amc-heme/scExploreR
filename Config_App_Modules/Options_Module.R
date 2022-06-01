@@ -320,7 +320,6 @@ options_server <- function(id,
 
               # Switch for defining groups (input$group_metadata)
               # Switch on if `groups` is not NULL
-              print(glue("Update switch for {id}"))
               updateMaterialSwitch(
                 session,
                 inputId = "group_metadata",

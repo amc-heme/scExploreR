@@ -203,33 +203,6 @@ metadata_group_fields_server <-
             module_data$remove_triggers[[field_id]] <-
               makeReactiveTrigger()
             
-            # TEMP: Prints to console when reactive expression is triggered
-            # observe(
-            #   #isolate(module_data$remove_triggers)[[field_id]]$depend(),
-            #   label = glue("{ns(field_id)}_reactive_trigger_observer"),
-            #   # Required ignore combination for reactive triggers
-            #   #ignoreNULL = FALSE,
-            #   #ignoreInit = TRUE,
-            #   {
-            #     # Present to get observer to take a depenency on just the 
-            #     # particular reactive trigger in question
-            #     isolate({module_data$remove_triggers})[[field_id]]$depend()
-            #     print(glue("{field_id} removal trigger activated."))
-            #   })
-            
-            # observe(
-            #   #isolate(module_data$remove_triggers)[[field_id]]$depend(),
-            #   label = glue("{ns(field_id)}_reactive_trigger_observer"),
-            #   # Required ignore combination for reactive triggers
-            #   #ignoreNULL = FALSE,
-            #   #ignoreInit = TRUE,
-            #   {
-            #     # Present to get observer to take a depenency on just the 
-            #     # particular reactive trigger in question
-            #     isolate({module_data$remove_triggers})[[field_id]]$depend()
-            #     print(glue("{field_id} removal trigger activated."))
-            #   })
-            
             # 2.3. Observer for field ####
             # Add observer to store data in reactive list when the inputs change
             module_data$field_observers[[field_id]] <- 
@@ -289,7 +262,6 @@ metadata_group_fields_server <-
               # Observer self-destructs when the removal is complete
               once = TRUE,
               {
-                print("Programmatic Trigger of deletion observer")
                 # Remove UI
                 removeUI(
                   selector = glue("#{ns(field_id)}_field")
@@ -308,26 +280,6 @@ metadata_group_fields_server <-
                 module_data$remove_triggers[[field_id]] <- NULL
               })
             
-            })
-        
-        observe({
-          print("n_fields")
-          print(n_fields())
-        })
-        
-        observe(
-          label = glue("{ns('print_reactive_triggers')}"),
-          {
-            print("Reactive triggers:")
-            triggerlist <-
-              lapply(
-                module_data$remove_triggers,
-                function(x) x$depend()
-              )
-            
-            names(triggerlist) <- names(module_data$remove_triggers)
-            
-            print(triggerlist)
             })
         
         # 3. Update fields when config file is loaded --------------------------
@@ -369,16 +321,14 @@ metadata_group_fields_server <-
                   # If there are more fields in existence than fields, trigger
                   # the reactive expressions to remove fields until there are
                   # the right number of fields.
-                  print("Condition 3C")
+                  
                   # Iterate through n_fields-n_groups observers (number that 
                   # must be deleted to create the required number of fields)
                   for (j in 1:(n_fields() - n_groups)){
                     # Trigger reactive triggers for the first n_fields-n_groups
                     # triggers in the list of reactive triggers
-                    print("Trigger removal observer")
                     module_data$remove_triggers[[j]]$trigger()
                   }
-                  print("For loop complete")
                 }
                 
               } else {
