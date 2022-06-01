@@ -18,7 +18,7 @@ options_ui <- function(id,
   
   # Calculations for options UI ---------------------------------------------
   # Metadata-specific calculations used to define UI for each metadata type
-  if (optcard_type=="metadata"){
+  if (optcard_type == "metadata"){
     # Get unique values of metadata field for display of summary statistics
     values <- unique(object@meta.data[[category_name]])
     # Create list of sorted values for display
@@ -28,10 +28,10 @@ options_ui <- function(id,
     
     # Metadata description
     # Display number of unique values if categorical; display range if numeric
-    if (metadata_type=="Categorical"){
+    if (metadata_type == "Categorical"){
       n_unique <- length(values)
       metadata_description <- glue("{n_unique} unique values")
-    } else if (metadata_type=="Numeric"){
+    } else if (metadata_type == "Numeric"){
       metadata_description <- ""
       # Previous code for describing numeric metadata: does not work
       # metadata_description <- 
@@ -44,18 +44,18 @@ options_ui <- function(id,
   
   # Create UI for options card ----------------------------------------------
   # Assays UI
-  if(optcard_type=="assays"){
+  if(optcard_type == "assays"){
     ui <- div(
-      id=ns("optcard"),
-      class="optcard single-space-bottom",
+      id = ns("optcard"),
+      class = "optcard single-space-bottom",
       tags$strong(
         glue("Options for {category_name}"),
-        class="large half-space-bottom center"
+        class = "large half-space-bottom center"
       ),
       
       # Human-readable suffix: appears on plots and search entries
       textInput(inputId = ns("hr"),
-                label="Set label for assay (will appear as entered in app)",
+                label = "Set label for assay (will appear as entered in app)",
                 width = "380px"),
       # Include assay name on plots: if checked, the label entered will be 
       # displayed on plots and in the feature search results.
@@ -67,7 +67,7 @@ options_ui <- function(id,
     )
     
     # Metadata UI
-  } else if (optcard_type=="metadata"){
+  } else if (optcard_type == "metadata"){
     ui <- div(
       id = ns("optcard"),
       class = "optcard single-space-bottom",
@@ -93,7 +93,7 @@ options_ui <- function(id,
       # Option to classify metadata into list (ex. group patients 
       # by sample conditions)
       # Only available for categorical metadata columns
-      if (metadata_type=="Categorical"){
+      if (metadata_type == "Categorical"){
         tagList(
           materialSwitch(
             inputId =  ns("group_metadata"),
@@ -105,7 +105,7 @@ options_ui <- function(id,
           tags$p(
             "(Choices for possible values in the metadata 
             column will appear in the app)",
-            class="center small"
+            class = "center small"
           ),
           # Metadata groups interface
           # One instance of the fields UI, with a button to 
@@ -116,19 +116,32 @@ options_ui <- function(id,
               #Namespace id for module is based on a 
               #numeric id since there are multiple fields.
               metadata_group_fields_ui(
-                id = ns("groups-1"),
-                temp_choices = unique(object@meta.data[[category_name]])
-              ),
-              
-              # Additional fields will be added above "add group" button
-              div(
-                actionButton(
-                  inputId = ns("add_group"),
-                  label = "Add Group",
-                  width = "100px"
+                id = ns("groups"),
+                unique_values =
+                  str_sort(
+                    unique(object@meta.data[[category_name]]),
+                    numeric = TRUE
+                    )
                 )
-              )
+              
+              # metadata_group_fields_ui(
+              #   id = ns("groups-1"),
+              #   temp_choices = unique(object@meta.data[[category_name]])
+              # ),
+              # 
+              # # Additional fields will be added above "add group" button
+              # div(
+              #   actionButton(
+              #     inputId = ns("add_group"),
+              #     label = "Add Group",
+              #     width = "100px"
+              #   )
+              # )
             )#End tagList of input containers
+          ),
+          
+          verbatimTextOutput(
+            outputId = ns("test_print")
           )
         )
       } else NULL,
@@ -212,23 +225,9 @@ options_server <- function(id,
       # User Interface to define subgroups within a metadata column
       # Only perfomed for categorical inputs
       if (options_type == "metadata"){
-        # Test for type of metadata field after testing to see if the object 
-        # is a metadata entry
+        # Test for type of metadata field after testing to see 
+        # if the object is a metadata entry
         if (type == "Categorical"){
-          # Reactive list for storing output from groups modules
-          print("Initializing group_choices")
-          suppressMessages(
-            group_choices <- reactiveValues()
-          )
-          print("Value of group_choices")
-          print(group_choices)
-          
-          # Create a list for storing reactive outputs of group fields modules
-          # group_choices <- list()
-          # Use makeReactiveBinding to get the list to update when group fields 
-          # inputs are changed
-          # makeReactiveBinding("group_choices")
-          
           ### 2.1.1. Define UI for group selection ####
           observeEvent(
             input$group_metadata,
@@ -250,93 +249,20 @@ options_server <- function(id,
               }
             })
           
-          ### 2.1.2. Define Possible Choices for Groups ####
-          # Create a reactive values object with a vector of the unique 
-          # values in the metadata column that can be sorted into groups. This
-          # will be used to populate the choices now and will be updated later
-          
-          # For now, this is not reactive. It will eventually be reactive and 
-          # depend on inputs in other metadata fields modules.
-          category_values <- 
-            unique(object@meta.data[[category_name]]) |> 
-            str_sort(numeric=TRUE)
-          
-          ### 2.1.3. Module Server for First Group Selection Field ####
-          # After creating the UI for the first group selection field, 
-          # create the corresponding server module
-          module_output <- 
+          ### 2.1.2. Module Server for Choosing Group Values
+          group_data <- 
             metadata_group_fields_server(
-              id = "groups-1",
-              possible_selections = category_values
+              id = "groups",
+              category_name = category_name,
+              unique_values = 
+                unique(object@meta.data[[category_name]]) |> 
+                str_sort(numeric=TRUE)
               )
           
-          # Use observe() to reactively update group_choices with 
-          # the module output
-          observe(
-            label=glue("observer for {category_name}-groups-1"),
-            {
-              # The superassignment operator <<- is used to update group_choices
-              # outside of the scope of the observe() function
-              group_choices[["groups-1"]] <- 
-                module_output()
-            })
-          
-          ### 2.1.4. Additional Group Modules ####
-          # Add additional fields if the "Add Group" button is clicked
-          observeEvent(
-            c(input$add_group),
-            label = glue("{category_name}: add Field Button"),
-            # When the ns(add-group) button is created or when the options 
-            # server module is created it will trigger this observer. The 
-            # ignore* parameters are set to TRUE to make the observer respond 
-            # only to a click of the button.
-            ignoreNULL = FALSE,
-            ignoreInit = TRUE,
-            {
-              # Increase counter by one
-              new_value <- group_counter() + 1
-              group_counter(new_value)
-              
-              # Use the action button's value to create an id. 
-              # Use group_counter() for ID creation
-              nested_id <- glue("groups-{group_counter()}")
-              
-              # Add module UI
-              # For arguments that reference an element by id that is not 
-              # a Shiny input or output, namespacing must be used
-              insertUI(
-                selector = glue("#{ns('add_group')}"),
-                where = "beforeBegin",
-                # Namespacing should also be used to call the UI components of 
-                # modules, but not the server component
-                ui = 
-                  metadata_group_fields_ui(
-                    ns(nested_id),
-                    remove_button = TRUE,
-                    temp_choices = 
-                      str_sort(
-                        unique(object@meta.data[[category_name]]),
-                        numeric=TRUE
-                        )
-                    )
-                )
-              
-              # Add module server instance
-              module_output <- 
-                metadata_group_fields_server(
-                  id = nested_id,
-                  possible_selections = category_values
-                )
-              
-              # Store output in group_choices and use observe() to 
-              # reactively update group_choices when the output changes
-              observe(
-                label = glue("Observer for {category_name}-{nested_id}"),
-                {
-                  group_choices[[nested_id]] <- 
-                    module_output()
-                })
-            })
+          output$test_print <- 
+            renderPrint(
+              group_data()
+            )
         }
       }
       
@@ -382,8 +308,8 @@ options_server <- function(id,
               # Get config info for matching metadata category
               config_individual <-
                 session$userData$config()$metadata[[category_name]]
-              
-              # Update inputs using config file 
+
+              # Update inputs using config file
               # Label for metadata column (text input, input$hr)
               updateTextInput(
                 session,
@@ -391,113 +317,115 @@ options_server <- function(id,
                 # Value `label` section of config for category
                 value = config_individual$label
               )
-              
+
               # Switch for defining groups (input$group_metadata)
               # Switch on if `groups` is not NULL
               print(glue("Update switch for {id}"))
               updateMaterialSwitch(
                 session,
                 inputId = "group_metadata",
-                value = 
+                value =
                   if (!is.null(config_individual$groups)) TRUE else FALSE
                 )
-              
+
               #### Create modules for each group #####
               # One module is already created by updateMaterialSwitch
               # if groups is not NULL
-              if (!is.null(config_individual$groups)){
-                n_groups <- length(config_individual$groups)
-                # If fields have already been created, delete all fields
-                # if (group_counter() > 1){
-                #   for (i in 2:group_counter()){
-                #     module_id <- glue("groups-{i}")
-                #     
-                #     # Check if groups_i has already been removed
-                #     if (!is.null(group_choices[[module_id]])){
-                #       removeUI(
-                #         # ID of container with ui is 
-                #         selector = glue("groups-{i}")
-                #       )
-                #       
-                #       # Remove module output from groups list
-                #       group_choices[[module_id]] <- NULL
-                #     }
-                #     
-                #   }
-                # }
-                
-                
-                # Determine number of modules to create. This depends on 
-                # the number of fields in the config file and the number of 
-                # group modules already created in the app (as defined by 
-                # group_counter)
-                
-                
-                # Additional modules are created if more than one group is read
-                # from the config file
-                if (n_groups > 1){
-                  # Also, check value of the module counter. If it is already
-                  # equal to the number of groups in the config file, 
-                  
-                  for (i in 2:n_groups){
-                    print("Create module")
-                    
-                    # Run exact same code as in #2.1.4 (will need to
-                    # re-structure groups model for this to work correctly)
-                    # Increase counter by one
-                    new_value <- group_counter() + 1
-                    group_counter(new_value)
-                    
-                    # Use the action button's value to create an id. 
-                    # Use group_counter() for ID creation
-                    nested_id <- glue("groups-{group_counter()}")
-                    
-                    # Add module UI
-                    # For arguments that reference an element by id that is not 
-                    # a Shiny input or output, namespacing must be used
-                    insertUI(
-                      selector = glue("#{ns('add_group')}"),
-                      where = "beforeBegin",
-                      # Namespacing should also be used to call the UI 
-                      # components of modules, but not the server component
-                      ui = 
-                        metadata_group_fields_ui(
-                          ns(nested_id),
-                          remove_button = TRUE,
-                          temp_choices = 
-                            str_sort(
-                              unique(object@meta.data[[category_name]]),
-                              numeric=TRUE
-                            )
-                        )
-                    )
-                    
-                    # Add module server instance
-                    module_output <- 
-                      metadata_group_fields_server(
-                        id = nested_id,
-                        possible_selections = category_values
-                        )
-                    
-                    # Store output in group_choices and use observe() to 
-                    # reactively update group_choices when the output changes
-                    observe(
-                      label = glue("Observer for {category_name}-{nested_id}"),
-                      {
-                        print("ID")
-                        print(id)
-                        print("Groups module ID")
-                        print(nested_id)
-                        print("Add new value to reactive list")
-                        group_choices[[nested_id]] <- 
-                          module_output()
-                        print("Done")
-                      })
-                    }
-                  }
-              }
+              
+              
+              # if (!is.null(config_individual$groups)){
+              #   n_groups <- length(config_individual$groups)
+              #   # If fields have already been created, delete all fields
+              #   # if (group_counter() > 1){
+              #   #   for (i in 2:group_counter()){
+              #   #     module_id <- glue("groups-{i}")
+              #   #
+              #   #     # Check if groups_i has already been removed
+              #   #     if (!is.null(group_choices[[module_id]])){
+              #   #       removeUI(
+              #   #         # ID of container with ui is
+              #   #         selector = glue("groups-{i}")
+              #   #       )
+              #   #
+              #   #       # Remove module output from groups list
+              #   #       group_choices[[module_id]] <- NULL
+              #   #     }
+              #   #
+              #   #   }
+              #   # }
+              # 
+              # 
+              #   # Determine number of modules to create. This depends on
+              #   # the number of fields in the config file and the number of
+              #   # group modules already created in the app (as defined by
+              #   # group_counter)
+              # 
+              # 
+              #   # Additional modules are created if more than one group is read
+              #   # from the config file
+              #   if (n_groups > 1){
+              #     # Also, check value of the module counter. If it is already
+              #     # equal to the number of groups in the config file,
+              # 
+              #     for (i in 2:n_groups){
+              #       print("Create module")
+              # 
+              #       # Run exact same code as in #2.1.4 (will need to
+              #       # re-structure groups model for this to work correctly)
+              #       # Increase counter by one
+              #       new_value <- group_counter() + 1
+              #       group_counter(new_value)
+              # 
+              #       # Use the action button's value to create an id.
+              #       # Use group_counter() for ID creation
+              #       nested_id <- glue("groups-{group_counter()}")
+              # 
+              #       # Add module UI
+              #       # For arguments that reference an element by id that is not
+              #       # a Shiny input or output, namespacing must be used
+              #       insertUI(
+              #         selector = glue("#{ns('add_group')}"),
+              #         where = "beforeBegin",
+              #         # Namespacing should also be used to call the UI
+              #         # components of modules, but not the server component
+              #         ui =
+              #           metadata_group_fields_ui(
+              #             ns(nested_id),
+              #             remove_button = TRUE,
+              #             temp_choices =
+              #               str_sort(
+              #                 unique(object@meta.data[[category_name]]),
+              #                 numeric=TRUE
+              #               )
+              #           )
+              #       )
+              # 
+              #       # Add module server instance
+              #       module_output <-
+              #         metadata_group_fields_server(
+              #           id = nested_id,
+              #           possible_selections = category_values
+              #           )
+              # 
+              #       # Store output in group_choices and use observe() to
+              #       # reactively update group_choices when the output changes
+              #       # observe(
+              #       #   label = glue("Observer for {category_name}-{nested_id}"),
+              #       #   {
+              #       #     print("ID")
+              #       #     print(id)
+              #       #     print("Groups module ID")
+              #       #     print(nested_id)
+              #       #     print("Add new value to reactive list")
+              #       #     group_choices[[nested_id]] <-
+              #       #       module_output()
+              #       #     print("Done")
+              #       #   })
+              #      }
+              #    }
+              # }
             }
-            
+
             })
       }
       
@@ -520,13 +448,7 @@ options_server <- function(id,
                  # groups: defined if the switch to group metadata is turned on, 
                  # and set to NULL otherwise.
                  `groups` = if (input$group_metadata == TRUE){
-                   # Uses the process_group_choices function to remove values 
-                   # representing deleted modules
-                   #process_group_choices(group_choices)
-                   lapply(
-                     group_choices,
-                     function(x) x
-                   )
+                   group_data()
                  } else NULL
             )
           })
