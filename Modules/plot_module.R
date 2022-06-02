@@ -84,6 +84,7 @@ plot_module_ui <- function(id,
                            color_by_feature_checkbox =  FALSE,
                            super_title_menu =           FALSE,
                            group_by_label =             FALSE,
+                           sort_groups_menu =           FALSE,
                            order_checkbox =             FALSE,
                            label_checkbox =             FALSE,
                            legend_checkbox =            FALSE,
@@ -308,6 +309,18 @@ plot_module_ui <- function(id,
           )
           }
       } else NULL,
+      
+      ## Order of groups (dot plots) ####
+      if (sort_groups_menu == TRUE){
+        selectInput(
+          inputId = ns("sort_groups"),
+          label = "Order of Groups on plot",
+          # Can select all options except "none"
+          choices = 
+            c("Ascending" = "ascending",
+              "Descending" = "descending")
+          )
+        } else NULL,
       
       ## Number of columns ####
       if (ncol_slider == TRUE){
@@ -1191,25 +1204,36 @@ plot_module_server <- function(id,
                  plot_selections <- 
                    list(
                      # Group_by
-                     `group_by` = reactive({
-                       if (!is.null(input$group_by)){
-                         input$group_by
-                         } else NULL
-                       }),
+                     `group_by` = 
+                       reactive({
+                         if (!is.null(input$group_by)){
+                           input$group_by
+                           } else NULL
+                         }),
                      
                      # Split_by
-                     `split_by` = reactive({
-                       if (!is.null(input$split_by)){
-                         input$split_by
-                         } else NULL
-                     }),
+                     `split_by` = 
+                       reactive({
+                         if (!is.null(input$split_by)){
+                           input$split_by
+                           } else NULL
+                         }),
                      
                      # Reduction
-                     `reduction` = reactive({
-                       if (!is.null(input$reduction)){
-                         input$reduction
-                       } else NULL
-                     }),
+                     `reduction` =
+                       reactive({
+                         if (!is.null(input$reduction)){
+                           input$reduction
+                           } else NULL
+                         }),
+                     
+                     # Re-order groups (dot plots)
+                     `sort_groups` = 
+                       reactive({
+                         if (isTruthy(input$sort_groups)){
+                           input$sort_groups
+                           } else NULL
+                         }),
                      
                      # Number of columns in multi-panel plot
                      # Special conditional used (in some cases ncol will still 
@@ -1903,7 +1927,7 @@ plot_module_server <- function(id,
                          # shiny_feature()
                          shiny_feature(
                            object = object(),
-                           features_entered = features_entered(), 
+                           features_entered = features(), 
                            assay_config = assay_config(),
                            # Group by: influences label placement
                            group_by = plot_selections$group_by(),
@@ -1959,7 +1983,7 @@ plot_module_server <- function(id,
                          # Violin plot using arguments relevant to shiny_vln()
                          shiny_vln(
                            object = object,
-                           features_entered = features_entered, 
+                           features_entered = features, 
                            group_by = plot_selections$group_by,
                            split_by = plot_selections$split_by,
                            show_legend = plot_selections$legend,
@@ -1977,16 +2001,17 @@ plot_module_server <- function(id,
                        label = glue("{plot_label}: Create Plot"),
                        {
                          shiny_dot(
-                           object = object,
+                           object = object(),
                            # Features argument: uses value returned by reactive
-                           features = features,
+                           features = features(),
                            # use_separate_features = 
                            #   reactive({input$use_separate_features}),
                            # separate_features = 
                            #   reactive({input$separate_features}),
-                           group_by = plot_selections$group_by,
-                           show_legend = plot_selections$legend,
-                           palette = palette
+                           group_by = plot_selections$group_by(),
+                           show_legend = plot_selections$legend(),
+                           palette = palette(),
+                           sort_groups = plot_selections$sort_groups()
                            )
                          })
                  } else if (plot_type == "scatter"){

@@ -57,8 +57,8 @@ shiny_feature <- function(object,
     need(
       length(Cells(object)) != 1,
       message = "Feature plot error: can't plot subsets with only one cell."
+      )
     )
-  )
   
   # Throw a silent exception if both share_scale and color_by_feature are TRUE
   # This combination produces an undesirable plot
