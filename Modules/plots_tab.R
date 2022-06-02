@@ -816,7 +816,34 @@ plots_tab_server <- function(id,
                        plots_s_sub
                        })
                  
-                 ## 3.3 Subset Summary Module ####
+                 ## 3.3 Check Subset ####
+                 # Return notifications if conditions are not met.
+                 observeEvent(
+                   subset(),
+                   ignoreNULL = FALSE,
+                   ignoreInit = TRUE,
+                   {
+                     if (!is.null(subset())){
+                       # Error A: Subset Only Contains one Cell
+                       if (length(Cells(subset())) == 1){
+                         showNotification(
+                           ui = 
+                             icon_notification_ui_2(
+                               icon = "exclamation-triangle",
+                               # Change to feature when other 
+                               # features are supported
+                               "Only one cell is present in the current subset.
+                               Plots may not draw correctly."
+                             ),
+                           #Show notification for 8 seconds
+                           duration = 8,
+                           session=session
+                         )
+                       }
+                     }
+                   })
+                 
+                 ## 3.4 Subset Summary Module ####
                  # Computes and exports the unique metadata values in the 
                  # current subset/object
                  subset_summary_server(

@@ -81,6 +81,14 @@ shiny_umap <- function(object,
       message = ""
       )
     )
+  
+  # Also throw an error when a subset only contains one cell
+  validate(
+    need(
+      length(Cells(object)) != 1,
+      message = "DimPlot error: can't plot subsets with only one cell."
+    )
+  )
 
   # Palette: must determine number of colors to create from provided palette
   # The number of colors is equal to the number of unique values in 

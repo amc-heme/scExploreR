@@ -233,25 +233,14 @@ corr_tab_server <- function(id,
                        # Show spinners if the submit button is pressed and a 
                        # feature has been selected (requirement to begin 
                        # calculation)
-                       
-                       # Test if the input is null separately from it being an
-                       # empty string (input$feature_selection is not 
-                       # initialized when a new dataset is loaded, which will 
-                       # cause errors with the conditional testing if it is an 
-                       # empty string, which is the value of 
-                       # input$feature_selection when it exists and no features 
-                       # have been entered)
                        log_session(session)
                        log_info("Corr tab: Submit button pressed")
+                       
                        if (isTruthy(input$feature_selection)){
                          log_info("Displaying spinners")
                          sidebar_spinner$show()
                          main_spinner$show()
-                       } else {
-                         # If the submit button is pressed without specifying
-                         # a feature, notify the user 
-                         
-                       }
+                       } 
                        
                        # Always return value of submit button
                        input$submit
