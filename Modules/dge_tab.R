@@ -390,7 +390,7 @@ dge_tab_server <- function(id,
                          # Explicitly coerce to tibble
                          as_tibble() %>%
                          # remove stat and auc from the output table
-                         select(-c(statistic, auc)) %>%
+                         select(-c(statistic, pval, auc)) %>%
                          # Using magrittr pipes here because the following
                          # statement doesn't work with base R pipes
                          # remove negative logFCs if box is checked
@@ -398,7 +398,7 @@ dge_tab_server <- function(id,
                          # Arrange in ascending order for padj, pval (lower
                          # values are more "significant"). Ascending order is
                          # used for the log fold-change
-                         arrange(padj, pval, desc(abs(logFC)))
+                         arrange(padj, desc(abs(logFC)))
                        
                        log_session(session)
                        log_info("DGE Tab: Completed Presto ")
@@ -427,7 +427,7 @@ dge_tab_server <- function(id,
                          rownames = FALSE
                          ) %>%
                          #Use 5 sig figs (3 or more is sufficient)
-                         formatSignif(3:8, 5)
+                         formatSignif(3:7, 5)
                        })
 
                  ## 3.8. UMAP of DE Selected Groups
