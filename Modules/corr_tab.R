@@ -243,13 +243,15 @@ corr_tab_server <- function(id,
                        # have been entered)
                        log_session(session)
                        log_info("Corr tab: Submit button pressed")
-                       if(!is.null(input$feature_selection)){
-                         if (input$feature_selection != ""){
-                           log_info("Displaying spinners")
-                           sidebar_spinner$show()
-                           main_spinner$show()
-                           }
-                         }
+                       if (isTruthy(input$feature_selection)){
+                         log_info("Displaying spinners")
+                         sidebar_spinner$show()
+                         main_spinner$show()
+                       } else {
+                         # If the submit button is pressed without specifying
+                         # a feature, notify the user 
+                         
+                       }
                        
                        # Always return value of submit button
                        input$submit
@@ -342,8 +344,32 @@ corr_tab_server <- function(id,
                    {
                      #print("3.3. Continuation Conditional")
                      if (object_init() == FALSE){
-                       # If object_init == FALSE, continue with DGE calculations
-                       continue$trigger()
+                       # If object_init == FALSE,
+                       # test if features are entered
+                       if (isTruthy(input$feature_selection)){
+                         # Continue if a feature is entered
+                         continue$trigger()
+                       } else {
+                         # If a feature is not set, do not continue, 
+                         # and hide spinners.
+                         sidebar_spinner$hide()
+                         main_spinner$hide()
+                         
+                         # Also, notify the user.
+                         showNotification(
+                           ui = 
+                             icon_notification_ui_2(
+                               icon = "exclamation-triangle",
+                               # Change to feature when other 
+                               # features are supported
+                               "A gene must be specified to 
+                                 recieve correlation results."
+                             ),
+                           #Show notification for 3 seconds
+                           duration = 3,
+                           session=session
+                         )
+                       }
                      } else {
                        # If object_init == TRUE, do not continue.
                        
@@ -575,12 +601,10 @@ corr_tab_server <- function(id,
                  
                  # 4. Correlations UI ------------------------------------------
                  ## 4.1. Main Panel UI ####
-                 # IgnoreNULL set to false to get UI to render at start up
                  main_panel_ui <- 
                    eventReactive(
                      submit_button(),
                      label = "Corr: Main UI",
-                     #ignoreNULL = FALSE, 
                      {
                        #print("C.4.1: Main UI")
                        # UI: if the feature selection menu is empty (default 
@@ -588,13 +612,9 @@ corr_tab_server <- function(id,
                        # isTruthy will cover a variety of possible scenarios
                        # ("" or NULL). This is the same test used by req()
                        if (!isTruthy(input$feature_selection)){
-                         tags$h3("Enter a feature and press submit to 
-                         view correlated features. You may also 
-                         specify restriction criteria using the 
-                                 dropdown menus.")
+                         NULL
                          } else {
-                           # If a feature has been defined, display the table
-                           # UI to display 
+                           # If a feature has been defined, generate table UI
                            tagList(
                              tags$h2(
                              glue("Correlation Analysis for 
@@ -619,13 +639,13 @@ corr_tab_server <- function(id,
                              # Correlations table and plots
                              tags$h3(
                                "Correlated Genes",
-                               class="center"
+                               class = "center"
                                ),
                              
                              # Table: rendered inline 
                              div(
-                               class="two-column",
-                               style="width: 40%; float: left;",
+                               class = "two-column",
+                               style = "width: 40%; float: left;",
                                tags$strong(
                                  "Correlation Table", 
                                  class="center single-space-bottom"
@@ -639,8 +659,8 @@ corr_tab_server <- function(id,
                              # Scatterplot: only appears after the user makes 
                              # a selection on the table
                              div(
-                               class="two-column",
-                               style="width: 60%; float: right;",
+                               class = "two-column",
+                               style = "width: 60%; float: right;",
                                # UI for scatterplot rendered in 
                                # separate eventReactive function
                                uiOutput(

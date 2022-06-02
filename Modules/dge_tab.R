@@ -370,9 +370,9 @@ dge_tab_server <- function(id,
                  ## 3.6. Run Presto
                  dge_table_content <-
                    eventReactive(
-                     # Chose the first reactive variable in the subset stats list
-                     # (all are updated simultaneously, and it is desired for
-                     # presto to run after stats are computed)
+                     # Chose the first reactive variable in the subset stats
+                     # list (all are updated simultaneously, and it is desired
+                     # for presto to run after stats are computed)
                      continue$depend(),
                      label = "DGE: Run Presto",
                      ignoreNULL = FALSE,
