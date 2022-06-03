@@ -962,6 +962,8 @@ plot_module_server <- function(id,
                    if (plot_type == "feature"){
                      feature_plot_custom_title <-
                        reactive({
+                         # Only continue if menu_type is not NULL (when custom
+                         # titles is selected)
                          req(menu_type())
                          
                          if (input$title_settings == "custom"){

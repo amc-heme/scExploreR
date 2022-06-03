@@ -44,6 +44,7 @@ multi_text_input_server <- function(id,
         reactive({
           # UI: for each split by category, a text box 
           # with a reset button beside it
+          click("update")
           tagList(
             lapply(
               1:length(default_vector()),
@@ -133,37 +134,6 @@ multi_text_input_server <- function(id,
               },
               default_vector()
             )
-          
-          # for (i in 1:length(groups_vector())){
-          #   print("Observer creation")
-          #   print(glue("i = {i}"))
-          #   print(
-          #     glue(
-          #       'eventExpr = input[[{paste0("multi_entry_reset", as.character(i))}]]'
-          #     )
-          #   )
-          #   
-          #   rv$observers[[as.character(i)]] <-
-          #     observeEvent(
-          #       # Observer responds to the individual reset button 
-          #       # of text field i
-          #       input[[paste0("multi_entry_reset", as.character(i))]],
-          #       label = 
-          #         glue("multi_entry Reset Button: Field {as.character(i)}"),
-          #       ignoreNULL = FALSE,
-          #       ignoreInit = TRUE,
-          #       {
-          #         print("Reset observer triggered")
-          #         print(glue("ID: {id}"))
-          #         print(glue("Observer {as.character(i)}"))
-          #         updateTextInput(
-          #           session = session,
-          #           inputId = paste0("entry", as.character(i)),
-          #           value = groups_vector()[i]
-          #         )
-          #       })
-          #   
-          # }
         })
       
       # Observer for Reset All Button ####
@@ -203,16 +173,16 @@ multi_text_input_server <- function(id,
                   
                   # If input i is defined, return the input
                   if (!is.null(input[[id]])){
-                    input[[id]]
+                    return(input[[id]])
                   } else {
                     # Otherwise, return the default entry for position i,
                     # as defined in groups_vector()
-                    default_vector()[i]
+                    return(default_vector()[i])
                   }
                   
                 })
             } else {
-              NULL
+              return(NULL)
             }
           })
       
