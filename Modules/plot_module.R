@@ -578,9 +578,6 @@ plot_module_ui <- function(id,
 #' module) should be ran. This should be TRUE for all plots where the user can 
 #' enter features that apply just to that plot.
 #'
-#' @return
-#' @export
-#'
 #' @examples
 plot_module_server <- function(id,
                                object, #Reactive
@@ -598,7 +595,6 @@ plot_module_server <- function(id,
                                lim_orig = lim_orig, #Reactive
                                palette = NULL, #Reactive
                                metadata_config = NULL,
-                               #Currently only needed for feature plots
                                assay_config = NULL,
                                separate_features_server = FALSE #Non-reactive
                                ){
@@ -1855,8 +1851,8 @@ plot_module_server <- function(id,
                  ## 9.2. Construct Plot ####
                  # Plot created based on the type specified when this server 
                  # function is called
-                 ### 9.2.1. DimPlot ####
                  if (plot_type == "dimplot"){
+                   ### 9.2.1. DimPlot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -1917,8 +1913,8 @@ plot_module_server <- function(id,
                            )
                      })
                    
-                   ### 9.2.2. Feature Plot ####
                  } else if (plot_type == "feature") {
+                   ### 9.2.2. Feature Plot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -1974,27 +1970,28 @@ plot_module_server <- function(id,
                            )
                          })
                    
-                   ### 9.2.3 Violin Plot ####
                  } else if (plot_type == "violin") {
+                   ### 9.2.3 Violin Plot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
                          # Violin plot using arguments relevant to shiny_vln()
                          shiny_vln(
-                           object = object,
-                           features_entered = features, 
-                           group_by = plot_selections$group_by,
-                           split_by = plot_selections$split_by,
-                           show_legend = plot_selections$legend,
-                           ncol = plot_selections$ncol,
-                           assay_config = assay_config,
-                           palette = palette
+                           object = object(),
+                           features_entered = features(), 
+                           group_by = plot_selections$group_by(),
+                           split_by = plot_selections$split_by(),
+                           show_legend = plot_selections$legend(),
+                           ncol = plot_selections$ncol(),
+                           assay_config = assay_config(),
+                           palette = palette(),
+                           sort_groups = plot_selections$sort_groups()
                            )
                        })
                    
-                   ### 9.2.4. Dot Plot ####
                  } else if (plot_type == "dot") {
+                   ### 9.2.4. Dot Plot ####
                    # Dot plot using arguments relevant to shiny_dot()
                    plot <- 
                      reactive(

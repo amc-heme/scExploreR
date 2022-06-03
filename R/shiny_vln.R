@@ -20,33 +20,57 @@ shiny_vln <- function(
   show_legend, # Reactive
   ncol, # Reactive
   assay_config, # Reactive
-  palette #Reactive
+  palette, #Reactive
+  sort_groups = NULL
 ){
+  # Default value of sort_groups: set to "ascending" if groups is NULL
+  if (is.null(sort_groups)){
+    sort_groups <- "ascending"
+  }
+  
   # At least one feature must be entered to avoid errors when computing plot
-  if (length(features_entered()) > 0){
+  if (length(features_entered) > 0){
+    
     # validate will keep plot code from running if the subset 
     # is NULL (no cells in subset)
     validate(
       need(
-        if (is.reactive(object)) object() else object,
+        object,
         # No message displayed (a notification is already displayed) 
         # (*was displayed*)
         message = ""
       )
     )
     
-    # Make function reactive-agnostic (will use either a non-reactive object, 
-    # or a reactive object unpacked to a non-reactive variable within 
-    # this function) 
-    if (is.reactive(object)){
-      object <- object()
-      } 
+    # Sort group_by levels by default 
+    # Plot groups in ascending or descending order by group name
+    object@meta.data[[group_by]] <-
+      # factor() creates a factor if the metadata category is not a factor
+      # already, and re-orders a factor if it already exists.
+      factor(
+        object@meta.data[[group_by]],
+        levels = 
+          object@meta.data[[group_by]] |> 
+          unique() |> 
+          str_sort(
+            numeric = TRUE,
+            # For violin plots, groups plot from left to right in same order
+            # vector levels appear (therefore ascending should use
+            # deceasing = FALSE)
+            decreasing = 
+              if (sort_groups == "ascending"){
+                FALSE
+              } else if (sort_groups == "descending"){
+                TRUE
+              }
+          )
+      )
     
     # Palette: must determine number of colors to create from provided palette
     # The number of colors is equal to the number of unique values in 
     # the group.by category
     n_colors <- 
-      object@meta.data[[group_by()]] |>
+      object@meta.data[[group_by]] |>
       unique() |> 
       length()
     
@@ -54,25 +78,25 @@ shiny_vln <- function(
       VlnPlot(
         # Object or subset
         object,
-        features = features_entered(),
-        group.by = group_by(),
+        features = features_entered,
+        group.by = group_by,
         # Split.by: NULL if user selects "none", otherwise equal 
         # to user selection
-        split.by = if (split_by() == "none") NULL else split_by(),
+        split.by = if (split_by == "none") NULL else split_by,
         # Cols: use user defined palette, or the defaults if palette() == NULL 
         cols = 
-          if (!is.null(palette())){
+          if (!is.null(palette)){
             # colorRampPalette() extends or contracts the given palette to 
             # produce exactly the required number of colors
-            colorRampPalette(palette())(n_colors)
+            colorRampPalette(palette)(n_colors)
             # Use ggplot2 defaults if palette() is unspecified
           } else NULL, 
         # ncol: use value of ncol defined in plot_module when more than
         # one feature is entered
-        ncol = if (length(features_entered())==1) NULL else ncol()
+        ncol = if (length(features_entered)==1) NULL else ncol
         ) +
       # Legend position: "right" if a legend is desired, and "none" if not
-      theme(legend.position = if (show_legend()==TRUE) "right" else "none")
+      theme(legend.position = if (show_legend==TRUE) "right" else "none")
     
     
     # Correct titles: change machine-readable name to human-readable name

@@ -40,11 +40,11 @@ shiny_dot <-
                 if (sort_groups == "ascending"){
                   TRUE
                 } else if (sort_groups == "descending"){
-                    FALSE
-                  }
-              )
-          )
-
+                  FALSE
+                }
+            )
+        )
+      
       #Create plot if at least one feature is passed to shiny_dot()
       plot <- 
         DotPlot(
@@ -59,8 +59,10 @@ shiny_dot <-
           legend.position = if (show_legend == TRUE) "right" else "none"
           ) +
         # Rename colorbar legend to "Mean-centered average expression"
-        guides(
-          `color` = guide_colorbar(title = 'Mean-centered\nAverage Expression')
+        suppressMessages(
+          guides(
+            `color` = guide_colorbar(title = 'Mean-centered\nAverage Expression')
+          )
         )
       
       # If a palette is defined, apply it to the plot
