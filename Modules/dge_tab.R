@@ -114,7 +114,8 @@ dge_tab_server <- function(id,
                            unique_metadata,
                            meta_choices,
                            valid_features,
-                           object_trigger
+                           object_trigger,
+                           error_list
                            ){
   moduleServer(id,
                 function(input,output,session){
@@ -202,7 +203,8 @@ dge_tab_server <- function(id,
                      {
                        # Hide the main panel UI while calculations are performed
                        # print(glue("hiding {ns('main_panel_ui')}"))
-                       hideElement(id = ns("main_panel_ui"))
+                       # Do not namespace IDs for hideElement 
+                       hideElement(id = "main_panel_ui")
 
                        # Display spinners
                        log_session(session)
@@ -291,22 +293,62 @@ dge_tab_server <- function(id,
                      label = "DGE: Subset",
                      ignoreNULL = FALSE,
                      {
-                       # If object_init == TRUE, set the subset equal to 
-                       # the full object
-                       if (object_init() == TRUE){
-                         subset <- object()
-                       } else {
-                         # Otherwise, create subset from selections and return
-                         subset <-
-                           make_subset(
-                             object = object,
-                             criteria_list = dge_subset_criteria(),
-                             user_string = subset_selections$user_string
+                       subset <- 
+                         tryCatch(
+                           error = function(cnd){
+                             # If the user has entered an advanced subsetting
+                             # string, log what was entered
+                             log_info("Error in dge tab subsetting.")
+                             if (
+                               !is.null(subset_selections$user_string())
+                               ){
+                               log_info("Advanced subsetting: TRUE.")
+                               log_info("String entered by user:")
+                               log_info(subset_selections$user_string())
+                             } else {
+                               log_info("Advanced subsetting: FALSE.")
+                             }
+                             
+                             # Use error_handler to display notification to user
+                             error_handler(
+                               session,
+                               cnd_message = cnd$message,
+                               # Uses a list of
+                               # subset-specific errors
+                               error_list = error_list$subset_errors
                              )
-                       }
+                             
+                             # Hide the spinners
+                             main_spinner$hide()
+                             sidebar_spinner$hide()
+                             
+                             # Return NULL for subset to 
+                             # discontinue downstream calculations
+                             NULL
+                           },
+                           # Begin tryCatch code
+                           {
+                             # If object_init == TRUE, return the full object
+                             if (object_init() == TRUE){
+                               return(object())
+                               } else {
+                                 # Otherwise, create subset from 
+                                 # selections and return
+                                 return(
+                                   make_subset(
+                                     object = object(),
+                                     criteria_list = 
+                                       dge_subset_criteria(),
+                                     user_string = 
+                                       subset_selections$user_string()
+                                   )
+                                 )
+                               }
+                             }
+                           )
 
                        # Return subset from eventReactive
-                       return(subset)
+                       subset
                        })
 
                  ## TEMP: Check Memory usage after making subset
@@ -671,8 +713,8 @@ dge_tab_server <- function(id,
                    umap_options(),
                    label = "DGE: Hide Spinner",
                    {
-                     #Show UI
-                     showElement(id = ns("main_panel_ui"))
+                     #Show UI (do not namespace ID for showElement)
+                     showElement(id = "main_panel_ui")
                      #Hide spinners
                      sidebar_spinner$hide()
                      main_spinner$hide()

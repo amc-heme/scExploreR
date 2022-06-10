@@ -706,7 +706,7 @@ plots_tab_server <- function(id,
                  # to other modules
                  # With reactive objects, a new module must be created for each 
                  # object to avoid collisions between subset menu ID's. 
-                 plots_subset_selections <-
+                 subset_selections <-
                    subset_selections_server(
                      id = "subset_selections",
                      object = object,
@@ -758,22 +758,31 @@ plots_tab_server <- function(id,
 
                        plots_s_sub <-
                          tryCatch(
-                           error=function(cnd){
+                           error = function(cnd){
                              # Return errors to user using notifications
                              # If an error is caught: the function below
                              # determines the type of error by inspecting
                              # message text with grepl (not recommended,
                              # but I currently don't know any other way to
                              # catch this error type)
+
+                             # If the user has entered an advanced subsetting
+                             # string, log what was entered
+                             log_info("Error in plots tab subsetting.")
+                             if (!is.null(subset_selections$user_string())){
+                               log_info("Advanced subsetting: TRUE.")
+                               log_info("String entered by user:")
+                               log_info(subset_selections$user_string())
+                             } else {
+                               log_info("Advanced subsetting: FALSE.")
+                             }
+
                              error_handler(
                                session,
                                cnd_message = cnd$message,
                                # Uses a list of
                                # subset-specific errors
-                               error_list = error_list,
-                               # Id prefix for the
-                               # notification elements
-                               id_prefix = ns("")
+                               error_list = error_list$subset_errors
                                )
 
                              # Return "NULL" for subset when an
@@ -786,7 +795,7 @@ plots_tab_server <- function(id,
                              if (object_init() == TRUE){
                                # if object_init is TRUE, return the full object
                                # instead of subsetting. Also set object_init
-                               # back to FALSE. 
+                               # back to FALSE.
                                object_init(FALSE)
                                plots_s_sub <- object()
                              } else {
@@ -794,18 +803,12 @@ plots_tab_server <- function(id,
                                # subset selections module as `criteria_list`.
                                plots_s_sub <-
                                  make_subset(
-                                   object,
-                                   # plots_subset_selections is a reactive 
-                                   # expression inside another reactive 
-                                   # expression (the eventReactive in 3.1). Must
-                                   # extract from eventReactive before passing 
-                                   # it to the function, which will extract the
-                                   # reactive inside
-                                   criteria_list = 
-                                     plots_subset_selections$selections,
-                                   user_string = 
-                                     plots_subset_selections$user_string
-                                 )
+                                   object(),
+                                   criteria_list =
+                                     subset_selections$selections(),
+                                   user_string =
+                                     subset_selections$user_string()
+                                   )
                                }
                              }
                            )#End tryCatch

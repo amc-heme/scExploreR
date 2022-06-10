@@ -178,51 +178,117 @@ continuous_palettes <-
 # Errors are defined in a list using the functions in "./R/error_handling.R". 
 # The error_handler() function is executed in a tryCatch() statement and checks
 # the error message returned against a list of errors.
-## List of errors for subset operations ####
-error_list <- list(
-  add_error_notification(
-    message="cannot allocate vector of size",
-    notification_ui=icon_notification_ui_2(
-      icon_name = "skull-crossbones",
-      tagList(
-        "Memory Error: RAM is insufficient for analyzing the specified subset. 
-        Please narrow down the subset scope using the restriction criteria to 
-        the left, and feel free to", 
-        github_link(display_text = "let us know"),
-        " ", # Space after link
-        "if you repeatedly recieve this error.") #End tagList
-      ), # End icon_notification_ui
-    notification_id = "mem_error"
-    ), # End add_error_notification
-  
-  # Error 2: Vector memory exhausted
-  add_error_notification(
-    message="vector memory exhausted",
-    notification_ui=icon_notification_ui_2(
-      icon_name = "skull-crossbones",
-      "Error: vector memory exhausted. If this issue persists, please ",
-      github_link("contact us"),
-      " with a screenshot of the response criteria selected. For now, narrowing 
-      down the subset criteria may resolve the error."
-      ), # End icon_notification_ui
-    notification_id = "vector_mem_error"
-),
 
-# Error 3: No Cells in Subset
-add_error_notification(
-  message = "No cells found",
-  icon_notification_ui_2(
-    icon_name = "skull-crossbones",
-    "No cells were found matching the defined subset criteria. Please check the 
-    subset dropdowns for mutually exclusive selections. If you recieve this error 
-    for combinations that should be valid, please",
-    github_link("let us know"),
-    # Period at end of link
-    "."
-    ), # End icon_notification_ui
-  notification_id = "no_cells_found"
-  )# End add_error_notification
-)# End list of error definitions (subset_errors)
+## List of errors ####
+# A multi-level list with sub-lists of errors for specific context.
+# Different sub-lists are used in different tryCatch statements
+error_list <- 
+  list(
+    `subset_errors` = 
+      list(
+        error_data(
+          message = "cannot allocate vector of size",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              tagList(
+                "Memory Error: RAM is insufficient for analyzing the specified 
+                subset. Please narrow down the subset scope using the 
+                restriction criteria to the left, and feel free to", 
+                github_link(display_text = "let us know"),
+                " ", # Space after link
+                "if you repeatedly recieve this error.") #End tagList
+            ), # End icon_notification_ui
+          notification_id = "subset_error_1"
+        ), # End error_data
+        
+        # Error 2: Vector memory exhausted
+        error_data(
+          message = "vector memory exhausted",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "Error: vector memory exhausted. If this issue persists, please ",
+              github_link("contact us"),
+              " with a screenshot of the response criteria selected. For now, 
+              narrowing down the subset criteria may resolve the error."
+            ), # End icon_notification_ui
+          notification_id = "subset_error_2"
+        ),
+        
+        # Error 3: No Cells in Subset
+        error_data(
+          message = "No cells found",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "No cells were found matching the defined subset criteria. Please 
+              check the subset dropdowns for mutually exclusive selections. If
+              you recieve this error for combinations that should be valid, 
+              please",
+              github_link("let us know"),
+              # Period at end of link
+              "."
+            ), # End icon_notification_ui
+          notification_id = "subset_error_3"
+          ),
+        
+        # Error 4: User-defined subset string has unclosed parentheses
+        error_data(
+          message = "unexpected end of input",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "Invalid format for string subsetting entry. Please check that all 
+              opened parentheses have been closed and try again. If the issue
+              persists, please email us with the following information:",
+              tags$br(),
+              "1. The entry in the string subsetting text box",
+              tags$br(),
+              "2. The desired subset, or question that prompted the selection of
+              this subset"
+              ),
+          notification_id = "subset_error_4"
+          ),
+        
+        # Error 5: User-defined subset string has incomplete string
+        error_data(
+          message = "INCOMPLETE_STRING",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "String subsetting entry has an incomplete string. Please make 
+              sure all opening quotation marks have a matching closing quotation
+              and try again. If the issue persists, please email us with the 
+              following information:",
+              tags$br(),
+              "1. The entry in the string subsetting text box",
+              tags$br(),
+              "2. The desired subset, or question that prompted the selection of
+              this subset"
+            ),
+          notification_id = "subset_error_5"
+        ),
+        
+        # Error 6: User-defined subset string uses improper formatting (generic)
+        error_data(
+          message = "unexpected",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "Invalid format for string subsetting entry. Please check your 
+              entry and try again. If the issue persists, please email us with 
+              the following information:",
+              tags$br(),
+              "1. The entry in the string subsetting text box",
+              tags$br(),
+              "2. The desired subset, or question that prompted the selection of 
+              this subset"
+              ),
+          notification_id = "subset_error_6"
+        )
+      ) # End subset error sub-list
+    )# End list of error definitions
 
 # Datasets: a list of available datasets with paths to object and config files,
 # as well as a description
@@ -1020,7 +1086,8 @@ server <- function(input, output, session){
         unique_metadata = unique_metadata,
         meta_choices = meta_choices,
         valid_features = valid_features,
-        object_trigger = dataset_change
+        object_trigger = dataset_change,
+        error_list = error_list
       )
       
       # Add current key to list of modules created so module is not re-created
