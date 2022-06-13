@@ -649,7 +649,6 @@ plot_module_server <- function(id,
                    observe({
                      # Adds reactive dependency on input$title_settings
                      if (isTruthy(input$title_settings)){
-                       print("Custom title conditional")
                        # Variable below is set to TRUE when custom titles 
                        # are possible
                        enable_custom = FALSE

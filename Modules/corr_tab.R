@@ -293,7 +293,7 @@ corr_tab_server <- function(id,
                      ignoreNULL = FALSE,
                      ignoreInit = TRUE,
                      {
-                       print("3.1. Show Spinners")
+                       #print("3.1. Show Spinners")
                        # Show spinners if the submit button is pressed and a 
                        # feature has been selected (requirement to begin 
                        # calculation)
@@ -329,7 +329,7 @@ corr_tab_server <- function(id,
                        }
                      )
                  
-                 ## 3.2 Define gene to display in UI
+                 ## 3.2 Define gene to display in UI ####
                  # The gene to display is equal to the feature selected
                  # when the submit button is pressed. 
                  corr_header_gene <-
@@ -379,7 +379,7 @@ corr_tab_server <- function(id,
                      ignoreNULL = FALSE,
                      ignoreInit = TRUE,
                      {
-                       print("3.3 make subset")
+                       #print("3.3 make subset")
                        
                        subset <- 
                          tryCatch(
@@ -472,7 +472,7 @@ corr_tab_server <- function(id,
                    # Does not work properly when ignoreInit == TRUE
                    ignoreInit = FALSE,
                    {
-                     print("3.4. Continuation Conditional")
+                     # print("3.4. Continuation Conditional")
                      
                      # Continue only if the conditions below are met
                      if (
@@ -524,11 +524,7 @@ corr_tab_server <- function(id,
                      ignoreInit = TRUE,
                      label = "Corr: Determine if Object is a Subset",
                      {
-                       print("3.5 is_subset")
-                       print("Value of subset_error")
-                       print(subset_error())
-                       print("Subset")
-                       print(subset())
+                       # print("3.5 is_subset")
                        
                        # Print an error if the subset does not exist or is NULL
                        validate(
@@ -575,7 +571,7 @@ corr_tab_server <- function(id,
                      {
                        log_session(session)
                        log_info("Corr tab: Begin correlation computations")
-                       print("3.7 Compute Correlation Tables")
+                       # print("3.7 Compute Correlation Tables")
                        if (is_subset() == TRUE){
                          # Subset is selected: compute tables for full object 
                          # and subset, then merge
@@ -639,7 +635,7 @@ corr_tab_server <- function(id,
                      label = "Corr: DT Content",
                      ignoreNULL = FALSE,
                      {
-                       print("3.8. DT Table")
+                       # print("3.8. DT Table")
                        # Define header for datatable using HTML
                        if (is_subset() == TRUE){
                          # If a subset is selected, the header will have three 
@@ -727,7 +723,7 @@ corr_tab_server <- function(id,
                    ignoreNULL = FALSE,
                    ignoreInit = TRUE,
                    {
-                     print("3.9. Hide spinners")
+                     # print("3.9. Hide spinners")
                      # Hide loading screen
                      main_spinner$hide()
                      sidebar_spinner$hide()

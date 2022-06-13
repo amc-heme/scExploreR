@@ -656,8 +656,18 @@ subset_selections_server <- function(id,
           # (which is the case before the checkbox is selected), return NULL 
           # for the string
           if(isTruthy(input$adv_subset)){
-            # If the subset string entry is defined, record the value
-            return(input$adv_subset)
+            # If the subset string entry is defined, test for newlines.
+            
+            # If newline characters exist in the string, remove them.
+            if (grepl("\\n", input$adv_subset)){
+              # gsub used to remove newline characters
+              return_string <- gsub("\\n", "", input$adv_subset)
+            } else {
+              return_string <- input$adv_subset
+            }
+            
+            # Return the result to user_string
+            return(return_string)
           } else {
             return(NULL)
           }
