@@ -75,15 +75,18 @@ make_subset <- function(object,
   }
   
   # String Subsetting
-  # If string subsetting is enabled, user_string will be defined.
-  if (!is.null(user_string)){
-    # When defined, sdd user string in parentheses and link it to conditionals 
-    # in subset string with "&" operator
+  # If string subsetting is enabled, user_string will be defined, but it may 
+  # be equal to "". This will cause errors in the concatenation below due to 
+  # the creation of an "&" operator before parentheses with no 
+  if (isTruthy(user_string)){
+    # Add the user-defined string in parentheses with an "&" 
+    # operator if it is defined and not equal to "". 
     subset_str <- glue('{subset_str} & ({user_string})')
   }
   
   # Subset using the subset string 
-  subset <- eval(parse(text=paste0("subset(object, subset = ", subset_str, ")")))
+  subset <- 
+    eval(parse(text=paste0("subset(object, subset = ", subset_str, ")")))
   
   # Re-level factors in subset: test every metadata category to see if it 
   # is a factor

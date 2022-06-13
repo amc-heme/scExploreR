@@ -657,14 +657,20 @@ subset_selections_server <- function(id,
           # for the string
           if(isTruthy(input$adv_subset)){
             # If the subset string entry is defined, test for newlines.
+            print("string entered")
+            print(input$adv_subset)
             
             # If newline characters exist in the string, remove them.
             if (grepl("\\n", input$adv_subset)){
+              print("Newline detected")
               # gsub used to remove newline characters
               return_string <- gsub("\\n", "", input$adv_subset)
             } else {
               return_string <- input$adv_subset
             }
+            
+            print("corrected string")
+            print(return_string)
             
             # Return the result to user_string
             return(return_string)
