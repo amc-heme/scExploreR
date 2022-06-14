@@ -419,7 +419,8 @@ subset_selections_server <- function(id,
                 # the disabled values (though there should not be any selected
                 # choices)
                 selected = 
-                  input[[category_id]][!input[[category_id]] %in% invalid_choices],
+                  input[[category_id]][
+                    !input[[category_id]] %in% invalid_choices],
                 choicesOpt = 
                   list(
                     disabled = disable_boolean,
