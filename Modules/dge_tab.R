@@ -131,7 +131,7 @@ dge_tab_server <- function(id,
                            ){
   moduleServer(
     id,
-    function(input,output,session){
+    function(input, output, session){
       # Server namespace function: for dynamic UI and modules
       ns <- session$ns
       
@@ -161,6 +161,7 @@ dge_tab_server <- function(id,
           )
       
       # 1. Process Selections for DGE Test --------------------------
+      # 1.1. Selections for DGE Test
       test_selections <-
         dge_test_selection_server(
           id = "test_selections",
@@ -168,7 +169,7 @@ dge_tab_server <- function(id,
           unique_metadata = unique_metadata,
           metadata_config = metadata_config,
           meta_choices = meta_choices
-        )
+          )
 
       # 2. Process Subset Selection Options -------------------------
       ## 2.1. Process group_by category from test_selections
@@ -194,13 +195,14 @@ dge_tab_server <- function(id,
           meta_categories = meta_categories,
           valid_features = valid_features,
           hide_menu = group_by_category
-        )
+          )
 
       # 3. Calculations ran after submit button is pressed ----------
       # Includes table, stats, and UMAP
       # Subset criteria (3.1) processed first,
       # UMAP (3.6) processed last
-      ## 3.1. Process Submit button input
+      
+      ## 3.1. Process Submit button input ####
       # Pass value of action button to nested modules
       # to control reactivity
       submit_button <-
@@ -233,7 +235,36 @@ dge_tab_server <- function(id,
             submit_button()
           })
       
-      ## 3.2. Define subset criteria
+      ## 3.2. Determine if Metaclusters are Requested ####
+      # This reactive expression saves the need to include the conditional 
+      # statements within each time they are needed during the DGE computation
+      metaclusters_present <- 
+        eventReactive(
+          show_spinner(),
+          label = "DGE: Determine if Metaclusters are present",
+          # All reactives in 3. must run at startup for output to be
+          # properly generated (endless spinner results otherwise)
+          # TODO: switch ignoreInit to TRUE and try un-suspending the dge table
+          ignoreInit = FALSE,
+          {
+            #print("DGE 3.2: metaclusters_present")
+            # Return TRUE when all conditions below are met
+            if (test_selections()$dge_mode == "mode_dge"){
+              if (!is.null(test_selections()$group_1) &
+                  !is.null(test_selections()$group_2)){
+                # At least one group must have more than one 
+                # member to create metaclusters 
+                if (length(test_selections()$group_1) > 1 |
+                    length(test_selections()$group_2) > 1){
+                  return(TRUE)
+                }
+              }
+            }
+            
+            FALSE
+          })
+      
+      ## 3.3. Define subset criteria ####
       # Combines outputs from test selection and subset selection
       # modules. The subset criteria are used both in the
       # make_subset() function and the subset stats module (the
@@ -241,12 +272,14 @@ dge_tab_server <- function(id,
       # as input)
       dge_subset_criteria <-
         eventReactive(
-          show_spinner(),
+          metaclusters_present(),
           label = "DGE: Subset Criteria",
           # All reactives in 3. must run at startup for output to be
           # properly generated (endless spinner results otherwise)
           ignoreInit = FALSE,
+          ignoreNULL = TRUE,
           {
+            #print("DGE 3.3: subset criteria")
             # Retrieve information from
             # test_selections Category
             group_by_category <- test_selections()$group_by
@@ -272,7 +305,7 @@ dge_tab_server <- function(id,
             return(subset_criteria)
           })
       
-      ## 3.3. Form subset
+      ## 3.4. Form subset ####
       # Initialize variables to control reset of subset when the 
       # object is changed
       
@@ -302,10 +335,13 @@ dge_tab_server <- function(id,
       
       subset <-
         eventReactive(
-          c(dge_subset_criteria(), subset_trigger$depend()),
+          c(dge_subset_criteria(), 
+            subset_trigger$depend()),
           label = "DGE: Subset",
           ignoreNULL = FALSE,
           {
+            #print("DGE 3.4: make subset")
+            
             subset <- 
               tryCatch(
                 error = function(cnd){
@@ -345,20 +381,41 @@ dge_tab_server <- function(id,
                   if (object_init() == TRUE){
                     return(object())
                   } else {
-                    # Otherwise, create subset from 
-                    # selections and return
-                    return(
+                    # Otherwise, create subset from selections
+                    subset <- 
                       make_subset(
                         object = object(),
-                        criteria_list = 
-                          dge_subset_criteria(),
-                        user_string = 
-                          subset_selections$user_string()
-                      )
-                    )
+                        criteria_list = dge_subset_criteria(),
+                        user_string = subset_selections$user_string()
+                        )
+                    
+                    # Modification of subset
+                    # Metacluster Creation (if applicable)
+                    if (metaclusters_present()){
+                      # Unpack variables from test_selections for simplified code
+                      metadata_column <- test_selections()$group_by
+                      group_1 <- test_selections()$group_1
+                      group_2 <- test_selections()$group_2
+                      
+                      # Use case_when to create metacluster 
+                      subset@meta.data$metacluster <- 
+                        case_when(
+                          # If the cell has a value for the group by category, 
+                          # assign a group name to it based on the members of the
+                          # group (for example, a group with "R" and "S" will be
+                          # renamed ("R and S"))
+                          subset@meta.data[[metadata_column]] %in% group_1 ~
+                            vector_to_text(group_1),
+                          subset@meta.data[[metadata_column]] %in% group_2 ~
+                            vector_to_text(group_2),
+                          TRUE ~ "Unspecified"
+                          )
+                    } # End if (metaclusters_present())
+                    
+                    # Return subset from tryCatch
+                    subset
                   }
-                }
-              )
+                }) # End tryCatch
             
             # Return subset from eventReactive
             subset
@@ -379,7 +436,7 @@ dge_tab_server <- function(id,
           
         })
       
-      ## 3.4. DGE Continuation Conditional
+      ## 3.5. DGE Continuation Conditional ####
       # After subset is computed, downstream computations should only 
       # proceed if the subset has been created as a result of 
       # pressing the submit button, and not as a result of the reset 
@@ -394,6 +451,8 @@ dge_tab_server <- function(id,
         label = "DGE: Continuation Conditional",
         subset(),
         {
+          #print("DGE 3.5: Continuation conditional")
+          
           if (object_init() == FALSE){
             # If object_init == FALSE, continue with DGE calculations
             continue$trigger()
@@ -410,7 +469,7 @@ dge_tab_server <- function(id,
           
         })
       
-      ## 3.5. Compute subset stats
+      ## 3.6. Compute subset stats ####
       subset_stats <- 
         subset_stats_server(
           id = "subset_stats",
@@ -419,10 +478,11 @@ dge_tab_server <- function(id,
           meta_categories = meta_categories,
           # Responds to continuation conditional 
           event_expr = dge_table_content,
-          group_by_category = group_by_category
+          group_by_category = group_by_category,
+          metaclusters_present = metaclusters_present
         )
       
-      ## 3.6. Run Presto
+      ## 3.7. Run Presto ####
       dge_table_content <-
         eventReactive(
           # Chose the first reactive variable in the subset stats
@@ -433,42 +493,73 @@ dge_tab_server <- function(id,
           ignoreNULL = FALSE,
           #ignoreInit = TRUE,
           {
-            #print("DGE 3.6: Run Presto")
+            #print("DGE 3.7: Run Presto")
+            
             log_session(session)
             log_info("DGE Tab: Begin Presto")
-            dge_table <-
-              # Run presto on the subset, using the group by category
-              wilcoxauc(
-                subset(), 
-                group_by = group_by_category()
-              ) %>%
-              # Explicitly coerce to tibble
-              as_tibble() %>%
-              # remove stat and auc from the output table
-              select(-c(statistic, pval, auc)) %>%
-              # Using magrittr pipes here because the following
-              # statement doesn't work with base R pipes
-              # remove negative logFCs if box is checked
-              {if (input$pos) filter(., logFC > 0) else .} %>%
-              # Arrange in ascending order for padj, pval (lower
-              # values are more "significant"). Ascending order is
-              # used for the log fold-change
-              arrange(padj, desc(abs(logFC)))
             
-            log_session(session)
-            log_info("DGE Tab: Completed Presto ")
+            dge_table <- 
+              tryCatch(
+                error = function(cnd){
+                  # Use error_handler to display notification to user
+                  error_handler(
+                    session,
+                    cnd_message = cnd$message,
+                    # Generic error messages only
+                    error_list = list()
+                  )
+                  
+                  # Hide the spinners
+                  main_spinner$hide()
+                  sidebar_spinner$hide()
+                  
+                  # Return nothing for the dge table in the event of an error
+                  return(NULL)
+                  },
+                {
+                  dge_table <-
+                    # Run presto on the subset, using the group by category
+                    wilcoxauc(
+                      subset(), 
+                      # If metaclusters are requested, use 
+                      # "metaclusters" for dge groups
+                      group_by = 
+                        if (!metaclusters_present()){
+                          group_by_category()
+                        } else {
+                          "metacluster"
+                        }
+                    ) %>%
+                    # Explicitly coerce to tibble
+                    as_tibble() %>%
+                    # remove stat and auc from the output table
+                    select(-c(statistic, pval, auc)) %>%
+                    # Using magrittr pipes here because the following
+                    # statement doesn't work with base R pipes
+                    # remove negative logFCs if box is checked
+                    {if (input$pos) filter(., logFC > 0) else .} %>%
+                    # Arrange in ascending order for padj, pval (lower
+                    # values are more "significant"). Ascending order is
+                    # used for the log fold-change
+                    arrange(padj, desc(abs(logFC)))
+                  
+                  log_session(session)
+                  log_info("DGE Tab: Completed Presto ")
+                  
+                  return(dge_table)
+                })
             
-            return(dge_table)
-          }
-        )
+            dge_table
+          })
       
-      ## 3.7. DGE table, as DT for viewing
+      ## 3.8. DGE table, as DT for viewing ####
       dge_DT_content <-
         eventReactive(
-          subset_stats$n_cells(),
+          dge_table_content(),
           label = "DGE: DT Generation",
-          ignoreNULL=FALSE,
           {
+            #print("DGE 3.8: DGE table")
+            
             datatable(
               dge_table_content(),
               # DT classes applied
@@ -485,24 +576,38 @@ dge_tab_server <- function(id,
               formatSignif(3:7, 5)
           })
       
-      ## 3.8. UMAP of DE Selected Groups
+      ## 3.9. UMAP of DE Selected Groups ####
       dge_umap <-
         eventReactive(
-          c(dge_DT_content(), input$umap_group_by),
+          c(dge_DT_content(), 
+            input$umap_group_by),
           ignoreNULL = FALSE,
           label = "DGE: UMAP",
           {
+            #print("DGE 3.9: UMAP")
+            
             # ncol_argument: number of columns
             # Based on number of classes being
             # analyzed in the subset.
             # Access with double brackets returns a dataframe.
             # Slice for the first row (the unique values)
             n_panel <-
-              unique(
-                subset()[[group_by_category()]]
-                # Take first column of unique() results
-              )[,1] |>
-              length()
+              if (!metaclusters_present()){
+                # Standard behavior: use group_by_category
+                unique(
+                  subset()[[group_by_category()]]
+                  # Take first column of unique() results
+                )[,1] |>
+                  length()
+              } else {
+                # Exception: use "metaclusters" when metaclusters are present
+                unique(
+                  subset()[["metacluster"]]
+                  # Take first column of unique() results
+                )[,1] |>
+                  length()
+              }
+              
             
             #Set ncol to number of panels if less than four
             #Panels are created
@@ -512,19 +617,22 @@ dge_tab_server <- function(id,
             
             #Use three columns for 4-9 panels
             else if (n_panel>=4 & n_panel<9){
-              ncol=3
+              ncol = 3
             }
             
             #Use four columns for 9+ panels
             else if (n_panel>=9){
-              ncol=4
+              ncol = 4
             }
             
             #Create UMAP of subsetted object
             umap <- DimPlot(
               subset(),
-              #Split by thgroup by category
-              split.by = group_by_category(),
+              #Split by the group by category (or metaclusters if enabled)
+              split.by = 
+                if (!metaclusters_present()){
+                  group_by_category()
+                  } else "metacluster",
               #Group by variable set in UMAP options panel
               group.by = input$umap_group_by,
               ncol = ncol
@@ -558,6 +666,7 @@ dge_tab_server <- function(id,
                 class="center"
               ),
               tags$h3("Test Summary", class="center"),
+              
               # Subset Stats Module for showing summary stats
               subset_stats_ui(
                 id = ns("subset_stats"),
@@ -569,12 +678,18 @@ dge_tab_server <- function(id,
                 meta_categories = meta_categories,
                 subset_selections = dge_subset_criteria
               ),
+              
               # DGE Table (uses DT data table)
-              tags$h3("DGE Table",
-                      class="center"),
+              tags$h3(
+                "DGE Table",
+                class="center"
+                ),
+              
               # Output container for table
-              DTOutput(outputId = ns("table"),
-                       width = "95%"),
+              DTOutput(
+                outputId = ns("table"),
+                width = "95%"
+                ),
               
               # UMAP plot
               # Title for plot

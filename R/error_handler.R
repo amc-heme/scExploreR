@@ -76,7 +76,7 @@ error_handler <-
   function(
     session,
     cnd_message,
-    error_list,
+    error_list = list(),
     issue_href = "https://github.com/amc-heme/DataExploreShiny/issues", 
     duration = NULL
     ){

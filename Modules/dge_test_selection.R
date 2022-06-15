@@ -179,7 +179,8 @@ dge_test_selection_server <-
                     inputId = ns("group_1"),
                     label = "Group 1",
                     choices = group_choices(),
-                    selected = group_choices()[1],
+                    # Nothing selected by default
+                    selected = character(0),
                     multiple = TRUE,
                     options =
                       list(
@@ -193,7 +194,7 @@ dge_test_selection_server <-
                     inputId = ns("group_2"),
                     label = "Group 2",
                     choices = group_choices(),
-                    selected = group_choices()[2],
+                    selected = character(0),
                     multiple = TRUE,
                     options =
                       list(
@@ -315,7 +316,7 @@ dge_test_selection_server <-
         observeEvent(
           input$group_2,
           # Menu update not necessary at startup
-          ignoreInit=TRUE,
+          ignoreInit = TRUE,
           # NULL values cause errors in this function
           ignoreNULL = TRUE,
           {
