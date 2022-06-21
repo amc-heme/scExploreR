@@ -188,8 +188,8 @@ dge_test_selection_server <-
                         "actions-box" = TRUE,
                         # Label for "deselect all" button
                         "deselectAllText" = "Clear selections"
-                      )
-                  ),
+                        )
+                    ),
                   pickerInput(
                     inputId = ns("group_2"),
                     label = "Group 2",
@@ -202,7 +202,7 @@ dge_test_selection_server <-
                         "actions-box" = TRUE,
                         # Label for "deselect all" button
                         "deselectAllText" = "Clear selections"
-                      )
+                        )
                     )
                   
                   ) # End tagList

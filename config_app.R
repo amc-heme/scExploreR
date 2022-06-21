@@ -10,6 +10,8 @@ library(waiter)
 library(shinycssloaders)
 library(shinyjs)
 library(shinyFeedback)
+# Sortable.JS: Creates a drag-and-drop menu
+library(sortable)
 
 # Reactlog (for debugging)
 library(reactlog)
@@ -179,35 +181,41 @@ assay_tab <- function(){
 }
 
 ## 1.2. Metadata Tab ####
-metadata_tab <- function(){
-  sidebarLayout(
-    applet_sidebar_panel(
-      div(
-        class = "input-no-margin",
-        multiInput(
-          inputId = "metadata_selected",
-          label = "Choose metadata to include:",
-          width = "100%",
-          # Currently, only non-numeric metadata columns are selectable
-          choices = non_numeric_cols,
-          options = 
-            list(
-              enable_search = FALSE,
-              non_selected_header = "Available Metadata",
-              selected_header = "Selected Metadata",
-              "hide_empty_groups" = TRUE
-              )
+metadata_tab <- 
+  function(){
+    sidebarLayout(
+      applet_sidebar_panel(
+        div(
+          class = "input-no-margin",
+          uiOutput(
+            outputId = "metadata_sortable_bucket"
+            )
+        
+          # multiInput(
+          #   inputId = "metadata_selected",
+          #   label = "Choose metadata to include:",
+          #   width = "100%",
+          #   # Currently, only non-numeric metadata columns are selectable
+          #   choices = non_numeric_cols,
+          #   options = 
+          #     list(
+          #       enable_search = FALSE,
+          #       non_selected_header = "Available Metadata",
+          #       selected_header = "Selected Metadata",
+          #       "hide_empty_groups" = TRUE
+          #       )
+          #   )
           )
-        )
-      ),
-    applet_main_panel(
-      # Options for Numeric metadata
-      # 
-      
-      # Options for Categorical, logical metadata
-      # Create a metadata options "card" for each non-numeric metadata column in
-      # the object. Cards below are hidden and display when the corresponding
-      # metadata category is selected
+        ),
+      applet_main_panel(
+        # Options for Numeric metadata
+        # 
+        
+        # Options for Categorical, logical metadata
+        # Create a metadata options "card" for each non-numeric metadata column
+        # in the object. Cards below are hidden and display when the
+        # corresponding metadata category is selected
+     
       tagList(
         lapply(
           non_numeric_cols, 
@@ -218,17 +226,21 @@ metadata_tab <- function(){
               optcard_type = "metadata"
               )
             }
-          
-          ),
-        # TEMP: add an additional card displaying the outputs from the metadata tab
+        ),
+        # TEMP: add an additional card displaying the outputs 
+        # from the metadata tab
         div(
           class="optcard",
           verbatimTextOutput(outputId = "print_metadata")
           )
+        # Alternative: use render UI to make cards. This did not work well.
+        # uiOutput(
+        #   outputId = "metadata_cards"
+        #   )
         )
       )
   )
-  }
+    }
 
 ## 2. Main UI ####
 ui <- fluidPage(
@@ -339,6 +351,15 @@ server <- function(input, output, session) {
   # across all tabs
   all_options <- list()
   
+  # module_data: reactiveValues object for storing data specific to this module
+  module_data <- reactiveValues()
+  # Available choices for Sortable drag-and-drop input: defaults to non-numeric
+  # metadata. This variable may change upon loading a config file.
+  module_data$metadata_sortable_options <- non_numeric_cols
+  # Nothing selected by default
+  module_data$metadata_sortable_selected <- character(0)
+    
+  
   ## 3.1. Assay Panel ####
   ### 3.1.1. Store selected assays as a reactive variable ####
   assays_selected <- 
@@ -445,12 +466,111 @@ server <- function(input, output, session) {
         # Extracts each reactive module output and stores them in a list
         list <- lapply(all_metadata_options, function(x) x())
         # Filter list for metadata columns that have been selected by the user
-        return(list[names(list) %in% input$metadata_selected])
+        list <- list[names(list) %in% input$metadata_selected]
+        # Sort list according to the order specified by the user in the drag
+        # and drop menu
+        list <- list[input$metadata_selected]
+        return(list)
         } else {
           # Return NULL if no columns are selected
           return(NULL)
           }
       })
+  
+  ### 3.2.4. Reactive UI ####
+  #### 3.2.4.1. UI for sortable menu ####
+  # Uses the bucket_list input from the sortable package
+  metadata_bucket_ui <-
+    eventReactive(
+      c(module_data$metadata_sortable_options,
+        module_data$metadata_sortable_selected),
+      label = "Metadata: define sortable",
+      {
+        tagList(
+          tags$b("Choose Metadata to Include in App"),
+          bucket_list(
+            header = 
+              "Drag metadata categories to the \"Included Metadata\" 
+              column to include. Metadata will appear in app menus in 
+              the order they appear in the right-hand column.",
+            orientation = "horizontal",
+            group_name = "metadata_bucket",
+            # Use the default class, and a class specific to this app
+            # Many sub-classes are tied to the default class, and styling will
+            # not be applied to those classes if the default class is not also 
+            # passed to this argument.
+            class = 
+              c("default-sortable", "bucket-select"),
+            add_rank_list(
+              input_id = "metadata_not_selected",
+              text = "Available Metadata",
+              labels = module_data$metadata_sortable_options
+            ),
+            add_rank_list(
+              input_id = "metadata_selected",
+              text = "Included Metadata",
+              labels = module_data$metadata_sortable_selected
+            )
+          )
+        )
+        })
+  
+  #### 3.2.4.2. Set Order of metadata cards based on sortable input ####
+  # This did not work; it resulted in errors with the server components
+  
+  # metadata_cards_ui <-
+  #   reactive(
+  #     label = "Set Order of Metadata Options Cards",
+  #     {
+  #       tagList(
+  #         # Create options cards for each each metadata category selected
+  #         lapply(
+  #           input$metadata_selected, 
+  #           function(colname){
+  #             options_ui(
+  #               id = colname, 
+  #               object = object,
+  #               optcard_type = "metadata"
+  #               )
+  #             }
+  #           ),
+  #         # Next, create cards for each metadata category that is not selected,
+  #         # but hide these cards (Inputs must exist to avoid errors with server
+  #         # components, but they should not be visible to the user)
+  #         lapply(
+  #           input$metadata_not_selected,
+  #           function(colname){
+  #             hidden(
+  #               options_ui(
+  #                 id = colname, 
+  #                 object = object,
+  #                 optcard_type = "metadata"
+  #               )
+  #             )
+  #           }
+  #         ),
+  #         
+  #         # TEMP: add an additional card displaying the outputs 
+  #         # from the metadata tab
+  #         div(
+  #           class="optcard",
+  #           verbatimTextOutput(outputId = "print_metadata")
+  #         )
+  #       )
+  #     })
+  
+  #### 3.2.4.3. Render reactive UI ####
+  # Sortable
+  output$metadata_sortable_bucket <-
+    renderUI({
+      metadata_bucket_ui()
+    })
+  
+  # Metadata cards
+  # output$metadata_cards <-
+  #   renderUI({
+  #     metadata_cards_ui()
+  #   })
   
   # TEMP: print all metadata options
   output$print_metadata <-

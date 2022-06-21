@@ -25,13 +25,21 @@ subset_stats_ui <- function(id,
     tagList(
       #Test statistics
       div(
-        tags$strong("Test selected", class="x-large inline-block"),
-        textOutput(outputId = ns("print_mode"), 
-                   inline=FALSE)
+        tags$strong(
+          "Test selected",
+          class = "x-large inline-block"
+          ),
+        textOutput(
+          outputId = ns("print_mode"), 
+          inline=FALSE
+          )
         ),
       # Metadata-specific subset statistics
-      tags$strong("Subset Used for Test", 
-                  class="x-large inline-block space-top"),
+      tags$strong(
+        "Subset Used for Test", 
+        class="x-large inline-block space-top"
+        ),
+      
       # Loop through the metadata categories read on app startup
       # One container is created for each category in the subset using lapply.
       # Unique values for each category will display inline with labels
@@ -40,22 +48,29 @@ subset_stats_ui <- function(id,
         # Category is looped through by lapply
         # metadata_config and ns are "constants" that must be passed as 
         # additional arguments to lapply 
-        FUN = function(category, metadata_config, ns){
-          subset_stats_metadata_output(
-            category = category,
-            metadata_config = metadata_config, 
-            ns = ns
-            )
-          },
+        FUN = 
+          function(category, metadata_config, ns){
+            subset_stats_metadata_output(
+              category = category,
+              metadata_config = metadata_config, 
+              ns = ns
+              )
+            },
         # Constants
         metadata_config,
-        ns),
+        ns
+        ),
+      
       # General subset statistics
       div(
-        tags$strong("Number of cells in subset: ",
-                    class = "space-top inline-block"),
-        textOutput(outputId = ns("n_cells"), 
-                   inline = TRUE)
+        tags$strong(
+          "Number of cells in subset: ",
+          class = "space-top inline-block"
+          ),
+        textOutput(
+          outputId = ns("n_cells"), 
+          inline = TRUE
+          )
         ),
       div(
         tags$strong("Number of cells per class: "),

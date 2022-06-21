@@ -780,11 +780,6 @@ plot_module_server <- function(id,
                                  } else NULL
                              )
                            
-                           print(glue("ID: {id}"))
-                           print("Updating input in response to startup")
-                           print("Default value:")
-                           print(initial_value)
-                           
                            # Update input with initial value
                            updateTextInput(
                              session,
@@ -835,14 +830,12 @@ plot_module_server <- function(id,
                                } else NULL
                          )
                        
-                       print("Updating input in response to reset button")
-                       
                        # Update input
                        updateTextInput(
                          session,
                          inputId = "custom_title",
                          value = initial_value
-                       )
+                         )
                        
                        # Programmatically click update button to process value
                        shinyjs::click("custom_title_update")
@@ -872,9 +865,7 @@ plot_module_server <- function(id,
                        ignoreNULL = FALSE,
                        ignoreInit = TRUE,
                        {
-                         print("3.5. Update custom_title_single eventReactive")
-                         print("Value of input$custom_title")
-                         print(input$custom_title)
+                         #print("3.5. Update custom_title_single eventReactive")
                          
                          # Pass value of custom_title if defined, otherwise pass
                          # the default value
@@ -1187,7 +1178,7 @@ plot_module_server <- function(id,
                      if (show == TRUE){
                        showElement(
                          id = elem_id
-                       )
+                         )
                      } else {
                        hideElement(
                          id = elem_id

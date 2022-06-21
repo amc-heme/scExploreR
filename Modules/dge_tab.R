@@ -740,14 +740,14 @@ dge_tab_server <- function(id,
           label = "DGE Download Buttons UI",
           ignoreNULL = FALSE,
           {
-            #Conditional level one, !hasName(): TRUE before table
-            #is created, FALSE after
+            # Conditional level one, !hasName(): TRUE before table
+            # is created, FALSE after
             if (!hasName(input, "dge_table_rows_selected")) {
-              #Display nothing before table is created
+              # Display nothing before table is created
               NULL
             } else {
-              #!hasName()==FALSE (table created)
-              #Display button to download table after table is created
+              # !hasName() == FALSE (table created)
+              # Display button to download table after table is created
               div(
                 downloadButton(
                   outputId = ns("download_table"),

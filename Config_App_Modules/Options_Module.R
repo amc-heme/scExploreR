@@ -189,6 +189,8 @@ options_server <- function(id,
       # Starts at 1 and counts up when the "add group" button is pressed
       group_counter <- reactiveVal(1)
       
+      print("Initializing metadata server")
+      
       # Initialize output variables
       # group_choices applies only to metadata variables that are categorical 
       # but is called for export from this module in all cases: therefore, it 
@@ -201,10 +203,10 @@ options_server <- function(id,
       # outside of server components)
       observeEvent(
         categories_selected(),
-        label = glue("Show/Hide Cards: {options_type}"), 
+        label = glue("Show/Hide Cards: {options_type}"),
         ignoreNULL = FALSE,
         {
-          # Examine the list of currently selected categories, and 
+          # Examine the list of currently selected categories, and
           # check if the module's category name is selected.
           # If so, show the options card
           if (category_name %in% categories_selected()){
@@ -217,7 +219,7 @@ options_server <- function(id,
       
       # 2. Metadata-tab specific functions -------------------------------------
       # Determine if metadata field is categorical or numeric
-      if(options_type == "metadata"){
+      if (options_type == "metadata"){
         type <- metadata_type(object,id)
       }
       
@@ -227,6 +229,7 @@ options_server <- function(id,
       if (options_type == "metadata"){
         # Test for type of metadata field after testing to see 
         # if the object is a metadata entry
+        print("metadata type if")
         if (type == "Categorical"){
           ### 2.1.1. Define UI for group selection ####
           observeEvent(
@@ -238,7 +241,8 @@ options_server <- function(id,
               
               #Display the interface when the corresponding 
               #switch is activated
-              if (input$group_metadata == TRUE){
+              print("Metadata group if")
+              if (isTruthy(input$group_metadata)){
                 showElement(
                   id = element_id
                 )
