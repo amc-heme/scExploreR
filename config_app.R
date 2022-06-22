@@ -147,7 +147,7 @@ assay_tab <- function(){
           value = TRUE,
           # Determines style of checkbox (warning is orange)
           status = "warning"
-        )
+          )
       )
       
       ),
@@ -217,26 +217,27 @@ metadata_tab <-
         # corresponding metadata category is selected
      
       tagList(
-        lapply(
-          non_numeric_cols, 
-          function(colname){
-            options_ui(
-              id = colname, 
-              object = object,
-              optcard_type = "metadata"
-              )
-            }
-        ),
+        # lapply(
+        #   non_numeric_cols, 
+        #   function(colname){
+        #     options_ui(
+        #       id = colname, 
+        #       object = object,
+        #       optcard_type = "metadata"
+        #       )
+        #     }
+        # ),
+        
+        uiOutput(
+          outputId = "metadata_cards"
+          ),
+        
         # TEMP: add an additional card displaying the outputs 
         # from the metadata tab
         div(
           class="optcard",
           verbatimTextOutput(outputId = "print_metadata")
           )
-        # Alternative: use render UI to make cards. This did not work well.
-        # uiOutput(
-        #   outputId = "metadata_cards"
-        #   )
         )
       )
   )
@@ -516,48 +517,43 @@ server <- function(input, output, session) {
         })
   
   #### 3.2.4.2. Set Order of metadata cards based on sortable input ####
-  # This did not work; it resulted in errors with the server components
+  # Sorting trigger: triggers when UI elements are re-arranged; restores inputs
+  session$userData$metadata_sorting_trigger <- makeReactiveTrigger()
   
-  # metadata_cards_ui <-
-  #   reactive(
-  #     label = "Set Order of Metadata Options Cards",
-  #     {
-  #       tagList(
-  #         # Create options cards for each each metadata category selected
-  #         lapply(
-  #           input$metadata_selected, 
-  #           function(colname){
-  #             options_ui(
-  #               id = colname, 
-  #               object = object,
-  #               optcard_type = "metadata"
-  #               )
-  #             }
-  #           ),
-  #         # Next, create cards for each metadata category that is not selected,
-  #         # but hide these cards (Inputs must exist to avoid errors with server
-  #         # components, but they should not be visible to the user)
-  #         lapply(
-  #           input$metadata_not_selected,
-  #           function(colname){
-  #             hidden(
-  #               options_ui(
-  #                 id = colname, 
-  #                 object = object,
-  #                 optcard_type = "metadata"
-  #               )
-  #             )
-  #           }
-  #         ),
-  #         
-  #         # TEMP: add an additional card displaying the outputs 
-  #         # from the metadata tab
-  #         div(
-  #           class="optcard",
-  #           verbatimTextOutput(outputId = "print_metadata")
-  #         )
-  #       )
-  #     })
+  metadata_cards_ui <-
+    reactive(
+      label = "Set Order of Metadata Options Cards",
+      {
+        ui <-
+          lapply(
+            # Cards made for the selected metadata categories in the order they
+            # are selected, then the non-selected categories (which will be
+            # hidden)
+            c(input$metadata_selected, input$metadata_not_selected),
+            function(colname){
+              card <- 
+                options_ui(
+                  id = colname,
+                  object = object,
+                  optcard_type = "metadata"
+                )
+              
+              # Apply shinyjs hidden class to cards for all metadata
+              # categories not currently selected
+              if (!colname %in% input$metadata_selected){
+                card <- shinyjs::hidden(card)
+              }
+              
+              card
+            }
+          )
+          
+        # Trigger sorting trigger to restore inputs lost upon re-creating UI
+        session$userData$metadata_sorting_trigger$trigger()
+        
+        # Return sorted cards
+        ui
+      })
   
   #### 3.2.4.3. Render reactive UI ####
   # Sortable
@@ -567,10 +563,17 @@ server <- function(input, output, session) {
     })
   
   # Metadata cards
-  # output$metadata_cards <-
-  #   renderUI({
-  #     metadata_cards_ui()
-  #   })
+  output$metadata_cards <-
+    renderUI({
+      metadata_cards_ui()
+    })
+  
+  outputOptions(
+    output, 
+    "metadata_cards", 
+    suspendWhenHidden = FALSE,
+    priority = 10
+    )
   
   # TEMP: print all metadata options
   output$print_metadata <-

@@ -45,26 +45,34 @@ options_ui <- function(id,
   # Create UI for options card ----------------------------------------------
   # Assays UI
   if(optcard_type == "assays"){
-    ui <- div(
-      id = ns("optcard"),
-      class = "optcard single-space-bottom",
-      tags$strong(
-        glue("Options for {category_name}"),
-        class = "large half-space-bottom center"
-      ),
-      
-      # Human-readable suffix: appears on plots and search entries
-      textInput(inputId = ns("hr"),
-                label = "Set label for assay (will appear as entered in app)",
-                width = "380px"),
-      # Include assay name on plots: if checked, the label entered will be 
-      # displayed on plots and in the feature search results.
-      # I may put this in the main app instead; it makes more sense to toggle
-      # it when making the plots.
-      checkboxInput(inputId = ns("include_label"),
-                    label = "Include assay name on plots?"),
-      tags$p("(This is usually not required for the default assay in your data)")
-    )
+    ui <- 
+      # Shinyjs hidden class applied initially to assay options cards
+      hidden(
+        div(
+          id = ns("optcard"),
+          class = "optcard single-space-bottom",
+          tags$strong(
+            glue("Options for {category_name}"),
+            class = "large half-space-bottom center"
+          ),
+          
+          # Human-readable suffix: appears on plots and search entries
+          textInput(
+            inputId = ns("hr"),
+            label = "Set label for assay (will appear as entered in app)",
+            width = "380px"
+            ),
+          
+          # Include assay name on plots: if checked, the label entered will be 
+          # displayed on plots and in the feature search results.
+          checkboxInput(
+            inputId = ns("include_label"),
+            label = "Include assay name on plots?"),
+          tags$p(
+            "(This is usually not required for the default assay in your data)"
+            )
+        )
+      )
     
     # Metadata UI
   } else if (optcard_type == "metadata"){
@@ -80,7 +88,7 @@ options_ui <- function(id,
       
       # If the metadata is categorical and there are 15 values or less,
       # print the values to screen
-      if (metadata_type == "Categorical" & length(values)<=15){
+      if (metadata_type == "Categorical" & length(values) <= 15){
         tags$p(glue("Values: {paste(values_sorted, collapse=', ')}"))
       } else NULL,
       
@@ -148,9 +156,6 @@ options_ui <- function(id,
     )
   }
   
-  # Add "hidden" shinyjs class to the card to hide each card initially
-  ui <- shinyjs::hidden(ui)
-  
   return(ui)
 }
 
@@ -189,8 +194,6 @@ options_server <- function(id,
       # Starts at 1 and counts up when the "add group" button is pressed
       group_counter <- reactiveVal(1)
       
-      print("Initializing metadata server")
-      
       # Initialize output variables
       # group_choices applies only to metadata variables that are categorical 
       # but is called for export from this module in all cases: therefore, it 
@@ -209,6 +212,12 @@ options_server <- function(id,
           # Examine the list of currently selected categories, and
           # check if the module's category name is selected.
           # If so, show the options card
+          # print(glue("show/hide test for {category_name}"))
+          # print("categories selected")
+          # print(categories_selected())
+          # print(glue("{category_name} %in% categories_selected"))
+          # print(category_name %in% categories_selected())
+          
           if (category_name %in% categories_selected()){
             showElement("optcard")
             # Otherwise, hide the card
@@ -241,7 +250,6 @@ options_server <- function(id,
               
               #Display the interface when the corresponding 
               #switch is activated
-              print("Metadata group if")
               if (isTruthy(input$group_metadata)){
                 showElement(
                   id = element_id
@@ -270,7 +278,40 @@ options_server <- function(id,
         }
       }
       
-      # 3. Update Inputs with loaded config file -------------------------------
+      # 3. Restore inputs when options cards are re-sorted ---------------------
+      # (In metadata tab)
+      observeEvent(
+        session$userData$metadata_sorting_trigger$depend(),
+        ignoreNULL = FALSE,
+        ignoreInit = TRUE,
+        label = glue("{id}: Restore Inputs Upon Rearrangement"),
+        {
+          # "Update" the input with the previously entered label
+          if (!is.null(input$hr)){
+            updateTextInput(
+              session,
+              inputId = "hr",
+              # Value for this input is stored in `dropdown_title`
+              value = input$hr
+            )
+          }
+          
+          # Do the same for the groups switch
+          if (!is.null(input$group_metadata)){
+            updateMaterialSwitch(
+              session,
+              inputId = "group_metadata",
+              value = input$group_metadata
+            )
+          }
+          
+          # Will also need code to update groups input when that is completed
+          # for 4.
+          
+        })
+      
+      
+      # 4. Update Inputs with loaded config file -------------------------------
       if (options_type == "assays"){
         observeEvent(
           session$userData$config(),
@@ -450,7 +491,7 @@ options_server <- function(id,
                  `label` = input$hr,
                  # groups: defined if the switch to group metadata is turned on, 
                  # and set to NULL otherwise.
-                 `groups` = if (input$group_metadata == TRUE){
+                 `groups` = if (isTruthy(input$group_metadata)){
                    group_data()
                  } else NULL
             )
