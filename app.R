@@ -426,6 +426,15 @@ ui <- tagList(
         # Opens link in new tab
         target = "_blank", 
         rel = "noopener noreferrer"
+        ),
+      
+      # Link to Genecards
+      tags$a(
+        "GeneCards",
+        href = "https://www.genecards.org/",
+        class = "blue_hover",
+        target = "_blank",
+        rel = "noopener noreferrer"
         )
     )# End tagList
   ), #End Help Button
