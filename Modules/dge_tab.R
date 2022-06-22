@@ -543,6 +543,16 @@ dge_tab_server <- function(id,
                     # used for the log fold-change
                     arrange(padj, desc(abs(logFC)))
                   
+                  # Change "logFC" column to log-2 fold change 
+                  # (default output uses a natural log)
+                  dge_table$logFC <- 
+                    to_log2(dge_table$logFC)
+                  
+                  # Rename column to explicitly specify log-2 fold change
+                  dge_table <-
+                    dge_table |>
+                    dplyr::rename(Log2FC = logFC)
+                  
                   log_session(session)
                   log_info("DGE Tab: Completed Presto ")
                   
