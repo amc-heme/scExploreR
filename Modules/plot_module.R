@@ -2108,6 +2108,10 @@ plot_module_server <- function(id,
                          ggsave(
                            file,
                            plot = plot(),
+                           # Default width/height: use a 3:2 ratio
+                           # Values are in inches
+                           width = 9,
+                           height = 6,
                            # Either 'png' or 'svg'
                            device = input$file_type,
                            # Set background color to white (background is 
