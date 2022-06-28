@@ -93,6 +93,14 @@ plots_tab_ui <- function(id,
                value = FALSE,
                right = TRUE,
                status = "default"
+             ),
+             # Switch for ridge plot
+             materialSwitch(
+               inputId = ns("make_ridge"),
+               label = "Ridge Plot", 
+               value = FALSE,
+               right = TRUE,
+               status = "default"
              )
            ),#End div
          ),
@@ -105,7 +113,8 @@ plots_tab_ui <- function(id,
            condition =
              glue("input['{ns('make_feature')}'] == true |
                   input['{ns('make_vln')}'] == true |
-                  input['{ns('make_dot')}'] == true"),
+                  input['{ns('make_dot')}'] == true |
+                  input['{ns('make_ridge')}'] == true"),
            # Content of conditionalPanel
            # Label
            tags$p(tags$strong("Enter features to display on plots:")),
@@ -405,7 +414,37 @@ plots_tab_ui <- function(id,
                download_button =       TRUE            
                )
            )
-         ) # End 1.9.
+         ), # End 1.9.
+         
+         ## 1.10. Ridge Plot Options
+         conditionalPanel(
+           condition = glue("input['{ns('make_ridge')}'] == true"),
+           collapsible_panel(
+             inputId = ns("ridge_collapsible"),
+             label = "Ridge Plot Specific Options",
+             active = FALSE,
+             plot_module_ui(
+               id = ns("ridge"),
+               ui_component = "options",
+               meta_choices = meta_choices,
+               plot_label = "Ridge",
+               group_by =              TRUE,
+               split_by =              FALSE,
+               ncol_slider =           FALSE,
+               order_checkbox =        FALSE,
+               label_checkbox =        FALSE,
+               legend_checkbox =       TRUE,
+               limits_checkbox =       FALSE,
+               display_coeff =         FALSE,
+               custom_colors =         FALSE,
+               manual_dimensions =     TRUE,
+               separate_features =     FALSE,
+               download_button =       TRUE,
+               # Add "none" to group by choices (ridge plots only)
+               group_by_add_none =     TRUE
+             )
+           )
+         ) # End 1.10
          ), #End 1.
        
        # 2. Main panel for displaying plot output ------------------------------
@@ -421,7 +460,7 @@ plots_tab_ui <- function(id,
            plot_module_ui(
              id = ns("dimplot"),
              ui_component = "plot"
-           ),
+             ),
            
            ## 2.2. Panel for feature plot 
            # Will be a message or a plot, depending on whether features have 
@@ -429,26 +468,32 @@ plots_tab_ui <- function(id,
            plot_module_ui(
              id = ns("feature"),
              ui_component = "plot"
-           ),
+             ),
            
            ## 2.3. Panel for violin plot
            # UI displayed will vary based on the entry into the feature text box
            plot_module_ui(
              id = ns("violin"),
              ui_component = "plot"
-           ),
+             ),
            
            ## 2.4. Dot plot panel
            plot_module_ui(
              id = ns("dot"),
              ui_component = "plot"
-           ),
+             ),
            
            ## 2.5. Scatterplot panel
            plot_module_ui(
              id = ns("scatter"),
              ui_component = "plot"
-           )
+             ),
+           
+           ## 2.6. Ridge Plot panel
+           plot_module_ui(
+             id = ns("ridge"),
+             ui_component = "plot"
+             )
          ) # End div
        ) # End 2.
      ) # End sidebarLayout() 
@@ -619,10 +664,10 @@ plots_tab_server <- function(id,
                  ## 2.1. Dimplot ####
                  plot_module_server(
                    id = "dimplot",
-                   object = subset, # Reactive
+                   object = subset,
                    # plot_switch: uses the input$make_dimplot switch
                    plot_switch = reactive({input$make_dimplot}),
-                   plot_label = "DimPlot", # Reactive
+                   plot_label = "DimPlot",
                    n_cells_original = n_cells_original, # Non-reactive
                    # Instructs server on which plot function to run
                    plot_type = "dimplot",
@@ -636,12 +681,12 @@ plots_tab_server <- function(id,
                  ## 2.2. Feature Plot ####
                  plot_module_server(
                    id = "feature",
-                   object = subset, # Reactive
+                   object = subset, 
                    # plot_switch: uses the input$make_feature switch
                    plot_switch = reactive({input$make_feature}),
                    features_entered = reactive({input$text_features}),
-                   plot_label = "Feature Plot", # Non-reactive
-                   n_cells_original = n_cells_original, # Reactive
+                   plot_label = "Feature Plot",
+                   n_cells_original = n_cells_original, 
                    # Instructs server on which plot function to run
                    plot_type = "feature",
                    assay_config = assay_config,
@@ -658,10 +703,10 @@ plots_tab_server <- function(id,
                  ## 2.3. Violin Plot ####
                  plot_module_server(
                    id = "violin",
-                   object = subset, # Reactive
+                   object = subset, 
                    # plot_switch: uses the input$make_vln switch
                    plot_switch = reactive({input$make_vln}),
-                   plot_label = "Violin Plot", # Non-reactive
+                   plot_label = "Violin Plot",
                    features_entered = reactive({input$text_features}),
                    # Instructs server on which plot function to run
                    plot_type = "violin",
@@ -673,11 +718,11 @@ plots_tab_server <- function(id,
                  ## 2.4. Dot plot ####
                  plot_module_server(
                    id = "dot",
-                   object = subset, # Reactive
+                   object = subset, 
                    # plot_switch: uses the input$make_dot switch
                    plot_switch = reactive({input$make_dot}),
                    features_entered = reactive({input$text_features}),
-                   plot_label = "Dot Plot", # Non-reactive
+                   plot_label = "Dot Plot", 
                    # Instructs server on which plot function to run
                    plot_type = "dot",
                    valid_features = valid_features,
@@ -689,15 +734,30 @@ plots_tab_server <- function(id,
                  ## 2.5. Scatterplot ####
                  plot_module_server(
                    id = "scatter",
-                   object = subset, # Reactive
+                   object = subset, 
                    # plot_switch: uses the input$make_scatter switch
                    plot_switch = reactive({input$make_scatter}),
-                   plot_label = "Scatterplot", # Non-reactive
+                   plot_label = "Scatterplot",
                    # Instructs server on which plot function to run
                    plot_type = "scatter",
                    # Valid features, for displaying choices for x- and y- axes
                    valid_features = valid_features,
                    # Use categorical palettes for scatterplot
+                   palette = selected_categorical_palette
+                   )
+                 
+                 ## 2.6. Ridge Plot ####
+                 plot_module_server(
+                   id = "ridge",
+                   object = subset, 
+                   # plot_switch: uses the input$make_ridge switch
+                   plot_switch = reactive({input$make_ridge}),
+                   plot_label = "Ridge Plot", 
+                   # Relies on feature text entry
+                   features_entered = reactive({input$text_features}),
+                   # Instructs server on which plot function to run
+                   plot_type = "ridge",
+                   # Use categorical palettes for ridge plot
                    palette = selected_categorical_palette
                    )
                  

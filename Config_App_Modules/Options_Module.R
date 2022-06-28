@@ -238,7 +238,6 @@ options_server <- function(id,
       if (options_type == "metadata"){
         # Test for type of metadata field after testing to see 
         # if the object is a metadata entry
-        print("metadata type if")
         if (type == "Categorical"){
           ### 2.1.1. Define UI for group selection ####
           observeEvent(

@@ -95,7 +95,9 @@ plot_module_ui <- function(id,
                            separate_features =          FALSE,
                            download_button =            FALSE,
                            # Default values for inputs
-                           label_default =              TRUE#,
+                           label_default =              TRUE,
+                           # Adds "none" to group_by choices
+                           group_by_add_none =           FALSE
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -145,8 +147,14 @@ plot_module_ui <- function(id,
       
       ## Group by menu ####
       if (group_by == TRUE){
-        # Choices for group by selection: should exclude "none"
-        group_by_choices <- meta_choices()[!meta_choices() %in% "none"]
+        # Choices for group by selection: should exclude "none" unless 
+        # explicitly included using group_by_add_none == TRUE
+        group_by_choices <- 
+          if (group_by_add_none == FALSE){
+            meta_choices()[!meta_choices() %in% "none"]
+          } else {
+            meta_choices()
+          }
         
         # If TRUE, add element
         selectInput(
@@ -294,9 +302,9 @@ plot_module_ui <- function(id,
           # Throw error if group_by menu is created (menu uses same ID)
           stop("`group_by_label` can't be TRUE when `group_by` is TRUE.")
         } else {
-          # Choices for group by selection: should exclude "none"
+          # Choices for group by selection: should exclude "none" 
           group_by_choices <- meta_choices()[!meta_choices() %in% "none"]
-
+           
           hidden(
             selectInput(
               inputId = ns("group_by"),
@@ -560,12 +568,15 @@ plot_module_ui <- function(id,
 #' in the app
 #' @param n_cells_original The number of cells in the original object. This is
 #' set in the main server function each time a new object is loaded.
-#' @param features_entered 
+#' @param features_entered The features entered in the plots tab of the app.
+#' This is currently defined in the plots tab module and passed to this module.
 #' @param manual_dimensions Creates a server instance for specifying manual 
 #' dimensions if TRUE. This should be set to TRUE if manual_dimensions is also 
 #' TRUE in the UI
 #' @param plot_type The type of plot to create from the selected options.
-#' @param valid_features 
+#' @param valid_features A list of the features that may be selected. Used for
+#' plot types that allow for selection of separate features (such as dot plots),
+#' or for scatterplots where two features are chosen from a search menu.
 #' @param lim_orig A list with the original x- and y- axes limits for each 
 #' reuction enabled for the current object. The list is generated at app 
 #' startup.
@@ -590,7 +601,8 @@ plot_module_server <- function(id,
                                              "feature",
                                              "violin",
                                              "dot",
-                                             "scatter"), #Non-reactive
+                                             "scatter",
+                                             "ridge"), #Non-reactive
                                valid_features = NULL, #Reactive
                                lim_orig = lim_orig, #Reactive
                                palette = NULL, #Reactive
@@ -1808,12 +1820,12 @@ plot_module_server <- function(id,
                  
                  # 9. Plot -----------------------------------------------------
                  ## 9.1 Define Features to use ####
-                 # For all plots except dimplot, scatterplot 
+                 # For all plots except dimplot, scatterplot, and ridgeplot 
                  # Uses either the general feature entry (features_entered()),
                  # or the separate features text entry depending on whether
                  # separate features are used in the module and whether the 
                  # checkbox to use them is selected.
-                 if (!plot_type %in% c("dimplot", "scatter")){
+                 if (!plot_type %in% c("dimplot", "scatter", "ridge")){
                    features <-
                      reactive(
                        label = glue("{plot_label}: Features for Plot"),            
@@ -2004,6 +2016,7 @@ plot_module_server <- function(id,
                            )
                          })
                  } else if (plot_type == "scatter"){
+                   ### 9.2.5. Scatterplot ####
                    # Scatterplot using relevant inputs
                    plot <- 
                      reactive(
@@ -2019,6 +2032,21 @@ plot_module_server <- function(id,
                            palette = palette
                            )
                        })
+                 } else if (plot_type == "ridge"){
+                   ### 9.2.6. Ridge Plot ####
+                     plot <-
+                       reactive(
+                         label = glue("{plot_label}: Create Plot"),
+                         {
+                          shiny_ridge(
+                            object = object(),
+                            features_entered = features_entered(),
+                            group_by = plot_selections$group_by(),
+                            show_legend = plot_selections$legend(),
+                            palette = palette()
+                            ) 
+                         }
+                       )
                    }
                  
                  ## 9.3. Render plot ####
