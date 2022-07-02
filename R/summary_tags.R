@@ -1,6 +1,6 @@
 #' summary_tags
 #'
-#' Generates a list of Shiny tags 
+#' Generates a list of Shiny tags to print the output of base R's `summary()`.
 #'
 #' Output format
 #' Min: <minimum value>

@@ -4,7 +4,8 @@ shiny_ridge <-
    features_entered,
    group_by = "none",
    show_legend = TRUE,
-   palette = NULL
+   palette = NULL,
+   center_x_axis_title = FALSE
   ){
     # If group_by is equal to none, add a dummy metadata column that labels
     # all cells with... "All Cells"
@@ -82,9 +83,20 @@ shiny_ridge <-
               plot.title = 
                 element_text(
                   hjust = 0.5
-                )
+                  )
+              )
+            ),
+          # Element D: Center X-axis label
+          if (center_x_axis_title == TRUE){
+            list(
+              theme(
+                axis.title.x = 
+                  element_text(
+                    hjust = 0.5
+                  )
+              )
             )
-          )
+          }
           )
 
       # Apply layers

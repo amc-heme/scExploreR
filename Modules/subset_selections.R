@@ -121,7 +121,7 @@ subset_selections_ui <- function(id,
                 rel = "noopener noreferrer",
                 class = "blue_hover underline underline-hover left",
                 # Decrease padding around link
-                style = "padding: 3px 6px;"
+                style = "padding: 3px 6px; margin-top: 15px;"
               )
             )
           ),
@@ -200,6 +200,10 @@ subset_selections_server <- function(id,
     function(input,output,session){
       # Server namespace function: used for UI elements rendered in server
       ns <- session$ns
+      
+      # module_data: reactiveValues object used to store the ridgeplot 
+      # interactively generated in 5.3.
+      module_data <- reactiveValues()
       
       # 1. UI for String Subsetting --------------------------------------------
       # Use shinyjs to show and hide menus based on whether the adv. subsetting
@@ -592,17 +596,328 @@ subset_selections_server <- function(id,
               ),
             tags$p("(This must be entered exactly as it displays above)"),
             # Summary Statistics
+            tags$b("Summary Statistics", class = "bold-blue"),
             summary_tags(
               feature_summary,
               header_class = "bold-blue"
-              )
+              ),
+            # Ridge plot showing histogram of feature expression (in all cells)
+            plotOutput(
+              outputId = ns("feature_summary_ridge"),
+              height = "150px",
+              # Draw vertical line upon user click
+              # Adding "plot_hover" will create `input$plot_hover`.
+              # A vertical line will be drawn according to the x coordinate 
+              # corresponding to the pointer location 
+              hover = 
+                hoverOpts(
+                  id = ns("plot_hover"),
+                  # Draw line when 
+                  delay = 300,
+                  delayType = "throttle"
+                  ),
+              click =
+                clickOpts(
+                  id = ns("plot_click")
+                )
+              ),
+            # UI to display statistics based on selected threshold
+            uiOutput(
+              outputId = ns("threshold_stats_ui")
+            )#,
+            
+            # TEMP: Show hover coordinates
+            # tags$p("Hover Data"),
+            # verbatimTextOutput(
+            #   outputId = ns("print_hover_coords")
+            #   ),
+            # tags$p("Click Data"),
+            # verbatimTextOutput(
+            #   outputId = ns("print_click_info")
+            #   )
             )
         })
       
-      ## 5.3. Render Feature Statistics UI ####
+      ## 5.3. Define Ridge Plot Showing Feature Expression ####
+      # The plot must be stored in a reactiveValues object (module_data) to
+      # avoid reactivity issues when processing hover and click values. 
+      # The initial plot is generated below.
+      observeEvent(
+        input$search_feature,
+        label = "Subset Selections: Ridge Plot Histogram",
+        ignoreNULL = FALSE,
+        {
+          # When drawing a new plot, clear plots and data associated with the
+          # last plot if present
+          module_data$initial_ridge_plot <- NULL
+          module_data$ridge_plot_with_threshold <- NULL
+          module_data$ridge_plot <- NULL
+          module_data$threshold_x <- NULL
+          module_data$thresh_stats <- NULL
+          
+          # Set module_data$ridge_plot to the plot if a feature is entered
+          # in the search bar, otherwise set the plot to NULL
+          if (isTruthy(input$search_feature)){
+            data <- 
+              FetchData(
+                object = object(),
+                vars = input$search_feature
+                )
+            
+            # Get minimum and maximum values of data
+            module_data$plot_max <- 
+              data |> 
+              max()
+            
+            module_data$plot_min <-
+              data |> 
+              min()
+            
+            ### TEMP ###
+            # Also make a ggplot histogram
+            module_data$gg_histogram <-
+              ggplot(data = data, aes(x = .data[[input$search_feature]])) +
+              geom_histogram(color = "#000000", fill = "#000088") +
+              theme_light()
+            
+            # The coordinates returned from hover and click events will
+            # be multiplied by the range to allow the user to properly select
+            # a region on the plot
+            # This is a workaround, it would be ideal to find out why Shiny
+            # interactive coordinates aren't working for Seurat plots
+            module_data$plot_range <- 
+              module_data$plot_max - module_data$plot_min
+            
+            module_data$initial_ridge_plot <-
+              shiny_ridge(
+                object = object(), 
+                features_entered = input$search_feature, 
+                group_by = "none", 
+                show_legend = FALSE, 
+                palette = c("#000088"),
+                center_x_axis_title = TRUE
+                ) 
+            # Extract the object from patchwork format
+            module_data$initial_ridge_plot <-
+              module_data$initial_ridge_plot[[1]]
+          } else {
+            module_data$initial_ridge_plot <-
+              NULL
+            }
+          })
+      
+      ## 5.4. Add vertical Line Upon Hovering
+      # In the event the user hovers over or clicks the plot, add the 
+      # corresponding vertical line at the x-coordinate of the click.
+      observeEvent(
+        input$plot_hover,
+        # IgnoreNULL must be TRUE to avoid the plot computing when
+        # input$plot_hover is NULL, which will erase the line from the plot
+        # as soon as it is drown
+        ignoreNULL = TRUE,
+        ignoreInit = TRUE,
+        {
+          # The saved plot must be different from the initial plot, or a series
+          # of vertical lines will be created each time a hover event is 
+          # registered
+          
+          # Transforming X-coordinates for compatibility with hover/click
+          # Coordinates are incorrectly being from zero to one, with one
+          # being the max value on the plot.
+          x_original <-
+            interactive_transform(
+              x_coord = input$plot_hover$x, 
+              distribution_range = module_data$plot_range,
+              distribution_minimum = module_data$plot_min, 
+              plot_min_coord = 0.08, 
+              plot_max_coord = 0.9
+              )
+          
+          # Draw vertical line using transformed hover coordinate  
+          # Hover line is drawn over either the initial plot, or the plot
+          # with a defined threshold, depending on whether the user has
+          # clicked the plot
+          
+          # module_data$click_info is used. module_data$click_info only 
+          # changes upon a new click, and does not become NULL while the 
+          # plot is re-drawn
+          # if (!is.null(module_data$click_info)){
+          #  base_plot <- module_data$initial_ridge_plot 
+          # } else {
+          #   # If module_data$click_info is defined, use the plot with 
+          #   # the vertical line at the click location
+          #   base_plot <- module_data$ridge_plot_with_threshold 
+          # }
+          
+          base_plot <- 
+            if (!is.null(module_data$ridge_plot_with_threshold)){
+              module_data$ridge_plot_with_threshold
+            } else{
+              module_data$initial_ridge_plot
+            }
+          
+          module_data$ridge_plot <-
+            base_plot +
+            geom_vline(
+              xintercept = x_original,
+              color = "#666666",
+              size = 0.75
+            )
+            
+            # TEMP: update hover coordinates for renderPrint output
+            module_data$hover_coords <- 
+              input$plot_hover
+            })
+      
+      ## 5.5. Respond to Click Event ####
+      ### 5.5.1 Add Threshold Line, Record Click Coordinates ####
+      observeEvent(
+        input$plot_click,
+        # IgnoreNULL must be TRUE to avoid the plot computing when
+        # input$plot_click is NULL, which will erase the line from the plot
+        # as soon as it is drown
+        ignoreNULL = TRUE,
+        ignoreInit = TRUE,
+        {
+          # Draw a solid, and persistent, line on the x-axis
+          # Transfrom x-coordinate of click to match distribution
+          x_original <-
+            interactive_transform(
+              x_coord = input$plot_click$x, 
+              distribution_range = module_data$plot_range,
+              distribution_minimum = module_data$plot_min, 
+              plot_min_coord = 0.08, 
+              plot_max_coord = 0.9
+              )
+          
+          # Record transformed x-coordinate 
+          print("Record threshold")
+          module_data$threshold_x <- x_original
+          
+          # Draw vertical line using transformed hover coordinate  
+          module_data$ridge_plot_with_threshold <-
+            module_data$initial_ridge_plot +
+            geom_vline(
+              xintercept = x_original,
+              color = "#000000",
+              size = 0.75
+              )
+          
+          # Record feature statistics
+          module_data$thresh_stats <- 
+            threshold_stats(
+              object = object(), 
+              feature = input$search_feature, 
+              threshold = module_data$threshold_x
+            )
+          
+          # Record click coordinates
+          module_data$click_info <- 
+            input$plot_click
+        })
+      
+      # ### 5.5.2 Compute Threshold Stats ###
+      # # Reactive expression must have separate name from function inside
+      # threshold_statistics <-
+      #   eventReactive(
+      #     input$plot_click,
+      #     # Must ignore NULL events to avoid stats resetting while the plot
+      #     # is drawing the threshold line
+      #     ignoreNULL = TRUE,
+      #     ignoreInit = TRUE,
+      #     {
+      #       print("Compute threshold stats")
+      #       
+      #       # Threshold stats function
+      #       threshold_stats(
+      #         object = object(), 
+      #         feature = input$search_feature, 
+      #         threshold = module_data$threshold_x
+      #         )
+      #       })
+      
+      ### 5.5.2. Display Threshold Stats ####
+      threshold_stats_ui <- 
+        eventReactive(
+          module_data$thresh_stats,
+          ignoreNULL = FALSE,
+          {
+            # Display UI only when a selection is made
+            if (!is.null(module_data$threshold_x)){
+              print("Pass is.null test")
+              
+              div(
+                class = "compact-options-container",
+                tags$b(
+                  class = "center",
+                  "Chosen threshold"
+                ),
+                tags$b(
+                  class ="center half-space-bottom",
+                  style = "background-color: #FFFFFF; border-radius: 10px;",
+                  format(
+                    module_data$threshold_x,
+                    # Display at least three sig figs in percentage
+                    digits = 3,
+                    # Display at least two digits after decimal point
+                    nsmall = 2,
+                    scientific = FALSE
+                  )
+                ),
+                tags$b(
+                  "Number of cells above threshold:"
+                ),
+                glue(
+                  "{module_data$thresh_stats$n_above}
+                  ({module_data$thresh_stats$percent_above}%)"
+                ),
+                tags$br(),
+                tags$b(
+                  "Number of cells below threshold:"
+                ),
+                glue(
+                  "{module_data$thresh_stats$n_below} 
+                  ({module_data$thresh_stats$percent_below}%)"
+                )
+              )
+            } 
+            })
+      
+      # output$print_hover_coords <-
+      #   renderPrint({
+      #     req(module_data$hover_coords)
+      #     
+      #     module_data$hover_coords
+      #   })
+      # 
+      # output$print_click_info <-
+      #   renderPrint({
+      #     req(module_data$click_info)
+      #     
+      #     module_data$click_info
+      #   })
+      
+      ## 5.4. Render Feature Statistics Components ####
       output$feature_statistics <- 
         renderUI({
           feature_stats_ui()
+        })
+      
+      output$feature_summary_ridge <-
+        renderPlot({
+          # Must use suppressMessages and print(plot) to suppress a
+          # "Picking joint bandwidth of ___" message from ggridges, which
+          # overwhelms the console when interactive hovering is used
+          # SuppressMessages alone is not enough, print(plot) must also be
+          # used. See https://github.com/tidyverse/ggplot2/issues/1101
+          suppressMessages(
+            print(module_data$ridge_plot)
+          )
+        })
+      
+      output$threshold_stats_ui <-
+        renderUI({
+          threshold_stats_ui()
         })
       
       # 6. Form Reactive List From Menu Selections -----------------------------
