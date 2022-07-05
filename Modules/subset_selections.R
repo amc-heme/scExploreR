@@ -675,10 +675,10 @@ subset_selections_server <- function(id,
             
             ### TEMP ###
             # Also make a ggplot histogram
-            module_data$gg_histogram <-
-              ggplot(data = data, aes(x = .data[[input$search_feature]])) +
-              geom_histogram(color = "#000000", fill = "#000088") +
-              theme_light()
+            # module_data$gg_histogram <-
+            #   ggplot(data = data, aes(x = .data[[input$search_feature]])) +
+            #   geom_histogram(color = "#000000", fill = "#000088") +
+            #   theme_light()
             
             # The coordinates returned from hover and click events will
             # be multiplied by the range to allow the user to properly select
@@ -706,7 +706,7 @@ subset_selections_server <- function(id,
             }
           })
       
-      ## 5.4. Add vertical Line Upon Hovering
+      ## 5.4. Add vertical Line Upon Hovering ####
       # In the event the user hovers over or clicks the plot, add the 
       # corresponding vertical line at the x-coordinate of the click.
       observeEvent(
@@ -791,25 +791,30 @@ subset_selections_server <- function(id,
               )
           
           # Record transformed x-coordinate 
-          print("Record threshold")
-          module_data$threshold_x <- x_original
+          # Round threshold to two decimal places (such that the threshold 
+          # displayed will be consistent with the threshold stats computed if
+          # it is copied and pasted. To my knowledge, there is no need to use
+          # thresholds with greater precision)
+          module_data$threshold_x <- 
+            x_original |> 
+            round(digits = 2)
           
           # Draw vertical line using transformed hover coordinate  
           module_data$ridge_plot_with_threshold <-
             module_data$initial_ridge_plot +
             geom_vline(
-              xintercept = x_original,
+              xintercept = module_data$threshold_x,
               color = "#000000",
               size = 0.75
               )
           
-          # Record feature statistics
+          # Record threshold statistics
           module_data$thresh_stats <- 
             threshold_stats(
               object = object(), 
               feature = input$search_feature, 
               threshold = module_data$threshold_x
-            )
+              )
           
           # Record click coordinates
           module_data$click_info <- 
@@ -844,8 +849,6 @@ subset_selections_server <- function(id,
           {
             # Display UI only when a selection is made
             if (!is.null(module_data$threshold_x)){
-              print("Pass is.null test")
-              
               div(
                 class = "compact-options-container",
                 tags$b(
