@@ -95,7 +95,7 @@ dge_test_selection_server <-
                     # to avoid namespace collisions
                     inputId = ns("group_by_marker"),
                     label = 
-                      "Choose metadata to use formarker identification:",
+                      "Choose metadata to use for marker identification:",
                     # Remove "none" and "best_response" from selectable
                     # options to group by
                     choices =
@@ -401,7 +401,7 @@ dge_test_selection_server <-
         # Return a reactive list with inputs, depending on the selected DGE mode
         selections <- 
           reactive(
-            label="Test Selection: Return Values",
+            label = "Test Selection: Return Values",
             {
               # dge_mode() must be defined to avoid errors
               if (!is.null(dge_mode())){
