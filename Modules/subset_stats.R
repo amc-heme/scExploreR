@@ -10,11 +10,10 @@
 # in the config file
 # gene_selected: In the corr tab, the gene selected by the user for computation.
 subset_stats_ui <- function(id,
-                            tab=c("dge","corr"),
+                            tab = c("dge", "corr"),
                             metadata_config,
                             meta_categories,
-                            subset_selections,
-                            gene_selected=NULL
+                            gene_selected = NULL
                             ){
   # Namespace function: prevents conflicts with 
   # inputs/outputs defined in other modules
@@ -31,13 +30,13 @@ subset_stats_ui <- function(id,
           ),
         textOutput(
           outputId = ns("print_mode"), 
-          inline=FALSE
+          inline = FALSE
           )
         ),
       # Metadata-specific subset statistics
       tags$strong(
         "Subset Used for Test", 
-        class="x-large inline-block space-top"
+        class = "x-large inline-block space-top"
         ),
       
       # Loop through the metadata categories read on app startup
@@ -76,7 +75,7 @@ subset_stats_ui <- function(id,
         tags$strong("Number of cells per class: "),
         verbatimTextOutput(outputId = ns("n_by_class")),
         # Applies CSS from www/other.css to verbatimTextOutput
-        class="n_by_class_style"
+        class = "n_by_class_style"
         )
       )# End tagList
       
@@ -158,7 +157,8 @@ subset_stats_server <-
            gene_selected = NULL,
            nonzero_threshold = NULL,
            group_by_category,
-           metaclusters_present
+           metaclusters_present = NULL,
+           thresholding_present = NULL
            ){
     moduleServer(
       id, 
@@ -166,6 +166,17 @@ subset_stats_server <-
         # Server namespace function (used for renderUI and 
         # JavaScript ID references)
         ns <- session$ns
+        
+        # For the DGE tab, ensure that metaclusters_present and 
+        # thresholding_present are defined 
+        if (
+          tab == "dge" & 
+            (!is.reactive(metaclusters_present) | 
+             !is.reactive(thresholding_present))
+        ){
+          stop("If `tab`=='dge', arguments `metaclusters_present` and 
+               `thresholding_present` must be defined as reactive values.")
+        }
         
         # 1. Compute stats for subset ------------------------------------------
         # Cells in subset (computed for both DGE and corr tabs)
@@ -214,23 +225,30 @@ subset_stats_server <-
         # For DGE tab only: stats on selected DE/marker classes, test 
         # mode, and number of cells by class
         if (tab == "dge"){
-          # classes: unique values in the selected group by metadata 
-          # category (not displayed but used downstream)
+          # Classes
+          # The groups or markers used for DGE. 
+          # Used for downstream stats
           classes <- 
             eventReactive(
               event_expr(),
               {
-                # Exception: when metaclusters are enabled, the classes are 
-                # the metaclusters created
                 if (metaclusters_present()){
+                  # When metaclusters are enabled, use two classes from 
+                  # "metacluster" column
                   subset()@meta.data$metacluster |> 
+                    unique()
+                } else if (thresholding_present()){
+                  # Simple thresholding: use classes from 
+                  # "simple_expr_threshold" column
+                  subset()@meta.data$simple_expr_threshold |> 
                     unique()
                 } else {
                   # Standard behavior
+                  # Use unique values for selected group by category in subset
                   subset()@meta.data[,group_by_category()] |> 
                     unique()
-                }
-              })
+                  }
+                })
           
           # Number of classes of the group_by metadata 
           # category in subset
@@ -267,44 +285,65 @@ subset_stats_server <-
               event_expr(),
               {
                 # Number of cells by class (tibble format)
-                if (metaclusters_present() == FALSE){
-                  n_cells_tibble <- 
-                    subset()@meta.data |>
-                    # Group by the specified metadata variable 
-                    group_by(.data[[group_by_category()]]) |>
-                    # Calculate number of cells per group
-                    summarise(n = n())
-                } else {
-                  # Exception: when metaclusters enabled, use "metaclusters"
-                  # as the group_by variable
-                  n_cells_tibble <- 
-                    subset()@meta.data |>
-                    # Group by the specified metadata variable 
-                    group_by(.data[["metacluster"]]) |>
-                    # Calculate number of cells per group
-                    summarise(n = n())
-                }
-                 
+                # Identify which metadata column is being used to define 
+                # groups.
                 
+                # Attempted to use a case_when statement here, but it caused
+                # errors. This issue appears to be with the reactive 
+                # group_by_category(), which is only defined when 
+                # metaclusters_present() and thresholding_present() are both 
+                # FALSE. The reactive appears to be evaluated regardless of what 
+                # the conditional statements passed evaluate to, even if the 
+                # value is not assigned 
+                
+                # grouping_column <-
+                #   case_when(
+                #     # For metaclusters, "metacluster"
+                #     metaclusters_present() ~ "metacluster",
+                #     # For simple thresholding, "simple_expr_threshold"
+                #     thresholding_present() ~ "simple_expr_threshold",
+                #     TRUE ~ group_by_category()
+                #     )
+
+                grouping_column <-
+                  if (metaclusters_present()){
+                    # For metaclusters, "metacluster"
+                    "metacluster"
+                  } else if (thresholding_present()){
+                    # For simple thresholding, "simple_expr_threshold"
+                    "simple_expr_threshold"
+                  } else {
+                    # Standard behavior: use group_by category
+                    group_by_category()
+                  }
+                
+                  
+                n_cells_tibble <-
+                  subset()@meta.data |>
+                  # Group by the metadata column identified above
+                  group_by(.data[[grouping_column]]) |>
+                  # Calculate number of cells per group
+                  summarise(n = n())
+
                 # Extract information from tibble
-                # Class names in first column of tibble
+                # Class names: first column of tibble
                 class_names <- as.character(n_cells_tibble[[1]])
-                # Cell counts are in second column of tibble
+                # Cell counts: second column of tibble
                 n_cells <- n_cells_tibble[[2]]
-                
+
                 # Print list of classes and the number of cells in each
                 n_cells_list = list()
                 for (i in 1:nrow(n_cells_tibble)){
-                  n_cells_list[[i]] <- 
+                  n_cells_list[[i]] <-
                     glue("{class_names[i]}: {n_cells[i]}")
                 }
-                
+
                 # Collapse list of class-count pairs into a string
-                # \n is the separator (will be read by 
+                # \n is the separator (will be read by
                 # verbatimTextOutput())
                 n_by_class <- paste(n_cells_list, collapse = "\n")
-                
-                return(n_by_class)
+
+                n_by_class
               })
           }
         
@@ -350,11 +389,10 @@ subset_stats_server <-
         
         # 3. Display stats -----------------------------------------------------
         ## 3.1. Number of cells (both tabs)
-        output$n_cells <- renderText({
-          # Use isolate to keep values from updating before the submit 
-          # button is pressed
-          n_cells()
-          })
+        output$n_cells <- 
+          renderText({
+            n_cells()
+            })
         
         ## 3.2 Cells with nonzero reads (correlations tab only)
         if (tab == "corr"){

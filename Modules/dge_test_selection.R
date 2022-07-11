@@ -31,27 +31,49 @@ dge_test_selection_ui <- function(id,
   # (dynamically updated based on group_by choice)
   classes_menu <- uiOutput(outputId = ns("classes_menu"))
   
+  # 4. Feature Expression Checkbox
+  # Option to use feature expression instead of categorical
+  # metadata to define groups
+  feature_expression_checkbox <-
+    # This option is only visible when differential expression is the mode
+    hidden(
+      checkboxInput(
+        inputId = ns("use_feature_expression"),
+        label = "Use Feature Expression to Define Groups"
+        )
+      )
+  
   # Combine elements above into tagList and return for display in app
   ui <- 
     tagList(
       mode_menu,
       group_by_menu,
-      classes_menu
+      classes_menu,
+      feature_expression_checkbox
       )
   }
 
-# Server function
-# Arguments
-# id: the namespace to use for the module. UI-server function pairs should use the same id.
-# object: The Seurat Object defined in the main server function
-# metadata_config: the metadata section of the config file. This does not need to
-# be specified if the config list is stored as "config" in the global environment.
+#' Test Selection in DGE Tab
+#'
+#' @param id ID to use for module namespacing. Must match the ID passed to 
+#' dge_test_selection_ui.
+#' @param object The Seurat Object defined in the main server function.
+#' @param unique_metadata 
+#' @param metadata_config the metadata section of the config file. This does not
+#' need to be specified if the config list is stored as "config" in the global
+#' environment.
+#' @param meta_choices 
+#' @param valid_features 
+#'
+#' @return A reactive list with information on the selected test:
+#'         ``
 dge_test_selection_server <- 
   function(id,
            object,
            unique_metadata,
            metadata_config,
-           meta_choices
+           meta_choices,
+           valid_features
            ){
     moduleServer(
       id,
@@ -65,7 +87,7 @@ dge_test_selection_server <-
             input$mode
             })
         
-        # 2. Dynamic UI for Group by Selection----------------------------------
+        # 2. Group by Menu -----------------------------------------------------
         # Define UI
         group_by_menu <- 
           eventReactive(
@@ -102,7 +124,7 @@ dge_test_selection_server <-
                       meta_choices()[!meta_choices() %in% "none"],
                     # At startup, marker selection is ran with clusters 
                     # as the group by variable.
-                    selected="clusters"
+                    selected = "clusters"
                     )
                   }
               })
@@ -113,7 +135,8 @@ dge_test_selection_server <-
             group_by_menu()
             })
         
-        # 3. Process group_by choice -------------------------------------------
+        # 3. Classes/Groups Menu -----------------------------------------------
+        ## 3.1. Process group_by choice ####
         # Reactive below avoids namespace collision issue while
         # pointing group by selections to one variable
         group_by_category <- 
@@ -131,7 +154,7 @@ dge_test_selection_server <-
                 } else NULL
               })
         
-        # 4. Determine unique values for the group by category -----------------
+        ## 3.2. Determine unique values for the group by category ####
         # Will be options for marker classes or groups in DGE). This process 
         # will be the same regardless of whether marker selection or 
         # differential gene expression is the chosen test
@@ -159,53 +182,110 @@ dge_test_selection_server <-
                 str_sort(numeric=TRUE)
               })
         
-        # 5. Dynamic UI for Marker classes/group selection ---------------------
+        ## 3.3. Show/hide menu for groups based on feature expression ####
+        observe(
+          label = "Test Selection: Show/Hide Groups by Expression Checkbox",
+          {
+            # Only evaluate when dge_mode() is defined
+            req(dge_mode())
+            
+            target_id <- "use_feature_expression"
+
+            if (dge_mode() == "mode_dge"){
+              showElement(
+                id = target_id
+                )
+              } else {
+                hideElement(
+                  id = target_id
+                  )
+                }
+            })
+        
+        ## 3.4. UI for Marker classes/group selection ####
         # Define_UI
         classes_menu <- 
           eventReactive(
-            # Reacts to group choices, defined in 4.
+            # Reacts to group choices, defined in 3.2.
             group_choices(),
             label = "Test Selection: Classes Selection Menu",
             #ignoreNULL = FALSE,
             {
               if (dge_mode() == "mode_dge") {
-                # DGE mode: display menus to select two classes from the 
-                # metadata category chosen as the group_by variable. This can be
-                # expanded to include groups based on multiple metadata
-                # selections
+                # DGE mode: UI depends on whether user selects checkbox for
+                # groups by feature expression
+                # Both interfaces are hidden by default and are shown based on
+                # the condition of the checkbox
                 tagList(
-                  # Put choices beside one another in two-column format
-                  pickerInput(
-                    inputId = ns("group_1"),
-                    label = "Group 1",
-                    choices = group_choices(),
-                    # Nothing selected by default
-                    selected = character(0),
-                    multiple = TRUE,
-                    options =
-                      list(
-                        "selected-text-format" = "count > 5",
-                        "actions-box" = TRUE,
-                        # Label for "deselect all" button
-                        "deselectAllText" = "Clear selections"
-                        )
-                    ),
-                  pickerInput(
-                    inputId = ns("group_2"),
-                    label = "Group 2",
-                    choices = group_choices(),
-                    selected = character(0),
-                    multiple = TRUE,
-                    options =
-                      list(
-                        "selected-text-format" = "count > 5",
-                        "actions-box" = TRUE,
-                        # Label for "deselect all" button
-                        "deselectAllText" = "Clear selections"
+                  # Standard DGE UI
+                  # Display menus to select two classes from the metadata 
+                  # category chosen as the group_by variable. Multiple 
+                  # selections are possible for each group.
+                  div(
+                    id = ns("standard_groups_ui"),
+                    # Put choices beside one another in two-column format
+                    pickerInput(
+                      inputId = ns("group_1"),
+                      label = "Group 1",
+                      choices = group_choices(),
+                      # Nothing selected by default
+                      selected = character(0),
+                      multiple = TRUE,
+                      options =
+                        list(
+                          "selected-text-format" = "count > 5",
+                          "actions-box" = TRUE,
+                          # Label for "deselect all" button
+                          "deselectAllText" = "Clear selections"
+                          )
+                      ),
+                    pickerInput(
+                      inputId = ns("group_2"),
+                      label = "Group 2",
+                      choices = group_choices(),
+                      selected = character(0),
+                      multiple = TRUE,
+                      options =
+                        list(
+                          "selected-text-format" = "count > 5",
+                          "actions-box" = TRUE,
+                          # Label for "deselect all" button
+                          "deselectAllText" = "Clear selections"
                         )
                     )
-                  
-                  ) # End tagList
+                  ),
+                  # Feature Threshold DGE UI
+                  # Eventually, will be divided into multiple separate 
+                  # interfaces for different types of thresholding
+                  hidden(
+                    div(
+                      id = ns("threshold_groups_ui"),
+                      # Simple threshold menu
+                      # One feature is chosen, and cells with expression above 
+                      # the threshold are compared to cells below threshold 
+                      selectizeInput(
+                        inputId = ns("simple_threshold_feature"),
+                        label = NULL,
+                        choices = NULL,
+                        selected = character(0),
+                        options = 
+                          list(
+                            "placeholder" = "Enter feature",
+                            "maxItems" = 1,
+                            "plugins" = list("remove_button"),
+                            "create" = FALSE
+                            )
+                        ),
+                      
+                      # Threshold picker UI (module hides plot
+                      # until feature is chosen above)
+                      threshold_picker_ui(
+                        id = ns("simple_threshold"),
+                        plot_height = "150px"
+                      )
+                    )
+                  )
+                )
                 } else if (dge_mode() == "mode_marker") {
                   # Marker mode: display menu to choose values from the 
                   # group by metadata category to include as classes in 
@@ -252,15 +332,40 @@ dge_test_selection_server <-
              classes_menu()
             })
         
-        # 6. Update Group 2 Menu Based on Group 1 Selection --------------------
-        # Removes the value in group 1 from the group 2 menu to keep 
-        # user from selecting the same groups for DE comparison
+        ## 3.5. Show/hide possible DGE UI interfaces ####
+        observe({
+          standard_id <- "standard_groups_ui"
+          threshold_id <- "threshold_groups_ui"
         
-        ## 6.1. Update Group 2 based on Group 1 Selection ####
+          if (!isTruthy(input$use_feature_expression)){
+            # When use feature expression checkbox is de-selected, show 
+            # standard DGE UI and hide the threshold DGE UI
+            showElement(
+              id = standard_id
+              )
+            hideElement(
+              id = threshold_id
+            )
+          } else {
+            # When the checkbox is selected, show the threshold DGE UI, and 
+            # hide the standard UI
+            showElement(
+              id = threshold_id
+              )
+            hideElement(
+              id = standard_id
+              )
+            }
+          })
+        
+        ## 3.6. Standard DGE Processing ####
+        ### 3.6.1. Update Group 2 based on Group 1 Selection ####
+        # Removes the value(s) in group 1 from the group 2 menu to keep 
+        # user from selecting the same groups for DE comparison
         observeEvent(
           input$group_1,
           # Menu update not necessary at startup
-          ignoreInit=TRUE,
+          ignoreInit = TRUE,
           # NULL values cause errors in this function
           ignoreNULL = TRUE,
           {
@@ -312,7 +417,7 @@ dge_test_selection_server <-
               )
             })
         
-        ## 6.2. Update Group 1 based on Group 2 Selection ####
+        ### 3.6.2. Update Group 1 based on Group 2 Selection ####
         observeEvent(
           input$group_2,
           # Menu update not necessary at startup
@@ -366,7 +471,39 @@ dge_test_selection_server <-
             )
           })
         
-        # 7. Process Test Selections -------------------------------------------
+        ## 3.7. Simple Feature Threshold Processing ####
+        ### 3.7.1. Populate Feature Choices for Simple Thresholding ####
+        # Populate menu with valid features when simple thresholding is selected
+        observeEvent(
+          label = "Test Selection: Fill Available Features",
+          input$use_feature_expression,
+          {
+            if (!isTruthy(input$simple_threshold_feature)){
+              # Update unless the user has entered a feature (updating in this 
+              # case is not necessary, and it would erase the user's input)
+              updateSelectizeInput(
+                session,
+                # Do not namespace IDs in update* functions
+                inputId = "simple_threshold_feature", 
+                choices = valid_features(), 
+                selected = character(0),
+                server = TRUE
+                )
+            }
+            
+          })
+        
+        ### 3.7.2. Server for Interactive Ridge Plot ####
+        simple_threshold <- 
+          threshold_picker_server(
+            # Do not namespace module server function IDs 
+            id = "simple_threshold",
+            object = object,
+            feature = reactive({input$simple_threshold_feature}),
+            showhide_animation = TRUE
+            )
+        
+        # 4. Process Test Selections -------------------------------------------
         # Group 1: process input if DGE is the mode selected
         group_1 <- 
           reactive({
@@ -397,7 +534,7 @@ dge_test_selection_server <-
               }
             })
         
-        # 8. Return information ------------------------------------------------
+        # 5. Return information ------------------------------------------------
         # Return a reactive list with inputs, depending on the selected DGE mode
         selections <- 
           reactive(
@@ -406,21 +543,43 @@ dge_test_selection_server <-
               # dge_mode() must be defined to avoid errors
               if (!is.null(dge_mode())){
                 if (dge_mode() == "mode_dge"){
-                  # Include groups when DGE is the selected mode
-                  return(
-                    list(
-                      `dge_mode` = dge_mode(),
-                      `group_by` = group_by_category(),
-                      `group_1` = group_1(),
-                      `group_2` = group_2()
+                  # DGE Mode: multiple possible return formats
+                  if (isTruthy(input$use_feature_expression)){
+                    # A. Groups defined using simple thresholding 
+                    # Return feature name and threshold value
+                    return(
+                      list(
+                        `dge_mode` = dge_mode(),
+                        # Indicate simple threshold being used for groups
+                        `group_mode` = "simple_threshold",
+                        `threshold_feature` = 
+                          input$simple_threshold_feature,
+                        `threshold_value` = simple_threshold()
+                        )
                       )
-                    )
+                    } else {
+                      # B. Standard DGE
+                      # Return selected groups
+                      return(
+                        list(
+                          `dge_mode` = dge_mode(),
+                          # Indicate that standard DGE is selected
+                          `group_mode` = "standard",
+                          `group_by` = group_by_category(),
+                          `group_1` = group_1(),
+                          `group_2` = group_2()
+                          )
+                        )
+                      }
                   } else if (dge_mode() == "mode_marker"){
                     # Include classes when marker identification 
                     # is the selected mode
                     return(
                       list(
                         `dge_mode` = dge_mode(),
+                        # Leave group_mode defined for compatability with 
+                        # conditional statements in DGE tab, but set to "none"
+                        `group_mode` = "none",
                         `group_by` = group_by_category(),
                         `classes_selected` = classes_selected()
                         )

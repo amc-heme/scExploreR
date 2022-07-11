@@ -745,7 +745,6 @@ corr_tab_server <- function(id,
                          tab = "corr",
                          metadata_config = metadata_config,
                          meta_categories = meta_categories,
-                         subset_selections = subset_selections,
                          gene_selected = corr_main_gene
                          )
                        })

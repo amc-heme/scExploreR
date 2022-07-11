@@ -14,7 +14,11 @@ library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
 
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
-options(shiny.reactlog=TRUE)
+options(
+  shiny.reactlog = TRUE, 
+  # Full stack trace for errors 
+  shiny.fullstacktrace = TRUE
+  )
 
 # Logging and performance monitoring
 library(profvis, quietly = TRUE, warn.conflicts = FALSE)
@@ -1004,7 +1008,8 @@ server <- function(input, output, session){
           id = glue("{dataset_info$last_object_key}_dge"),
           unique_metadata = unique_metadata,
           metadata_config = metadata_config,
-          meta_categories = meta_categories
+          meta_categories = meta_categories,
+          meta_choices = meta_choices
           )
       })
   
@@ -1091,6 +1096,7 @@ server <- function(input, output, session){
         id = glue("{current_key}_dge"),
         object = object,
         metadata_config = metadata_config,
+        assay_config = assay_config,
         meta_categories = meta_categories,
         unique_metadata = unique_metadata,
         meta_choices = meta_choices,

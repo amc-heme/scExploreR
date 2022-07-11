@@ -16,29 +16,32 @@ threshold_picker_ui <-
     tagList(
       # Plot is hidden until a feature is passed to the module 
       hidden(
-        # Ridge plot showing histogram of feature expression in current object
-        plotOutput(
-          outputId = ns("ridge_plot"),
-          # Shiny Default width: 100% of parent element
-          width = if (!is.null(plot_width)) plot_width else "100%",
-          # Shiny Default height: 400px
-          height = if (!is.null(plot_height)) plot_height else "400px",
-          # Draw vertical line upon user click
-          # Adding "plot_hover" will create `input$plot_hover`.
-          # A vertical line will be drawn according to the x coordinate 
-          # corresponding to the pointer location 
-          hover = 
-            hoverOpts(
-              id = ns("plot_hover"),
-              # Hover response will re-compute every 300ms, as long as cursor is 
-              # within bounds of plot (throttle behavior)
-              delay = 300,
-              delayType = "throttle"
+        div(
+          id = ns("ridge_plot_ui"),
+          # Ridge plot showing histogram of feature expression in current object
+          plotOutput(
+            outputId = ns("ridge_plot"),
+            # Shiny Default width: 100% of parent element
+            width = if (!is.null(plot_width)) plot_width else "100%",
+            # Shiny Default height: 400px
+            height = if (!is.null(plot_height)) plot_height else "400px",
+            # Draw vertical line upon user click
+            # Adding "plot_hover" will create `input$plot_hover`.
+            # A vertical line will be drawn according to the x coordinate 
+            # corresponding to the pointer location 
+            hover = 
+              hoverOpts(
+                id = ns("plot_hover"),
+                # Hover response will re-compute every 300ms, as long as cursor 
+                # is within bounds of plot (throttle behavior)
+                delay = 300,
+                delayType = "throttle"
               ),
-          click =
-            clickOpts(
-              id = ns("plot_click")
+            click =
+              clickOpts(
+                id = ns("plot_click")
               )
+            )
           )
         ),
       # UI to display statistics based on selected threshold
@@ -74,11 +77,8 @@ threshold_picker_ui <-
             ),
           textOutput(
             outputId = ns("below_stats")
+            )
           )
-        )
-        # uiOutput(
-        #   outputId = ns("threshold_stats_ui")
-        #   )
         )
     )
 }
@@ -93,7 +93,8 @@ threshold_picker_server <-
   function(
     id,
     object,
-    feature
+    feature,
+    showhide_animation = FALSE
     ){
     moduleServer(
       id,
@@ -107,18 +108,43 @@ threshold_picker_server <-
         # reactiveValues objects.
         module_data <- reactiveValues()
         
+        # Spinner that displays over ridge plot during initial computation
+        plot_spinner <-
+          Waiter$new(
+            id = ns("ridge_plot"),
+            html = spin_loaders(id = 2, color = "#555588"),
+            color = "#B1B1B188",
+            # Gives manual control of showing/hiding spinner
+            hide_on_render = FALSE
+            )
+        
         # 1. Show plot when feature() is defined ####
         observe(
           label = glue("{id}: Show/hide Ridge Plot"),
           {
+            print("Feature processed by threshold server")
+            print(feature())
+            print("isTruthy test")
+            print(isTruthy(feature()))
+            
+            target_id <- ns("ridge_plot_ui")
+
             if (isTruthy(feature())){
+              print("showElement target")
+              print(ns(target_id))
               showElement(
-                id = "ridge_plot"
-              )
+                id = target_id,
+                # If showhide_animation is TRUE, animate plot (will slide 
+                # into and out of existence)
+                anim = showhide_animation,
+                asis = TRUE
+                )
             } else {
               hideElement(
-                id = "ridge_plot"
-              )
+                id = target_id,
+                anim = showhide_animation,
+                asis = TRUE
+                )
             }
           })
         
@@ -145,6 +171,10 @@ threshold_picker_server <-
               # Prevent unexpected behavior if more than one feature 
               # is specified
               req(length(feature()) == 1)
+              
+              # Show spinner over plot during computation
+              plot_spinner$show()
+              
               data <- 
                 FetchData(
                   object = object(),
@@ -177,13 +207,17 @@ threshold_picker_server <-
                   palette = c("#000088"),
                   center_x_axis_title = TRUE
                 ) 
-              # Extract the object from patchwork format
-              module_data$initial_ridge_plot <-
-                module_data$initial_ridge_plot[[1]]
+            #   # Extract the object from patchwork format
+            #   module_data$initial_ridge_plot <-
+            #     module_data$initial_ridge_plot[[1]]
+              
             } else {
+              # Do not draw plot if no feature is defined
               module_data$initial_ridge_plot <-
                 NULL
             }
+            
+            plot_spinner$hide()
           })
         
         # 3. Add vertical Line Upon Hovering ####
@@ -294,10 +328,10 @@ threshold_picker_server <-
                 threshold = module_data$threshold_x
               )
             
-            print("Cells above")
-            print(module_data$threshold_stats$n_above)
-            print("Cells below")
-            print(module_data$threshold_stats$n_below)
+            # print("Cells above")
+            # print(module_data$threshold_stats$n_above)
+            # print("Cells below")
+            # print(module_data$threshold_stats$n_below)
             
             # Record click coordinates
             module_data$click_info <- 
@@ -308,61 +342,18 @@ threshold_picker_server <-
         observe(
           label = glue("{id}: Show/hide Threshold Stats"),
           {
+            target_id <- "threshold_stats_ui"
+            
             if (!is.null(module_data$threshold_x)){
               showElement(
-                id = "threshold_stats_ui"
+                id = target_id
               )
             } else {
               hideElement(
-                id = "threshold_stats_ui"
+                id = target_id
               )
             }
           })
-        
-        ## 4.2. Compute UI
-        # threshold_stats_ui <- 
-        #   eventReactive(
-        #     module_data$threshold_stats,
-        #     ignoreNULL = FALSE,
-        #     {
-        #       # Display UI only when a selection is made
-        #       if (!is.null(module_data$threshold_x)){
-        #         div(
-        #           class = "compact-options-container",
-        #           tags$b(
-        #             class = "center",
-        #             "Chosen threshold"
-        #           ),
-        #           tags$b(
-        #             class ="center half-space-bottom",
-        #             style = "background-color: #FFFFFF; border-radius: 10px;",
-        #             format(
-        #               module_data$threshold_x,
-        #               # Display at least three sig figs in percentage
-        #               digits = 3,
-        #               # Display at least two digits after decimal point
-        #               nsmall = 2,
-        #               scientific = FALSE
-        #             )
-        #           ),
-        #           tags$b(
-        #             "Number of cells above threshold:"
-        #           ),
-        #           glue(
-        #             "{module_data$threshold_stats$n_above}
-        #           ({module_data$threshold_stats$percent_above}%)"
-        #           ),
-        #           tags$br(),
-        #           tags$b(
-        #             "Number of cells below threshold:"
-        #           ),
-        #           glue(
-        #             "{module_data$threshold_stats$n_below} 
-        #           ({module_data$threshold_stats$percent_below}%)"
-        #           )
-        #         )
-        #       } 
-        #     })
         
         # 5. Render plot and statistics ####
         # Plot

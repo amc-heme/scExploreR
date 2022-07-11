@@ -11,16 +11,16 @@
 dge_tab_ui <- function(id,
                        unique_metadata,
                        metadata_config,
-                       meta_categories
+                       meta_categories,
+                       meta_choices
                        ){
-  # Namespace function: prevents conflicts with 
-  # inputs/outputs defined in other modules 
+  # Namespace function
   ns <- NS(id)
   
   # UI for DGE Tab
   fluidPage(
     sidebarLayout(
-      # 1. Options Panel
+      # 1. Options Panel -------------------------------------------------------
       sidebarPanel(
         # Add a container to display a waiter over when the options are updating
         div(
@@ -51,10 +51,39 @@ dge_tab_ui <- function(id,
                 )
               }),
           
-          # UMAP options panel (conditional UI)
-          uiOutput(
-            outputId = ns("umap_options")
+          # UMAP options panel (hidden, displays after plot is created)
+          hidden(
+            # Collapsible panel must be placed in a container for show/hide
+            # to work properly (the content of the panel is not a descendent
+            # of the button tag to open/close the panel, so show/hide commands
+            # will only cause the button to show/hide if they target the 
+            # panel's ID)
+            div(
+              id = ns("options_panel_ui"),
+              collapsible_panel(
+                inputId = ns("umap_options_panel"),
+                label = "UMAP Options",
+                active = TRUE,
+                # Selection of group.by variable
+                selectInput(
+                  inputId = ns("umap_group_by"),
+                  label = "Metadata to Group by:",
+                  # Remove "none" from selectable
+                  # options to group by
+                  choices =
+                    meta_choices()[!meta_choices() %in% "none"],
+                  # First category in meta_choices is selected
+                  # by default
+                  selected =
+                    meta_choices()[!meta_choices() %in% "none"][1]
+                  )
+                )
+              )
             ),
+          
+          # uiOutput(
+          #   outputId = ns("umap_options")
+          #   ),
           
           # Checkbox to return positive markers only (shown for both modes)
           checkboxInput(
@@ -70,16 +99,67 @@ dge_tab_ui <- function(id,
             ),
             
           # Download Button
-          uiOutput(
-            outputId = ns("downloads_ui")
+          # Hidden, displays when the table is created
+          hidden(
+            downloadButton(
+              outputId = ns("download_table"),
+              label = "Download Table",
+              icon = icon("table")
+              )
             )
           ) # End dge-sidebar div
         ), # End sidebarPanel (1.3.1)
       
-      # 2. Main Panel
+      # 2. Main Panel ----------------------------------------------------------
       mainPanel(
-        div(id = ns("main_panel"), 
+        # Main panel is hidden until test results are submitted and computed
+        hidden(
+          div(
+            id = ns("main_panel"), 
             class = "spinner-container-main",
+            
+            # Title of stats page (text depends on test chosen)
+            tags$h2(
+              textOutput(
+                outputId = ns("main_panel_title"),
+                inline = TRUE
+                ),
+              class="center"
+              ),
+            
+            # Summary stats for test used
+            tags$h3(
+              "Test Summary", 
+              class="center"
+            ),
+            # Subset Stats Module 
+            subset_stats_ui(
+              id = ns("subset_stats"),
+              tab = "dge",
+              metadata_config = metadata_config,
+              meta_categories = meta_categories
+              ),
+            
+            # DGE Table (uses DT data table)
+            tags$h3(
+              "DGE Table",
+              class="center"
+            ),
+            DTOutput(
+              outputId = ns("table"),
+              width = "95%"
+              ),
+            
+            # UMAP
+            # Title: depends on test used
+            uiOutput(
+              outputId = ns("umap_title_ui")
+              ),
+            # UMAP container
+            plotOutput(
+              outputId = ns("umap"),
+              height = "600px"
+            )
             
             # # TEMP: display reactive variables used in this tab while developing
             # "Test Selection Output",
@@ -93,12 +173,13 @@ dge_tab_ui <- function(id,
             
             # Div added to contain Waiter spinner (forces the spinner to cover 
             # the full main panel)
-            uiOutput(outputId = ns("main_panel_ui"))
-        ) # End dge_main_panel
-      ) # End MainPanel
-    ) # End sidebarLayout
-  ) # End fluidPage
-}
+            #uiOutput(outputId = ns("main_panel_ui"))
+            )
+          ) # End dge_main_panel
+        ) # End MainPanel
+      ) # End sidebarLayout
+    ) # End fluidPage
+  }
 
 
 # dge_tab_server
@@ -119,6 +200,7 @@ dge_tab_ui <- function(id,
 dge_tab_server <- function(id,
                            object,
                            metadata_config,
+                           assay_config,
                            # This will replace metadata_config at some point
                            # (It is derived from the config file and is the only
                            # information used)
@@ -168,7 +250,8 @@ dge_tab_server <- function(id,
           object = object,
           unique_metadata = unique_metadata,
           metadata_config = metadata_config,
-          meta_choices = meta_choices
+          meta_choices = meta_choices,
+          valid_features = valid_features
           )
 
       # 2. Process Subset Selection Options -------------------------
@@ -210,16 +293,29 @@ dge_tab_server <- function(id,
           input$submit
         })
       
-      # Show spinner: runs after submit button is pressed
+      ## 3.2 Show Spinner
+      # Runs after submit button is pressed
       show_spinner <-
         eventReactive(
           submit_button(),
           label = "DGE: Show Spinner",
           {
+            print("DGE 3.2: Show Spinner")
             # Hide the main panel UI while calculations are performed
-            # print(glue("hiding {ns('main_panel_ui')}"))
+            # print(glue("hiding {ns('main_panel')}"))
             # Do not namespace IDs for hideElement 
-            hideElement(id = "main_panel_ui")
+            hideElement(id = "main_panel")
+            
+            # If the DGE table download button is visible, hide while 
+            # a new table is being computed
+            hideElement(
+              id = "download_table"
+              )
+            
+            # Do the same for the UMAP options panel
+            hideElement(
+              id = "options_panel_ui"
+              )
             
             # Display spinners
             log_session(session)
@@ -235,7 +331,7 @@ dge_tab_server <- function(id,
             submit_button()
           })
       
-      ## 3.2. Determine if Metaclusters are Requested ####
+      ## 3.3. Determine if Metaclusters are Requested ####
       # This reactive expression saves the need to include the conditional 
       # statements within each time they are needed during the DGE computation
       metaclusters_present <- 
@@ -247,9 +343,11 @@ dge_tab_server <- function(id,
           # TODO: switch ignoreInit to TRUE and try un-suspending the dge table
           ignoreInit = FALSE,
           {
-            #print("DGE 3.2: metaclusters_present")
+            print("DGE 3.3: metaclusters_present")
             # Return TRUE when all conditions below are met
-            if (test_selections()$dge_mode == "mode_dge"){
+            # DGE, with standard groups (thresholding not used)
+            if (test_selections()$dge_mode == "mode_dge" &
+                test_selections()$group_mode == "standard"){
               if (!is.null(test_selections()$group_1) &
                   !is.null(test_selections()$group_2)){
                 # At least one group must have more than one 
@@ -261,51 +359,90 @@ dge_tab_server <- function(id,
               }
             }
             
+            # FALSE is returned if `return(TRUE)` is not reached in the series
+            # of conditionals above (reduces the need to write else statements)
+            # for each level of conditionals
             FALSE
           })
       
-      ## 3.3. Define subset criteria ####
-      # Combines outputs from test selection and subset selection
-      # modules. The subset criteria are used both in the
-      # make_subset() function and the subset stats module (the
-      # latter of which is designed to take a reactive variable
-      # as input)
-      dge_subset_criteria <-
+      ## 3.4. Determine if thresholding is being performed ####
+      thresholding_present <-
         eventReactive(
           metaclusters_present(),
+          label = "DGE: Determine if Thresholding is Requested",
+          # All reactives in 3. must run at startup for output to be
+          # properly generated (endless spinner results otherwise)
+          # TODO: switch ignoreInit to TRUE and try un-suspending the dge table
+          ignoreInit = FALSE,
+          {
+            print("DGE 3.4: thresholding_present")
+            # Return TRUE when all conditions below are met
+            # DGE, with standard groups (thresholding not used)
+            if (test_selections()$dge_mode == "mode_dge" &
+                test_selections()$group_mode %in% "simple_threshold"){
+              TRUE
+            } else {
+              FALSE
+              }
+          })
+      
+      observe({
+        print("Value of thresholding_present()")
+        print(thresholding_present())
+      })
+      
+      ## 3.5. Define subset criteria ####
+      # Combines outputs from test selection and subset selection modules. 
+      # The subset criteria are used in the make_subset() function and the 
+      # subset stats module.
+      dge_subset_criteria <-
+        eventReactive(
+          thresholding_present(),
           label = "DGE: Subset Criteria",
           # All reactives in 3. must run at startup for output to be
           # properly generated (endless spinner results otherwise)
           ignoreInit = FALSE,
           ignoreNULL = TRUE,
           {
-            #print("DGE 3.3: subset criteria")
-            # Retrieve information from
-            # test_selections Category
-            group_by_category <- test_selections()$group_by
-            # Chosen groups/classes (store in a vector)
-            if (test_selections()$dge_mode == "mode_dge"){
-              # For DGE mode: set the vector of choices equal to the
-              # selections for the two groups
-              choices <-
-                c(test_selections()$group_1,
-                  test_selections()$group_2)
-            } else if (test_selections()$dge_mode == "mode_marker"){
-              # Marker identification: use vector of selected classes
-              choices <- test_selections()$classes_selected
+            print("DGE 3.5: subset criteria")
+
+            # The process for determining subset criteria varies when 
+            # the conditions below are met 
+            if (test_selections()$group_mode %in% c("simple_threshold")){
+              # Special case: simple expression tresholding 
+              # test selections do not influence the subset. Only
+              # the subset selections are used. There is also no 
+              # group by category.
+              subset_criteria <- subset_selections$selections()
+            } else {
+              # Standard behavior 
+              
+              # Chosen groups/classes from the category to include in the subset
+              if (test_selections()$dge_mode == "mode_dge"){
+                choices <-
+                  c(test_selections()$group_1, 
+                    test_selections()$group_2)
+                } else if (test_selections()$dge_mode == "mode_marker"){
+                  choices <- 
+                    test_selections()$classes_selected
+                } else {
+                    warning("DGE 3.5: Unrecognized DGE mode")
+                  }
+              
+              # Fetch subset selections
+              # Must unpack from reactive to avoid modifying the
+              # reactive with test_selections data
+              subset_criteria <- subset_selections$selections()
+              # Add group by metadata category with 
+              # classes/groups to subset instructions
+              subset_criteria[[group_by_category()]] <- choices
             }
             
-            # Retrieve list of subset selections
-            # Must unpack from reactive to avoid modifying the
-            # reactive with the test_selections data above
-            subset_criteria <- subset_selections$selections()
-            # Append test_selections information to selections list
-            subset_criteria[[group_by_category]] <- choices
-            
-            return(subset_criteria)
+            # Return subset criteria
+            subset_criteria
           })
       
-      ## 3.4. Form subset ####
+      ## 3.6. Form subset ####
       # Initialize variables to control reset of subset when the 
       # object is changed
       
@@ -340,7 +477,7 @@ dge_tab_server <- function(id,
           label = "DGE: Subset",
           ignoreNULL = FALSE,
           {
-            #print("DGE 3.4: make subset")
+            print("DGE 3.6: make subset")
             
             subset <- 
               tryCatch(
@@ -412,6 +549,50 @@ dge_tab_server <- function(id,
                           )
                     } # End if (metaclusters_present())
                     
+                    # Groups based on feature expression thresholds
+                    # Create new metadata column based on threshold
+                    if (thresholding_present()){
+                      print("Add metadata column for threshold")
+                      # Fetch threshold defined in test_selections module
+                      threshold <- test_selections()$threshold_value
+                      # Fetch feature used in thresholding
+                      feature <- test_selections()$threshold_feature
+                      
+                      print("Threshold")
+                      print(threshold)
+                      print("Feature")
+                      print(feature)
+                      
+                      # Fetch expression data for the selected feature
+                      expr_data <- 
+                        FetchData(
+                          object = subset,
+                          vars = feature
+                          ) 
+                      
+                      # Remove assay tag from feature name
+                      # (Must be done after FetchData, which requires 
+                      # the machine-readable feature name)
+                      print("hr_name function")
+                      feature <- 
+                        hr_name(
+                          feature,
+                          assay_config = assay_config(),
+                          use_suffix = FALSE
+                        )
+                      
+                      # Create metadata column based on simple threshold
+                      subset@meta.data$simple_expr_threshold <-
+                        case_when(
+                          # Avoiding "+" and "-" declarations for now
+                          # "High" when expresssion value is greater than
+                          # or equal to threshold, otherwise "Low".
+                          expr_data >= threshold ~ glue("{feature} High"),
+                          expr_data < threshold ~ glue("{feature} Low"),
+                          TRUE ~ "error"
+                        )
+                      }
+                    
                     # Return subset from tryCatch
                     subset
                   }
@@ -431,12 +612,11 @@ dge_tab_server <- function(id,
           log_info(
             glue(
               "Memory used after creating subset in dge tab {to_GB(mem_used())}"
+              )
             )
-          )
-          
-        })
+          })
       
-      ## 3.5. DGE Continuation Conditional ####
+      ## 3.7. DGE Continuation Conditional ####
       # After subset is computed, downstream computations should only 
       # proceed if the subset has been created as a result of 
       # pressing the submit button, and not as a result of the reset 
@@ -451,7 +631,7 @@ dge_tab_server <- function(id,
         label = "DGE: Continuation Conditional",
         subset(),
         {
-          #print("DGE 3.5: Continuation conditional")
+          print("DGE 3.7: Continuation conditional")
           
           if (object_init() == FALSE){
             # If object_init == FALSE, continue with DGE calculations
@@ -469,7 +649,7 @@ dge_tab_server <- function(id,
           
         })
       
-      ## 3.6. Compute subset stats ####
+      ## 3.8. Compute subset stats ####
       subset_stats <- 
         subset_stats_server(
           id = "subset_stats",
@@ -479,10 +659,11 @@ dge_tab_server <- function(id,
           # Responds to continuation conditional 
           event_expr = dge_table_content,
           group_by_category = group_by_category,
-          metaclusters_present = metaclusters_present
-        )
+          metaclusters_present = metaclusters_present,
+          thresholding_present = thresholding_present 
+          )
       
-      ## 3.7. Run Presto ####
+      ## 3.9. Run Presto ####
       dge_table_content <-
         eventReactive(
           # Chose the first reactive variable in the subset stats
@@ -491,9 +672,9 @@ dge_tab_server <- function(id,
           continue$depend(),
           label = "DGE: Run Presto",
           ignoreNULL = FALSE,
-          #ignoreInit = TRUE,
+          ignoreInit = TRUE,
           {
-            #print("DGE 3.7: Run Presto")
+            print("DGE 3.9: Run Presto")
             
             log_session(session)
             log_info("DGE Tab: Begin Presto")
@@ -524,10 +705,12 @@ dge_tab_server <- function(id,
                       # If metaclusters are requested, use 
                       # "metaclusters" for dge groups
                       group_by = 
-                        if (!metaclusters_present()){
-                          group_by_category()
-                        } else {
+                        if (metaclusters_present()){
                           "metacluster"
+                        } else if (thresholding_present()){
+                          "simple_expr_threshold"
+                        } else {
+                          group_by_category()
                         }
                     ) %>%
                     # Explicitly coerce to tibble
@@ -554,7 +737,7 @@ dge_tab_server <- function(id,
                     dplyr::rename(Log2FC = logFC)
                   
                   log_session(session)
-                  log_info("DGE Tab: Completed Presto ")
+                  log_info("DGE Tab: Completed Presto")
                   
                   return(dge_table)
                 })
@@ -562,13 +745,13 @@ dge_tab_server <- function(id,
             dge_table
           })
       
-      ## 3.8. DGE table, as DT for viewing ####
+      ## 3.10. DGE table, as DT for viewing ####
       dge_DT_content <-
         eventReactive(
           dge_table_content(),
           label = "DGE: DT Generation",
           {
-            #print("DGE 3.8: DGE table")
+            print("DGE 3.10: DGE table")
             
             datatable(
               dge_table_content(),
@@ -581,12 +764,12 @@ dge_tab_server <- function(id,
               filter = "top",
               # Remove rownames
               rownames = FALSE
-            ) %>%
+              ) %>%
               #Use 5 sig figs (3 or more is sufficient)
               formatSignif(3:7, 5)
           })
       
-      ## 3.9. UMAP of DE Selected Groups ####
+      ## 3.11. UMAP of DE Selected Groups ####
       dge_umap <-
         eventReactive(
           c(dge_DT_content(), 
@@ -594,243 +777,348 @@ dge_tab_server <- function(id,
           ignoreNULL = FALSE,
           label = "DGE: UMAP",
           {
-            #print("DGE 3.9: UMAP")
-            
-            # ncol_argument: number of columns
-            # Based on number of classes being
-            # analyzed in the subset.
-            # Access with double brackets returns a dataframe.
-            # Slice for the first row (the unique values)
-            n_panel <-
-              if (!metaclusters_present()){
-                # Standard behavior: use group_by_category
-                unique(
-                  subset()[[group_by_category()]]
-                  # Take first column of unique() results
-                )[,1] |>
-                  length()
+            print("DGE 3.11: UMAP")
+
+            # Determine value of ncol
+            # ncol depends on number of panels.
+            # Number of panels equals number of split by groups.
+
+            # Define metadata used to split plot (DGE groups/marker classes) 
+            metadata_column <- 
+              if (metaclusters_present()){
+                "metacluster"
+              } else if (thresholding_present()){
+                  "simple_expr_threshold"
               } else {
-                # Exception: use "metaclusters" when metaclusters are present
-                unique(
-                  subset()[["metacluster"]]
-                  # Take first column of unique() results
-                )[,1] |>
-                  length()
-              }
-              
-            
+                group_by_category()
+                }
+
+            n_panel <-
+              n_unique(
+                object = subset(),
+                metadata_column = metadata_column
+                )
+
             #Set ncol to number of panels if less than four
             #Panels are created
             if (n_panel < 4){
               ncol = n_panel
-            }
-            
+              }
+
             #Use three columns for 4-9 panels
-            else if (n_panel>=4 & n_panel<9){
+            else if (n_panel >= 4 & n_panel < 9){
               ncol = 3
-            }
-            
+              }
+
             #Use four columns for 9+ panels
-            else if (n_panel>=9){
+            else if (n_panel >= 9){
               ncol = 4
-            }
-            
-            #Create UMAP of subsetted object
-            umap <- DimPlot(
+              }
+
+            print("Compute DimPlot")
+            # Create DimPlot of subsetted object
+            DimPlot(
               subset(),
-              #Split by the group by category (or metaclusters if enabled)
-              split.by = 
-                if (!metaclusters_present()){
+              # Split by groups or marker classes used for DGE
+              split.by =
+                if (metaclusters_present()){
+                  # Use "metacluster" when metaclusers present
+                  "metacluster"
+                } else if (thresholding_present()){
+                  # When thresholding present, use "simple_expr_threshold"
+                  "simple_expr_threshold"
+                } else {
+                  # Standard DGE: split by the group by category
                   group_by_category()
-                  } else "metacluster",
+                },
               #Group by variable set in UMAP options panel
               group.by = input$umap_group_by,
               ncol = ncol
-            )
-            
-            umap
+              )
           })
       
-      # 4. Dynamic UI for Main Panel --------------------------------
-      dge_ui <-
+      ## 3.12. Title for Main Panel ####
+      main_panel_title <-
         eventReactive(
-          #UI now renders once all computations are complete
-          subset(),
-          label = "DGE Main UI (Define Content)",
-          #Do not render main UI at startup to avoid errors
-          #ignoreInit=TRUE,
-          #ignoreNULL = FALSE,
+          dge_umap(),
+          label = "DGE 3.12: Main Panel Title",
           {
-            # User-defined label for group-by variable (for printing
-            # in UI below)
-            # TODO: make sure this updates when a different group
-            # by variable is submitted
-            group_by_label <-
-              metadata_config()[[test_selections()$group_by]]$label
+            print("DGE 3.12: Main Panel Title")
             
-            # UI to display
-            ui <- tagList(
-              tags$h2(
-                glue("Differential Expression/Marker Genes by
-                                {group_by_label} in Subset"),
-                class="center"
-              ),
-              tags$h3("Test Summary", class="center"),
-              
-              # Subset Stats Module for showing summary stats
-              subset_stats_ui(
-                id = ns("subset_stats"),
-                tab = "dge",
-                metadata_config = metadata_config,
-                # Pass dge_subset_criteria() to this argument instead
-                # of subset_selections() (dge_subset_criteria()
-                # includes the group by category)
-                meta_categories = meta_categories,
-                subset_selections = dge_subset_criteria
-              ),
-              
-              # DGE Table (uses DT data table)
+            print("Value of thresholding_present()")
+            print(thresholding_present())
+            
+            if (thresholding_present()){
+              print("Conditional: thresholding present")
+              feature_label <- 
+                hr_name(
+                  test_selections()$threshold_feature,
+                  assay_config = assay_config(),
+                  use_suffix = FALSE
+                  )
+
+              # Header for simple thresholding
+              glue("Differential Expression Results Based on
+                   {feature_label} Expression Threshold")
+            } else {
+              print("Conditional: standard case")
+              # Standard DGE or metaclusters: add group by category to
+              # header text
+              # Label for group by category in config file
+              # TODO: make sure this updates when a different group
+              # by variable is submitted
+              group_by_label <-
+                metadata_config()[[group_by_category()]]$label
+
+              # Standard header
+              glue("Differential Expression/Marker Genes by
+                   {group_by_label} in Subset")
+              }
+            })
+      
+      ## 3.13. UMAP Title (Dynamic UI) ####
+      umap_title <-
+        eventReactive(
+          main_panel_title(),
+          label = "DGE 3.13: UMAP Title",
+          {
+            print("DGE 3.13: UMAP Title")
+            # UI returned depends on DGE mode
+            if (test_selections()$dge_mode == "mode_dge"){
+              # DGE Title
               tags$h3(
-                "DGE Table",
+                "UMAP of groups being compared",
                 class="center"
-                ),
-              
-              # Output container for table
-              DTOutput(
-                outputId = ns("table"),
-                width = "95%"
-                ),
-              
-              # UMAP plot
-              # Title for plot
-              # Depends on mode, tested through n_classes()
-              # Make sure n_classes is a reactive and is defined 
-              # to avoid errors
-              if (is.reactive(subset_stats$n_classes())){
-                if (!is.null(subset_stats$n_classes())){
-                  # Use different titles based on the test used
-                  if(subset_stats$n_classes() == 2){
-                    # Title for differential gene expression
-                    tags$h3(
-                      "UMAP of groups being compared",
-                      class="center"
-                    )
-                  } else {
-                    # Title for marker identification
-                    tagList(
-                      # Center text
-                      tags$h3(
-                        "UMAP by class",
-                        class="center"
-                      ),
-                      tags$p(
-                        "(Markers are computed for each group shown)",
-                        class="center"
-                      )
-                    )
-                  }
-                } else NULL
-              } else NULL,
-              
-              
-              # UMAP container
-              plotOutput(
-                outputId = ns("umap"),
-                height = "600px"
               )
-            ) # End tagList
-            
-            ui
+            } else if (test_selections()$dge_mode == "mode_marker"){
+              # Marker identification title (and subtext)
+              tagList(
+                # Center text
+                tags$h3(
+                  "UMAP by class",
+                  class="center"
+                  ),
+                tags$p(
+                  "(Markers are computed for each group shown)",
+                  class="center"
+                  )
+                )
+              }
+            })
+      
+      ## 3.14. Hide Spinners ####
+      observeEvent(
+        umap_title(),
+        label = "DGE 3.14: Hide Spinner",
+        {
+          # Show UI (do not namespace ID for showElement)
+          showElement(
+            id = "main_panel"
+            )
+          
+          # Show DGE Table Download button
+          showElement(
+            id = "download_table"
+            )
+          
+          # Show UMAP options panel
+          showElement(
+            id = "options_panel_ui"
+            )
+          
+          # Hide spinners
+          sidebar_spinner$hide()
+          main_spinner$hide()
+          log_session(session)
+          log_info("DGE Tab: Spinners removed.")
           })
       
-      # 5. Dynamic UI: Download Buttons for Table and Plots ---------
-      dge_downloads_ui <-
-        eventReactive(
-          c(submit_button(), input$table_rows_selected),
-          label = "DGE Download Buttons UI",
-          ignoreNULL = FALSE,
-          {
-            # Conditional level one, !hasName(): TRUE before table
-            # is created, FALSE after
-            if (!hasName(input, "dge_table_rows_selected")) {
-              # Display nothing before table is created
-              NULL
-            } else {
-              # !hasName() == FALSE (table created)
-              # Display button to download table after table is created
-              div(
-                downloadButton(
-                  outputId = ns("download_table"),
-                  label = "Download Table",
-                  icon = icon("table")
-                )
-              )
-            }
-          }
-        )
+      # 4. Dynamic UI for Main Panel 
+      # dge_ui <-
+      #   eventReactive(
+      #     #UI now renders once all computations are complete
+      #     subset(),
+      #     label = "DGE Main UI (Define Content)",
+      #     #Do not render main UI at startup to avoid errors
+      #     #ignoreInit=TRUE,
+      #     #ignoreNULL = FALSE,
+      #     {
+      #       # Header text to display as title of results UI
+      #       if (!thresholding_present()){
+      #         
+      #       } else {
+      #         feature_label <- 
+      #           hr_name(
+      #             test_selections()$threshold_feature,
+      #             assay_config = assay_config(),
+      #             use_suffix = FALSE
+      #           ) 
+      #         
+      #         header_text <- 
+      #           glue("Differential Expression Genes Based on 
+      #                {feature_label} Expression Threshold")
+      #       }
+      #       
+      #       # UI to display
+      #       ui <- tagList(
+      #         tags$h2(
+      #           header_text,
+      #           class="center"
+      #           ),
+      #         tags$h3(
+      #           "Test Summary", 
+      #           class="center"
+      #           ),
+      #         
+      #         # Subset Stats Module for showing summary stats
+      #         subset_stats_ui(
+      #           id = ns("subset_stats"),
+      #           tab = "dge",
+      #           metadata_config = metadata_config,
+      #           # Pass dge_subset_criteria() to this argument instead
+      #           # of subset_selections() (dge_subset_criteria()
+      #           # includes the group by category)
+      #           meta_categories = meta_categories
+      #         ),
+      #         
+      #         # DGE Table (uses DT data table)
+      #         tags$h3(
+      #           "DGE Table",
+      #           class="center"
+      #           ),
+      #         
+      #         # Output container for table
+      #         DTOutput(
+      #           outputId = ns("table"),
+      #           width = "95%"
+      #           ),
+      #         
+      #         # UMAP plot
+      #         # Title for plot
+      #         # Depends on mode, tested through n_classes()
+      #         # Make sure n_classes is a reactive and is defined 
+      #         # to avoid errors
+      #         if (is.reactive(subset_stats$n_classes())){
+      #           if (!is.null(subset_stats$n_classes())){
+      #             # Use different titles based on the test used
+      #             if (subset_stats$n_classes() == 2){
+      #               # Title for differential gene expression
+      #               tags$h3(
+      #                 "UMAP of groups being compared",
+      #                 class="center"
+      #               )
+      #             } else {
+      #               # Title for marker identification
+      #               tagList(
+      #                 # Center text
+      #                 tags$h3(
+      #                   "UMAP by class",
+      #                   class="center"
+      #                 ),
+      #                 tags$p(
+      #                   "(Markers are computed for each group shown)",
+      #                   class="center"
+      #                 )
+      #               )
+      #             }
+      #           } else NULL
+      #         } else NULL,
+      #         
+      #         
+      #         # UMAP container
+      #         plotOutput(
+      #           outputId = ns("umap"),
+      #           height = "600px"
+      #         )
+      #       ) # End tagList
+      #       
+      #       ui
+      #     })
       
-      # 6. Dynamic UI: Options Panel for UMAP -----------------------
-      umap_options <-
-        eventReactive(
-          subset(),
-          label = "DGE: UMAP Options Panel",
-          #ignoreNULL = FALSE,
-          {
-            #Display options panel after the umap is created
-            #Test: dge_umap is of class 'ggplot'
-            if ("ggplot" %in% class(dge_umap())){
-              collapsible_panel(
-                inputId = ns("umap_options_panel"),
-                label = "UMAP Options",
-                active = TRUE,
-                #group.by selection
-                selectInput(
-                  inputId = ns("umap_group_by"),
-                  label = "Metadata to Group by:",
-                  #Remove "none" from selectable
-                  #options to group by
-                  choices=
-                    meta_choices()[!meta_choices() %in% "none"],
-                  #First category in meta_choices is selected
-                  #by default
-                  selected =
-                    meta_choices()[!meta_choices() %in% "none"][1]
-                )
-              )
-            } else {
-              #Return nothing unless the UMAP is created
-              NULL
-            }
-          }
-        )
+      # dge_downloads_ui <-
+      #   eventReactive(
+      #     c(submit_button(), input$table_rows_selected),
+      #     label = "DGE Download Buttons UI",
+      #     ignoreNULL = FALSE,
+      #     {
+      #       # UI for download button
+      #       if (isTruthy(dge_table_content())){
+      #         # Display after the table has been created
+      #         div(
+      #           
+      #         )
+      #       } else {
+      #         NULL
+      #         }
+      #       })
       
-      # 7. Render DGE UI, table, and UMAP ---------------------------
-      #Main UI
-      output$main_panel_ui <- renderUI({
-        dge_ui()
-      })
+      # 5. Dynamic UI: Options Panel for UMAP 
+      # umap_options <-
+      #   eventReactive(
+      #     subset(),
+      #     label = "DGE: UMAP Options Panel",
+      #     #ignoreNULL = FALSE,
+      #     {
+      #       #Display options panel after the umap is created
+      #       #Test: dge_umap is of class 'ggplot'
+      #       if ("ggplot" %in% class(dge_umap())){
+      #         collapsible_panel(
+      #           inputId = ns("umap_options_panel"),
+      #           label = "UMAP Options",
+      #           active = TRUE,
+      #           #group.by selection
+      #           selectInput(
+      #             inputId = ns("umap_group_by"),
+      #             label = "Metadata to Group by:",
+      #             #Remove "none" from selectable
+      #             #options to group by
+      #             choices =
+      #               meta_choices()[!meta_choices() %in% "none"],
+      #             #First category in meta_choices is selected
+      #             #by default
+      #             selected =
+      #               meta_choices()[!meta_choices() %in% "none"][1]
+      #           )
+      #         )
+      #       } else {
+      #         #Return nothing unless the UMAP is created
+      #         NULL
+      #       }
+      #     }
+      #   )
       
-      #Options panel for UMAP
-      output$umap_options <- renderUI({
-        umap_options()
-      })
-      
-      #Download buttons
-      output$downloads_ui <- renderUI({
-        dge_downloads_ui()
-      })
-      
-      #Table
-      output$table <- renderDT({
-        dge_DT_content()
-      })
-      
-      #UMAP plot
-      output$umap <- suppressGraphics(
-        renderPlot({
-          dge_umap()
+      # 4. Render DGE UI, table, and UMAP --------------------------------------
+      # Main Panel Header
+      output$main_panel_title <- 
+        renderText({
+          main_panel_title()
         })
-      )
+      
+      # Options panel for UMAP
+      # output$umap_options <- 
+      #   renderUI({
+      #     umap_options()
+      #     })
+      
+      # Table
+      output$table <- 
+        renderDT({
+          dge_DT_content()
+          })
+      
+      # UMAP Title
+      output$umap_title <-
+        renderUI({
+          umap_title()
+        })
+      
+      # UMAP plot
+      output$umap <- 
+        suppressGraphics(
+          renderPlot({
+            dge_umap()
+            })
+          )
       
       #During development: render outputs of reactive variables in tab
       # output$test_selection_output <- renderPrint({
@@ -846,33 +1134,21 @@ dge_tab_server <- function(id,
       #   subset_stats()
       # })
       
-      # 8. Hide Spinners --------------------------------------------
-      observeEvent(
-        umap_options(),
-        label = "DGE: Hide Spinner",
-        {
-          #Show UI (do not namespace ID for showElement)
-          showElement(id = "main_panel_ui")
-          #Hide spinners
-          sidebar_spinner$hide()
-          main_spinner$hide()
-          log_session(session)
-          log_info("DGE Tab: Spinners removed.")
-        }
-      )
-      
-      # 9. Download Handler for DGE Table ---------------------------
-      output$dge_download_table <- downloadHandler(
-        filename = function() {
-          glue("DGE_table_{input$dge_group_by}.csv")
-        },
-        content = function(file) {
-          write.csv(dge_table_content(),
-                    file = file,
-                    row.names = FALSE)
-        },
-        contentType = "text/csv"
-      )#End downloadHandler
+      # 5. Download Handler for DGE Table --------------------------------------
+      output$dge_download_table <- 
+        downloadHandler(
+          filename = function() {
+            glue("DGE_table_{test_selections()$group_by}.csv")
+            },
+          content = function(file) {
+            write.csv(
+              dge_table_content(),
+              file = file,
+              row.names = FALSE
+              )
+            },
+          contentType = "text/csv"
+          ) # End downloadHandler
       }
     )
   }
