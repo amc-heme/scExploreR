@@ -580,11 +580,6 @@ dge_tab_server <- function(id,
                       # Fetch feature used in thresholding
                       feature <- test_selections()$threshold_feature
                       
-                      print("Threshold")
-                      print(threshold)
-                      print("Feature")
-                      print(feature)
-                      
                       # Fetch expression data for the selected feature
                       expr_data <- 
                         FetchData(
@@ -595,7 +590,6 @@ dge_tab_server <- function(id,
                       # Remove assay tag from feature name
                       # (Must be done after FetchData, which requires 
                       # the machine-readable feature name)
-                      print("hr_name function")
                       feature <- 
                         hr_name(
                           feature,
