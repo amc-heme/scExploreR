@@ -33,7 +33,7 @@ dge_tab_ui <- function(id,
             
           # Menus to choose test (DGE or marker identification and 
           # classes/groups to include). Uses dge_test_selection module
-            dge_test_selection_ui(
+            dge_test_selections_ui(
               id = ns("test_selections"),
               meta_choices = meta_choices
               ),
@@ -112,70 +112,70 @@ dge_tab_ui <- function(id,
       
       # 2. Main Panel ----------------------------------------------------------
       mainPanel(
-        # Main panel is hidden until test results are submitted and computed
-        hidden(
-          div(
-            id = ns("main_panel"), 
-            class = "spinner-container-main",
-            
-            # Title of stats page (text depends on test chosen)
-            tags$h2(
-              textOutput(
-                outputId = ns("main_panel_title"),
-                inline = TRUE
+        # Spinner that displays above main panel while results are computing
+        div(
+          id = ns("main_panel_spinner"), 
+          class = "spinner-container-main",
+          # Content of main panel (hidden until test 
+          # results are submitted and computed)
+          hidden(
+            div(
+              id = ns("main_panel"),
+              # Title of stats page (text depends on test chosen)
+              tags$h2(
+                textOutput(
+                  outputId = ns("main_panel_title"),
+                  inline = TRUE
                 ),
-              class="center"
+                class="center"
               ),
-            
-            # Summary stats for test used
-            tags$h3(
-              "Test Summary", 
-              class="center"
-            ),
-            # Subset Stats Module 
-            subset_stats_ui(
-              id = ns("subset_stats"),
-              tab = "dge",
-              metadata_config = metadata_config,
-              meta_categories = meta_categories
+              
+              # Summary stats for test used
+              tags$h3(
+                "Test Summary", 
+                class="center"
               ),
-            
-            # DGE Table (uses DT data table)
-            tags$h3(
-              "DGE Table",
-              class="center"
-            ),
-            DTOutput(
-              outputId = ns("table"),
-              width = "95%"
+              # Subset Stats Module 
+              subset_stats_ui(
+                id = ns("subset_stats"),
+                tab = "dge",
+                metadata_config = metadata_config,
+                meta_categories = meta_categories
               ),
-            
-            # UMAP
-            # Title: depends on test used
-            uiOutput(
-              outputId = ns("umap_title_ui")
+              
+              # DGE Table (uses DT data table)
+              tags$h3(
+                "DGE Table",
+                class="center"
               ),
-            # UMAP container
-            plotOutput(
-              outputId = ns("umap"),
-              height = "600px"
+              DTOutput(
+                outputId = ns("table"),
+                width = "95%"
+              ),
+              
+              # UMAP
+              # Title: depends on test used
+              uiOutput(
+                outputId = ns("umap_title_ui")
+              ),
+              # UMAP container
+              plotOutput(
+                outputId = ns("umap"),
+                height = "600px"
+              )
+              
+              # # TEMP: display reactive variables used in this tab while developing
+              # "Test Selection Output",
+              # verbatimTextOutput(outputId = ns("test_selection_output")),
+              # "Subset Selection Output",
+              # verbatimTextOutput(outputId = ns("subset_selection_output")),
+              # "Subset information:",
+              # verbatimTextOutput(outputId = ns("subset_info_output")),
+              # "Subset Stats Output:",
+              # verbatimTextOutput(outputId = ns("subset_stats_output"))
+              )
             )
-            
-            # # TEMP: display reactive variables used in this tab while developing
-            # "Test Selection Output",
-            # verbatimTextOutput(outputId = ns("test_selection_output")),
-            # "Subset Selection Output",
-            # verbatimTextOutput(outputId = ns("subset_selection_output")),
-            # "Subset information:",
-            # verbatimTextOutput(outputId = ns("subset_info_output")),
-            # "Subset Stats Output:",
-            # verbatimTextOutput(outputId = ns("subset_stats_output")),
-            
-            # Div added to contain Waiter spinner (forces the spinner to cover 
-            # the full main panel)
-            #uiOutput(outputId = ns("main_panel_ui"))
-            )
-          ) # End dge_main_panel
+          ) 
         ) # End MainPanel
       ) # End sidebarLayout
     ) # End fluidPage
@@ -235,7 +235,7 @@ dge_tab_server <- function(id,
       # Displays until hidden at the end of computation
       main_spinner <-
         Waiter$new(
-          id = ns("main_panel"),
+          id = ns("main_panel_spinner"),
           html = spin_loaders(id = 2,color = "#555588"),
           color = "#FFFFFF",
           # Gives manual control of showing/hiding spinner
@@ -243,9 +243,9 @@ dge_tab_server <- function(id,
           )
       
       # 1. Process Selections for DGE Test --------------------------
-      # 1.1. Selections for DGE Test
+      ## 1.1. Selections module
       test_selections <-
-        dge_test_selection_server(
+        dge_test_selections_server(
           id = "test_selections",
           object = object,
           unique_metadata = unique_metadata,
@@ -253,22 +253,44 @@ dge_tab_server <- function(id,
           meta_choices = meta_choices,
           valid_features = valid_features
           )
-
-      # 2. Process Subset Selection Options -------------------------
-      ## 2.1. Process group_by category from test_selections
-      # The metadata chosen as the group by category in the test
-      # selections menu must be hidden from the subset selections
-      # inputs, since the subset must be equal to the classes or
-      # groups chosen, which are already selected by the user in the
-      # test selections module.
+      
+      ## 1.2 Chosen group by category 
+      # Used in several downstream reactives
       group_by_category <-
         reactive(
-          label = "DGE Tab: Process Group by Selection",
+          label = "DGE Tab: Group_by_category",
           {
             test_selections()$group_by
           })
+      
+      # 2. Process Subset Selection Options -------------------------
+      ## 2.1. Hide Subset Menu Currently Used as Group By Category ####
+      # For standard DGE and marker identification, the selections for the group 
+      # by metadata category are used to subset the object, so that presto only 
+      # compares the selected groups or classes.
+      hidden_category <- 
+        reactive(
+          label = "DGE Tab: Define Hidden Subset Menu",
+          {
+            req(test_selections())
+            # The menu only needs to be hidden for standard DGE, or DGE with 
+            # metaclusters. For thresholding, categorical metadata (the group
+            # by category) is not used to define presto classes.
+            
+            # Conditional: do not use metaclusters_present() or 
+            # thresholding_present(). These are currently only computed after 
+            # the submit button is pressed.
+            if (!test_selections()$group_mode %in% ("simple_threshold")){
+              # Hide menu for group_by_category() when thresholds are not used
+              group_by_category()
+            } else {
+              # Return NULL when feature thresholds are requested 
+              NULL
+            }
+          })
+      
 
-      ## 2.2. Call subset_selections module
+      ## 2.2. Subset selections module ####
       subset_selections <-
         subset_selections_server(
           id = "subset_selections",
@@ -277,7 +299,7 @@ dge_tab_server <- function(id,
           metadata_config = metadata_config,
           meta_categories = meta_categories,
           valid_features = valid_features,
-          hide_menu = group_by_category
+          hide_menu = hidden_category
           )
 
       # 3. Calculations ran after submit button is pressed ----------

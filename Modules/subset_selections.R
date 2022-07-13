@@ -1,13 +1,15 @@
-# Subset Selections Module
-
-# subset_selections_ui
-# arguments
-# id: namespace to use for this module. Reccomended id is "<tab_name>_subset_menus".
-# unique_metadata: a list of the unique metadata values for each of the metadata 
-# categories listed in the config file. This is generated in the main server function 
-# at startup.
-# metadata_config: the metadata section of the config file. This does not need to
-# be specified if the config list is stored as "config" in the global environment.
+#' Subset Selections Module UI
+#'
+#' @param id id to use for the module.id to use for module namespacing. 
+#' UI-server module pairs must use the same id. 
+#' @param unique_metadata A list of the unique metadata values for each of the 
+#' metadata categories listed in the config file. This is generated in the 
+#' main server function.
+#' @param metadata_config The metadata section of the config file. This does not 
+#' need to be specified if the config list is stored as "config" in the global 
+#' environment.
+#'
+#' @return
 subset_selections_ui <- function(id,
                                  unique_metadata,
                                  metadata_config
@@ -171,27 +173,35 @@ subset_selections_ui <- function(id,
   menus
   }
 
-# Server function
-# Arguments
-# id: the namespace to use for the module. UI-server function pairs should 
-# use the same id.
-# object: The Seurat Object defined in the main server function
-# unique_metadata: a list of the unique metadata values for each of the metadata 
-# categories listed in the config file. This is generated in the main server
-# function at startup.
-# metadata_config: the metadata section of the config file. This does not need 
-# to be specified if the config list is stored as "config" in the global
-# environment.
-# hide_menu (optional): a string or character vector giving the name(s) of 
-# metadata categories for which to hide menus in the subset selection interface.
+#' Subset Selections Module 
+#'
+#' @param id id to use for module namespacing. UI-server module pairs must 
+#' use the same id.
+#' @param object The Seurat object for which subset criteria are to be defined.
+#' @param unique_metadata A list of the unique metadata values for each of the 
+#' metadata categories listed in the config file. This is generated in the main 
+#' server function upon startup and object change. 
+#' @param metadata_config The metadata section of the config file, loaded in the
+#' main server function.
+#' @param meta_categories A vector of the metadata categories included in the 
+#' config file for the current object. This is computed in the main server
+#' function
+#' @param valid_features A list of the available features in the current object,
+#' used to populate the choices of the feature selection menu when groups based
+#' on feature thresholds are requested.
+#' @param hide_menu (optional) a string or character vector giving 
+#' the name(s) of metadata categories for which to hide menus in the
+#' subset selection interface.
+#' 
+#' @return
+#'
 subset_selections_server <- function(id,
                                      object,
                                      unique_metadata,
                                      metadata_config,
                                      meta_categories,
                                      valid_features,
-                                     hide_menu = NULL,
-                                     set_menu = NULL
+                                     hide_menu = NULL
                                      ){
   # Initialize module 
   moduleServer(
@@ -511,31 +521,34 @@ subset_selections_server <- function(id,
         observeEvent(
           hide_menu(),
           label = "Subset Selections: Hide Menu",
-          # This observer must not be ran when hide_menu is equal to NULL. In 
-          # this case, the value will not be reactive and the app will crash
-          ignoreNULL = TRUE,
+          # NULL values should be processed (all menus shown when NULL)
+          ignoreNULL = FALSE,
           {
-            # Only hide menus if hide_menu is not equal to NULL
-            if (!is.null(hide_menu()) && length(hide_menu()) > 0){
+            # Hide menus if hide_menu is not equal to NULL
+            if (!is.null(hide_menu())){
               # Hide all menus specified in hide_menus (may be a 
               # single menu or multiple menus)
               for (menu_category in hide_menu()){
                 hideElement(
-                  id = ns(glue("{menu_category}_selection")),
-                  #Disables automatic namespacing (for consistency in code)
-                  asis = TRUE
-                  )
-                }
+                  id = glue("{menu_category}_selection")
+                )
+              }
               # Show all menus in the module that are not in the 
               # hide_menu vector
               for (category in names(metadata_config())){
                 if (!category %in% hide_menu()){
                   showElement(
-                    id = ns(glue("{category}_selection")),
-                    asis = TRUE
+                    id = glue("{category}_selection")
                   )
                 }
               }
+            } else {
+              # If hide_menu is NULL, show all menus 
+              for (category in names(metadata_config())){
+                showElement(
+                  id = glue("{category}_selection")
+                  )
+                }
               }
             })
       }
