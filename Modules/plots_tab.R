@@ -73,6 +73,15 @@ plots_tab_ui <- function(id,
                value = FALSE,
                right = TRUE,
                status = "default"
+             ),
+             
+             # Switch for cell type proportion bar plot
+             materialSwitch(
+               inputId = ns("make_proportion"),
+               label = "Cell Proportion Plot", 
+               value = FALSE,
+               right = TRUE,
+               status = "default"
              )
            ),# End div
            # Right column
@@ -310,8 +319,6 @@ plots_tab_ui <- function(id,
                title_menu =                 TRUE,
                legend_title_menu =          TRUE,
                group_by =                   FALSE,
-               # Sets a group_by menu for determining how labels are printed
-               group_by_label =             TRUE,
                split_by =                   TRUE,
                ncol_slider =                TRUE,
                super_title_menu =           TRUE,
@@ -325,7 +332,12 @@ plots_tab_ui <- function(id,
                manual_dimensions =          TRUE,
                download_button =            TRUE,
                # Default values for inputs
-               label_default =              FALSE
+               label_default =              FALSE,
+               # Modifications to group by menu
+               # Label for group by menu: for feature plots, the group by
+               # variable controls the metadata used for labeling groups
+               group_by_label = "Metadata for Labeling Groups",
+               group_by_include_none = FALSE
              )
            )
          ),
@@ -416,7 +428,7 @@ plots_tab_ui <- function(id,
            )
          ), # End 1.9.
          
-         ## 1.10. Ridge Plot Options
+         ## 1.10. Ridge Plot Options ####
          conditionalPanel(
            condition = glue("input['{ns('make_ridge')}'] == true"),
            collapsible_panel(
@@ -441,11 +453,51 @@ plots_tab_ui <- function(id,
                separate_features =     FALSE,
                download_button =       TRUE,
                # Add "none" to group by choices (ridge plots only)
-               group_by_add_none =     TRUE
+               group_by_include_none =     TRUE
              )
            )
-         ) # End 1.10
-         ), #End 1.
+         ), # End 1.10
+         
+         ## 1.11. Proportion Stacked Bar Plot Options ####
+         conditionalPanel(
+           condition = glue("input['{ns('make_proportion')}'] == true"),
+           collapsible_panel(
+             inputId = ns("proportion_collapsible"),
+             label = "Cell Proportion Plot Specific Options",
+             active = FALSE,
+             plot_module_ui(
+               id = ns("proportion"),
+               ui_component = "options",
+               meta_choices = meta_choices,
+               plot_label = "Cell Proportion",
+               group_by =              TRUE,
+               split_by =              TRUE,
+               title_menu =            TRUE,
+               sort_groups_menu =      TRUE,
+               ncol_slider =           FALSE,
+               order_checkbox =        FALSE,
+               label_checkbox =        FALSE,
+               legend_checkbox =       TRUE,
+               limits_checkbox =       FALSE,
+               display_coeff =         FALSE,
+               custom_colors =         FALSE,
+               manual_dimensions =     TRUE,
+               separate_features =     FALSE,
+               download_button =       TRUE,
+               # Modifications to group by/split by menus
+               group_by_include_none = FALSE,
+               split_by_include_none = FALSE,
+               # Will later be set by config file
+               group_by_default =      "clusters",
+               split_by_default =      "htb",
+               group_by_label = 
+                 "Choose Metadata for Proportions",
+               split_by_label = 
+                 "Choose Metadata for Proportion Comparison"
+               )
+             )
+           ) # End 1.11.
+         ), # End 1.
        
        # 2. Main panel for displaying plot output ------------------------------
        mainPanel(
@@ -493,7 +545,13 @@ plots_tab_ui <- function(id,
            plot_module_ui(
              id = ns("ridge"),
              ui_component = "plot"
-             )
+             ),
+           
+           ## 2.7. Cell Proportion Stacked Bar Plot Panel
+           plot_module_ui(
+             id = ns("proportion"),
+             ui_component = "plot"
+           )
          ) # End div
        ) # End 2.
      ) # End sidebarLayout() 
@@ -690,6 +748,7 @@ plots_tab_server <- function(id,
                    # Instructs server on which plot function to run
                    plot_type = "feature",
                    assay_config = assay_config,
+                   metadata_config = metadata_config,
                    lim_orig = lim_orig,
                    # Both palettes are passed to feature plot. Continuous
                    # palette is used unless "color_by_feature" is TRUE
@@ -760,6 +819,21 @@ plots_tab_server <- function(id,
                    # Use categorical palettes for ridge plot
                    palette = selected_categorical_palette
                    )
+                 
+                 ## 2.7. Cell Type Proportion Bar Plot ####
+                 plot_module_server(
+                   id = "proportion",
+                   object = subset,
+                   # plot_switch: uses the input$make_proportion switch
+                   plot_switch = reactive({input$make_proportion}),
+                   plot_label = "Cell Proportion Plot", 
+                   # Instructs server on which plot function to run
+                   plot_type = "proportion",
+                   # Use categorical palettes for cell type proportion plot
+                   palette = selected_categorical_palette,
+                   metadata_config = metadata_config,
+                   assay_config = assay_config
+                 )
                  
                  # 3. Process Subset -------------------------------------------
                  # 3.1 Module server to process user selections and report ####

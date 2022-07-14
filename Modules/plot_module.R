@@ -71,33 +71,39 @@ plot_module_ui <- function(id,
                            meta_choices = NULL,
                            plot_label = "",
                            reductions = NULL,
-                           # TEMP: conditionals vertically aligned
-                           # for multi-cursor editing
-                           reductions_menu =            FALSE,
-                           scatterplot_ui =             FALSE,
-                           group_by =                   FALSE,
-                           split_by =                   FALSE,
-                           title_menu =                 FALSE,
-                           legend_title_menu =          FALSE,
-                           ncol_slider =                FALSE,
-                           share_scale_checkbox =       FALSE,
-                           color_by_feature_checkbox =  FALSE,
-                           super_title_menu =           FALSE,
-                           group_by_label =             FALSE,
-                           sort_groups_menu =           FALSE,
-                           order_checkbox =             FALSE,
-                           label_checkbox =             FALSE,
-                           legend_checkbox =            FALSE,
-                           display_coeff =              FALSE,
-                           limits_checkbox =            FALSE,
-                           custom_colors =              FALSE,
-                           manual_dimensions =          FALSE,
-                           separate_features =          FALSE,
-                           download_button =            FALSE,
+                           # UI Elements: Included when the arguments are TRUE
+                           reductions_menu =                       FALSE,
+                           scatterplot_ui =                        FALSE,
+                           group_by =                              FALSE,
+                           split_by =                              FALSE,
+                           title_menu =                            FALSE,
+                           legend_title_menu =                     FALSE,
+                           ncol_slider =                           FALSE,
+                           share_scale_checkbox =                  FALSE,
+                           color_by_feature_checkbox =             FALSE,
+                           super_title_menu =                      FALSE,
+                           sort_groups_menu =                      FALSE,
+                           order_checkbox =                        FALSE,
+                           label_checkbox =                        FALSE,
+                           legend_checkbox =                       FALSE,
+                           display_coeff =                         FALSE,
+                           limits_checkbox =                       FALSE,
+                           custom_colors =                         FALSE,
+                           manual_dimensions =                     FALSE,
+                           separate_features =                     FALSE,
+                           download_button =                       FALSE,
+                           # Modifiers to elements above
                            # Default values for inputs
-                           label_default =              TRUE,
-                           # Adds "none" to group_by choices
-                           group_by_add_none =           FALSE
+                           label_default =                         TRUE,
+                           # Include "none" for group_by/split_by choices
+                           group_by_include_none =                 FALSE,
+                           split_by_include_none =                 TRUE,
+                           # Alternate label for group_by/split_by menus
+                           group_by_label =                   NULL,
+                           split_by_label =                   NULL,
+                           # Default values for group by and split by choices
+                           group_by_default =                      NULL,
+                           split_by_default =                      NULL
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -148,9 +154,9 @@ plot_module_ui <- function(id,
       ## Group by menu ####
       if (group_by == TRUE){
         # Choices for group by selection: should exclude "none" unless 
-        # explicitly included using group_by_add_none == TRUE
+        # explicitly included using group_by_include_none == TRUE
         group_by_choices <- 
-          if (group_by_add_none == FALSE){
+          if (group_by_include_none == FALSE){
             meta_choices()[!meta_choices() %in% "none"]
           } else {
             meta_choices()
@@ -159,24 +165,60 @@ plot_module_ui <- function(id,
         # If TRUE, add element
         selectInput(
           inputId = ns("group_by"), 
-          label = "Metadata to Group By",
+          label = 
+            if (!is.null(group_by_label)){
+              group_by_label
+            } else {
+              "Metadata to Group By"
+            },
           # Can select all options except "none"
           choices = group_by_choices, 
-          # First option selected by default 
-          selected = group_by_choices[1]
+          # First option selected by default, unless a default choice is
+          # provided
+          selected = 
+            if (!is.null(group_by_default)){
+              group_by_default
+            } else {
+              group_by_choices[1]
+            }
           )
         # Do not add element if FALSE
       } else NULL,
       
       ## Split by menu ####
       if (split_by == TRUE){
+        # Define choices for split by menu
+        # Exclude "none" if split_by_include_none == FALSE
+        # Default behavior is not to exclude "none"
+        split_by_choices <- 
+          if (split_by_include_none == FALSE){
+            meta_choices()[!meta_choices() %in% "none"]
+          } else {
+            meta_choices()
+          }
+        
         selectInput(
           inputId = ns("split_by"), 
-          label = "Metadata to Split By",
+          label = 
+            if (!is.null(split_by_label)){
+              split_by_label
+            } else {
+              "Metadata to Split By"
+            },
           # Use vector of included metadata category names from the config file
-          choices = meta_choices(),  
-          # "none" selected by default
-          selected = "none"
+          choices = split_by_choices,  
+          # Default value: use split by default if provided
+          selected = 
+            if (!is.null(split_by_default)){
+              split_by_default
+            } else {
+              # If not, use "none" unless it is excluded
+              if (split_by_include_none == TRUE){
+                "none"
+              } else {
+                split_by_choices[1]
+              }
+            }
          )
       } else NULL,
       
@@ -294,29 +336,6 @@ plot_module_ui <- function(id,
             )
           )
         } else NULL,
-      
-      ## Group by for Feature Plot Labels ####
-      # Feature plot only. Can't be used with group_by_menu.
-      if (group_by_label == TRUE){
-        if (group_by == TRUE){
-          # Throw error if group_by menu is created (menu uses same ID)
-          stop("`group_by_label` can't be TRUE when `group_by` is TRUE.")
-        } else {
-          # Choices for group by selection: should exclude "none" 
-          group_by_choices <- meta_choices()[!meta_choices() %in% "none"]
-           
-          hidden(
-            selectInput(
-              inputId = ns("group_by"),
-              label = "Metadata for Labeling Groups",
-              # Can select all options except "none"
-              choices = group_by_choices,
-              # First option selected by default
-              selected = group_by_choices[1]
-            )
-          )
-          }
-      } else NULL,
       
       ## Order of groups (dot plots) ####
       if (sort_groups_menu == TRUE){
@@ -591,18 +610,13 @@ plot_module_ui <- function(id,
 #'
 #' @examples
 plot_module_server <- function(id,
+                               plot_type, #Non-reactive
+                               plot_label, #Non-reactive
                                object, #Reactive
                                plot_switch, #Reactive
-                               plot_label, #Non-reactive
                                n_cells_original, #Reactive
                                features_entered = NULL, #Reactive 
                                manual_dimensions = TRUE, #Non-reactive
-                               plot_type = c("dimplot",
-                                             "feature",
-                                             "violin",
-                                             "dot",
-                                             "scatter",
-                                             "ridge"), #Non-reactive
                                valid_features = NULL, #Reactive
                                lim_orig = lim_orig, #Reactive
                                palette = NULL, #Reactive
@@ -614,6 +628,34 @@ plot_module_server <- function(id,
                function(input,output,session){
                  # Server namespace function: for dynamic UI
                  ns <- session$ns
+                 
+                 # Return error notification if the plot type is not in the list
+                 # of supported types
+                 if (!plot_type %in% 
+                     c("dimplot",
+                       "feature",
+                       "violin",
+                       "dot",
+                       "scatter",
+                       "ridge",
+                       "proportion"
+                       )
+                 ){
+                   showNotification(
+                     ui = 
+                       icon_notification_ui_2(
+                         icon = "skull-crossbones",
+                         # Change to feature when other 
+                         # features are supported
+                         glue("Plot module for {id} has an unrecognized 
+                              value for argument `plot_type`. This is a 
+                              development error, please contact us and we will 
+                              resolve the issue.")
+                       ),
+                     #Show notification for 5 seconds
+                     session = session
+                   )
+                 }
                  
                  # 1. Manual Dimensions Module Server --------------------------
                  if (manual_dimensions == TRUE){
@@ -647,7 +689,7 @@ plot_module_server <- function(id,
                  # 3. Title Settings Menu --------------------------------------
                  # Title settings and custom titles are currently only enabled 
                  # for DimPlots and Feature Plots
-                 if (plot_type %in% c("dimplot", "feature")){
+                 if (plot_type %in% c("dimplot", "feature", "proportion")){
                    # Reactive trigger for updating single custom title input
                    update_title_single <- makeReactiveTrigger()
                    
@@ -668,8 +710,10 @@ plot_module_server <- function(id,
                        
                        # Conditional tree to determine if 
                        # custom titles are possible
-                       if (plot_type == "dimplot"){
+                       if (plot_type %in% c("dimplot", "proportion")){
                          # DimPlots: custom titles are always possible
+                         # Proportion stacked bar plots use same behavior as
+                         # DimPlots
                          enable_custom = TRUE
                          # Plot uses a single 
                          menu_type("single")
@@ -765,7 +809,7 @@ plot_module_server <- function(id,
                    # selections that influence the default title change
                    observeEvent(
                      # EventExpr depends on plot type
-                     if (plot_type == "dimplot"){
+                     if (plot_type %in% c("dimplot", "proportion")){
                        c(input$title_settings,
                          object(),
                          plot_selections$group_by()
@@ -783,6 +827,9 @@ plot_module_server <- function(id,
                            # Compute initial value for custom title input
                            initial_value <- 
                              initial_title(
+                               # initial_title processes the plot type and 
+                               # currently accepts "dimplot", "feature", 
+                               # or "proportion".
                                plot_type = plot_type,
                                group_by = plot_selections$group_by(),
                                metadata_config = metadata_config(),
@@ -957,7 +1004,45 @@ plot_module_server <- function(id,
                      #     )
                    }
                    
-                   ## 3.7. Custom title input to feature plots ####
+                   ## 3.7. Custom title input to dimplots, stacked bar plots ####
+                   if (plot_type %in% c("dimplot", "proportion")){
+                     plot_title <-
+                       reactive({
+                         # Define default title to use if a custom title is not
+                         # requested. Default is the label of the group by 
+                         # category, or the name itself if the label is not 
+                         # defined in the config file
+                         group_by_label <-
+                           metadata_config()[[plot_selections$group_by()]]$label
+                         
+                         default_title <-
+                           if (isTruthy(group_by_label)){
+                             group_by_label
+                           } else {
+                             plot_selections$group_by()
+                           }
+                           
+                         # Return title based on selections in title settings 
+                         # menu 
+                         if (isTruthy(input$title_settings)){
+                           if (input$title_settings == "default"){
+                             default_title
+                           } else if (input$title_settings == "custom"){
+                             # Use the custom title entered by the 
+                             # user in this case
+                             custom_title_single()
+                           } else if (input$title_settings == "none"){
+                             # NULL is passed to the title argument, removing it
+                             NULL
+                           }
+                         } else{
+                           # Use default title if selection menu does not exist
+                           default_title
+                         }
+                       })
+                   }
+                   
+                   ## 3.8. Custom title input to feature plots ####
                    # Must pass either single or multiple custom title output 
                    # depending on the current number of panels on the feature 
                    # plot, or NULL 
@@ -984,6 +1069,24 @@ plot_module_server <- function(id,
                            # Pass NULL if custom titles are not specified
                            NULL
                          }
+                       })
+                   }
+                   
+                   ## 3.9. X-axis title for Cell Type Proportion Plots ####
+                   # Aim is to eventually add a custom title input
+                   if (plot_type == "proportion"){
+                     proportion_x_axis_title <- 
+                       reactive({
+                         split_by_label <-
+                           isolate({metadata_config()})[[
+                             plot_selections$split_by()]]$label
+                         
+                         default_title <-
+                           if (isTruthy(split_by_label)){
+                             split_by_label
+                           } else {
+                             plot_selections$split_by()
+                           }
                        })
                    }
                  }
@@ -1194,7 +1297,7 @@ plot_module_server <- function(id,
                      } else {
                        hideElement(
                          id = elem_id
-                       )
+                         )
                        }
                    })
                  }
@@ -1888,30 +1991,31 @@ plot_module_server <- function(id,
                              if (input$title_settings == "none"){
                                FALSE
                              } else TRUE,
-                           plot_title =
+                           # Plot title: from 3.7.
+                           plot_title = plot_title(),
                              # Human-readable plot title
                              # Depends on title_settings
-                             if (isTruthy(input$title_settings)){
-                               if (input$title_settings == "default"){
-                                 # Default behavior is to use the `label` property
-                                 # for the category in the config file
-                                 metadata_config()[[
-                                   plot_selections$group_by()]]$label
-                               } else if (input$title_settings == "custom"){
-                                 # Use the custom title entered by the user
-                                 # in this case
-                                 custom_title_single()
-                               } else if (input$title_settings == "none"){
-                                 # NULL is passed to the title argument,
-                                 # removing it
-                                 NULL
-                               }
-                             } else{
-                               # Use default behavior if selection menu
-                               # does not exist
-                               metadata_config()[[
-                                 plot_selections$group_by()]]$label
-                             },
+                             # if (isTruthy(input$title_settings)){
+                             #   if (input$title_settings == "default"){
+                             #     # Default behavior is to use the `label` property
+                             #     # for the category in the config file
+                             #     metadata_config()[[
+                             #       plot_selections$group_by()]]$label
+                             #   } else if (input$title_settings == "custom"){
+                             #     # Use the custom title entered by the user
+                             #     # in this case
+                             #     custom_title_single()
+                             #   } else if (input$title_settings == "none"){
+                             #     # NULL is passed to the title argument,
+                             #     # removing it
+                             #     NULL
+                             #   }
+                             # } else{
+                             #   # Use default behavior if selection menu
+                             #   # does not exist
+                             #   metadata_config()[[
+                             #     plot_selections$group_by()]]$label
+                             # },
                            reduction = plot_selections$reduction(),
                            palette = palette()
                            )
@@ -2047,6 +2151,33 @@ plot_module_server <- function(id,
                             ) 
                          }
                        )
+                 } else if (plot_type == "proportion"){
+                   ### 9.2.7. Cell Type Proportion Stacked Bar Plot ####
+                   plot <-
+                     reactive(
+                       label = glue("{plot_label}: Create Plot"),
+                       {
+                        shiny_stacked_bar(
+                          object = object(),
+                          group_by = plot_selections$group_by(),
+                          split_by = plot_selections$split_by(),
+                          x_axis_title = proportion_x_axis_title(),
+                          show_legend = plot_selections$legend(),
+                          show_title =
+                            # show_title controls how NULL values for 
+                            # plot_title are interpreted (NULL will remove the 
+                            # label by default, but plot_title will be NULL if 
+                            # a label is not set in the config file (want the 
+                            # default title to be used in this case))
+                            if (input$title_settings == "none"){
+                              FALSE
+                            } else TRUE,
+                          # Plot title: from 3.7.
+                          plot_title = plot_title(),
+                          palette = palette(),
+                          sort_groups = plot_selections$sort_groups()
+                        ) 
+                       })
                    }
                  
                  ## 9.3. Render plot ####
@@ -2054,14 +2185,26 @@ plot_module_server <- function(id,
                  # If undefined, they will use the values from plotOutput, which
                  # respond to the manual dimensions inputs.
                  output$plot <- renderPlot({
-                   if (plot_type %in% c("dimplot", "violin")){
+                   if (plot_type %in% c("dimplot", "violin", "proportion")){
                      validate(
                        need(
                          input$group_by != input$split_by, 
                          message = 
-                           glue(
-                             'Invalid selections for {plot_label}: "Group By" and "Split By" must be different.'
-                             )
+                           if (plot_type %in% c("dimplot", "violin")){
+                             glue(
+                               'Invalid selections for {plot_label}: 
+                               "Group By" and "Split By" must be different.'
+                               )
+                           } else if (plot_type == "proportion") {
+                             # For cell type proportion plots, group by and 
+                             # split by are renamed "proportions" and 
+                             # "proportion comparison", respectively.
+                               glue(
+                                 'Invalid selections for {plot_label}: 
+                                 "Proportions" and "Proportion Comparison" 
+                                 must be different.'
+                               )
+                             }
                          )
                      )
                    }

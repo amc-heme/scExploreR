@@ -11,26 +11,31 @@
 #' @param features_entered The features currently selected (for feature plots)
 #'
 initial_title <- function(
-  plot_type = c("dimplot", "feature"),
+  plot_type,
   group_by = NULL,
   metadata_config = NULL, 
   features_entered = NULL
   ){
-  if (plot_type == "dimplot"){
+  if (!plot_type %in% c("dimplot", "feature", "proportion")){
+    stop(
+      'Agrument `plot_type` must be one of "dimplot", "feature", or "proportion"'
+      )
+  }
+  
+  if (plot_type %in% c("dimplot", "proportion")){
+    # For DimPlots and cell proportion plots: use name of group_by category
+    
     # Throw error if metadata_config or group_by are undefined
     if (is.null(metadata_config)){
-      stop('When `plot_type` is equal to "dimplot", `metadata_config` must be defined.')
+      stop('When `plot_type` is equal to "dimplot" or "proportion", `metadata_config` must be defined.')
     }
     if (is.null(group_by)){
-      stop('When `plot_type` is equal to "dimplot", `group_by` must be defined.')
+      stop('When `plot_type` is equal to "dimplot" or "proportion", `group_by` must be defined.')
     }
     
-    
-    # For DimPlots: name of group_by category
     if (!is.null(group_by)){
       config_label <-
-        metadata_config[[
-          group_by]]$label
+        metadata_config[[group_by]]$label
       
       # Define initial value of text entry
       initial_value <-

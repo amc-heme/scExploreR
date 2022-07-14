@@ -40,6 +40,7 @@ library(viridisLite, quietly = TRUE, warn.conflicts = FALSE)
 library(colourpicker, quietly = TRUE, warn.conflicts = FALSE)
 library(ggsci, quietly = TRUE, warn.conflicts = FALSE)
 library(scales, quietly = TRUE, warn.conflicts = FALSE)
+library(cowplot, quietly = TRUE, warn.conflicts = FALSE)
 
 # Additional backend packages
 library(presto, quietly = TRUE, warn.conflicts = FALSE)

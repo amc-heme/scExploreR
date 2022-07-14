@@ -7,8 +7,59 @@ shiny_stacked_bar <-
     y_axis_title = NULL,
     plot_title = NULL,
     show_title = TRUE,
-    show_legend = TRUE
+    show_legend = TRUE,
+    palette = NULL,
+    sort_groups = NULL
   ){
+    # Processing of palette
+    # Determine number of colors needed, which is equal to the number of 
+    # unique values in the group by category
+    n_colors <- 
+      object@meta.data[[group_by]] |>
+      unique() |> 
+      length()
+    
+    # Expand or contract palette so number of colors exactly matches the 
+    # number needed
+    colors <- 
+      if (!is.null(palette)){
+        # colorRampPalette() extends or contracts the given palette to 
+        # produce exactly the required number of colors
+        colorRampPalette(palette)(n_colors)
+        # If palette() is unspecified, use ggplot2 defaults
+      } else NULL
+    
+    # Ordering proportion split by groups on stacked bar chart
+    # Default value of sort_groups: set to "ascending" if groups is NULL
+    if (is.null(sort_groups)){
+      sort_groups <- "ascending"
+    }
+
+    # Refactor split by groups to plot in ascending or 
+    # descending order by group name
+    object@meta.data[[split_by]] <-
+      # factor() creates a factor if the metadata category is not a factor
+      # already, and re-orders a factor if it already exists.
+      factor(
+        object@meta.data[[split_by]],
+        levels = 
+          object@meta.data[[split_by]] |> 
+          unique() |> 
+          str_sort(
+            numeric = TRUE,
+            # Cell type proportion plots will plot groups in an order
+            # consistent with the value of the `decreasing` argument
+            # (FALSE will plot in ascending order, from left to right)
+            decreasing = 
+              if (sort_groups == "ascending"){
+                FALSE
+              } else if (sort_groups == "descending"){
+                TRUE
+              }
+            )
+        )
+    
+    # Create cell type proportion stacked bar chart
     plot <-
       ggplot(
         data = object@meta.data, 
@@ -42,33 +93,44 @@ shiny_stacked_bar <-
     # Additional Layers
     layers <-
       c(
-        # A. X-axis title
+        # A. Application of categorical palette, if specified
+        # If a palette is not defined, scale_color_manual is not called, 
+        # and ggplot2 defaults will be used
+        if (!is.null(colors)){
+          scale_color_manual(
+            values = colors,
+            # Color to use for NA values: currently fixed as "grey50"
+            na.value = "grey50"
+            )
+          },
+        
+        # B. X-axis title
         # Use value of x_axis_title if defined
         if (!is.null(x_axis_title)){
           list(
             xlab(x_axis_title)
-          )
-        } else {
-          # If an x-axis title is not defined, use the 
-          # name of the split_by category
-          list(
-            xlab(split_by)
-          )
-        },
+            )
+          } else {
+            # If an x-axis title is not defined, use the 
+            # name of the split_by category
+            list(
+              xlab(split_by)
+              )
+            },
         
-        # B. Y-axis title
+        # C. Y-axis title
         # Use y-axis title if defined, otherwise "Proportion of Cells"
         if (!is.null(y_axis_title)){
           list(
             ylab(y_axis_title)
-          )
+            )
         } else {
           list(
-            ylab("Proportion of cells")
-          )
-        },
+            ylab("Proportion of Cells")
+            )
+          },
         
-        # C. Plot title
+        # D. Plot title
         list(
           labs(
             title = 
@@ -80,7 +142,7 @@ shiny_stacked_bar <-
             ) 
         ),
         
-        # D. Show/hide plot title
+        # E. Show/hide plot title
         # Plot title is shown by default
         if (show_title == FALSE){
           list(
@@ -90,7 +152,7 @@ shiny_stacked_bar <-
             )
           },
         
-        # E. Show/hide legend title (shown by default)
+        # F. Show/hide legend title (shown by default)
         list(
           theme(
             legend.position = 
@@ -99,7 +161,6 @@ shiny_stacked_bar <-
               } else "none"
             )
           )
-        
         
         )
         
