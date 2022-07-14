@@ -19,6 +19,9 @@ shiny_stacked_bar <-
       unique() |> 
       length()
     
+    print("Palette")
+    print(palette)
+    
     # Expand or contract palette so number of colors exactly matches the 
     # number needed
     colors <- 
@@ -28,6 +31,9 @@ shiny_stacked_bar <-
         colorRampPalette(palette)(n_colors)
         # If palette() is unspecified, use ggplot2 defaults
       } else NULL
+    
+    print("colors")
+    print(colors)
     
     # Ordering proportion split by groups on stacked bar chart
     # Default value of sort_groups: set to "ascending" if groups is NULL
@@ -99,6 +105,9 @@ shiny_stacked_bar <-
         if (!is.null(colors)){
           scale_color_manual(
             values = colors,
+            # Must explicitly specify the scale as working with the "fill"
+            # property
+            aesthetics = "fill",
             # Color to use for NA values: currently fixed as "grey50"
             na.value = "grey50"
             )
