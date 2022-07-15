@@ -7,6 +7,17 @@ shiny_ridge <-
    palette = NULL,
    center_x_axis_title = FALSE
   ){
+    # validate will keep plot code from running if the subset 
+    # is NULL (no cells in subset)
+    validate(
+      need(
+        object,
+        # No message displayed (a notification is already 
+        # displayed) (*was displayed*)
+        message = ""
+      )
+    )
+    
     # If group_by is equal to none, add a dummy metadata column that labels
     # all cells with... "All Cells"
     if (group_by == "none"){

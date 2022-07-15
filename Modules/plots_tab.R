@@ -40,10 +40,9 @@ plots_tab_ui <- function(id,
          # of the columns from protruding into the elements beneath of it 
          # becomes larger than the other column)
          div(
+           # two-column-container creates a flexbox container that will allow
+           # switches to resize when the size of the window changes
            class = "two-column-container",
-           # Height must be defined for feature selection box beneath the 
-           # element to display correctly
-           style = "height: 165px;",
            #Left column
            div(
              class="two_column",

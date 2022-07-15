@@ -11,6 +11,17 @@ shiny_stacked_bar <-
     palette = NULL,
     sort_groups = NULL
   ){
+    # validate will keep plot code from running if the subset 
+    # is NULL (no cells in subset)
+    validate(
+      need(
+        object,
+        # No message displayed (a notification is already 
+        # displayed) (*was displayed*)
+        message = ""
+      )
+    )
+    
     # Processing of palette
     # Determine number of colors needed, which is equal to the number of 
     # unique values in the group by category
@@ -18,9 +29,6 @@ shiny_stacked_bar <-
       object@meta.data[[group_by]] |>
       unique() |> 
       length()
-    
-    print("Palette")
-    print(palette)
     
     # Expand or contract palette so number of colors exactly matches the 
     # number needed
@@ -31,9 +39,6 @@ shiny_stacked_bar <-
         colorRampPalette(palette)(n_colors)
         # If palette() is unspecified, use ggplot2 defaults
       } else NULL
-    
-    print("colors")
-    print(colors)
     
     # Ordering proportion split by groups on stacked bar chart
     # Default value of sort_groups: set to "ascending" if groups is NULL

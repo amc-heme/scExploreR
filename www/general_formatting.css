@@ -88,16 +88,6 @@ h2, h3 {
   display: none;
 }
 
-/* Two-column panel */
-.two_column {
-	width: 50%;
-	display: inline-block;
-	/* Add padding to sides of columns */
-	padding: 5px;
-	padding-top: 0px;
-	padding-bottom: 0px;
-}
-
 /* Add to two-column classes to automatically align left and right*/
 .float_left {
 	/* Use this class for the left column */
@@ -113,6 +103,28 @@ h2, h3 {
   /* Uses text format from auto_dictionary.Rmd */
   color: var(--markdown-blue, #000088);
   font-weight: bold;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Two column classes */
+/* For showing elements side-by-side in a two-column format */
+
+/* two-column-container: used for the parent container of the two columns */
+.two-column-container {
+  /* Use flex to get the continer to resize according to the viewport window,
+     so the dimensions of the container are always exactly sufficient to show
+     content, even when the heights of the two columns are not equal */
+  display: flex;
+}
+
+/* Two-column panel */
+.two_column {
+	width: 50%;
+	display: inline-block;
+	/* Add padding to sides of columns */
+	padding: 5px;
+	padding-top: 0px;
+	padding-bottom: 0px;
 }
 
 /* -------------------------------------------------------------------------- */
