@@ -89,12 +89,12 @@ h2, h3 {
 }
 
 /* Add to two-column classes to automatically align left and right*/
-.float_left {
+.float_left, .float-left {
 	/* Use this class for the left column */
   float: left;
 }
 
-.float_right {
+.float_right, .float-right {
 	/* Use this class for the right column */
   float: right;
 }
@@ -103,6 +103,15 @@ h2, h3 {
   /* Uses text format from auto_dictionary.Rmd */
   color: var(--markdown-blue, #000088);
   font-weight: bold;
+}
+
+/* CSS used for label of inputs that are disabled */
+/* Input label text is contained in a span element immediately following
+   the input in the DOM. The span element is selected using the adjacent sibling
+   combinator ("+"). */
+.disabled-label + span {
+  /* Grey text, with alpha of 0.5 */
+  color: #88888888;
 }
 
 /* -------------------------------------------------------------------------- */

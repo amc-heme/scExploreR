@@ -67,9 +67,18 @@ options_ui <- function(id,
           # displayed on plots and in the feature search results.
           checkboxInput(
             inputId = ns("include_label"),
-            label = "Include assay name on plots?"),
-          tags$p(
-            "(This is usually not required for the default assay in your data)"
+            label = 
+              "Include assay name on plots? (This is usually not required for 
+              the default assay in your data)"
+            ),
+          
+          # Designate the assay as the ADT assay 
+          # This can only be enabled for one assay at a time
+          # checking the box on one assay will cause the box to be disabled
+          # on other assays
+          checkboxInput(
+            inputId = ns("designate_adt"),
+            label = "Designate as ADT (surface protein) assay",
             )
         )
       )
@@ -93,10 +102,13 @@ options_ui <- function(id,
       } else NULL,
       
       # Human-readable suffix: appears on plots and search entries
-      textInput(inputId = ns("hr"),
-                label = "Set label for metadata column (will appear as 
-                         entered in app interface)",
-                width = "380px"),
+      textInput(
+        inputId = ns("hr"),
+        label = 
+          "Set label for metadata column (will appear 
+          as entered in app interface)",
+        width = "380px"
+        ),
       
       # Option to classify metadata into list (ex. group patients 
       # by sample conditions)
@@ -131,20 +143,6 @@ options_ui <- function(id,
                     numeric = TRUE
                     )
                 )
-              
-              # metadata_group_fields_ui(
-              #   id = ns("groups-1"),
-              #   temp_choices = unique(object@meta.data[[category_name]])
-              # ),
-              # 
-              # # Additional fields will be added above "add group" button
-              # div(
-              #   actionButton(
-              #     inputId = ns("add_group"),
-              #     label = "Add Group",
-              #     width = "100px"
-              #   )
-              # )
             )#End tagList of input containers
           ),
           
@@ -178,7 +176,8 @@ options_server <- function(id,
                            object,
                            categories_selected, 
                            options_type = c("assays", "metadata"),
-                           category_name = id
+                           category_name = id,
+                           disable_adt_checkbox = NULL
                            ){
   # Initialize module
   moduleServer(
@@ -277,7 +276,54 @@ options_server <- function(id,
         }
       }
       
-      # 3. Restore inputs when options cards are re-sorted ---------------------
+      # 3. Assay-tab Specific Functions ---------------------------------------- 
+      if (options_type == "assays"){
+        ## 3.1. Disable ADT Checkbox when Selected for another assay ####
+        observe(
+          label = glue("{id}: Disable ADT Checkbox from Other Modules"),
+          {
+            # jQuery Selector to modify ADT checkboxes from other modules: 
+            # ends with "designate_adt" and does not have 
+            # a prefix equal to the current module id
+            other_checkboxes_selector <- 
+              glue("input[id$='designate_adt']:not([id|={id}])")
+            
+            if (isTruthy(input$designate_adt)){
+              # When the checkbox is selected, disable all checkboxes with the 
+              # id "designate_adt" that are not part of the current module
+              disable(
+                selector = other_checkboxes_selector,
+                # Do not apply namespacing, since inputs from other modules 
+                # are involved
+                asis = TRUE
+                )
+              
+              addClass(
+                selector = other_checkboxes_selector,
+                class = "disabled-label",
+                asis = TRUE
+              )
+            } else {
+              # When the checkbox is de-selected, enable all checkboxes with
+              # id "designate_adt" (across all modules)
+              all_checkboxes_selector <- "input[id$='designate_adt']"
+              
+              enable(
+                selector = all_checkboxes_selector,
+                asis = TRUE
+                )
+              
+              removeClass(
+                class = "disabled-label",
+                selector = all_checkboxes_selector,
+                asis = TRUE
+                )
+              }
+            })
+      }
+      
+      
+      # 4. Restore inputs when options cards are re-sorted ---------------------
       # (In metadata tab)
       observeEvent(
         session$userData$metadata_sorting_trigger$depend(),
@@ -310,7 +356,7 @@ options_server <- function(id,
         })
       
       
-      # 4. Update Inputs with loaded config file -------------------------------
+      # 5. Update Inputs with loaded config file -------------------------------
       if (options_type == "assays"){
         observeEvent(
           session$userData$config(),
@@ -472,7 +518,7 @@ options_server <- function(id,
             })
       }
       
-      # 4. Returns from Module ------------------------------------------------- 
+      # 6. Returns from Module ------------------------------------------------- 
       if (options_type == "metadata"){
         # Return options depend on the type of metadata (Categorical metadata 
         # has a reactive list of metadata group choices; numeric and other types 
@@ -485,16 +531,19 @@ options_server <- function(id,
           # 2. The user-specified label (human-readable and used for the 
           #   keys of choices)
           # 3. The metadata groups selected, if specified by the user
-          return_list_metadata <- reactive({
-            list(`meta_colname` = category_name,
-                 `label` = input$hr,
-                 # groups: defined if the switch to group metadata is turned on, 
-                 # and set to NULL otherwise.
-                 `groups` = if (isTruthy(input$group_metadata)){
-                   group_data()
-                 } else NULL
-            )
-          })
+          return_list_metadata <- 
+            reactive({
+              list(
+                `meta_colname` = category_name,
+                `label` = input$hr,
+                # groups: defined if the switch to group metadata is turned on, 
+                # and set to NULL otherwise.
+                `groups` = 
+                  if (isTruthy(input$group_metadata)){
+                    group_data()
+                    } else NULL
+                )
+              })
           
           # Numeric metadata and other types: group_choices is NULL
         } else {
@@ -525,9 +574,12 @@ options_server <- function(id,
             list(
               `assay` = category_name,
               `key` = Key(object[[category_name]]),
-              `suffix_human` = if (input$include_label==TRUE) input$hr else "",
-              `dropdown_title` = input$hr)
-          })
+              `suffix_human` = 
+                if (input$include_label == TRUE) input$hr else "",
+              `dropdown_title` = input$hr,
+              `designated_adt` = input$designate_adt
+              )
+            })
         
         return(return_list_assays)
       }

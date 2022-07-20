@@ -98,3 +98,12 @@ categories of metadata values */
 #help_button_container{
   margin-right: 5px;
 }
+
+#adt_threshold_sidebar, #adt_threshold_main {
+  transition: width 0.5s;
+}
+
+.zero-width {
+  width: 0em;
+  overflow: hidden;
+}

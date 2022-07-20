@@ -47,6 +47,10 @@ source_files <-
       )
     )
 
+# Add threshold_picker module from main app modules
+source_files <-
+  c(source_files, "./Modules/threshold_picker.R" )
+
 # Use source() to import files into R
 sapply(
   source_files, 
@@ -93,12 +97,19 @@ js_files <-
 # Create list of style tags for each CSS file 
 js_list <- lapply(js_files,includeScript)
 
-# Load object (hard-coded for now but will soon be chosen using a file input)
+# Load object #### 
+# (hard-coded for now but will soon be chosen using a file input)
 object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 # Need a conditional to test if the loaded object is a Seurat object
 
-# Define Config file path for loading (eventually will use file input)
+# Define Config file path for loading ####
+# (eventually will use file input)
 config_filename <- "./Seurat_Objects/d0-d30-config.rds"
+
+# Version of config app #### 
+# Printed in config file. Will be used to alert user if they are using a 
+# config file that is not compatible with the current version of the main app
+config_version <- "0.2.0"
 
 # Numeric Metadata Columns
 meta_columns <- names(object@meta.data)
@@ -141,6 +152,8 @@ assay_tab <- function(){
               )
           )
         ), # End multiInput
+        
+        # Include numeric metadata for plotting
         awesomeCheckbox(
           inputId = "include_numeric_metadata",
           label = "Include numeric metadata for plotting", 
@@ -190,21 +203,6 @@ metadata_tab <-
           uiOutput(
             outputId = "metadata_sortable_bucket"
             )
-        
-          # multiInput(
-          #   inputId = "metadata_selected",
-          #   label = "Choose metadata to include:",
-          #   width = "100%",
-          #   # Currently, only non-numeric metadata columns are selectable
-          #   choices = non_numeric_cols,
-          #   options = 
-          #     list(
-          #       enable_search = FALSE,
-          #       non_selected_header = "Available Metadata",
-          #       selected_header = "Selected Metadata",
-          #       "hide_empty_groups" = TRUE
-          #       )
-          #   )
           )
         ),
       applet_main_panel(
@@ -217,17 +215,6 @@ metadata_tab <-
         # corresponding metadata category is selected
      
       tagList(
-        # lapply(
-        #   non_numeric_cols, 
-        #   function(colname){
-        #     options_ui(
-        #       id = colname, 
-        #       object = object,
-        #       optcard_type = "metadata"
-        #       )
-        #     }
-        # ),
-        
         uiOutput(
           outputId = "metadata_cards"
           ),
@@ -235,13 +222,97 @@ metadata_tab <-
         # TEMP: add an additional card displaying the outputs 
         # from the metadata tab
         div(
-          class="optcard",
+          class = "optcard",
           verbatimTextOutput(outputId = "print_metadata")
           )
         )
       )
   )
     }
+
+## 1.3. ADT Threshold Tab ####
+threshold_tab <-
+  function(){
+    sidebarLayout(
+      sidebarPanel(
+        id = "adt_threshold_sidebar",
+        style = "height: 85vh; margin-bottom: 0px;",
+        # Elements in sidebar display conditionally based on which function 
+        # the user is performing on threshold data (add new threshold data,
+        # edit an existing threshold, or none of the above)
+        hidden(
+          div(
+            # show-on-add: element displays when user is adding a new ADT 
+            class = "show-on-add",
+            selectizeInput(
+              inputId = "selected_adt",
+              label = NULL,
+              choices = NULL,
+              selected = character(0),
+              options = 
+                list(
+                  "placeholder" = "Enter feature",
+                  "maxItems" = 1,
+                  "plugins" = list("remove_button"),
+                  "create" = FALSE
+                  )
+              )
+            ),
+          # UI for selecting threshold: displays when a feature is entered 
+          # above, or when an existing threshold is being edited. 
+          div(
+            id = "threshold_picker_div",
+            threshold_picker_ui(
+              id = "threshold_picker",
+              plot_height = "15em"
+              )
+            ),
+          # Buttons to accept or discard threshold
+          div(
+            class = "show-on-add show-on-edit space-top",
+            # Accept button: disabled at first; enabled when a feature 
+            # threshold has been selected using the interactive ridge plot
+            disabled(
+              actionButton(
+                inputId = "accept_threshold",
+                class = "button-primary float-right",
+                style = "margin-left: 10px;",
+                label = "Confirm"
+                )
+              ),
+            # Cancel button: discards feature selection and threshold, and 
+            # returns menus to "idle" state
+            actionButton(
+              inputId = "cancel_threshold",
+              class = "button-ghost float-right",
+              label = "Cancel"
+              )
+            )
+          )
+        ),
+      mainPanel(
+        id = "adt_threshold_main", 
+        tags$h3(
+          "Defined ADT Thresholds",
+          class = "Center"
+        ),
+        
+        # Table of thresholds
+        # Placeholder for now
+        DTOutput(
+          outputId = "threshold_table"
+        ),
+      
+        # Button to add a new threshold
+        actionButton(
+          inputId = "add_threshold",
+          label = "New Threshold",
+          class = "button-primary",
+          style = "float: right;"
+        )
+      )
+    )
+  }
 
 ## 2. Main UI ####
 ui <- fluidPage(
@@ -263,7 +334,11 @@ ui <- fluidPage(
     tabPanel(
       title = "Metadata",
       metadata_tab()
-      )
+      ),
+    tabPanel(
+      title = "ADT Threshold",
+      threshold_tab()
+    )
     ),
   
   # Elements below will be moved to the navbar using JavaScript
@@ -347,10 +422,24 @@ ui <- fluidPage(
 
 ## 3. Main Server Function ####
 server <- function(input, output, session) {
+  # Hide ADT Threshold Tab at startup: this is shown when the user designates
+  # an assay as the surface protein assay 
+  # Use jQuery selector (tab does not have an ID). Selector is based on content
+  # of tab button
+  ADT_tab_selector <- "a:contains('ADT Threshold')"
+
+  hideElement(
+    selector = ADT_tab_selector
+  )
+  
   # Initialize Variables
   # all_options: list used to store full record of user selections 
   # across all tabs
-  all_options <- list()
+  all_options <- 
+    list(
+      # Append config app version to list that is printed to file 
+      `config_version` = config_version
+    )
   
   # module_data: reactiveValues object for storing data specific to this module
   module_data <- reactiveValues()
@@ -359,7 +448,17 @@ server <- function(input, output, session) {
   module_data$metadata_sortable_options <- non_numeric_cols
   # Nothing selected by default
   module_data$metadata_sortable_selected <- character(0)
-    
+  # Store assays for which ADT thresholding modules have been created 
+  # (to avoid duplicates)
+  module_data$existing_adt_modules <- c()
+  
+  # Threshold tab data
+  # State of sidebar: different menus are shown depending on what the user
+  # is doing at the moment (adding a new threshold, editing a threshold, etc.)
+  module_data$threshold_menu_state <- "idle"
+  # Tibble for storing threshold data: a blank tibble with column names for 
+  # the adt name and the value
+  module_data$threshold_data <- tribble(~adt, ~value)
   
   ## 3.1. Assay Panel ####
   ### 3.1.1. Store selected assays as a reactive variable ####
@@ -392,7 +491,8 @@ server <- function(input, output, session) {
       }
     })
   
-  ### 3.1.3. Filter list of options module outputs and combine into a single 
+  ### 3.1.3. Process list of assay module outputs #### 
+  # Filter list of options module outputs and combine into a single 
   # reactive object, which is added to the all_options list. 
   all_options$assays <- 
     reactive({
@@ -407,6 +507,50 @@ server <- function(input, output, session) {
           return(NULL)
           }
       })
+  
+  ### 3.1.4. Determine designated ADT assay ####
+  ADT_assay <-
+    reactive({
+      # Get TRUE/FALSE values for whether each assay is an ADT assay
+      is_adt <-
+        sapply(
+          all_options$assays(),
+          function(x){
+            x$designated_adt
+            }
+          )
+      
+      # Return the name of the assay designated as the ADT assay
+      if (any(is_adt == TRUE)){
+        return(
+          names(
+            is_adt[is_adt == TRUE]
+            )
+          )
+      } else {
+        # If none are designated, return NULL.
+        return(
+          NULL
+          )
+      }
+    })
+  
+  ### 3.1.5. Show/Hide ADT thresholding tab ####
+  observe({
+    # When an assay is designated as the ADT assay, show the corresponding tab
+    if (!is.null(ADT_assay())){
+      showElement(
+        # ADT_tab_selector is defined at the beginning of the server function
+        selector = ADT_tab_selector
+      )
+    } else {
+      # Hide the tab if there is no designated ADT assay
+      hideElement(
+        selector = ADT_tab_selector
+      )
+    }
+  })
+  
   
   # Temp: print assay options to screen
   output$assay_options <- 
@@ -581,24 +725,211 @@ server <- function(input, output, session) {
       all_options$metadata()
       })
   
-  ## 3.3. Config File Download Handler ####
+  ## 3.3 ADT Thresholding Panel ####
+  ### 3.3.1. Populate ADT Choices when designated ADT assay is changed ####
+  observeEvent(
+    ADT_assay(),
+    ignoreNULL = TRUE,
+    ignoreInit = TRUE,
+    {
+      # Fetch features (surface proteins) for the designated ADT assay
+      adts <- 
+        object[[ADT_assay()]] |> 
+        rownames()
+      
+      # Populate select input with ADT choices 
+      updateSelectizeInput(
+        session = session,
+        inputId = "selected_adt",
+        choices = adts,
+        selected = character(0),
+        server = TRUE
+        )
+      
+      # Also, set state of threshold menus back to "idle" if the designated 
+      # ADT assay changes
+      module_data$threshold_menu_state <- "idle"
+    })
+  
+  ### 3.3.2. Threshold picker server ####
+  #### 3.3.2.1. ADT passed to server ####
+  threshold_server_adt <- 
+    reactive({
+      if (module_data$threshold_menu_state == "add"){
+        # Selected ADT must be defined to avoid errors
+        req(input$selected_adt)
+        
+        # When adding a new threshold, use the adt selected by the user in
+        # the search window
+        # Add assay key to ADT (threshold server expects this)
+        paste0(
+          Key(object[[isolate({ADT_assay()})]]),
+          input$selected_adt
+          )
+      } else if (module_data$threshold_menu_state == "edit") {
+        # Will be equal to the ADT requested for editing
+      }
+    })
+  
+  #### 3.3.2.2. Server instance ####
+  threshold_value <- 
+    threshold_picker_server(
+      id = "threshold_picker", 
+      # `object` argument must be reactive, but the object is non-reactive
+      # in the config file
+      object = reactive({object}), 
+      feature = threshold_server_adt,
+      showhide_animation = TRUE
+      )
+  
+  ### 3.3.3. Adjust state based on button presses ####
+  #### 3.3.3.1. "Add" State ####
+  observeEvent(
+    input$add_threshold,
+    ignoreNULL = FALSE,
+    ignoreInit = TRUE,
+    {
+      module_data$threshold_menu_state <- "add"
+    })
+  
+  ### 3.3.4. Show/hide menus based on state ####
+  #### 3.3.4.1. Generic Menus ####
+  observe({
+    # jQuery selectors for classes that show elements based on state
+    add_selector <- "[class *= 'show-on-add']"
+    edit_selector <- "[class *= 'show-on-edit']"
+    idle_selector <- "[class *= 'show-on-idle']"
+    
+    if (module_data$threshold_menu_state == "add"){
+      showElement(
+        selector = add_selector
+        )
+    } else if (module_data$threshold_menu_state == "idle") {
+      hideElement(
+        selector = add_selector
+      )
+      hideElement(
+        selector = edit_selector
+      )
+    }
+  })
+  
+  ### 3.3.5. Confirm feature button ####
+  #### 3.3.5.1. Enable "confirm" button when a threshold is selected ####
+  observe({
+    print("threshold value")
+    print(threshold_value())
+    
+    if (!is.null(threshold_value())){
+      enable(
+        id = "accept_threshold"
+        )
+    } else {
+        disable(
+          id = "accept_threshold"
+        )
+      }
+    })
+  
+  #### 3.3.5.2. Save data and close menu when the confirm button is pressed ####
+  observeEvent(
+    input$accept_threshold,
+    ignoreNULL = FALSE,
+    ignoreInit = TRUE,
+    {
+      # Add the threshold value for the currently selected ADT to the table
+      module_data$threshold_data <-
+        module_data$threshold_data |> 
+        add_row(
+          adt = input$selected_adt,
+          value = threshold_value()
+          )
+      
+      # Set state of menus back to "idle"
+      module_data$threshold_menu_state <- "idle"
+    })
+  
+  ### 3.3.6. Render Table of ADT Thresholds ####
+  threshold_DT <-
+    reactive({
+      datatable(
+        module_data$threshold_data,
+        # DT classes applied
+        # See https://datatables.net/manual/styling/classes
+        class = "compact stripe cell-border hover",
+        # Disallow selection of rows/cells (currently)
+        selection = "none",
+        # Remove rownames
+        rownames = FALSE
+        )
+      })
+  
+  output$threshold_table <-
+    renderDT({
+      threshold_DT()
+    })
+  
+  #### Threshold Picker UI ####
+  # Shown when the state is "add" and an adt is entered in the search input
+  # OR when the state is "edit" (feature being edited is provided when changing 
+  # to this state)
+  observe({
+    target_id <- "threshold_picker_div"
+    
+    if (module_data$threshold_menu_state == "add"){
+      if (!is.null(input$selected_adt)){
+        showElement(
+          id = target_id,
+          anim = TRUE
+        )
+      } else {
+        hideElement(
+          id = target_id,
+          anim = TRUE
+        )
+      }
+    } else if (module_data$threshold_menu_state == "edit"){
+      showElement(
+        id = target_id
+      )
+    } else {
+      hideElement(
+        id = target_id
+      )
+    }
+  })
+  
+  ## 3.4. Config File Download Handler ####
   output$export_selections <- 
     downloadHandler(
       filename = "config.rds",
       content = 
         function(file){
-          # Extract each reactive output from the options module 
-          # and store in a list
-          all_options_list <- lapply(all_options, function(x) x()) 
+          # Compile config file data from the all_options list 
+          config_data <- 
+            lapply(
+              all_options, 
+              function(x){
+                # The all_options list contains a mix of reactive and 
+                # non-reactive values. Reactive values are unpacked, while 
+                # non-reactive values are left as-is.
+                if (is.reactive(x)){
+                  x()
+                  } else {
+                    x
+                  }
+                }
+              ) 
+          
           # Download above object as .rds 
           saveRDS(
-            object = all_options_list,
+            object = config_data,
             file = file
             )
           })
   
-  ## 3.4. Load Config File ####
-  ### 3.4.1 Load File ####
+  ## 3.5. Load Config File ####
+  ### 3.5.1 Load File ####
   # Loads a previously created config file and imports contents into app
   # storing in session$userdata makes file visible to all modules
   session$userData$config <-
@@ -618,13 +949,13 @@ server <- function(input, output, session) {
             ),
           duration = NULL,
           id = "load_config",
-          session=session
+          session = session
         )
         
         readRDS(config_filename)
       })
   
-  ### 3.4.2. Update inputs in main server function with file contents ####
+  ### 3.5.2. Update inputs in main server function with file contents ####
   # Assays selected
   observeEvent(
     session$userData$config(),
