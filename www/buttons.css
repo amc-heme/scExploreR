@@ -37,6 +37,40 @@
 }
 
 /******************************************************************************/
+/* Icon Buttons */
+/* For buttons that consist solely of a fontawesome icon */
+.icon-button {
+  background-color: transparent;
+  border: none;
+}
+
+.icon-button > i {
+  color: #000000;
+}
+
+/* Hover and active classes: apply to the icon "inside" the button, not the
+   button itself */
+.icon-button:hover > i {
+  color: var(--mid-blue);
+}
+
+.icon-button:active > i {
+  color: var(--mid-blue-active);
+  /* Rectangular border of icon is highlighted by default when active:
+     this is disabled here so only the icon itself is highlighted */
+  border: none;
+}
+
+/* Turn off highlight on button window when active (only icon responds) */
+.icon-button:active {
+  box-shadow: none
+}
+
+.icon-button:active:focus {
+  outline: none
+}
+
+/******************************************************************************/
 /* Additional classes applied to buttons*/
 /* Compact button: decreases margins for better fit */
 .compact-button{

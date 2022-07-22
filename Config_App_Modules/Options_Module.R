@@ -44,7 +44,7 @@ options_ui <- function(id,
   
   # Create UI for options card ----------------------------------------------
   # Assays UI
-  if(optcard_type == "assays"){
+  if (optcard_type == "assays"){
     ui <- 
       # Shinyjs hidden class applied initially to assay options cards
       hidden(

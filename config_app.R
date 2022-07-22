@@ -234,83 +234,96 @@ metadata_tab <-
 threshold_tab <-
   function(){
     sidebarLayout(
-      sidebarPanel(
-        id = "adt_threshold_sidebar",
-        style = "height: 85vh; margin-bottom: 0px;",
-        # Elements in sidebar display conditionally based on which function 
-        # the user is performing on threshold data (add new threshold data,
-        # edit an existing threshold, or none of the above)
-        hidden(
-          div(
-            # show-on-add: element displays when user is adding a new ADT 
-            class = "show-on-add",
-            selectizeInput(
-              inputId = "selected_adt",
-              label = NULL,
-              choices = NULL,
-              selected = character(0),
-              options = 
-                list(
-                  "placeholder" = "Enter feature",
-                  "maxItems" = 1,
-                  "plugins" = list("remove_button"),
-                  "create" = FALSE
+      position = "right",
+      sidebarPanel = 
+        sidebarPanel(
+          id = "adt_threshold_sidebar",
+          style = "height: 85vh; margin-bottom: 0px;",
+          width = 5,
+          # Elements in sidebar display conditionally based on which function 
+          # the user is performing on threshold data (add new threshold data,
+          # edit an existing threshold, or none of the above)
+          hidden(
+            div(
+              # show-on-add: element displays when user is adding a new ADT 
+              class = "show-on-add",
+              selectizeInput(
+                inputId = "selected_adt",
+                label = NULL,
+                choices = NULL,
+                selected = character(0),
+                options = 
+                  list(
+                    "placeholder" = "Enter feature",
+                    "maxItems" = 1,
+                    "plugins" = list("remove_button"),
+                    "create" = FALSE
                   )
               )
             ),
-          # UI for selecting threshold: displays when a feature is entered 
-          # above, or when an existing threshold is being edited. 
-          div(
-            id = "threshold_picker_div",
-            threshold_picker_ui(
-              id = "threshold_picker",
-              plot_height = "15em"
+            # UI for selecting threshold: displays when a feature is entered 
+            # above, or when an existing threshold is being edited. 
+            div(
+              id = "threshold_picker_div",
+              threshold_picker_ui(
+                id = "threshold_picker",
+                plot_height = "15em"
               )
             ),
-          # Buttons to accept or discard threshold
-          div(
-            class = "show-on-add show-on-edit space-top",
-            # Accept button: disabled at first; enabled when a feature 
-            # threshold has been selected using the interactive ridge plot
-            disabled(
-              actionButton(
-                inputId = "accept_threshold",
-                class = "button-primary float-right",
-                style = "margin-left: 10px;",
-                label = "Confirm"
+            # Buttons to accept or discard threshold
+            div(
+              class = "show-on-add show-on-edit space-top",
+              # Accept button: disabled at first; enabled when a feature 
+              # threshold has been selected using the interactive ridge plot
+              disabled(
+                actionButton(
+                  inputId = "accept_threshold",
+                  class = "button-primary float-right",
+                  style = "margin-left: 10px;",
+                  label = "Confirm"
                 )
               ),
-            # Cancel button: discards feature selection and threshold, and 
-            # returns menus to "idle" state
-            actionButton(
-              inputId = "cancel_threshold",
-              class = "button-ghost float-right",
-              label = "Cancel"
+              # Cancel button: discards feature selection and threshold, and 
+              # returns menus to "idle" state
+              actionButton(
+                inputId = "cancel_threshold",
+                class = "button-ghost float-right",
+                label = "Cancel"
               )
             )
           )
         ),
-      mainPanel(
-        id = "adt_threshold_main", 
-        tags$h3(
-          "Defined ADT Thresholds",
-          class = "Center"
-        ),
-        
-        # Table of thresholds
-        # Placeholder for now
-        DTOutput(
-          outputId = "threshold_table"
-        ),
-      
-        # Button to add a new threshold
-        actionButton(
-          inputId = "add_threshold",
-          label = "New Threshold",
-          class = "button-primary",
-          style = "float: right;"
+      mainPanel = 
+        mainPanel(
+          id = "adt_threshold_main", 
+          width = 7,
+          tags$h3(
+            "Defined ADT Thresholds",
+            class = "Center"
+          ),
+          
+          # Table of thresholds
+          # Placeholder for now
+          DTOutput(
+            outputId = "threshold_table"
+          ),
+          
+          # Button to add a new threshold
+          div(
+            class = "space-top",
+            actionButton(
+              inputId = "add_threshold",
+              label = "New Threshold",
+              class = "button-primary",
+              style = "float: right;"
+            )
+          ),
+          # JavaScript for inline edit/delete buttons on table
+          # This is rendered as HTML when changes are made to the datatable
+          uiOutput(
+            outputId = "threshold_table_button_script"
+          )
         )
-      )
     )
   }
 
@@ -458,7 +471,13 @@ server <- function(input, output, session) {
   module_data$threshold_menu_state <- "idle"
   # Tibble for storing threshold data: a blank tibble with column names for 
   # the adt name and the value
-  module_data$threshold_data <- tribble(~adt, ~value)
+  
+  #module_data$threshold_data <- tribble(~adt, ~value)
+  module_data$threshold_data <- 
+    tibble(
+      `adt` = character(0), 
+      `value` = numeric(0)
+      )
   
   ## 3.1. Assay Panel ####
   ### 3.1.1. Store selected assays as a reactive variable ####
@@ -726,7 +745,28 @@ server <- function(input, output, session) {
       })
   
   ## 3.3 ADT Thresholding Panel ####
-  ### 3.3.1. Populate ADT Choices when designated ADT assay is changed ####
+  ### 3.3.1. Define/update available ADTs ####
+  # Reactive variable will be used for updating the selection menu with
+  # ADTs in the designated assay that have not already been added to the table
+  available_adts <-
+    reactive({
+      req(ADT_assay())
+      
+      # Fetch ADTs in the designated assay (reacts to assay)
+      adts <- 
+        object[[ADT_assay()]] |> 
+        rownames()
+      
+      # return adts that are not included in the table of defined thresholds
+      # (also reacts to changes in the table)
+      if (!is.null(module_data$threshold_data)){
+        return(adts[!adts %in% module_data$threshold_data$adt])
+      } else {
+        return(adts)
+      }
+    })
+  
+  ### 3.3.2. Populate ADT Choices when designated ADT assay is changed ####
   observeEvent(
     ADT_assay(),
     ignoreNULL = TRUE,
@@ -751,8 +791,8 @@ server <- function(input, output, session) {
       module_data$threshold_menu_state <- "idle"
     })
   
-  ### 3.3.2. Threshold picker server ####
-  #### 3.3.2.1. ADT passed to server ####
+  ### 3.3.3. Threshold picker server ####
+  #### 3.3.3.1. ADT passed to server ####
   threshold_server_adt <- 
     reactive({
       if (module_data$threshold_menu_state == "add"){
@@ -771,7 +811,7 @@ server <- function(input, output, session) {
       }
     })
   
-  #### 3.3.2.2. Server instance ####
+  #### 3.3.3.2. Server instance ####
   threshold_value <- 
     threshold_picker_server(
       id = "threshold_picker", 
@@ -782,8 +822,8 @@ server <- function(input, output, session) {
       showhide_animation = TRUE
       )
   
-  ### 3.3.3. Adjust state based on button presses ####
-  #### 3.3.3.1. "Add" State ####
+  ### 3.3.4. Respond to "Add threshold" Button ####
+  # Set state to "add", which will show menus with the class "show-on-add"
   observeEvent(
     input$add_threshold,
     ignoreNULL = FALSE,
@@ -792,8 +832,8 @@ server <- function(input, output, session) {
       module_data$threshold_menu_state <- "add"
     })
   
-  ### 3.3.4. Show/hide menus based on state ####
-  #### 3.3.4.1. Generic Menus ####
+  ### 3.3.5. Show/hide menus based on state ####
+  #### 3.3.5.1. Generic Menus ####
   observe({
     # jQuery selectors for classes that show elements based on state
     add_selector <- "[class *= 'show-on-add']"
@@ -804,72 +844,21 @@ server <- function(input, output, session) {
       showElement(
         selector = add_selector
         )
+    } else if (module_data$threshold_menu_state == "edit"){
+      showElement(
+        selector = edit_selector
+        )
     } else if (module_data$threshold_menu_state == "idle") {
       hideElement(
         selector = add_selector
-      )
+        )
       hideElement(
         selector = edit_selector
-      )
-    }
-  })
-  
-  ### 3.3.5. Confirm feature button ####
-  #### 3.3.5.1. Enable "confirm" button when a threshold is selected ####
-  observe({
-    print("threshold value")
-    print(threshold_value())
-    
-    if (!is.null(threshold_value())){
-      enable(
-        id = "accept_threshold"
-        )
-    } else {
-        disable(
-          id = "accept_threshold"
         )
       }
-    })
+  })
   
-  #### 3.3.5.2. Save data and close menu when the confirm button is pressed ####
-  observeEvent(
-    input$accept_threshold,
-    ignoreNULL = FALSE,
-    ignoreInit = TRUE,
-    {
-      # Add the threshold value for the currently selected ADT to the table
-      module_data$threshold_data <-
-        module_data$threshold_data |> 
-        add_row(
-          adt = input$selected_adt,
-          value = threshold_value()
-          )
-      
-      # Set state of menus back to "idle"
-      module_data$threshold_menu_state <- "idle"
-    })
-  
-  ### 3.3.6. Render Table of ADT Thresholds ####
-  threshold_DT <-
-    reactive({
-      datatable(
-        module_data$threshold_data,
-        # DT classes applied
-        # See https://datatables.net/manual/styling/classes
-        class = "compact stripe cell-border hover",
-        # Disallow selection of rows/cells (currently)
-        selection = "none",
-        # Remove rownames
-        rownames = FALSE
-        )
-      })
-  
-  output$threshold_table <-
-    renderDT({
-      threshold_DT()
-    })
-  
-  #### Threshold Picker UI ####
+  #### 3.3.5.2. Show/Hide Threshold Picker UI ####
   # Shown when the state is "add" and an adt is entered in the search input
   # OR when the state is "edit" (feature being edited is provided when changing 
   # to this state)
@@ -897,6 +886,213 @@ server <- function(input, output, session) {
         id = target_id
       )
     }
+  })
+  
+  ### 3.3.6. Confirm feature button ####
+  #### 3.3.6.1. Enable "confirm" button when a threshold is selected ####
+  observe({
+    print("threshold value")
+    print(threshold_value())
+    
+    if (!is.null(threshold_value())){
+      enable(
+        id = "accept_threshold"
+        )
+    } else {
+        disable(
+          id = "accept_threshold"
+          )
+      }
+    })
+  
+  #### 3.3.6.2. Save data and close menu when the confirm button is pressed ####
+  observeEvent(
+    input$accept_threshold,
+    ignoreNULL = FALSE,
+    ignoreInit = TRUE,
+    {
+      # Add the threshold value for the currently selected ADT to the table
+      module_data$threshold_data <-
+        module_data$threshold_data |> 
+        add_row(
+          adt = input$selected_adt,
+          value = threshold_value()
+          )
+      
+      # Update ADT choices to exclude the ADTs currently in the table
+      adts <- 
+        object[[ADT_assay()]] |> 
+        rownames()
+      
+      updateSelectizeInput(
+        session = session,
+        inputId = "selected_adt",
+        choices = adts[!adts %in% module_data$threshold_data$adt],
+        selected = character(0),
+        server = TRUE
+      )
+      
+      # Set state of menus back to "idle"
+      module_data$threshold_menu_state <- "idle"
+    })
+  
+  ### 3.3.7. Render Table of ADT Thresholds ####
+  #### 3.3.7.1. DT Datatable ####
+  threshold_DT <-
+    reactive({
+      DT <- module_data$threshold_data
+      
+      # Add edit and delete buttons to table
+      # Code adapted from https://github.com/AntoineGuillot2/ButtonsInDataTable
+      if (nrow(DT) > 0){
+        DT[["Actions"]] <-
+          glue(
+            '<div class = "btn-group" style = "float: right;" role = "group" 
+            aria-label = "Options for {DT[[\'adt\']]}">
+              <button type="button" class="btn icon-button edit" 
+                id = edit_{1:nrow(module_data$threshold_data)}> 
+                <i class = "fa fa-pencil" role = "presentation" 
+                  aria-label = "Edit" style = "font-size: 1.7em;"></i>
+                </button>
+              
+              <button type="button" class="btn icon-button delete" 
+                id = delete_{1:nrow(module_data$threshold_data)}> 
+                  <i class = "fa fa-times-circle" role = "presentation" 
+                  aria-label = "Delete" style = "font-size: 1.7em;"></i>
+              </button>
+           </div>'
+          )
+      }
+      
+      # Create DT Datatable
+      datatable(
+        DT,
+        # DT classes applied
+        # See https://datatables.net/manual/styling/classes
+        class = "compact stripe cell-border hover",
+        # Disallow selection of rows/cells (currently)
+        selection = "none",
+        # Remove rownames
+        rownames = FALSE,
+        colnames = c("ADT" = "adt", "Chosen Threshold" = "value"),
+        # Escape set to FALSE so HTML above is rendered properly
+        escape = FALSE
+        )
+      })
+  
+  output$threshold_table <-
+    renderDT({
+      threshold_DT()
+    })
+  
+  #### 3.3.7.2. JavaScript for Inline Buttons ####
+  button_script <-
+    reactive({
+      req(module_data$threshold_data)
+      
+      # Adapted from 
+      # https://github.com/AntoineGuillot2/ButtonsInDataTable/blob/master/server.R
+      if (nrow(module_data$threshold_data > 0)){
+        # Script: when the user clicks a button within the DT table 
+        # (#threshold_table button) register the id of the button the user 
+        # clicked on as input$lastClickId, and a random number as 
+        # input$lastClick (this is the trigger for responding to the click, and 
+        # must therefore always change with each click.)
+        tags$script(
+          "
+          $(document).on('click', '#threshold_table button', function () {
+              Shiny.onInputChange('lastClickId', this.id);
+              Shiny.onInputChange('lastClick', Math.random())
+              });
+          "
+        )
+      }
+    })
+  
+  output$threshold_table_button_script <-
+    renderUI({
+      button_script()
+    })
+  
+  ### 3.3.8. Respond to edit/delete buttons ####
+  observeEvent(
+    input$lastClick,
+    ignoreNULL = FALSE,
+    ignoreInit = TRUE,
+    {
+      print(glue("You clicked {input$lastClickId}"))
+      
+      # input$lastClickId stores the id of the button that was clicked
+      if (grepl("edit", input$lastClickId)){
+        # If the button is an edit button, initialize menus for editing.
+        # Set the state of the menus to "edit"
+        module_data$threshold_menu_state <- "edit"
+        
+        # Determine which row the edit button was on
+        row_selected <- 
+          gsub("edit_", "", input$lastClickId) |> 
+          as.numeric()
+        
+        print(module_data$threshold_data)
+        print(module_data$threshold_data$adt)
+        print("Row selected")
+        print(row_selected)
+        print("ADT selected")
+        print(module_data$threshold_data$adt[row_selected])
+        
+        
+        # Determine which ADT was on the row selected
+        adt_selected <- 
+          module_data$threshold_data$adt[row_selected]
+        
+        if (is.na(adt_selected) | is.null(adt_selected)){
+          warning(
+            "Threshold table: ADT selected for editing is undefined."
+            )
+        }
+        
+        # Fetch the value for the ADT from the table
+        selected_threshold <- 
+          module_data$threshold_data$value[row_selected]
+        
+        # Set the selected ADT to the one being edited. 
+        # The ADT selectize input is modified and is still accessed, 
+        # but it is not visible when the state is "edit"
+        updateSelectizeInput(
+          session = session,
+          inputId = "selected_adt",
+          # Choices do not change, but must be added for update to proceed
+          choices = available_adts(),
+          selected = adt_selected,
+          server = TRUE
+          )
+        
+        
+      } else if (grepl("delete", input$lastClickId)) {
+        # Delete the row corresponding to the button from the table
+        # Determine which row the delete button was on
+        row_selected <- 
+          gsub("delete_", "", input$lastClickId) |> 
+          as.numeric()
+        
+        # Prevents crashing in the event the selected_row is undefined
+        if (!is.null(row_selected) | is.na(row_selected)){
+          print("Delete Target")
+          print(module_data$threshold_data$adt[row_selected])
+          
+          # Delete the selected row from the table and save the new table
+          module_data$threshold_data <-
+            module_data$threshold_data[-row_selected,]
+        } else {
+          warning("Unable to determine the index of the row selected for deletion")
+        }
+      }
+    })
+  
+  # TEMP: value of input$selected_adt ####
+  observe({
+    print("Change in value of input$selected_adt. New value:")
+    print(input$selected_adt)
   })
   
   ## 3.4. Config File Download Handler ####
