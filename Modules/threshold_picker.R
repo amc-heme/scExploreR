@@ -140,6 +140,7 @@ threshold_picker_server <-
                 asis = TRUE
                 )
             } else {
+              # Hide the interactive plot
               hideElement(
                 id = target_id,
                 anim = showhide_animation,
@@ -368,7 +369,7 @@ threshold_picker_server <-
               print(module_data$ridge_plot)
             )
           })
-        
+
         # Stats UI
         # output$threshold_stats_ui <-
         #   renderUI({

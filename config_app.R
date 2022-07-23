@@ -244,9 +244,26 @@ threshold_tab <-
           # the user is performing on threshold data (add new threshold data,
           # edit an existing threshold, or none of the above)
           hidden(
+            # Header of options bar: depends on whether the state is "add" 
+            # or "edit"
             div(
               # show-on-add: element displays when user is adding a new ADT 
               class = "show-on-add",
+              tags$h4("Add ADT Threshold"),
+              ),
+              div(
+                class = "show-on-edit",
+                tags$h4(
+                  "Edit threshold for ",
+                  textOutput(
+                    outputId = "threshold_header_edit_feature"
+                    )
+                  ),
+                ),
+            # Menu to choose an ADT to add a threshold for
+            div(
+              class = "show-on-add",
+              tags$b("Enter an ADT threshold below to add to table:"),
               selectizeInput(
                 inputId = "selected_adt",
                 label = NULL,
@@ -259,7 +276,7 @@ threshold_tab <-
                     "plugins" = list("remove_button"),
                     "create" = FALSE
                   )
-              )
+                )
             ),
             # UI for selecting threshold: displays when a feature is entered 
             # above, or when an existing threshold is being edited. 
@@ -469,15 +486,21 @@ server <- function(input, output, session) {
   # State of sidebar: different menus are shown depending on what the user
   # is doing at the moment (adding a new threshold, editing a threshold, etc.)
   module_data$threshold_menu_state <- "idle"
+  
   # Tibble for storing threshold data: a blank tibble with column names for 
   # the adt name and the value
-  
-  #module_data$threshold_data <- tribble(~adt, ~value)
   module_data$threshold_data <- 
     tibble(
       `adt` = character(0), 
       `value` = numeric(0)
       )
+  
+  # Variables set when a ADT in the table is being edited and cleared after a
+  # new threshold is set
+  # Identity of ADT being edited
+  module_data$feature_for_editing <- NULL
+  # Index of row being edited
+  module_data$edit_row <- NULL
   
   ## 3.1. Assay Panel ####
   ### 3.1.1. Store selected assays as a reactive variable ####
@@ -571,7 +594,7 @@ server <- function(input, output, session) {
   })
   
   
-  # Temp: print assay options to screen
+  # Temp: print assay options to screen ####
   output$assay_options <- 
     renderPrint({
       all_options$assays()
@@ -795,9 +818,12 @@ server <- function(input, output, session) {
   #### 3.3.3.1. ADT passed to server ####
   threshold_server_adt <- 
     reactive({
+      # Value passed to server depends on state
       if (module_data$threshold_menu_state == "add"){
+        # When the menus are in the "add" state, use input$selected_adt
         # Selected ADT must be defined to avoid errors
         req(input$selected_adt)
+        req(ADT_assay())
         
         # When adding a new threshold, use the adt selected by the user in
         # the search window
@@ -808,9 +834,15 @@ server <- function(input, output, session) {
           )
       } else if (module_data$threshold_menu_state == "edit") {
         # Will be equal to the ADT requested for editing
-      }
+        # (this is set using a reactiveValues object)
+        paste0(
+          # Add assay key
+          Key(object[[isolate({ADT_assay()})]]),
+          module_data$feature_for_editing
+        )
+      } 
     })
-  
+
   #### 3.3.3.2. Server instance ####
   threshold_value <- 
     threshold_picker_server(
@@ -911,13 +943,29 @@ server <- function(input, output, session) {
     ignoreNULL = FALSE,
     ignoreInit = TRUE,
     {
-      # Add the threshold value for the currently selected ADT to the table
-      module_data$threshold_data <-
-        module_data$threshold_data |> 
-        add_row(
-          adt = input$selected_adt,
-          value = threshold_value()
+      if (module_data$threshold_menu_state == "add"){
+        # If the state is "add", add the threshold value for the currently 
+        # selected ADT to the table
+        module_data$threshold_data <-
+          module_data$threshold_data |> 
+          add_row(
+            adt = input$selected_adt,
+            value = threshold_value()
           )
+      } else if (module_data$threshold_menu_state == "edit"){
+        # Set the "adt" entry of the row being edited to the feature name
+        # module_data$threshold_data[module_data$edit_row, 1] <-
+        #   module_data$feature_for_editing
+        
+        # Set the "value" entry (column 2) of the row being edited to the new 
+        # value chosen on the interactive plot
+        module_data$threshold_data[module_data$edit_row, 2] <-
+          threshold_value()
+       
+        # Set the identity of the feature being edited back to NULL
+        module_data$feature_for_editing <- NULL 
+        module_data$edit_row <- NULL
+      }
       
       # Update ADT choices to exclude the ADTs currently in the table
       adts <- 
@@ -930,7 +978,7 @@ server <- function(input, output, session) {
         choices = adts[!adts %in% module_data$threshold_data$adt],
         selected = character(0),
         server = TRUE
-      )
+        )
       
       # Set state of menus back to "idle"
       module_data$threshold_menu_state <- "idle"
@@ -1040,7 +1088,6 @@ server <- function(input, output, session) {
         print("ADT selected")
         print(module_data$threshold_data$adt[row_selected])
         
-        
         # Determine which ADT was on the row selected
         adt_selected <- 
           module_data$threshold_data$adt[row_selected]
@@ -1055,17 +1102,25 @@ server <- function(input, output, session) {
         selected_threshold <- 
           module_data$threshold_data$value[row_selected]
         
+        # Pass feature to reactive variable to update the ridge plot
+        module_data$feature_for_editing <- 
+          adt_selected
+        
+        # Store the index of the row selected for 
+        module_data$edit_row <-
+          row_selected
+        
         # Set the selected ADT to the one being edited. 
         # The ADT selectize input is modified and is still accessed, 
         # but it is not visible when the state is "edit"
-        updateSelectizeInput(
-          session = session,
-          inputId = "selected_adt",
-          # Choices do not change, but must be added for update to proceed
-          choices = available_adts(),
-          selected = adt_selected,
-          server = TRUE
-          )
+        # updateSelectizeInput(
+        #   session = session,
+        #   inputId = "selected_adt",
+        #   # Choices do not change, but must be added for update to proceed
+        #   choices = available_adts(),
+        #   selected = adt_selected,
+        #   server = TRUE
+        #   )
         
         
       } else if (grepl("delete", input$lastClickId)) {
@@ -1087,6 +1142,12 @@ server <- function(input, output, session) {
           warning("Unable to determine the index of the row selected for deletion")
         }
       }
+    })
+  
+  ### 3.3.9. Threshold settings window header text (edit mode) ####
+  output$threshold_header_edit_feature <-
+    renderText({
+      module_data$feature_for_editing
     })
   
   # TEMP: value of input$selected_adt ####
