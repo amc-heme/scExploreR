@@ -497,10 +497,13 @@ server <- function(input, output, session) {
   
   # Variables set when a ADT in the table is being edited and cleared after a
   # new threshold is set
+  editing_data <- reactiveValues()
   # Identity of ADT being edited
-  module_data$feature_for_editing <- NULL
+  editing_data$adt_target <- NULL
+  # Previously defined threshold of ADT being edited
+  editing_data$previous_threshold <- NULL
   # Index of row being edited
-  module_data$edit_row <- NULL
+  editing_data$target_row <- NULL
   
   ## 3.1. Assay Panel ####
   ### 3.1.1. Store selected assays as a reactive variable ####
@@ -838,7 +841,7 @@ server <- function(input, output, session) {
         paste0(
           # Add assay key
           Key(object[[isolate({ADT_assay()})]]),
-          module_data$feature_for_editing
+          editing_data$adt_target
         )
       } 
     })
@@ -851,7 +854,13 @@ server <- function(input, output, session) {
       # in the config file
       object = reactive({object}), 
       feature = threshold_server_adt,
-      showhide_animation = TRUE
+      showhide_animation = TRUE,
+      # Used to show the previous threshold on the interactive ridge 
+      # plot during editing
+      set_threshold = 
+        reactive({
+          editing_data$previous_threshold
+          })
       )
   
   ### 3.3.4. Respond to "Add threshold" Button ####
@@ -954,17 +963,18 @@ server <- function(input, output, session) {
           )
       } else if (module_data$threshold_menu_state == "edit"){
         # Set the "adt" entry of the row being edited to the feature name
-        # module_data$threshold_data[module_data$edit_row, 1] <-
-        #   module_data$feature_for_editing
+        # module_data$threshold_data[editing_data$target_row, 1] <-
+        #   editing_data$adt_target
         
         # Set the "value" entry (column 2) of the row being edited to the new 
         # value chosen on the interactive plot
-        module_data$threshold_data[module_data$edit_row, 2] <-
+        module_data$threshold_data[editing_data$target_row, 2] <-
           threshold_value()
        
-        # Set the identity of the feature being edited back to NULL
-        module_data$feature_for_editing <- NULL 
-        module_data$edit_row <- NULL
+        # Set editing_data variables back to NULL
+        editing_data$adt_target <- NULL 
+        editing_data$target_row <- NULL
+        editing_data$previous_threshold <- NULL
       }
       
       # Update ADT choices to exclude the ADTs currently in the table
@@ -1068,8 +1078,6 @@ server <- function(input, output, session) {
     ignoreNULL = FALSE,
     ignoreInit = TRUE,
     {
-      print(glue("You clicked {input$lastClickId}"))
-      
       # input$lastClickId stores the id of the button that was clicked
       if (grepl("edit", input$lastClickId)){
         # If the button is an edit button, initialize menus for editing.
@@ -1081,12 +1089,12 @@ server <- function(input, output, session) {
           gsub("edit_", "", input$lastClickId) |> 
           as.numeric()
         
-        print(module_data$threshold_data)
-        print(module_data$threshold_data$adt)
-        print("Row selected")
-        print(row_selected)
-        print("ADT selected")
-        print(module_data$threshold_data$adt[row_selected])
+        # print(module_data$threshold_data)
+        # print(module_data$threshold_data$adt)
+        # print("Row selected")
+        # print(row_selected)
+        # print("ADT selected")
+        # print(module_data$threshold_data$adt[row_selected])
         
         # Determine which ADT was on the row selected
         adt_selected <- 
@@ -1098,16 +1106,17 @@ server <- function(input, output, session) {
             )
         }
         
-        # Fetch the value for the ADT from the table
-        selected_threshold <- 
+        # Fetch previous threshold and pass to interactive ridge plot
+        # (will display previous selection )
+        editing_data$previous_threshold <- 
           module_data$threshold_data$value[row_selected]
         
         # Pass feature to reactive variable to update the ridge plot
-        module_data$feature_for_editing <- 
+        editing_data$adt_target <- 
           adt_selected
         
         # Store the index of the row selected for 
-        module_data$edit_row <-
+        editing_data$target_row <-
           row_selected
         
         # Set the selected ADT to the one being edited. 
@@ -1147,7 +1156,7 @@ server <- function(input, output, session) {
   ### 3.3.9. Threshold settings window header text (edit mode) ####
   output$threshold_header_edit_feature <-
     renderText({
-      module_data$feature_for_editing
+      editing_data$adt_target
     })
   
   # TEMP: value of input$selected_adt ####

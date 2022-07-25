@@ -88,13 +88,19 @@ threshold_picker_ui <-
 #' @param id ID to use for module server instance.
 #' @param object
 #' @param feature
+#' @param showhide_animation
+#' @param set_threshold A reactive value used to set the selected threshold to
+#' a defined value. For example, when editing the threshold value for a feature,
+#' this is set to the last value selected for the feature, giving a visual 
+#' representation of what the last selection was.
 #'
 threshold_picker_server <- 
   function(
     id,
     object,
     feature,
-    showhide_animation = FALSE
+    showhide_animation = FALSE,
+    set_threshold = NULL
     ){
     moduleServer(
       id,
@@ -122,16 +128,9 @@ threshold_picker_server <-
         observe(
           label = glue("{id}: Show/hide Ridge Plot"),
           {
-            print("Feature processed by threshold server")
-            print(feature())
-            print("isTruthy test")
-            print(isTruthy(feature()))
-            
             target_id <- ns("ridge_plot_ui")
 
             if (isTruthy(feature())){
-              print("showElement target")
-              print(ns(target_id))
               showElement(
                 id = target_id,
                 # If showhide_animation is TRUE, animate plot (will slide 
@@ -312,7 +311,7 @@ threshold_picker_server <-
               x_original |> 
               round(digits = 2)
             
-            # Draw vertical line using transformed hover coordinate  
+            # Draw vertical line using transformed click coordinate  
             module_data$ridge_plot_with_threshold <-
               module_data$initial_ridge_plot +
               geom_vline(
@@ -328,11 +327,6 @@ threshold_picker_server <-
                 feature = feature(), 
                 threshold = module_data$threshold_x
               )
-            
-            # print("Cells above")
-            # print(module_data$threshold_stats$n_above)
-            # print("Cells below")
-            # print(module_data$threshold_stats$n_below)
             
             # Record click coordinates
             module_data$click_info <- 
@@ -356,7 +350,42 @@ threshold_picker_server <-
             }
           })
         
-        # 5. Render plot and statistics ####
+        # 5. Update a plot with a previously defined threshold ####
+        if (is.reactive(set_threshold)){
+          # Observer is created only when set_threshold is defined as a 
+          # reactive variable (set_threshold is a non-reactive NULL by default,
+          # since it is not used on all applications of this module)
+          observeEvent(
+            set_threshold(),
+            ignoreNULL = TRUE,
+            ignoreInit = TRUE,
+            {
+              # When a new value is passed to set_threshold, set the threshold
+              # to the new value
+              module_data$threshold_x <- set_threshold()
+              
+              # Draw a vertical line on the plot at the new value, as if a click 
+              # event had occurred at the location of the threshold.
+              # Draw vertical line using transformed click coordinate  
+              module_data$ridge_plot_with_threshold <-
+                module_data$initial_ridge_plot +
+                geom_vline(
+                  xintercept = module_data$threshold_x,
+                  color = "#000000",
+                  size = 0.75
+                )
+              
+              # Update statistics with new threshold value
+              module_data$threshold_stats <- 
+                threshold_stats(
+                  object = object(), 
+                  feature = feature(), 
+                  threshold = module_data$threshold_x
+                )
+            })
+          }
+        
+        # 6. Render plot and statistics ####
         # Plot
         output$ridge_plot <-
           renderPlot({
@@ -406,7 +435,7 @@ threshold_picker_server <-
               )
             })
         
-        # 6. Return chosen threshold from module ####
+        # 7. Return chosen threshold from module ####
         # Package into a reactive value for consistency with other modules
         reactive({
           module_data$threshold_x
