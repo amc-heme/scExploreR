@@ -78,6 +78,73 @@
 }
 
 /******************************************************************************/
+/* Buttons on top of plot outputs */
+/* The class below should be applied to a div element that contains both the
+   plotOutput container and the buttons to be placed above the plot */
+.plot-with-buttons {
+  position: relative;
+  top: 0;
+  left: 0;
+}
+
+/* Plot output container */
+/* The position property of the plotOutput container is set to relative to
+   allow for overlay of the buttons. */
+ .plot-with-buttons > .shiny-plot-output {
+   position: relative;
+   left: 0;
+   top: 0;
+
+ }
+
+ /* Round upper left and upper right corners of plot (for visual consistency
+    with the plot options panel beneath the plot) */
+ /* Space between selectors: selects all img elements that are descendents of
+    an element with .plot-with-buttons, regardless of position in the
+    hierarchy (as opposed to >, which will only select direct descendents) */
+ .plot-with-buttons img {
+   border-radius: 8px 8px 0px 0px;
+ }
+
+/* For each button over the plot, position is set to absolute to display over
+   plot. For each button, values for either top or bottom, and either left or
+   right, must be set using the `style` argument of actionButton to position
+   each button in the desired location. */
+   .plot-button {
+     position: absolute;
+   }
+
+/* Alternately, buttons can be placed in a container with class
+   .plot-button-panel, which will create a horizontal panel of buttons at
+   the bottom of the plot. */
+ .plot-button-panel {
+   position: relative;
+   width: inherit;
+   height: 25px;
+   /* Rounds the bottom corners but not the top corners for visual
+      continuity with plot window */
+   border-radius: 0px 0px 8px 8px;
+   background-color: #BBBBBB55;
+   /* Padding on left and right adds additional space to buttons at the end of
+      the panel */
+   padding: 0px 5px;
+   margin-bottom: 10px;
+ }
+
+/* This class is intended for a button in a .plot-button-panel continer created
+   using shinyWidgets::dropDownButton */
+.plot-dropDownButton{
+  /* Default position for dropDownButton is absolute. This is not desired since
+     the buttons look best when placed automatically */
+  position: relative;
+  /* Buttons will appear from right to left */
+  float: right;
+  outline: none;
+  /* Vertically centers buttons in panel and adds space between buttons*/
+  margin: 2.5px 5px;
+}
+
+/******************************************************************************/
 
 /* CSS for styling the help button and its dropdown menu*/
 #help {

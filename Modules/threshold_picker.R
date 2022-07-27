@@ -3,12 +3,14 @@
 #' @param id ID to use for module elements.
 #' @param plot_width
 #' @param plot_height
+#' @param buttons_panel
 #'
 threshold_picker_ui <- 
   function(
     id,
     plot_width = NULL,
-    plot_height = NULL
+    plot_height = NULL,
+    buttons_panel = TRUE
     ){
     # Namespace function: prevents conflicts with IDs defined in other modules
     ns <- NS(id)
@@ -18,6 +20,8 @@ threshold_picker_ui <-
       hidden(
         div(
           id = ns("ridge_plot_ui"),
+          # CSS is applied to allow buttons to appear over the plot
+          class = "plot-with-buttons",
           # Ridge plot showing histogram of feature expression in current object
           plotOutput(
             outputId = ns("ridge_plot"),
@@ -41,7 +45,57 @@ threshold_picker_ui <-
               clickOpts(
                 id = ns("plot_click")
               )
+            ),
+          div(
+            class = "plot-button-panel",
+            dropdownButton(
+              # status argument adds classes to button
+              # Space is intentional. dropdownButton adds "btn-" to the 
+              # beginning of the status string
+              status = " icon-button plot-button plot-button-dropdown plot-dropDownButton",
+              size = "xs",
+              tooltip = "Adjust x-axis limits",
+              right = FALSE,
+              up = TRUE,
+              icon = icon("arrows-alt-h"),
+              tagList(
+                div(
+                  class = "inline-containers",
+                  textInput(
+                    inputId = ns("lower_xlim"),
+                    label = "Lower Bound:",
+                    # Default value is filled in the server function
+                    value = NULL
+                  ),
+                  textInput(
+                    inputId = ns("upper_xlim"),
+                    label = "Upper Bound:",
+                    value = NULL
+                  )
+                ),
+                actionButton(
+                  inputId = ns("apply_xlim"),
+                  class = "button-primary float-right",
+                  style = "margin-left: 10px;",
+                  label = "Apply"
+                ),
+                actionButton(
+                  inputId = ns("restore_xlim"),
+                  class = "button-ghost float-right",
+                  icon = icon("undo-alt"),
+                  label = "Restore Original"
+                )
+              )
             )
+          )
+          
+          # actionButton(
+          #   inputId = "adjust_xlim",
+          #   label = NULL,
+          #   icon = icon("arrows-alt-h"),
+          #   class = "icon-button plot-button"
+          #   
+          #   )
           )
         ),
       # UI to display statistics based on selected threshold
@@ -104,7 +158,7 @@ threshold_picker_server <-
     ){
     moduleServer(
       id,
-      function(input,output,session){
+      function(input, output, session){
         # Server namespacing function
         ns <- session$ns
         
@@ -113,6 +167,16 @@ threshold_picker_server <-
         # saved, and thus "accumulate")). This type of behavior requires 
         # reactiveValues objects.
         module_data <- reactiveValues()
+        
+        # When the user hovers over an interactive plot, the x-coordinate
+        # returned is on a zero to one scale based on the position on the plot
+        # instead of the true x-coordinate on the plot. Furthermore, zero and
+        # one do not directly correspond to the lower and upper x-limits, 
+        # respectively. The values below are used to convert the coordinates on
+        # a 0-1 scale to the true coordinates, and were tuned to yield 
+        # the most accurate coordinates possible.
+        plot_min_coord <- 0.06
+        plot_max_coord <- 0.96
         
         # Spinner that displays over ridge plot during initial computation
         plot_spinner <-
@@ -148,7 +212,7 @@ threshold_picker_server <-
             }
           })
         
-        # 2. Define Ridge Plot Showing Feature Expression ####
+        # 2. Create ridge plot upon feature change ####
         # The plot must be stored in a reactiveValues object (module_data) to
         # avoid reactivity issues when processing hover and click values. 
         # The initial plot is generated below.
@@ -156,12 +220,18 @@ threshold_picker_server <-
           feature(),
           label = glue("{id}: Ridge Plot Histogram"),
           ignoreNULL = FALSE,
+          # This observer must execute before the observer in 5. to ensure 
+          # user-defined thresholds are being applied after the plot is created
+          # when switching features (otherwise the threshold will be drawn on
+          # the previous plot instead of the current one)
+          priority = 2,
           {            
             # When drawing a new plot, clear plots and data associated 
             # with the last plot if present
             module_data$initial_ridge_plot <- NULL
             module_data$ridge_plot_with_threshold <- NULL
             module_data$ridge_plot <- NULL
+            module_data$original_xlim <- NULL
             module_data$threshold_x <- NULL
             module_data$threshold_stats <- NULL
             
@@ -206,11 +276,16 @@ threshold_picker_server <-
                   show_legend = FALSE, 
                   palette = c("#000088"),
                   center_x_axis_title = TRUE
-                ) 
-            #   # Extract the object from patchwork format
-            #   module_data$initial_ridge_plot <-
-            #     module_data$initial_ridge_plot[[1]]
+                  ) 
               
+              # After drawing the plot, record the original x-axis limits
+              module_data$original_xlim <-
+                layer_scales(module_data$initial_ridge_plot)$x$range$range
+              
+              # Also save to module_data$ridge_plot (this plot is the one 
+              # printed to the screen)
+              module_data$ridge_plot <-
+                module_data$initial_ridge_plot
             } else {
               # Do not draw plot if no feature is defined
               module_data$initial_ridge_plot <-
@@ -220,7 +295,7 @@ threshold_picker_server <-
             plot_spinner$hide()
           })
         
-        # 3. Add vertical Line Upon Hovering ####
+        # 3. Respond to hover event (add vertical line) ####
         # In the event the user hovers over or clicks the plot, add the 
         # corresponding vertical line at the x-coordinate of the click.
         observeEvent(
@@ -233,48 +308,50 @@ threshold_picker_server <-
           ignoreInit = TRUE,
           {
             # The saved plot must be different from the initial plot, or a series
-            # of vertical lines will be created each time a hover event is 
+            # of vertical lines will be created each time a hover event is
             # registered
-            
+
             # Transforming X-coordinates for compatibility with hover/click
             # Coordinates are incorrectly being from zero to one, with one
             # being the max value on the plot.
-            x_original <-
+            plot_x_coordinate <-
               interactive_transform(
-                x_coord = input$plot_hover$x, 
-                distribution_range = module_data$plot_range,
-                distribution_minimum = module_data$plot_min, 
-                plot_min_coord = 0.08, 
-                plot_max_coord = 0.9
+                x_coord = input$plot_hover$x,
+                # Distribution_range: uses the x-axis limits of the plot,
+                # as computed in 6.1.
+                distribution_range = current_xlim()[2] - current_xlim()[1],
+                distribution_minimum = module_data$plot_min,
+                plot_min_coord = 0.06,
+                plot_max_coord = 0.96
               )
-            
-            # Draw vertical line using transformed hover coordinate  
+
+            # Draw vertical line using transformed hover coordinate
             # Hover line is drawn over either the initial plot, or the plot
             # with a defined threshold, depending on whether the user has
             # clicked the plot
-            
-            # module_data$click_info is used. module_data$click_info only 
-            # changes upon a new click, and does not become NULL while the 
+
+            # module_data$click_info is used. module_data$click_info only
+            # changes upon a new click, and does not become NULL while the
             # plot is re-drawn
             # if (!is.null(module_data$click_info)){
-            #  base_plot <- module_data$initial_ridge_plot 
+            #  base_plot <- module_data$initial_ridge_plot
             # } else {
-            #   # If module_data$click_info is defined, use the plot with 
+            #   # If module_data$click_info is defined, use the plot with
             #   # the vertical line at the click location
-            #   base_plot <- module_data$ridge_plot_with_threshold 
+            #   base_plot <- module_data$ridge_plot_with_threshold
             # }
-            
-            base_plot <- 
+
+            base_plot <-
               if (!is.null(module_data$ridge_plot_with_threshold)){
                 module_data$ridge_plot_with_threshold
               } else{
                 module_data$initial_ridge_plot
               }
-            
+
             module_data$ridge_plot <-
               base_plot +
               geom_vline(
-                xintercept = x_original,
+                xintercept = plot_x_coordinate,
                 color = "#666666",
                 size = 0.75
               )
@@ -293,13 +370,15 @@ threshold_picker_server <-
           {
             # Draw a solid, and persistent, line on the x-axis
             # Transfrom x-coordinate of click to match distribution
-            x_original <-
+            plot_x_coordinate <-
               interactive_transform(
                 x_coord = input$plot_click$x, 
-                distribution_range = module_data$plot_range,
+                # Distribution_range: uses the x-axis limits of the plot, 
+                # as computed in 6.1.
+                distribution_range = current_xlim()[2] - current_xlim()[1],
                 distribution_minimum = module_data$plot_min, 
-                plot_min_coord = 0.08, 
-                plot_max_coord = 0.9
+                plot_min_coord = plot_min_coord, # 0.08, 
+                plot_max_coord = plot_max_coord # 0.9
               )
             
             # Record transformed x-coordinate 
@@ -308,7 +387,7 @@ threshold_picker_server <-
             # it is copied and pasted. To my knowledge, there is no need to use
             # thresholds with greater precision)
             module_data$threshold_x <- 
-              x_original |> 
+              plot_x_coordinate |> 
               round(digits = 2)
             
             # Draw vertical line using transformed click coordinate  
@@ -359,7 +438,13 @@ threshold_picker_server <-
             set_threshold(),
             ignoreNULL = TRUE,
             ignoreInit = TRUE,
+            # Must have a lower priority than the observer in 2. 
+            # (see note for that observer)
+            priority = 1,
             {
+              print("Detected previously set threshold:")
+              print(set_threshold())
+              
               # When a new value is passed to set_threshold, set the threshold
               # to the new value
               module_data$threshold_x <- set_threshold()
@@ -375,6 +460,9 @@ threshold_picker_server <-
                   size = 0.75
                 )
               
+              # Also update module_data$ridge_plot (the plot that is printed)
+              module_data$ridge_plot <- module_data$ridge_plot_with_threshold
+              
               # Update statistics with new threshold value
               module_data$threshold_stats <- 
                 threshold_stats(
@@ -385,10 +473,253 @@ threshold_picker_server <-
             })
           }
         
-        # 6. Render plot and statistics ####
+        # 6. Adjusting X-Axis Limits of plot ####
+        ## 6.1. Current X-axis limits ####
+        current_xlim <- 
+          reactive(
+            label = glue("{id}: Current X-Axis Limits of Plot"),
+            {
+              # Fetch X-axis limits from ggplot object (current plot, whenever
+              # *the base plot* is re-drawn (when the feature is changed, or 
+              # when x-axis limits are changed, currently))
+              req(module_data$initial_ridge_plot)
+              
+              plot <- module_data$initial_ridge_plot
+              
+              # If the scale of the plot has been adjusted, the value of 
+              # plot$coordinates$default will be FALSE.
+              if (!plot$coordinates$default){
+                # When the plot has been modified using coord_cartesan, the 
+                # limits must be accessed using the limits element of the 
+                # coordinates list stored in the ggplot2 object for the plot. 
+                plot$coordinates$limits$x
+              } else {
+                # Otherwise, use the default limits for the data, which are 
+                # accessed using layer_scales.
+                layer_scales(module_data$initial_ridge_plot)$x$range$range
+              }
+              
+              #layer_scales(module_data$initial_ridge_plot)$x$range$range
+              
+              # # Plot to use depends on whether a threshold has been set
+              # if (!is.null(module_data$threshold_x)){
+              #   # Plot must be defined to avoid errors
+              #   req(module_data$ridge_plot_with_threshold)
+              #   
+              #   layer_scales(module_data$ridge_plot_with_threshold)$x$range$range
+              # } else {
+              #   req(module_data$initial_ridge_plot)
+              #   
+              #   layer_scales(module_data$initial_ridge_plot)$x$range$range
+              # }
+            })
+        
+        ## 6.2. Original X-axis limits for current feature #### 
+        # original_xlim <-
+        #   eventReactive(
+        #     feature(),
+        #     label = glue("{id}: Original X-Axis Limits of Plot"),
+        #     ignoreNULL = TRUE,
+        #     ignoreInit = TRUE,
+        #     {
+        #       req(module_data$initial_ridge_plot)
+        #       # Updates only when the feature is changed (must save original
+        #       # x-axis limits after changing them so the user can easily revert
+        #       # them)
+        #       layer_scales(module_data$initial_ridge_plot)$x$range$range
+        #     })
+        
+        ## 6.3. Update text entry of limits to reflect current values ####
+        observe(
+          label = glue("{id}: Update Text Entry of Limits"),
+          {
+            print("Update xlim text inputs")
+            
+            # Observer will update whenever the plot axes are re-drawn (when 
+            # current_xlim changes)
+            updateTextInput(
+              session = session,
+              inputId = "lower_xlim", 
+              value = current_xlim()[1]
+              )
+            
+            updateTextInput(
+              session = session,
+              inputId = "upper_xlim", 
+              value = current_xlim()[2]
+              )
+            })
+        
+        ## 6.4. Respond to apply limits button ####
+        # Re-draw Plot With New Limits 
+        observeEvent(
+          input$apply_xlim,
+          ignoreNULL = FALSE,
+          ignoreInit = TRUE,
+          {
+            # When the upper and lower x-axis limits match the original limits,
+            # re-drawing the plot is not necessary.
+            if (input$lower_xlim != module_data$original_xlim[1] | 
+                input$upper_xlim != module_data$original_xlim[2]){
+              print("Not equal test pass")
+            } else {
+              print("Not equal test fail")
+            }
+            
+            # Construct plot with new limits
+            plot <-
+              suppressWarnings(
+                shiny_ridge(
+                  object = object(), 
+                  features_entered = feature(), 
+                  group_by = "none", 
+                  show_legend = FALSE, 
+                  palette = c("#000088"),
+                  center_x_axis_title = TRUE,
+                  # Pass x-axis limits as a two-element vector
+                  xlim = 
+                    c(as.numeric(input$lower_xlim), as.numeric(input$upper_xlim))
+                )
+              )
+            
+            # Save plot to module_data$initial_ridge_plot
+            module_data$initial_ridge_plot <- 
+              plot
+            
+            
+            
+            # If a threshold is defined, add a vertical line to the plot at
+            # the threshold and save to that plot to
+            # module_data$ridge_plot_with_threshold (both plots must be updated
+            # in this case)
+            if (!is.null(module_data$threshold_x)){
+              module_data$ridge_plot_with_threshold <-
+                plot +
+                geom_vline(
+                  xintercept = module_data$threshold_x,
+                  color = "#000000",
+                  size = 0.75
+                )
+              
+              # Update the plot that is printed via the render function in 7.
+              # (otherwise the plot will not update on-screen until the user 
+              # hovers over it)
+              module_data$ridge_plot <- module_data$ridge_plot_with_threshold
+            } else {
+              # No threshold: update printed plot without a vertical line
+              module_data$ridge_plot <- module_data$initial_ridge_plot
+            }
+          })
+        
+        ## 6.5. Respond to restore limits button ####
+        observeEvent(
+          input$restore_xlim,
+          ignoreNULL = FALSE,
+          ignoreInit = TRUE,
+          {
+            # Re-draw plot with the original limits 
+            plot <-
+              suppressWarnings(
+                shiny_ridge(
+                  object = object(), 
+                  features_entered = feature(), 
+                  group_by = "none", 
+                  show_legend = FALSE, 
+                  palette = c("#000088"),
+                  center_x_axis_title = TRUE,
+                  # Pass NULL to use the default limits for the data
+                  xlim = NULL
+                  )
+                )
+            
+            # Save plot to module_data$initial_ridge_plot
+            module_data$initial_ridge_plot <- 
+              plot
+            
+            # If a threshold is defined, draw the vertical line and then also 
+            # save to module_data$ridge_plot_with_threshold
+            if (!is.null(module_data$threshold_x)){
+              module_data$ridge_plot_with_threshold <-
+                plot +
+                geom_vline(
+                  xintercept = module_data$threshold_x,
+                  color = "#000000",
+                  size = 0.75
+                )
+              
+              # Update the plot that is printed via the render function in 7.
+              # (otherwise the plot will not update on-screen until the user 
+              # hovers over it)
+              module_data$ridge_plot <- module_data$ridge_plot_with_threshold
+            } else {
+              # No threshold: update printed plot without a vertical line
+              module_data$ridge_plot <- module_data$initial_ridge_plot
+              }
+            })
+        
+        
+        ## Modal server for changing limits
+        # xlim_modal_server(
+        #   id = "xlim_modal",
+        #   reactive_trigger = reactive({input$adjust_xlim}),
+        #   current_xlim = current_xlim,
+        #   xlim_orig = original_xlim
+        # )
+        
+        # 7. Render plot and statistics ####
         # Plot
         output$ridge_plot <-
           renderPlot({
+            # Plot returned to output depends on whether a threshold is set,
+            # and whether the user is currently hovering over the plot
+            
+            
+            
+            # # Rendering plot: start with the initial plot, or the plot with 
+            # # threshold, depending on which is defined
+            # plot <-
+            #   if (!is.null(module_data$threshold_x)){
+            #     module_data$ridge_plot_with_threshold
+            #   } else {
+            #     module_data$initial_ridge_plot
+            #   }
+            # 
+            # # If the user is hovering over the plot, draw a vertical line at the 
+            # # location of the hover,
+            # # (Line is added here to avoid the need for a third plot to be 
+            # # stored in module_data)
+            # if (!is.null(input$plot_hover)){
+            #   # Translate hover coordinates to "true" coordinates
+            #   # Hover returns x values from 0 to 1, with one being slightly
+            #   # beyond the upper x limit of the plot, and zero being slightly
+            #   # below the lower x limit. 
+            #   plot_x_coordinate <-
+            #     interactive_transform(
+            #       x_coord = input$plot_hover$x, 
+            #       # Distribution_range: uses the x-axis limits of the plot, 
+            #       # as computed in 6.1. 
+            #       distribution_range = current_xlim()[2] - current_xlim()[1],
+            #       distribution_minimum = module_data$plot_min, 
+            #       plot_min_coord = plot_min_coord, 
+            #       plot_max_coord = plot_max_coord 
+            #       )
+            #   
+            #   # Add vertical line at the x_coordinate of the hover
+            #   plot <-
+            #     plot +
+            #     geom_vline(
+            #       xintercept = plot_x_coordinate,
+            #       color = "#666666",
+            #       size = 0.75
+            #     )
+            #   }
+            # 
+            # # suppressWarnings(
+            # #   
+            # # )
+            # 
+            
+            
             # Must use suppressMessages and print(plot) to suppress a
             # "Picking joint bandwidth of ___" message from ggridges, which
             # overwhelms the console when interactive hovering is used
@@ -435,7 +766,7 @@ threshold_picker_server <-
               )
             })
         
-        # 7. Return chosen threshold from module ####
+        # 8. Return chosen threshold from module ####
         # Package into a reactive value for consistency with other modules
         reactive({
           module_data$threshold_x

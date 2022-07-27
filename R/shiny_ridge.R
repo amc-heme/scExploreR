@@ -5,7 +5,8 @@ shiny_ridge <-
    group_by = "none",
    show_legend = TRUE,
    palette = NULL,
-   center_x_axis_title = FALSE
+   center_x_axis_title = FALSE,
+   xlim = NULL
   ){
     # validate will keep plot code from running if the subset 
     # is NULL (no cells in subset)
@@ -107,6 +108,15 @@ shiny_ridge <-
                   )
               )
             )
+          },
+          # Element E: Manually defined x-axis limits
+          if (!is.null(xlim)){
+            # scale_x_continuous(
+            #   limits = xlim
+            #   )
+            coord_cartesian(
+              xlim = xlim
+              )
           }
           )
 

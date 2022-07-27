@@ -25,7 +25,6 @@ library(ggplot2)
 library(glue)
 library(DT)
 
-
 # Load functions in ./R directory
 # Get list of files
 source_files <- 
@@ -49,7 +48,11 @@ source_files <-
 
 # Add threshold_picker module from main app modules
 source_files <-
-  c(source_files, "./Modules/threshold_picker.R" )
+  c(source_files, 
+    "./Modules/threshold_picker.R", 
+    # Threshold_picker also depends on xlim_modal
+    "./Modules/xlim_modal.R"
+    )
 
 # Use source() to import files into R
 sapply(
@@ -253,11 +256,9 @@ threshold_tab <-
               ),
               div(
                 class = "show-on-edit",
-                tags$h4(
-                  "Edit threshold for ",
-                  textOutput(
-                    outputId = "threshold_header_edit_feature"
-                    )
+                # Header to display when editing feature
+                uiOutput(
+                  outputId = "threshold_header"
                   ),
                 ),
             # Menu to choose an ADT to add a threshold for
@@ -863,7 +864,8 @@ server <- function(input, output, session) {
           })
       )
   
-  ### 3.3.4. Respond to "Add threshold" Button ####
+  ### 3.3.4. "Add threshold" button ####
+  #### 3.3.4.1. Respond to button ####
   # Set state to "add", which will show menus with the class "show-on-add"
   observeEvent(
     input$add_threshold,
@@ -872,6 +874,22 @@ server <- function(input, output, session) {
     {
       module_data$threshold_menu_state <- "add"
     })
+  
+  #### 3.3.4.2. Disable button while adding or editing a feature ####
+  # Prevents user from adding a new feature while editing the current one
+  observe({
+    target_id <- "add_threshold"
+    
+    if (module_data$threshold_menu_state %in% c("add", "edit")){
+      disable(
+        id = target_id
+      )
+    } else if (module_data$threshold_menu_state == "idle"){
+      enable(
+        id = target_id
+      )
+    }
+  })
   
   ### 3.3.5. Show/hide menus based on state ####
   #### 3.3.5.1. Generic Menus ####
@@ -929,8 +947,42 @@ server <- function(input, output, session) {
     }
   })
   
-  ### 3.3.6. Confirm feature button ####
-  #### 3.3.6.1. Enable "confirm" button when a threshold is selected ####
+  ### 3.3.6. Cancel threshold button ####
+  observeEvent(
+    input$cancel_threshold,
+    ignoreNULL = FALSE,
+    ignoreInit = TRUE,
+    {
+      # Clear data for ADT being added or edited
+      if (module_data$threshold_menu_state == "edit"){
+        # If editing, set editing_data variables back to NULL
+        editing_data$adt_target <- NULL 
+        editing_data$target_row <- NULL
+        editing_data$previous_threshold <- NULL
+      }
+      
+      # Reset ADT selection input
+      # Get names of all ADTs 
+      adts <- 
+        object[[ADT_assay()]] |> 
+        rownames()
+      
+      updateSelectizeInput(
+        session = session,
+        inputId = "selected_adt",
+        # Exclude the ADTs currently in the table
+        choices = adts[!adts %in% module_data$threshold_data$adt],
+        selected = character(0),
+        server = TRUE
+      )
+      
+      # Set state of menus back to "idle" 
+      module_data$threshold_menu_state <- "idle"
+    })
+  
+  
+  ### 3.3.7. Accept threshold button ####
+  #### 3.3.7.1. Enable "confirm" button when a threshold is selected ####
   observe({
     print("threshold value")
     print(threshold_value())
@@ -946,7 +998,7 @@ server <- function(input, output, session) {
       }
     })
   
-  #### 3.3.6.2. Save data and close menu when the confirm button is pressed ####
+  #### 3.3.7.2. Save data and close menu when the confirm button is pressed ####
   observeEvent(
     input$accept_threshold,
     ignoreNULL = FALSE,
@@ -994,8 +1046,8 @@ server <- function(input, output, session) {
       module_data$threshold_menu_state <- "idle"
     })
   
-  ### 3.3.7. Render Table of ADT Thresholds ####
-  #### 3.3.7.1. DT Datatable ####
+  ### 3.3.8. Render Table of ADT Thresholds ####
+  #### 3.3.8.1. DT Datatable ####
   threshold_DT <-
     reactive({
       DT <- module_data$threshold_data
@@ -1043,7 +1095,7 @@ server <- function(input, output, session) {
       threshold_DT()
     })
   
-  #### 3.3.7.2. JavaScript for Inline Buttons ####
+  #### 3.3.8.2. JavaScript for Inline Buttons ####
   button_script <-
     reactive({
       req(module_data$threshold_data)
@@ -1072,7 +1124,7 @@ server <- function(input, output, session) {
       button_script()
     })
   
-  ### 3.3.8. Respond to edit/delete buttons ####
+  ### 3.3.9. Respond to edit/delete buttons ####
   observeEvent(
     input$lastClick,
     ignoreNULL = FALSE,
@@ -1153,17 +1205,13 @@ server <- function(input, output, session) {
       }
     })
   
-  ### 3.3.9. Threshold settings window header text (edit mode) ####
-  output$threshold_header_edit_feature <-
-    renderText({
-      editing_data$adt_target
+  ### 3.3.10. Threshold settings window header text (edit mode) ####
+  output$threshold_header <-
+    renderUI({
+      tags$h4(
+        glue("Edit threshold for {editing_data$adt_target}")
+      )
     })
-  
-  # TEMP: value of input$selected_adt ####
-  observe({
-    print("Change in value of input$selected_adt. New value:")
-    print(input$selected_adt)
-  })
   
   ## 3.4. Config File Download Handler ####
   output$export_selections <- 

@@ -180,7 +180,6 @@ h2, h3 {
   border-radius: 10px;
 }
 
-
 .feature_statistics_container {
   min-height: 150px;
   max-height: 400px;
@@ -223,6 +222,10 @@ h2, h3 {
   padding: 3px 6px;
 }
 
-.two-color-input-right > .shiny-input-container > .colourpicker > .colourpicker-input-container > .colourpicker-panel {
+.two-color-input-right >
+  .shiny-input-container >
+  .colourpicker >
+  .colourpicker-input-container >
+  .colourpicker-panel {
   left: -80px;
 }
