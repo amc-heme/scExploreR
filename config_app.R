@@ -464,9 +464,9 @@ server <- function(input, output, session) {
   )
   
   # Initialize Variables
-  # all_options: list used to store full record of user selections 
+  # config_data: list used to store full record of user selections 
   # across all tabs
-  all_options <- 
+  config_data <- 
     list(
       # Append config app version to list that is printed to file 
       `config_version` = config_version
@@ -539,8 +539,8 @@ server <- function(input, output, session) {
   
   ### 3.1.3. Process list of assay module outputs #### 
   # Filter list of options module outputs and combine into a single 
-  # reactive object, which is added to the all_options list. 
-  all_options$assays <- 
+  # reactive object, which is added to the config_data list. 
+  config_data$assays <- 
     reactive({
       #Options list is only processed when metadata columns have been selected
       if (!is.null(input$assays_selected)){
@@ -560,7 +560,7 @@ server <- function(input, output, session) {
       # Get TRUE/FALSE values for whether each assay is an ADT assay
       is_adt <-
         sapply(
-          all_options$assays(),
+          config_data$assays(),
           function(x){
             x$designated_adt
             }
@@ -601,11 +601,11 @@ server <- function(input, output, session) {
   # Temp: print assay options to screen ####
   output$assay_options <- 
     renderPrint({
-      all_options$assays()
+      config_data$assays()
       })
   
   ## 3.2. Metadata Panel ####
-  ### 3.2.1. Record Selected Metadata ####
+  ### 3.2.1. Record selected metadata ####
   metadata_selected <- 
     eventReactive(
       input$metadata_selected,
@@ -614,7 +614,7 @@ server <- function(input, output, session) {
         input$metadata_selected
         })
   
-  ### 3.2.2. Options Modules for Metadata ####
+  ### 3.2.2. Options modules for metadata ####
   # One server instance is created for each metadata category in the object
   all_metadata_options <- list()
   
@@ -649,8 +649,8 @@ server <- function(input, output, session) {
   # 
   # })
   
-  ### 3.2.3. Reactive List of Options Module Outputs ####
-  all_options$metadata <- 
+  ### 3.2.3. Store metadata options in config data ####
+  config_data$metadata <- 
     reactive({
       # Options list is only processed when metadata columns have been selected
       if (!is.null(input$metadata_selected)){
@@ -668,7 +668,7 @@ server <- function(input, output, session) {
           }
       })
   
-  ### 3.2.4. Reactive UI ####
+  ### 3.2.4. Reactive UI components ####
   #### 3.2.4.1. UI for sortable menu ####
   # Uses the bucket_list input from the sortable package
   metadata_bucket_ui <-
@@ -706,7 +706,7 @@ server <- function(input, output, session) {
         )
         })
   
-  #### 3.2.4.2. Set Order of metadata cards based on sortable input ####
+  #### 3.2.4.2. Set order of metadata cards based on sortable input ####
   # Sorting trigger: triggers when UI elements are re-arranged; restores inputs
   session$userData$metadata_sorting_trigger <- makeReactiveTrigger()
   
@@ -768,10 +768,10 @@ server <- function(input, output, session) {
   # TEMP: print all metadata options
   output$print_metadata <-
     renderPrint({
-      all_options$metadata()
+      config_data$metadata()
       })
   
-  ## 3.3 ADT Thresholding Panel ####
+  ## 3.3 ADT thresholding panel ####
   ### 3.3.1. Define/update available ADTs ####
   # Reactive variable will be used for updating the selection menu with
   # ADTs in the designated assay that have not already been added to the table
@@ -917,7 +917,7 @@ server <- function(input, output, session) {
       }
   })
   
-  #### 3.3.5.2. Show/Hide Threshold Picker UI ####
+  #### 3.3.5.2. Show/Hide threshold picker UI ####
   # Shown when the state is "add" and an adt is entered in the search input
   # OR when the state is "edit" (feature being edited is provided when changing 
   # to this state)
@@ -1046,8 +1046,8 @@ server <- function(input, output, session) {
       module_data$threshold_menu_state <- "idle"
     })
   
-  ### 3.3.8. Render Table of ADT Thresholds ####
-  #### 3.3.8.1. DT Datatable ####
+  ### 3.3.8. Render table of ADT thresholds ####
+  #### 3.3.8.1. DT datatable ####
   threshold_DT <-
     reactive({
       DT <- module_data$threshold_data
@@ -1095,7 +1095,7 @@ server <- function(input, output, session) {
       threshold_DT()
     })
   
-  #### 3.3.8.2. JavaScript for Inline Buttons ####
+  #### 3.3.8.2. JavaScript for inline buttons ####
   button_script <-
     reactive({
       req(module_data$threshold_data)
@@ -1213,18 +1213,24 @@ server <- function(input, output, session) {
       )
     })
   
-  ## 3.4. Config File Download Handler ####
+  ### 3.3.11. Record threshold table in config data ####
+  config_data$adt_thresholds <-
+    reactive({
+      module_data$threshold_data
+    })
+  
+  ## 3.4. Config file download handler ####
   output$export_selections <- 
     downloadHandler(
       filename = "config.rds",
       content = 
         function(file){
-          # Compile config file data from the all_options list 
-          config_data <- 
+          # Compile config file data from the config_data list 
+          config_data_export <- 
             lapply(
-              all_options, 
+              config_data, 
               function(x){
-                # The all_options list contains a mix of reactive and 
+                # The config_data list contains a mix of reactive and 
                 # non-reactive values. Reactive values are unpacked, while 
                 # non-reactive values are left as-is.
                 if (is.reactive(x)){
@@ -1237,7 +1243,7 @@ server <- function(input, output, session) {
           
           # Download above object as .rds 
           saveRDS(
-            object = config_data,
+            object = config_data_export,
             file = file
             )
           })
@@ -1270,7 +1276,7 @@ server <- function(input, output, session) {
       })
   
   ### 3.5.2. Update inputs in main server function with file contents ####
-  # Assays selected
+  #### 3.5.2.1. Assays selected ####
   observeEvent(
     session$userData$config(),
     {
@@ -1286,7 +1292,7 @@ server <- function(input, output, session) {
       )
     })
   
-  # Metadata selected
+  #### 3.5.2.2. Metadata selected ####
   observeEvent(
     session$userData$config(),
     {
@@ -1302,6 +1308,9 @@ server <- function(input, output, session) {
       )
     })
   
+  #### 3.5.2.3 ADT threshold table ####
+  
+  #### TEMP: Observers for Debugging ####
   # config_file_load <- eventReactive(
   #   input$load_config,
   #   ignoreNULL = FALSE,
