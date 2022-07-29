@@ -1365,11 +1365,6 @@ server <- function(input, output, session) {
     })
   
   #### 3.5.2.2. Metadata selected ####
-  # Create a reactive trigger to update options for each metadata column 
-  # selected after the sortable menus have been updated. 
-  session$userData$load_metadata_options <- 
-    makeReactiveTrigger()
-  
   observeEvent(
     session$userData$config(),
     {
@@ -1388,12 +1383,18 @@ server <- function(input, output, session) {
       module_data$metadata_sortable_not_selected <-
         non_numeric_cols[
           !non_numeric_cols %in% module_data$metadata_sortable_selected]
-      
-      # Trigger update of options for individual metadata categories
-      session$userData$load_metadata_options$trigger()
       })
   
   #### 3.5.2.3 ADT threshold table ####
+  observeEvent(
+    session$userData$config(),
+    {
+      # Set the threshold table in the app equal to the table recorded in the
+      # file being loaded
+      module_data$threshold_data <-
+        session$userData$config()$adt_thresholds
+    })
+  
   
   #### TEMP: Observers for Debugging ####
   # config_file_load <- eventReactive(

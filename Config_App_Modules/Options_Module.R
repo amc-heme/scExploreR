@@ -400,6 +400,14 @@ options_server <- function(id,
                 value =
                   if (isTruthy(config_individual$suffix_human)) TRUE else FALSE
               )
+              
+              # Designated ADT assay
+              updateCheckboxInput(
+                session,
+                inputId = "designate_adt",
+                value =
+                  if (isTruthy(config_individual$designated_adt)) TRUE else FALSE
+              )
             }
           })
       } else if (options_type == "metadata"){
