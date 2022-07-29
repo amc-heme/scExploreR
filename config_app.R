@@ -1,4 +1,4 @@
-# Initialize libraries
+# Initialize libraries ####
 library(shiny)
 library(Seurat)
 
@@ -25,7 +25,7 @@ library(ggplot2)
 library(glue)
 library(DT)
 
-# Load functions in ./R directory
+# Load functions in ./R directory ####
 # Get list of files
 source_files <- 
   list.files(
@@ -81,9 +81,10 @@ css_list <-
 
 # Load Javascript files for app: find all .js files that apply to the applet and 
 # create a list of script() tags using includeScript().
-# Files to include: all files in www/applet_js/ directory, and the collapsible_panel.js 
-# file in the www/ directory (www/button_wizzard.js must be excluded since it 
-# conflicts with 'applet_navbar_wizzard' in the www/applet_js/ directory)
+# Files to include: all files in www/applet_js/ directory, and the 
+# collapsible_panel.js file in the www/ directory (www/button_wizzard.js must 
+# be excluded since it conflicts with 'applet_navbar_wizzard' in the 
+# www/applet_js/ directory)
 js_files <- 
   list.files(
     path = "./www/", 
@@ -98,7 +99,27 @@ js_files <-
 #js_files <- c(js_files,"./www/collapsible_panel.js")
 
 # Create list of style tags for each CSS file 
-js_list <- lapply(js_files,includeScript)
+js_list <- lapply(js_files, includeScript)
+
+# JavaScript Functions ####
+# The raw Javascript for each function is defined here as text, and each 
+# function is wrapped in shinyjs::extendShinyjs() in the main UI function for 
+# use with Shiny.
+
+# insertElemAfter: the UI defined by elem_id is repositioned after the UI 
+# defined by destination_id.
+insertAfterjs <- 
+  'shinyjs.insertElemAfter = 
+      function(params){
+        var defaultParams = {
+          elem_id: null,
+          destination_id: null
+        };
+        params = shinyjs.getParams(params, defaultParams);
+        
+        // concatenate "#" with the element IDs provided
+        $("#" + params.elem_id).insertAfter("#" + params.destination_id);
+      }'
 
 # Load object #### 
 # (hard-coded for now but will soon be chosen using a file input)
@@ -107,7 +128,7 @@ object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
 
 # Define Config file path for loading ####
 # (eventually will use file input)
-config_filename <- "./Seurat_Objects/d0-d30-config.rds"
+config_filename <- "./Seurat_Objects/d0-d30-config-with-thresholds.rds"
 
 # Version of config app #### 
 # Printed in config file. Will be used to alert user if they are using a 
@@ -181,7 +202,7 @@ assay_tab <- function(){
               id = assay,
               object = object,
               optcard_type = "assays"
-            )
+              )
             }
           ),
         # TEMP: add an additional card displaying the outputs from all tabs
@@ -209,28 +230,38 @@ metadata_tab <-
           )
         ),
       applet_main_panel(
-        # Options for Numeric metadata
-        # 
+        # Options for Numeric metadata (Numeric metadata is currently not
+        # displayed)
         
         # Options for Categorical, logical metadata
         # Create a metadata options "card" for each non-numeric metadata column
         # in the object. Cards below are hidden and display when the
         # corresponding metadata category is selected
-     
-      tagList(
-        uiOutput(
-          outputId = "metadata_cards"
+        tagList(
+          lapply(
+            non_numeric_cols,
+            function(colname){
+              options_ui(
+                id = colname,
+                object = object,
+                optcard_type = "metadata"
+              )
+            }
           ),
-        
-        # TEMP: add an additional card displaying the outputs 
-        # from the metadata tab
-        div(
-          class = "optcard",
-          verbatimTextOutput(outputId = "print_metadata")
+          
+          # uiOutput(
+          #   outputId = "metadata_cards"
+          #   ),
+          
+          # TEMP: add an additional card displaying the outputs 
+          # from the metadata tab
+          div(
+            class = "optcard",
+            verbatimTextOutput(outputId = "print_metadata")
+            )
           )
         )
       )
-  )
     }
 
 ## 1.3. ADT Threshold Tab ####
@@ -351,6 +382,8 @@ ui <- fluidPage(
   useWaiter(),
   # Shinyjs: a Shiny JavaScript extension
   useShinyjs(),
+  # Initialize custom JavaScript functions defined after the source() statements
+  extendShinyjs(text = insertAfterjs, functions = "insertElemAfter"),
   # Main UI
   navbarPage(
     title = "Object Configuration",
@@ -474,11 +507,14 @@ server <- function(input, output, session) {
   
   # module_data: reactiveValues object for storing data specific to this module
   module_data <- reactiveValues()
-  # Available choices for Sortable drag-and-drop input: defaults to non-numeric
-  # metadata. This variable may change upon loading a config file.
-  module_data$metadata_sortable_options <- non_numeric_cols
-  # Nothing selected by default
+  
+  # Metadata choices selected vs. not selected
+  # Nothing selected by default. The variables below are modified when loading
+  # a config file
   module_data$metadata_sortable_selected <- character(0)
+  # Choices not selected: equal to all non-numeric metadata.
+  module_data$metadata_sortable_not_selected <- non_numeric_cols
+  
   # Store assays for which ADT thresholding modules have been created 
   # (to avoid duplicates)
   module_data$existing_adt_modules <- c()
@@ -673,7 +709,7 @@ server <- function(input, output, session) {
   # Uses the bucket_list input from the sortable package
   metadata_bucket_ui <-
     eventReactive(
-      c(module_data$metadata_sortable_options,
+      c(module_data$metadata_sortable_not_selected,
         module_data$metadata_sortable_selected),
       label = "Metadata: define sortable",
       {
@@ -695,7 +731,7 @@ server <- function(input, output, session) {
             add_rank_list(
               input_id = "metadata_not_selected",
               text = "Available Metadata",
-              labels = module_data$metadata_sortable_options
+              labels = module_data$metadata_sortable_not_selected
             ),
             add_rank_list(
               input_id = "metadata_selected",
@@ -707,63 +743,99 @@ server <- function(input, output, session) {
         })
   
   #### 3.2.4.2. Set order of metadata cards based on sortable input ####
-  # Sorting trigger: triggers when UI elements are re-arranged; restores inputs
-  session$userData$metadata_sorting_trigger <- makeReactiveTrigger()
-  
-  metadata_cards_ui <-
-    reactive(
-      label = "Set Order of Metadata Options Cards",
-      {
-        ui <-
-          lapply(
-            # Cards made for the selected metadata categories in the order they
-            # are selected, then the non-selected categories (which will be
-            # hidden)
-            c(input$metadata_selected, input$metadata_not_selected),
-            function(colname){
-              card <- 
-                options_ui(
-                  id = colname,
-                  object = object,
-                  optcard_type = "metadata"
-                )
-              
-              # Apply shinyjs hidden class to cards for all metadata
-              # categories not currently selected
-              if (!colname %in% input$metadata_selected){
-                card <- shinyjs::hidden(card)
-              }
-              
-              card
-            }
+  observeEvent(
+    c(input$metadata_selected, input$metadata_not_selected),
+    label = "Metadata: set order of metadata options cards",
+    ignoreNULL = FALSE,
+    ignoreInit = TRUE,
+    {
+      print("Rearrange metadata options cards")
+      
+      # Guide vector for ordering the metadata options cards
+      # Lists the metadata included by the user in the order defined in the 
+      # sortable, followed by all other categories (the corresponding cards 
+      # will be invisible, but they should be sorted after the included 
+      # metadata categories)
+      metadata_categories_order <-
+        c(input$metadata_selected, input$metadata_not_selected)
+      
+      for (i in 1:length(metadata_categories_order)){
+        if (i == 1){
+          # First element is left as-is 
+          next
+        } else if (i == 2) {
+          # Second element: move after first element
+          
+          # First element (destination, second element will be inserted after
+          # this element)
+          destination_column <- metadata_categories_order[1]
+          # ID of the first options card, which is passed to the JavaScript
+          # function
+          destination_id <- glue("{destination_column}-optcard")
+          
+          # Second element (target)
+          elem_column <- metadata_categories_order[i]
+          elem_id <- glue("{elem_column}-optcard")
+          
+          # Custom JavaScript function to move options card
+          js$insertElemAfter(
+            elem_id = elem_id,
+            destination_id = destination_id
           )
           
-        # Trigger sorting trigger to restore inputs lost upon re-creating UI
-        session$userData$metadata_sorting_trigger$trigger()
-        
-        # Return sorted cards
-        ui
+        } else {
+          # All subsequent elements: move after the previous element
+          # ID of previous card (destination of move)
+          destination_column <- metadata_categories_order[i - 1]
+          destination_id <- glue("{destination_column}-optcard")
+          
+          # ID of current card (element to be moved)
+          elem_column <- metadata_categories_order[i]
+          elem_id <- glue("{elem_column}-optcard")
+          
+          # Custom JavaScript function to move options card
+          js$insertElemAfter(
+            elem_id = elem_id,
+            destination_id = destination_id
+          )
+        }
+      }
       })
   
-  #### 3.2.4.3. Render reactive UI ####
-  # Sortable
+  #### 3.2.4.3 Show/hide Metadata Options Cards ####
+  observe({
+    for (colname in non_numeric_cols){
+      # Show all cards that are in the "Metadata selected" column of the 
+      # sortable, and hide all cards that are not
+      if (colname %in% input$metadata_selected){
+        showElement(
+          id = glue("{colname}-optcard"),
+          asis = TRUE
+        )
+      } else {
+        hideElement(
+          id = glue("{colname}-optcard"),
+          asis = TRUE
+        )
+      }
+    }
+  })
+  
+  #### 3.2.4.4. Render Sortable UI ####
   output$metadata_sortable_bucket <-
     renderUI({
       metadata_bucket_ui()
     })
   
-  # Metadata cards
-  output$metadata_cards <-
-    renderUI({
-      metadata_cards_ui()
-    })
-  
+  # Also set suspendWhenHidden to FALSE to allow reactives that lead to the
+  # output to compute when the sortable is hidden 
+  # (this is desired when loading a config file, as the metadata tab may not 
+  # be active when it is loaded)
   outputOptions(
     output, 
-    "metadata_cards", 
-    suspendWhenHidden = FALSE,
-    priority = 10
-    )
+    "metadata_sortable_bucket", 
+    suspendWhenHidden = FALSE
+  )
   
   # TEMP: print all metadata options
   output$print_metadata <-
@@ -1293,20 +1365,33 @@ server <- function(input, output, session) {
     })
   
   #### 3.5.2.2. Metadata selected ####
+  # Create a reactive trigger to update options for each metadata column 
+  # selected after the sortable menus have been updated. 
+  session$userData$load_metadata_options <- 
+    makeReactiveTrigger()
+  
   observeEvent(
     session$userData$config(),
     {
-      updateMultiInput(
-        session,
-        inputId = "metadata_selected",
-        selected = 
-          # Names of assays in config file are the names selected when the 
-          # file was created
-          names(
-            session$userData$config()$metadata
-          )
-      )
-    })
+      # Set selected vs. not selected metadata categories using the information
+      # in the loaded file
+      # sortable inputs will update when the values below change.
+      module_data$metadata_sortable_selected <- 
+        # Selected metadata: equal to the names of the metadata list in the
+        # config file. The order of the sortable will reflect the order of the
+        # metadata categories in the config file
+        session$userData$config()$metadata |> 
+        names()
+      
+      # Non-selected metadata: all non-numeric metadata columns that are not
+      # in the loaded file
+      module_data$metadata_sortable_not_selected <-
+        non_numeric_cols[
+          !non_numeric_cols %in% module_data$metadata_sortable_selected]
+      
+      # Trigger update of options for individual metadata categories
+      session$userData$load_metadata_options$trigger()
+      })
   
   #### 3.5.2.3 ADT threshold table ####
   

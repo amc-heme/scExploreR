@@ -8,7 +8,8 @@
 options_ui <- function(id,
                        object,
                        optcard_type = c("assays", "metadata"),
-                       category_name = id
+                       category_name = id,
+                       restore_inputs = list()
                        ){
   # NS(id): namespace function, defined here and called for every input ID. One
   # namespace is used for each instance of the options module and is defined by
@@ -107,7 +108,13 @@ options_ui <- function(id,
         label = 
           "Set label for metadata column (will appear 
           as entered in app interface)",
-        width = "380px"
+        width = "380px",
+        value = 
+          if (!is.null(restore_inputs$hr)) {
+            restore_inputs$hr
+          } else {
+            ""
+          } 
         ),
       
       # Option to classify metadata into list (ex. group patients 
@@ -118,7 +125,12 @@ options_ui <- function(id,
           materialSwitch(
             inputId =  ns("group_metadata"),
             label = "Group metadata into categories?", 
-            value = FALSE,
+            value = 
+              if (!is.null(restore_inputs$group_metadata)){
+                restore_inputs$group_metadata
+              } else {
+                FALSE
+              },
             right = TRUE,
             status = "default"
             ),
@@ -233,7 +245,7 @@ options_server <- function(id,
       
       ## 2.1. Metadata Groups ####
       # User Interface to define subgroups within a metadata column
-      # Only perfomed for categorical inputs
+      # Only performed for categorical inputs
       if (options_type == "metadata"){
         # Test for type of metadata field after testing to see 
         # if the object is a metadata entry
@@ -325,38 +337,38 @@ options_server <- function(id,
       
       # 4. Restore inputs when options cards are re-sorted ---------------------
       # (In metadata tab)
-      observeEvent(
-        session$userData$metadata_sorting_trigger$depend(),
-        ignoreNULL = FALSE,
-        ignoreInit = TRUE,
-        label = glue("{id}: Restore Inputs Upon Rearrangement"),
-        {
-          # "Update" the input with the previously entered label
-          if (!is.null(input$hr)){
-            updateTextInput(
-              session,
-              inputId = "hr",
-              # Value for this input is stored in `dropdown_title`
-              value = input$hr
-            )
-          }
-          
-          # Do the same for the groups switch
-          if (!is.null(input$group_metadata)){
-            updateMaterialSwitch(
-              session,
-              inputId = "group_metadata",
-              value = input$group_metadata
-            )
-          }
-          
-          # Will also need code to update groups input when that is completed
-          # for 4.
-          
-        })
+      # observeEvent(
+      #   session$userData$config(),
+      #   ignoreNULL = FALSE,
+      #   ignoreInit = TRUE,
+      #   label = glue("{id}: Restore Inputs Upon Rearrangement"),
+      #   {
+      #     # "Update" the input with the previously entered label
+      #     if (!is.null(input$hr)){
+      #       updateTextInput(
+      #         session,
+      #         inputId = "hr",
+      #         # Value for this input is stored in `dropdown_title`
+      #         value = input$hr
+      #       )
+      #     }
+      #     
+      #     # Do the same for the groups switch
+      #     if (!is.null(input$group_metadata)){
+      #       updateMaterialSwitch(
+      #         session,
+      #         inputId = "group_metadata",
+      #         value = input$group_metadata
+      #       )
+      #     }
+      #     
+      #     # Will also need code to update groups input when that is completed
+      #     # for 4.
+      #     
+      #   })
       
       
-      # 5. Update Inputs with loaded config file -------------------------------
+      # 5. Update inputs upon loading config file ------------------------------
       if (options_type == "assays"){
         observeEvent(
           session$userData$config(),
@@ -366,6 +378,7 @@ options_server <- function(id,
               # Get config info for assay matching module ID
               config_individual <- 
                 session$userData$config()$assays[[id]]
+              
               
               # Update inputs
               # Text entry for assay label
@@ -392,13 +405,20 @@ options_server <- function(id,
       } else if (options_type == "metadata"){
         observeEvent(
           session$userData$config(),
+          label = glue("{id}: Update Options Based on Config File"),
           {
             # Search for category name in loaded config file
             if (category_name %in% names(session$userData$config()$metadata)){
+              print(glue("Update options for {id}"))
+              
               # Get config info for matching metadata category
               config_individual <-
                 session$userData$config()$metadata[[category_name]]
 
+              # Freeze inputs
+              freezeReactiveValue(input, "hr")
+              freezeReactiveValue(input, "group_metadata")
+              
               # Update inputs using config file
               # Label for metadata column (text input, input$hr)
               updateTextInput(
@@ -517,6 +537,14 @@ options_server <- function(id,
 
             })
       }
+      
+      # TEMP Observer for status of metadata outputs####
+      observe({
+        if (id %in% c("htb", "treatment", "response", "clusters")){
+          print(glue("{id}: change in value of input$hr:"))
+          print(input$hr)
+        }
+      })
       
       # 6. Returns from Module ------------------------------------------------- 
       if (options_type == "metadata"){
