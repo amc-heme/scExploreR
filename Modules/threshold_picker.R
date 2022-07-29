@@ -557,6 +557,8 @@ threshold_picker_server <-
           ignoreNULL = FALSE,
           ignoreInit = TRUE,
           {
+            req(feature())
+            
             # When the upper and lower x-axis limits match the original limits,
             # re-drawing the plot is not necessary.
             if (input$lower_xlim != module_data$original_xlim[1] | 
@@ -617,6 +619,8 @@ threshold_picker_server <-
           ignoreNULL = FALSE,
           ignoreInit = TRUE,
           {
+            req(feature())
+            
             # Re-draw plot with the original limits 
             plot <-
               suppressWarnings(
