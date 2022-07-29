@@ -732,7 +732,7 @@ dge_tab_server <- function(id,
                     # Explicitly coerce to tibble
                     as_tibble() %>%
                     # remove stat and auc from the output table
-                    select(-c(statistic, pval, auc)) %>%
+                    select(-c(statistic, pval)) %>%
                     # Using magrittr pipes here because the following
                     # statement doesn't work with base R pipes
                     # remove negative logFCs if box is checked
@@ -781,8 +781,8 @@ dge_tab_server <- function(id,
               # Remove rownames
               rownames = FALSE
               ) %>%
-              #Use 5 sig figs (3 or more is sufficient)
-              formatSignif(3:7, 5)
+              # Use 5 sig figs (3 or more is sufficient)
+              formatSignif(3:8, 5)
           })
       
       ## 3.11. UMAP of DE Selected Groups ####
