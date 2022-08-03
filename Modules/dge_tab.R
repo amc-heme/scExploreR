@@ -767,8 +767,44 @@ dge_tab_server <- function(id,
           {
             print("DGE 3.10: DGE table")
             
+            # Add Genecards link for each gene
+            table <- dge_table_content()
+            # Vector of feature names to pass to links
+            features <- table$feature 
+            
+            table["Additional Info"] <- 
+              glue(
+                # Link to gene cards search, for each feature in the table
+                '<a href=
+                  https://www.genecards.org/Search/Keyword?queryString={features} 
+                  target="_blank",
+                  rel="noopener noreferrer">GeneCards</a>'
+                )
+            
+            # Rename "group" column based on the test selected
+            group_rename <- 
+              if (test_selections()$dge_mode == "mode_dge") {
+                "Group"
+              } else if (test_selections()$dge_mode == "mode_marker") {
+                  "Class"
+              }
+            
+            # Renamed using base R syntax because new name is dynamic
+            names(table)[names(table) == "group"] <-
+              group_rename
+            
+            # New names for pct_in and pct_out columns
+            pct_in_rename <- glue("Percent Expression Within {group_rename}")
+            pct_out_rename <- glue("Percent Expression Outside {group_rename}")
+            
+            names(table)[names(table) == "pct_in"] <-
+              pct_in_rename
+            
+            names(table)[names(table) == "pct_out"] <-
+              pct_out_rename
+            
             datatable(
-              dge_table_content(),
+              table,
               # DT classes applied
               # See https://datatables.net/manual/styling/classes
               class = "compact stripe cell-border hover",
@@ -777,7 +813,16 @@ dge_tab_server <- function(id,
               # Add filter interface above columns
               filter = "top",
               # Remove rownames
-              rownames = FALSE
+              rownames = FALSE,
+              # Set escape to FALSE to render the HTML for GeneCards links 
+              escape = FALSE,
+              # Rename columns (new_name = old_name)
+              colnames = 
+                c("Feature" = "feature", 
+                  "Average Expression" = "avgExpr", 
+                  "AUC" = "auc",
+                  "Adjusted p-value" = "padj"
+                  )
               ) %>%
               # Use 5 sig figs (3 or more is sufficient)
               formatSignif(3:8, 5)
