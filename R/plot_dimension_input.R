@@ -38,7 +38,8 @@ plot_dimension_input <-function(slider_input_id,
     
     #Text box
     span(
-      style="display: inline-block; width: 60px; margin-bottom:0px; margin-left:5px;",
+      style=
+        "display: inline-block; width: 60px; margin-bottom:0px; margin-left:5px;",
       #Serach input: takes text as input, but does not update value until 
       #user presses enter
       searchInput(

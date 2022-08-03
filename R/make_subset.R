@@ -1,26 +1,32 @@
-# Subset Creation Function
-
-# Arguments
-# criteria_list: a list of name-value pairs with the name of each category used 
-# as a criterion, and the unique values within that category to include in the 
-# subset. The name of the category must be entered exactly as it appears in the 
-# metadata slot of the Seurat object, and the list object itself must be 
-# reactive, as opposed to each individual item being reactive. The app code 
-# should generate the list in the correct format automatically.  
+#' Subset Creation Function
+#'
+#' @param object a Seurat object.
+#' @param criteria_list a list of name-value pairs with the name of each 
+#' category used as a criterion, and the unique values within that category to 
+#' include in the subset. The name of the category must be entered exactly as it
+#' appears in the metadata slot of the Seurat object, and the list object itself
+#' must be reactive, as opposed to each individual item being reactive. The app
+#'  code should generate the list in the correct format automatically.  
+#' @param user_string if the user enables the entry of a subset string, the 
+#' value of the string should be passed to this variable. The string passed will
+#' be added to the end of the string generated from criteria_list, with the '&'
+#' operator separating the string.
+#'
+#' @return A Seurat object subsetted for the criteria entered.
 make_subset <- function(object, 
-                        criteria_list
+                        criteria_list,
+                        user_string = NULL
                         ){
-  # Define sub-function vector_code (generates code to be passed as a string 
-  # to the subset function)
-  # Given a vector, vector_code will export a string that will 
-  # produce the vector when passed to eval(parse(text=<vector output>)).
-  # Format: c("item_1","item_2")
+  # vector_code sub-function
+  # Converts a vector of subset criterion to a string representation of that 
+  # vector, for passing to eval(parse())
   vector_code <- function(vector){
     # content: separate vector elements with "," 
-    content <- paste(vector, collapse='\",\"')
+    content <- paste(vector, collapse= '\",\"')
     # string: add c(" and ") to the ends of the content
     string <- paste0('c("', content, '")')
-    # Handling special cases
+    
+    # Special cases
     # 1. NA
     # NA values appear as "NA" in the vector created above. 
     # "NA" (NA-as-a-string) will cause issues with data that uses the literal 
@@ -42,32 +48,21 @@ make_subset <- function(object,
     return(string)
   }
   
-  # A string with the defined criteria will be used for subsetting.
+  # Construct string for subsetting
   # Begin with empty string
   subset_str <-""
   
-  # If the criteria list passed to the function is a reactive expression, unpack 
-  # it into a non-reactive variable
-  if (is.reactive(criteria_list)){
-    criteria_list <- criteria_list()
-  }
-  # Loop through criteria defined in criteria_list 
-  # Construct subset syntax for each input (indexing is used to allow a 
-  # different format to be used for the last criterion)
+  # Construct a string representation for each criterion, and append to string
   for (i in 1:length(criteria_list)){
     # Get the metadata category associated with the current index (name of
     # criteria_list[[i]])
     category <- names(criteria_list)[i]
     
-    # Each criterion is enclosed in parentheses and will evaluate to TRUE for 
-    # the cells with metadata matching the criterion. When multiple criteria 
-    # are used, cells with metadata matching all criteria are marked TRUE and 
-    # included in the subset. The ampersand character is used to separate all
-    # criteria, to search for cells where all criteria apply. 
-    
     # Construct criterion for the current category 
     if (i < length(criteria_list)){
-      # For all entries except for the last: add "&" after the criterion
+      # For all entries except for the last: add AND (`&`) after the criterion
+      # (Specified criteria are mutually exclusive, so they use the 
+      # AND operator)
       criterion <- 
         glue("({category} %in% {vector_code(criteria_list[[i]])}) & ")
       # Do not use "&" for last criterion, or if there is only one criterion
@@ -79,8 +74,19 @@ make_subset <- function(object,
     subset_str <- paste0(subset_str, criterion)
   }
   
+  # String Subsetting
+  # If string subsetting is enabled, user_string will be defined, but it may 
+  # be equal to "". This will cause errors in the concatenation below due to 
+  # the creation of an "&" operator before parentheses with no 
+  if (isTruthy(user_string)){
+    # Add the user-defined string in parentheses with an "&" 
+    # operator if it is defined and not equal to "". 
+    subset_str <- glue('{subset_str} & ({user_string})')
+  }
+  
   # Subset using the subset string 
-  subset <- eval(parse(text=paste0("subset(object(), subset = ", subset_str, ")")))
+  subset <- 
+    eval(parse(text=paste0("subset(object, subset = ", subset_str, ")")))
   
   # Re-level factors in subset: test every metadata category to see if it 
   # is a factor

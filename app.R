@@ -12,20 +12,37 @@ library(shinycssloaders, quietly = TRUE, warn.conflicts = FALSE)
 library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
 # library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
 
-
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
-options(shiny.reactlog=TRUE, warn.conflicts = FALSE)
+options(
+  shiny.reactlog = TRUE, 
+  # Full stack trace for errors 
+  shiny.fullstacktrace = TRUE
+  )
 
-# Tidyverse Packages
+# Logging and performance monitoring
+library(profvis, quietly = TRUE, warn.conflicts = FALSE)
+library(pryr, quietly = TRUE, warn.conflicts = FALSE)
+library(rlog, quietly = TRUE, warn.conflicts = FALSE)
+
+# Tidyverse packages
 library(tidyverse, quietly = TRUE, warn.conflicts = FALSE)
 library(stringr, quietly = TRUE, warn.conflicts = FALSE)
 library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
 library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
+library(gridExtra, quietly = TRUE, warn.conflicts = FALSE)
 library(glue, quietly = TRUE, warn.conflicts = FALSE)
 library(DT, quietly = TRUE, warn.conflicts = FALSE)
 
-# Additional Backend Packages
+# Plotting
+library(RColorBrewer, quietly = TRUE, warn.conflicts = FALSE)
+library(viridisLite, quietly = TRUE, warn.conflicts = FALSE)
+library(colourpicker, quietly = TRUE, warn.conflicts = FALSE)
+library(ggsci, quietly = TRUE, warn.conflicts = FALSE)
+library(scales, quietly = TRUE, warn.conflicts = FALSE)
+library(cowplot, quietly = TRUE, warn.conflicts = FALSE)
+
+# Additional backend packages
 library(presto, quietly = TRUE, warn.conflicts = FALSE)
 library(R.devices, quietly = TRUE, warn.conflicts = FALSE)
 
@@ -73,7 +90,7 @@ css_files <-
 # Create list of style tags for each CSS file
 css_list <- lapply(css_files,includeCSS)
 
-# Load Javasctipt files for app: find all .js files in www/ directory
+# Load Javascript files for app: find all .js files in www/ directory
 # and create a list of script() tags using includeScript().
 # Get list of .js files in www/ directory
 js_files <- 
@@ -97,64 +114,197 @@ js_list <- lapply(js_files, includeScript)
 # gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
+## Color palettes for plotting categorical variables ####
+# Define available palettes
+
+# CU Palette 
+# Created using official CU colors, along with other colors symbolic of CU
+cu_extended <-
+  colors <- c(
+    # Uses three of the four official CU colors
+    # First four: official CU Colors
+    "#CFB87C", 
+    "#000000", 
+    "#565A5C", 
+    #"#A2A4A3",
+    # Color of walls on CU Boulder campus buildings 
+    "#AD7B64",
+    # Color of CU Boulder campus roofs
+    "#9A4A3A",
+    # Color of pine trees in Flatirons
+    "#3A553A",
+    # Color of the sunny Colorado sky
+    "#529FDF"
+  )
+
+# Palettes are from ggsci, a package with palettes inspired by
+# scientific journals and science fiction
+# Package by Nan Xiao (https://nanx.me/ggsci/articles/ggsci.html)
+categorical_palettes <- 
+  list(
+    # Default Palette used by Seurat (from ggplot2)
+    `default` = hue_pal()(8),
+    # D3 (20-color palette)
+    `D3` = pal_d3("category20")(20),
+    # LocusZoom
+    `LocusZoom` = pal_locuszoom()(7),
+    # Stepped (from Seurat::DiscretePalette)
+    `stepped` = DiscretePalette(20, palette = "stepped"),
+    # Rick and Morty (yes, that Rick and Morty) ;)
+    `Rick and Morty` = pal_rickandmorty("schwifty")(12),
+    # Star Trek
+    `Star Trek` = pal_startrek()(7),
+    # CU palette
+    `CU_Palette` = cu_extended,
+    # Journal of Clinical Ontology
+    `JCO` = pal_jco()(10),
+    # Lancet
+    `Lancet` = pal_lancet()(9)
+  )
+
+# Continuous palettes 
+# Taken from viridisLite package, created by Simon Garnier
+# https://sjmgarnier.github.io/viridisLite/
+continuous_palettes <-
+  list(
+    # Seurat Default: two colors
+    `default` = c("lightgrey", "blue"),
+    # viridisLite palettes
+    `inferno` = inferno(42, direction = -1),
+    `plasma` = plasma(42, direction = -1),
+    `rocket` = rocket(42, direction = -1),
+    `viridis` = viridis(42, begin = 0.1, direction = -1),
+    `cividis` = cividis(42, direction = -1),
+    `mako` = mako(42, direction = -1)
+  )
+
+
 # Error Handling: define possible errors ---------------------------------------
 # Errors are defined in a list using the functions in "./R/error_handling.R". 
 # The error_handler() function is executed in a tryCatch() statement and checks
 # the error message returned against a list of errors.
-## List of errors for subset operations ####
-error_list <- list(
-  add_error_notification(
-    message="cannot allocate vector of size",
-    notification_ui=icon_notification_ui_2(
-      icon_name = "skull-crossbones",
-      tagList(
-        "Memory Error: RAM is insufficient for analyzing the specified subset. 
-        Please narrow down the subset scope using the restriction criteria to 
-        the left, and feel free to", 
-        github_link(display_text = "let us know"),
-        " ", # Space after link
-        "if you repeatedly recieve this error.")#End tagList
-      ), # End icon_notification_ui
-    notification_id = "mem_error"
-    ), # End add_error_notification
-  
-  # Error 2: Vector memory exhausted
-  add_error_notification(
-    message="vector memory exhausted",
-    notification_ui=icon_notification_ui_2(
-      icon_name = "skull-crossbones",
-      "Error: vector memory exhausted. If this issue persists, please ",
-      github_link("contact us"),
-      " with a screenshot of the response criteria selected. For now, narrowing 
-      down the subset criteria may resolve the error."
-      ), # End icon_notification_ui
-    notification_id = "vector_mem_error"
-),
 
-# Error 3: No Cells in Subset
-add_error_notification(
-  message = "No cells found",
-  icon_notification_ui_2(
-    icon_name = "skull-crossbones",
-    "No cells were found matching the defined subset criteria. Please check the 
-    subset dropdowns for mutually exclusive selections. If you recieve this error 
-    for combinations that should be valid, please",
-    github_link("let us know"),
-    # Period at end of link
-    "."
-    ), # End icon_notification_ui
-  notification_id = "no_cells_found"
-  )# End add_error_notification
-)# End list of error definitions (subset_errors)
+## List of errors ####
+# A multi-level list with sub-lists of errors for specific context.
+# Different sub-lists are used in different tryCatch statements
+error_list <- 
+  list(
+    `subset_errors` = 
+      list(
+        error_data(
+          message = "cannot allocate vector of size",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              tagList(
+                "Memory Error: RAM is insufficient for analyzing the specified 
+                subset. Please narrow down the subset scope using the 
+                restriction criteria to the left, and feel free to", 
+                github_link(display_text = "let us know"),
+                " ", # Space after link
+                "if you repeatedly recieve this error.") #End tagList
+            ), # End icon_notification_ui
+          notification_id = "subset_error_1"
+        ), # End error_data
+        
+        # Error 2: Vector memory exhausted
+        error_data(
+          message = "vector memory exhausted",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "Error: vector memory exhausted. If this issue persists, please ",
+              github_link("contact us"),
+              " with a screenshot of the response criteria selected. For now, 
+              narrowing down the subset criteria may resolve the error."
+            ), # End icon_notification_ui
+          notification_id = "subset_error_2"
+        ),
+        
+        # Error 3: No Cells in Subset
+        error_data(
+          message = "No cells found",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "No cells were found matching the defined subset criteria. Please 
+              check the subset dropdowns for mutually exclusive selections. If
+              you recieve this error for combinations that should be valid, 
+              please",
+              github_link("let us know"),
+              # Period at end of link
+              "."
+            ), # End icon_notification_ui
+          notification_id = "subset_error_3"
+          ),
+        
+        # Error 4: User-defined subset string has unclosed parentheses
+        error_data(
+          message = "unexpected end of input",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "Invalid format for string subsetting entry. Please check that all 
+              opened parentheses have been closed and try again. If the issue
+              persists, please email us with the following information:",
+              tags$br(),
+              "1. The entry in the string subsetting text box",
+              tags$br(),
+              "2. The desired subset, or question that prompted the selection of
+              this subset"
+              ),
+          notification_id = "subset_error_4"
+          ),
+        
+        # Error 5: User-defined subset string has incomplete string
+        error_data(
+          message = "INCOMPLETE_STRING",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "String subsetting entry has an incomplete string. Please make 
+              sure all opening quotation marks have a matching closing quotation
+              and try again. If the issue persists, please email us with the 
+              following information:",
+              tags$br(),
+              "1. The entry in the string subsetting text box",
+              tags$br(),
+              "2. The desired subset, or question that prompted the selection of
+              this subset"
+            ),
+          notification_id = "subset_error_5"
+        ),
+        
+        # Error 6: User-defined subset string uses improper formatting (generic)
+        error_data(
+          message = "unexpected",
+          notification_ui = 
+            icon_notification_ui_2(
+              icon_name = "skull-crossbones",
+              "Invalid format for string subsetting entry. Please check your 
+              entry and try again. If the issue persists, please email us with 
+              the following information:",
+              tags$br(),
+              "1. The entry in the string subsetting text box",
+              tags$br(),
+              "2. The desired subset, or question that prompted the selection of 
+              this subset"
+              ),
+          notification_id = "subset_error_6"
+        )
+      ) # End subset error sub-list
+    )# End list of error definitions
 
 # Datasets: a list of available datasets with paths to object and config files,
 # as well as a description
+log_info("R process initialization: loading datasets")
 datasets <- 
   list(
     `d0_d30` = 
       list(
         `label` = "Longitudinal Data",
-        `object` = "./Seurat_Objects/longitudinal_samples_20211025.rds",
+        `object` = 
+          readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds"),
         `config` = "./Seurat_Objects/d0-d30-config.rds",
         `description` = 
           "Contains 3 normal bone marrow samples, and longitudinal samples from 
@@ -165,7 +315,8 @@ datasets <-
     `AML_samples` = 
       list(
         `label` = "AML (Pheresis) Dataset",
-        `object` = "./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds",
+        `object` = 
+          readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds"),
         `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
         `description` = 
           "Contains 3 normal bone marrow samples, and 23 AML samples.",
@@ -178,7 +329,7 @@ datasets <-
     # `AML_NA_Test` =
     #   list(
     #     `label` = "NA Test Object",
-    #     `object` = "./Seurat_Objects/NA_example.rds",
+    #     `object` = readRDS("./Seurat_Objects/NA_example.rds"),
     #     `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
     #     `description` =
     #       "Seurat Object used purely to test the handling of NA values. This
@@ -187,6 +338,7 @@ datasets <-
     #     `plot` = "./www/aml_UMAP.png"
     #     )
     )
+log_info("Datasets successfully loaded")
 
 # Table of Contents ------------------------------------------------------------
 # TODO: Add module tree here
@@ -241,48 +393,58 @@ ui <- tagList(
     # Dropdown menu content
     # Header
     tagList(
-      tags$p("Help and Background",
-             style=
-               "color: #888888; 
-            margin-bottom: 0px;
-            font-size: 1.17em;"
-      ),
+      tags$p(
+        "Help and Background",
+        style=
+        "color: #888888; 
+        margin-bottom: 0px;
+        font-size: 1.17em;"
+        ),
       
       # Interpreting scRNA-seq plots
       tags$a(
         "Interpereting scRNA-seq Plots",
-        href="scRNA_Plots_Explained.html",
-        class="blue_hover",
+        href = "scRNA_Plots_Explained.html",
+        class = "blue_hover",
         # Opens link in new tab
-        target="_blank", 
+        target = "_blank", 
         # Cybersecurity measure for links that 
         # open in new tab: prevents tabnapping
-        rel="noopener noreferrer" 
+        rel = "noopener noreferrer" 
         ),
       
       # Tutorial Document
       tags$a(
         "Tutorial Vignette",
-        href="Shiny_Vignette.html",
-        class="blue_hover",
+        href = "Shiny_Vignette.html",
+        class = "blue_hover",
         # Opens link in new tab
-        target="_blank", 
-        rel="noopener noreferrer" 
+        target = "_blank", 
+        rel = "noopener noreferrer" 
         ), # End Detailed Walkthrough link
       
       # File issue on github
       tags$a(
         "Report a Bug",
-        href="https://github.com/amc-heme/DataExploreShiny/issues",
-        class="blue_hover",
+        href = "https://github.com/amc-heme/DataExploreShiny/issues",
+        class = "blue_hover",
         # Opens link in new tab
-        target="_blank", 
-        rel="noopener noreferrer"
+        target = "_blank", 
+        rel = "noopener noreferrer"
+        ),
+      
+      # Link to Genecards
+      tags$a(
+        "GeneCards",
+        href = "https://www.genecards.org/",
+        class = "blue_hover",
+        target = "_blank",
+        rel = "noopener noreferrer"
         )
     )# End tagList
   ), #End Help Button
   
-  # Dataset Button ('DNA' icon)
+  # Dataset Button 
   dropdownButton(
     inputId = "options",
     status="info",
@@ -346,7 +508,26 @@ server <- function(input, output, session){
   # opened (lazy evaluation))
   update_features <- makeReactiveTrigger()
   
+  ###
+  # reactiveValues list for main server function
+  main_server <- 
+    reactiveValues(
+      # modules_created: stores the keys of the module server instances created
+      modules_created = list(),
+      dge_modules_created = list()
+    )
+  ###
+  
   # 1. Reactively load object and config file ----------------------------------
+  cat("\n")
+  log_info(
+    glue("New Connection \n(session ID: {session$token})")
+    )
+  log_info(
+    glue("Memory usage upon connection: {to_GB(mem_used())}")
+    )
+  log_session(session)
+  
   # Initialize a reactiveVal for storing the key of the last dataset loaded
   dataset_info <- reactiveValues()
   dataset_info$last_object_key <- NULL
@@ -362,7 +543,7 @@ server <- function(input, output, session){
   # Value of startup is not important (though it can't be zero or it will be
   # ignored by observers with ignoreNULL arguments set to TRUE)
   startup(2)
-
+  
   ## 1.1. Event observers to open and close modal ####
   observeEvent(
     input$open_dataset_window,
@@ -435,6 +616,7 @@ server <- function(input, output, session){
           # b. Dataset requested is different
           if (previous_key != selected_key()){
             # Activate Reactive trigger to load dataset
+            print("Dataset change trigger")
             dataset_change$trigger()
             } 
           
@@ -444,6 +626,21 @@ server <- function(input, output, session){
           }
       })
   
+  # TEMP: Inspect dataset trigger
+  observeEvent(
+    dataset_change$depend(),
+    label = "Dataset Trigger",
+    # The depend() function always evaluates to NULL when printed regardless
+    # of its true server value. Therefore, ignoreNULL must be used for the 
+    # observer to respond to the trigger.
+    ignoreNULL = FALSE,
+    # Do not want the observer to run upon startup or module creation
+    ignoreInit = TRUE,
+    {
+      print("Dataset trigger in main server ")
+      print(dataset_change$depend())
+      })
+  
   ## 1.4. Load/Update Object ####
   observeEvent(
     # Loads when the reactive trigger in "Loading Conditional" is activated
@@ -451,12 +648,10 @@ server <- function(input, output, session){
     label = "Load/Update Object",
     ignoreNULL = FALSE,
     {
-      path <- datasets[[selected_key()]]$object
-      
       app_spinner$show()
-      # Load seurat object using defined path and set "object" 
-      # reactiveVal to the object
-      object(readRDS(path))
+      # Fetch Seurat object from datasets list defined at startup and set 
+      # "object" reactiveVal to the result
+      object(datasets[[selected_key()]]$object)
 
       app_spinner$hide()
       })
@@ -657,40 +852,7 @@ server <- function(input, output, session){
         unique_metadata
         })
   
-  ## 2.8. UMAP Dimensions of full object ####
-  # This is used to allow plotting of subsets with original axes scales
-  # Plot a UMAP of the full data, store it to memory, and record the
-  # x and y limits of the plot
-  umap_orig <- 
-    reactive({
-      req(object())
-      DimPlot(
-        object()
-      )
-    })
-  
-  # Record limits
-  xlim_orig <- 
-    reactive({
-      req(object())
-      layer_scales(umap_orig())$x$range$range
-    })
-    
-  ylim_orig <- 
-    reactive({
-      req(object())
-      layer_scales(umap_orig())$y$range$range
-    })
-  
-  # Store number of cells: used to determine if it is a subset
-  # TODO: does this apply to non-CITEseq datasets?
-  n_cells_original <- 
-    reactive({
-      req(object())
-      ncol(object())
-    })
-  
-  ## 2.9 Reductions in object ####
+  ## 2.8 Reductions in object ####
   reductions <- 
     reactive({
       req(object())
@@ -703,11 +865,99 @@ server <- function(input, output, session){
             reductions[reductions=="umap"],
             reductions[!reductions=="umap"]
             )
-        }
+      }
       
       reductions
     })
+  
+  ## 2.9. Original Axes limits by reduction ####
+  # Original axes limits must be calculated for each reduction
+  # Current method is to use the min and max values for coordinates in 
+  # the cell embeddings for each reduction
+  
+  #xmin <- min(obj@reductions[[reduction]]@cell.embeddings[,1])
+  #xmax <- max(obj@reductions[[reduction]]@cell.embeddings[,1])
+  
+  lim_orig <-
+    eventReactive(
+      reductions(),
+      ignoreNULL = FALSE,
+      label = "Setup: Define orignal axes limits",
+      {
+        req(reductions())
+        
+        lim_orig <- 
+          lapply(
+            reductions(),
+            function(reduction, object){
+              # limits calculation: uses cell embeddings
+              # Same as default method in FeaturePlotWrapper.R
+              # `object` does not require parentheses if called with them below
+              xmin <- min(object@reductions[[reduction]]@cell.embeddings[,1])
+              xmax <- max(object@reductions[[reduction]]@cell.embeddings[,1])
+              ymin <- min(object@reductions[[reduction]]@cell.embeddings[,2])
+              ymax <- max(object@reductions[[reduction]]@cell.embeddings[,2]) 
+              
+              return(
+                list(
+                  xlim_orig = c(xmin, xmax),
+                  ylim_orig = c(ymin, ymax)
+                )
+              )
+            },
+            # Object must called with parentheses here (if not, parentheses
+            # would be required in the function above)
+            object()
+          )
+        
+        # Set names of list to names of reductions
+        names(lim_orig) <- reductions()
+        
+        # Return list of original limits
+        lim_orig
+      })
+  
+  ## 2.10 Store number of cells in full object ####
+  # used to determine if a subset is selected.
+  # TODO: does this apply to non-CITEseq datasets?
+  n_cells_original <- 
+    reactive({
+      req(object())
+      ncol(object())
+    })
     
+  ## 2.11 Auto-Generated Object Dictionary ####
+  # Data dictionary
+  # The data dictionary gives the names of all metadata in the object as a 
+  # guide for string subsetting.
+  # When object is changed, render a new data dictionary to www/
+  observeEvent(
+    object(),
+    #ignoreNULL = FALSE,
+    #ignoreInit = TRUE,
+    {
+      print("Rendering new data dictionary")
+      
+      # Gather parameters used by document
+      params <-
+        list(
+          object = object(),
+          valid_features = valid_features()
+        )
+      
+      # Execute Rmarkdown document
+      rmarkdown::render(
+        # Rmd document to render
+        input = "./Auto_Dictionary.Rmd",
+        # Must export HTML to www/ directory for the app to find the file
+        output_dir = "./www/",
+        # pass parameters to report
+        params = params,
+        # Set up a new environment that is the child of the global envrionment
+        # (isolates document environment from app)
+        envir = new.env(parent = globalenv())
+        )
+    })
   
   # 3. Initialize Modules ------------------------------------------------------
   ## 3.1. Dynamic UI ####
@@ -734,8 +984,11 @@ server <- function(input, output, session){
             meta_choices = meta_choices,
             unique_metadata = unique_metadata,
             category_labels = category_labels,
+            assay_config = assay_config,
             metadata_config = metadata_config,
-            reductions = reductions
+            reductions = reductions,
+            categorical_palettes = categorical_palettes,
+            continuous_palettes = continuous_palettes
             )
         
         # Hide spinner and return module UI
@@ -756,7 +1009,8 @@ server <- function(input, output, session){
           id = glue("{dataset_info$last_object_key}_dge"),
           unique_metadata = unique_metadata,
           metadata_config = metadata_config,
-          meta_categories = meta_categories
+          meta_categories = meta_categories,
+          meta_choices = meta_choices
           )
       })
   
@@ -796,57 +1050,96 @@ server <- function(input, output, session){
       })
   
   ## 3.2 Server instances ####
-  # Separate instances of each tab server are created for each dataset to avoid 
-  # namespace collisions between datasets that share metadata category names
+  # A separate module instance is needed for each dataset to avoid namespace 
+  # collisions, but only one module should be created for each dataset. The 
+  # observer below will initialize modules for each tab if they have not already 
+  # been created.
   
-  ### 3.2.1. Plots Tab Server Module #####
+  ### 3.2.1. Plots tab server ####
+  observe(
+    label = "Create Module Servers",
+    {
+      current_key <- dataset_info$last_object_key
+      
+      # If the current key is not in the list of module servers created, create
+      # server instances for each tab.
+      if (!current_key %in% main_server$modules_created){
+        print(glue("New module for plots tab (key = {current_key})"))
+        plots_tab_server(
+          id = glue("{current_key}_plots"),
+          object = object,
+          metadata_config = metadata_config,
+          assay_config = assay_config,
+          meta_categories = meta_categories,
+          category_labels = category_labels,
+          unique_metadata = unique_metadata,
+          valid_features = valid_features,
+          error_list = error_list,
+          n_cells_original = n_cells_original,
+          lim_orig = lim_orig,
+          categorical_palettes = categorical_palettes,
+          continuous_palettes = continuous_palettes
+          )
+        
+        # Add current key to list of modules created so module is not re-created
+        main_server$modules_created <- 
+          c(main_server$modules_created, current_key)
+        }
+      })
+
+  ### 3.2.2. DGE Tab Server ####
   observe({
-    plots_tab_server(
-      id = glue("{dataset_info$last_object_key}_plots"),
-      object = object,
-      metadata_config = metadata_config,
-      assay_config = assay_config,
-      meta_categories = meta_categories,
-      category_labels = category_labels,
-      unique_metadata = unique_metadata,
-      valid_features = valid_features,
-      error_list = error_list,
-      n_cells_original = n_cells_original,
-      xlim_orig = xlim_orig,
-      ylim_orig = ylim_orig
+    current_key <- dataset_info$last_object_key
+    
+    if (!current_key %in% main_server$dge_modules_created){
+      print(glue("New module for dge tab (key = {current_key})"))
+      dge_tab_server(
+        id = glue("{current_key}_dge"),
+        object = object,
+        metadata_config = metadata_config,
+        assay_config = assay_config,
+        meta_categories = meta_categories,
+        unique_metadata = unique_metadata,
+        meta_choices = meta_choices,
+        valid_features = valid_features,
+        object_trigger = dataset_change,
+        error_list = error_list
       )
+      
+      # Add current key to list of modules created so module is not re-created
+      main_server$dge_modules_created <- 
+        c(main_server$dge_modules_created, current_key)
+      }
     })
   
-  ### 3.2.2. DGE Tab Server Module ####
+  ### 3.2.3. Correlations Tab Server ####
   observe({
-    dge_tab_server(
-      id = glue("{dataset_info$last_object_key}_dge"),
-      object = object,
-      metadata_config = metadata_config,
-      meta_categories = meta_categories,
-      unique_metadata = unique_metadata,
-      meta_choices = meta_choices
+    current_key <- dataset_info$last_object_key
+    
+    if(!current_key %in% main_server$corr_modules_created){
+      print(glue("New module for correlations tab (key = {current_key})"))
+      corr_tab_server(
+        id = glue("{current_key}_corr"),
+        object = object,
+        metadata_config = metadata_config,
+        meta_categories = meta_categories,
+        unique_metadata = unique_metadata,
+        n_cells_original = n_cells_original,
+        nonzero_threshold = nonzero_threshold,
+        meta_choices = meta_choices,
+        valid_features = valid_features,
+        error_list = error_list,
+        update_features = update_features,
+        object_trigger = dataset_change
       )
-    })
+      
+      # Add current key to list of modules created so module is not re-created
+      main_server$corr_modules_created <- 
+        c(main_server$corr_modules_created, current_key)
+    }
+  })
   
-  ### 3.2.3. Correlations Tab Server Module ####
-  observe({
-    corr_tab_server(
-      id = glue("{dataset_info$last_object_key}_corr"),
-      object = object,
-      metadata_config = metadata_config,
-      meta_categories = meta_categories,
-      unique_metadata = unique_metadata,
-      n_cells_original = n_cells_original,
-      nonzero_threshold = nonzero_threshold,
-      meta_choices = meta_choices,
-      valid_features = valid_features,
-      error_list = error_list,
-      update_features = update_features
-      )
-    })
-  
-  # 4. Dataset Description in modal UI ####
+  # 4. Dataset Description in modal UI -----------------------------------------
   # Render text for the dataset modal that displays a description of the dataset
   # currently selected
   output$dataset_description <-
@@ -865,6 +1158,31 @@ server <- function(input, output, session){
         )
     },
     deleteFile=FALSE
+    )
+  
+  # Observe statement to determine memory usage of all objects in the environment
+  # observe({
+  #   env <- .GlobalEnv
+  #   units <- "MB"
+  #   
+  #   env_size(env, units)
+  # })
+  
+  observeEvent(
+    object(),
+    {
+      log_info(
+        glue("Memory used after loading current object: {to_GB(mem_used())}")
+        )
+      })
+  
+  # 5. Callbacks ---------------------------------------------------------------
+  ## 5.1. Code to run when the user disconnects ####
+  onSessionEnded(
+    function(){
+      log_info(glue("Session {session$token} disconnected."))
+      log_info(glue("Memory usage upon disconnection: {to_GB(mem_used())}"))
+    }
     )
   
   # DEBUG: UI to test object and config file are properly rendered

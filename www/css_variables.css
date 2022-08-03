@@ -1,0 +1,26 @@
+/* CSS variables used for app */
+:root{
+  /* Color 1: Dark blue (appears purple-gray) */
+  --dk-blue: #555588;
+
+  /* Color 2: Medium blue */
+  --mid-blue: #4E7CE0;
+  --mid-blue-border: #333BE6;
+  --mid-blue-hover: #7796D9;
+  --mid-blue-active: #7796D9;
+
+  /* Color 3: Light blue */
+  /* Uses same color as btn-info */
+
+  /* Color 4: Dark blue used for auto-dictionary markdown and feature summary */
+  --markdown-blue: #082E6B;
+
+  /* Color 5: Orange (accent color) */
+  --orange: #ED872D;
+  --orange-border: #F06810;
+  --orange-hover: #DE7F2C;
+  --orange-hover-border: #DC600C;
+
+  /* Border radius for buttons */
+  --button-border-radius: 15px;
+}
