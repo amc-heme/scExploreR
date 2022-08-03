@@ -51,7 +51,8 @@ source_files <-
   c(source_files, 
     "./Modules/threshold_picker.R", 
     # Threshold_picker also depends on xlim_modal
-    "./Modules/xlim_modal.R"
+    "./Modules/xlim_modal.R",
+    "./Modules/warning_modal.R"
     )
 
 # Use source() to import files into R
@@ -211,7 +212,16 @@ assay_tab <- function(){
           verbatimTextOutput(
             outputId = "assay_options"
             )
-        ) # End TEMP
+        ),
+        
+        # Button to activate warning modal (for testing purposes)
+        # actionButton(
+        #   inputId = "warning_modal", 
+        #   label = "", 
+        #   icon = icon("exclamation-triangle"),
+        #   class = "icon-button x-large"
+        #   )
+        # End TEMP
       )
     )
   )
@@ -1395,6 +1405,10 @@ server <- function(input, output, session) {
         session$userData$config()$adt_thresholds
     })
   
+  warning_modal_server(
+    id = "warning",
+    reactive_trigger = reactive({input$warning_modal})
+  )
   
   #### TEMP: Observers for Debugging ####
   # config_file_load <- eventReactive(

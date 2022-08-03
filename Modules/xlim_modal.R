@@ -92,8 +92,8 @@ xlim_modal_server <-
          # Closes modal without applying changes
          observeEvent(
            input$cancel,
-           ignoreInit = TRUE,
-           ignoreNULL = FALSE,
+           ignoreInit = FALSE,
+           ignoreNULL = TRUE,
            {
              removeModal()
            })
