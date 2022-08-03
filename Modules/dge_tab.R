@@ -408,11 +408,6 @@ dge_tab_server <- function(id,
               }
           })
       
-      observe({
-        print("Value of thresholding_present()")
-        print(thresholding_present())
-      })
-      
       ## 3.5. Define subset criteria ####
       # Combines outputs from test selection and subset selection modules. 
       # The subset criteria are used in the make_subset() function and the 
@@ -676,7 +671,10 @@ dge_tab_server <- function(id,
           event_expr = dge_table_content,
           group_by_category = group_by_category,
           metaclusters_present = metaclusters_present,
-          thresholding_present = thresholding_present 
+          thresholding_present = thresholding_present,
+          dge_simple_threshold = 
+            # Must put module output back into a reactive
+            reactive({test_selections()$threshold_value}) 
           )
       
       ## 3.9. Run Presto ####
@@ -831,7 +829,6 @@ dge_tab_server <- function(id,
               ncol = 4
               }
 
-            print("Compute DimPlot")
             # Create DimPlot of subsetted object
             DimPlot(
               subset(),
@@ -861,9 +858,6 @@ dge_tab_server <- function(id,
           {
             print("DGE 3.12: Main Panel Title")
             
-            print("Value of thresholding_present()")
-            print(thresholding_present())
-            
             if (thresholding_present()){
               print("Conditional: thresholding present")
               feature_label <- 
@@ -877,7 +871,6 @@ dge_tab_server <- function(id,
               glue("Differential Expression Results Based on
                    {feature_label} Expression Threshold")
             } else {
-              print("Conditional: standard case")
               # Standard DGE or metaclusters: add group by category to
               # header text
               # Label for group by category in config file
@@ -949,172 +942,12 @@ dge_tab_server <- function(id,
           log_info("DGE Tab: Spinners removed.")
           })
       
-      # 4. Dynamic UI for Main Panel 
-      # dge_ui <-
-      #   eventReactive(
-      #     #UI now renders once all computations are complete
-      #     subset(),
-      #     label = "DGE Main UI (Define Content)",
-      #     #Do not render main UI at startup to avoid errors
-      #     #ignoreInit=TRUE,
-      #     #ignoreNULL = FALSE,
-      #     {
-      #       # Header text to display as title of results UI
-      #       if (!thresholding_present()){
-      #         
-      #       } else {
-      #         feature_label <- 
-      #           hr_name(
-      #             test_selections()$threshold_feature,
-      #             assay_config = assay_config(),
-      #             use_suffix = FALSE
-      #           ) 
-      #         
-      #         header_text <- 
-      #           glue("Differential Expression Genes Based on 
-      #                {feature_label} Expression Threshold")
-      #       }
-      #       
-      #       # UI to display
-      #       ui <- tagList(
-      #         tags$h2(
-      #           header_text,
-      #           class="center"
-      #           ),
-      #         tags$h3(
-      #           "Test Summary", 
-      #           class="center"
-      #           ),
-      #         
-      #         # Subset Stats Module for showing summary stats
-      #         subset_stats_ui(
-      #           id = ns("subset_stats"),
-      #           tab = "dge",
-      #           metadata_config = metadata_config,
-      #           # Pass dge_subset_criteria() to this argument instead
-      #           # of subset_selections() (dge_subset_criteria()
-      #           # includes the group by category)
-      #           meta_categories = meta_categories
-      #         ),
-      #         
-      #         # DGE Table (uses DT data table)
-      #         tags$h3(
-      #           "DGE Table",
-      #           class="center"
-      #           ),
-      #         
-      #         # Output container for table
-      #         DTOutput(
-      #           outputId = ns("table"),
-      #           width = "95%"
-      #           ),
-      #         
-      #         # UMAP plot
-      #         # Title for plot
-      #         # Depends on mode, tested through n_classes()
-      #         # Make sure n_classes is a reactive and is defined 
-      #         # to avoid errors
-      #         if (is.reactive(subset_stats$n_classes())){
-      #           if (!is.null(subset_stats$n_classes())){
-      #             # Use different titles based on the test used
-      #             if (subset_stats$n_classes() == 2){
-      #               # Title for differential gene expression
-      #               tags$h3(
-      #                 "UMAP of groups being compared",
-      #                 class="center"
-      #               )
-      #             } else {
-      #               # Title for marker identification
-      #               tagList(
-      #                 # Center text
-      #                 tags$h3(
-      #                   "UMAP by class",
-      #                   class="center"
-      #                 ),
-      #                 tags$p(
-      #                   "(Markers are computed for each group shown)",
-      #                   class="center"
-      #                 )
-      #               )
-      #             }
-      #           } else NULL
-      #         } else NULL,
-      #         
-      #         
-      #         # UMAP container
-      #         plotOutput(
-      #           outputId = ns("umap"),
-      #           height = "600px"
-      #         )
-      #       ) # End tagList
-      #       
-      #       ui
-      #     })
-      
-      # dge_downloads_ui <-
-      #   eventReactive(
-      #     c(submit_button(), input$table_rows_selected),
-      #     label = "DGE Download Buttons UI",
-      #     ignoreNULL = FALSE,
-      #     {
-      #       # UI for download button
-      #       if (isTruthy(dge_table_content())){
-      #         # Display after the table has been created
-      #         div(
-      #           
-      #         )
-      #       } else {
-      #         NULL
-      #         }
-      #       })
-      
-      # 5. Dynamic UI: Options Panel for UMAP 
-      # umap_options <-
-      #   eventReactive(
-      #     subset(),
-      #     label = "DGE: UMAP Options Panel",
-      #     #ignoreNULL = FALSE,
-      #     {
-      #       #Display options panel after the umap is created
-      #       #Test: dge_umap is of class 'ggplot'
-      #       if ("ggplot" %in% class(dge_umap())){
-      #         collapsible_panel(
-      #           inputId = ns("umap_options_panel"),
-      #           label = "UMAP Options",
-      #           active = TRUE,
-      #           #group.by selection
-      #           selectInput(
-      #             inputId = ns("umap_group_by"),
-      #             label = "Metadata to Group by:",
-      #             #Remove "none" from selectable
-      #             #options to group by
-      #             choices =
-      #               meta_choices()[!meta_choices() %in% "none"],
-      #             #First category in meta_choices is selected
-      #             #by default
-      #             selected =
-      #               meta_choices()[!meta_choices() %in% "none"][1]
-      #           )
-      #         )
-      #       } else {
-      #         #Return nothing unless the UMAP is created
-      #         NULL
-      #       }
-      #     }
-      #   )
-      
       # 4. Render DGE UI, table, and UMAP --------------------------------------
       # Main Panel Header
       output$main_panel_title <- 
         renderText({
           main_panel_title()
         })
-      
-      # Options panel for UMAP
-      # output$umap_options <- 
-      #   renderUI({
-      #     umap_options()
-      #     })
       
       # Table
       output$table <- 

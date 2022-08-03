@@ -31,6 +31,20 @@ subset_stats_ui <- function(id,
         textOutput(
           outputId = ns("print_mode"), 
           inline = FALSE
+          ),
+        # Threshold used: only displays for threshold-based DGE
+        hidden(
+          div(
+            id = ns("threshold_info_div"),
+            tags$strong(
+              "Threshold value entered for high/low designation:",
+              class = "inline-block"
+              ),
+            textOutput(
+              outputId = ns("threshold"), 
+              inline = TRUE
+              )
+            )
           )
         ),
       # Metadata-specific subset statistics
@@ -150,7 +164,7 @@ subset_stats_ui <- function(id,
 # chosen for the test. 
 subset_stats_server <- 
   function(id,
-           tab = c("dge","corr"), #Non-reactive
+           tab = c("dge", "corr"), #Non-reactive
            subset, # Reactive
            event_expr, # Reactive
            meta_categories, # Reactive
@@ -158,7 +172,8 @@ subset_stats_server <-
            nonzero_threshold = NULL,
            group_by_category,
            metaclusters_present = NULL,
-           thresholding_present = NULL
+           thresholding_present = NULL,
+           dge_simple_threshold = NULL
            ){
     moduleServer(
       id, 
@@ -351,7 +366,7 @@ subset_stats_server <-
         # 2.1. Nonzero proportion is below the defined threshold 
         # Use observe statement to reactively check prop_nonzero()
         # Applies to correlations tab only
-        if (tab=="corr"){
+        if (tab == "corr"){
           observeEvent(
             event_expr(),
             ignoreNULL=FALSE,
@@ -387,14 +402,37 @@ subset_stats_server <-
             })# End observeEvent
           }
         
-        # 3. Display stats -----------------------------------------------------
-        ## 3.1. Number of cells (both tabs)
+        # 3. Show/hide threshold information text ------------------------------
+        if (tab == "dge"){
+          observeEvent(
+            event_expr(),
+            label = glue("{id}: show/hide threshold value"),
+            {
+              target_id = "threshold_info_div"
+              
+              # Show the threshold information when simple thresholding is 
+              # being used (this will be when the threshold value is defined)
+              if (!is.null(dge_simple_threshold())){
+                showElement(
+                  id = target_id
+                )
+              } else {
+                hideElement(
+                  id = target_id
+                )
+              }
+            })
+          
+        }
+        
+        # 4. Display stats -----------------------------------------------------
+        ## 4.1. Number of cells (both tabs)
         output$n_cells <- 
           renderText({
             n_cells()
             })
         
-        ## 3.2 Cells with nonzero reads (correlations tab only)
+        ## 4.2. Cells with nonzero reads (correlations tab only)
         if (tab == "corr"){
           output$n_nonzero_and_percent <-
             renderText({
@@ -402,22 +440,28 @@ subset_stats_server <-
             })
           }
         
-        ## 3.3. - 3.4 Outputs specific to DGE tab
+        ## 4.3. - 4.5. Outputs specific to DGE tab
         if (tab == "dge"){
-          ## 3.3 Print description of test selected
+          ## 4.3. Print description of test selected
           output$print_mode <- 
             renderText({
               mode_description()
             })
           
-          ## 3.4 Print number of cells by class
+          ## 4.4. Print number of cells by class
           output$n_by_class <- 
             renderText({
               n_by_class()
             })
+          
+          ## 4.5. Threshold (if using threshold-based DGE)
+          output$threshold <-
+            renderText({
+              dge_simple_threshold()
+            })
         }
         
-        ## 3.5. Summary of unique metadata in subset (both tabs)
+        ## 4.6. Summary of unique metadata in subset (both tabs)
         # lapply creates an output for each metadata category
         lapply(
           X = meta_categories(), 
@@ -435,7 +479,7 @@ subset_stats_server <-
           }
         )
         
-        # 4. Return Stats from Server ------------------------------------------
+        # 5. Return Stats from Server ------------------------------------------
         # For dge tab: return n_cells, classes, and n_classes
         # Return a list of reactives, as opposed to a reactive list
         if (tab=="dge"){
