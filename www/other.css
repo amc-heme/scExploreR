@@ -30,12 +30,6 @@ z-index: 999;
   padding: 0em;
 }
 
-/* Center table in DGE tab */
-#dge-table {
-  margin-left: auto;
-  margin-right: auto;
-}
-
 /* Correlations tab UI: remove margin from bottom of
 group by dropdown menu */
 #corr_scatter_group_by{

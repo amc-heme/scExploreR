@@ -1,0 +1,27 @@
+/* DGE tab-specific CSS */
+/* Centers table in DGE tab */
+[id*="dge-table"]{
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Shrink font size of pct_in and pct_out columns in table */
+[id*="dge-table"] th:nth-child(7),
+[id*="dge-table"] th:nth-child(8){
+  font-size: 0.9em;
+}
+
+/* Decrease padding in search inputs above DT table */
+/* Keeps inputs from being cut off when the browser window
+   is of a standard width (usually have to increase width to see
+   inputs) */
+[id*="dge-table"] thead input {
+  padding-right: 20px !important;
+  padding-left: 5px !important;
+}
+
+/* Decrease width of delete button in search input */
+[id*="dge-table"] thead .form-control-feedback {
+  width: 16px;
+  margin-right: 4px;
+}
