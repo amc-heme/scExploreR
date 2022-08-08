@@ -66,9 +66,9 @@ source_files <-
       path = "./Modules", 
       # Pattern, any set of characters, followed by ".R"
       # Period is double escaped
-      pattern=".*\\.R", 
-      full.names=TRUE, 
-      ignore.case=TRUE
+      pattern = ".*\\.R", 
+      full.names = TRUE, 
+      ignore.case = TRUE
       )
     )
 
