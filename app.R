@@ -10,14 +10,15 @@ library(shinydashboard, quietly = TRUE, warn.conflicts = FALSE)
 library(waiter, quietly = TRUE, warn.conflicts = FALSE)
 library(shinycssloaders, quietly = TRUE, warn.conflicts = FALSE)
 library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
+library(sortable, quietly = TRUE, warn.conflicts = FALSE)
 # library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
 
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
 options(
-  shiny.reactlog = TRUE, 
+  shiny.reactlog = TRUE#, 
   # Full stack trace for errors 
-  shiny.fullstacktrace = TRUE
+  #shiny.fullstacktrace = TRUE
   )
 
 # Logging and performance monitoring

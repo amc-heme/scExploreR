@@ -13,7 +13,8 @@ shiny_dot <-
     group_by, 
     show_legend = TRUE, 
     palette = NULL,
-    sort_groups = NULL
+    sort_groups = NULL,
+    custom_factor_levels = NULL
     ){
     # Default value of sort_groups: set to "ascending" if groups is NULL
     if (is.null(sort_groups)){
@@ -29,21 +30,40 @@ shiny_dot <-
         factor(
           object@meta.data[[group_by]],
           levels = 
-            object@meta.data[[group_by]] |> 
-            unique() |> 
-            str_sort(
-              numeric = TRUE,
-              # DotPlot plots levels in inverse order to their order in the 
-              # factor (first level appears on the bottom of the plot, and 
-              # last level appears on the top)
-              decreasing = 
-                if (sort_groups == "ascending"){
-                  TRUE
-                } else if (sort_groups == "descending"){
-                  FALSE
+            # If sort_groups is "ascending" or "descending", re-factor based on
+            # an alphanumeric order
+            if (sort_groups %in% c("ascending", "descending")){
+              object@meta.data[[group_by]] |> 
+                unique() |> 
+                str_sort(
+                  numeric = TRUE,
+                  # DotPlot plots levels in inverse order to their order in the 
+                  # factor (first level appears on the bottom of the plot, and 
+                  # last level appears on the top)
+                  decreasing = 
+                    if (sort_groups == "ascending"){
+                      TRUE
+                    } else if (sort_groups == "descending"){
+                      FALSE
+                    }
+                )
+            } else if (sort_groups == "custom"){
+              # If sort_groups is custom but custom_factor_levels is not 
+              # defined, throw an informative error message (error returned
+              # by by factor() is too generic) 
+              if (is.null(custom_factor_levels)){
+                stop(
+                  'When `sort_groups` is equal to "custom", 
+                  `custom_factor_levels` must be defined.'
+                  )
                 }
-            )
-        )
+              # If sort_groups is "custom", use the user-defined levels 
+              custom_factor_levels |> 
+                # reverse order for dot plots (DotPlot uses the inverse
+                # of the order)
+                rev()
+            }
+          )
       
       #Create plot if at least one feature is passed to shiny_dot()
       plot <- 
