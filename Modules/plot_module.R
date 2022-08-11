@@ -1886,8 +1886,7 @@ plot_module_server <- function(id,
                            # If so, extract factor levels
                            menu_levels <-
                              group_by_metadata |>
-                             levels() #|> 
-                             #as.character() 
+                             levels() 
                          } else {
                            # Otherwise, fetch the unique values
                            menu_levels <-
@@ -1895,52 +1894,18 @@ plot_module_server <- function(id,
                              unique()
                          }
                          
-                         # Sort values to initialize menu in alphanumeric order
+                         # Sort to initialize menu in ascending 
+                         # alphanumeric order
                          menu_levels <-
                            menu_levels |> 
                            str_sort(
                              numeric = TRUE,
-                             decreasing = 
+                             decreasing = FALSE
                                # Use descending order for dot plots (DotPlot() 
                                # inverts factor levels when plotting)
-                               if (plot_type == "dot") TRUE else FALSE
+                               #if (plot_type == "dot") TRUE else FALSE
                            )
-
-                         # factor_levels <-
-                         #   object()@meta.data[[plot_selections$group_by()]] |>
-                         #   levels() 
                          
-                         # Initialize menu with factor levels in alphanumeric
-                         # order from top to bottom (use decreasing = TRUE) for
-                         # dot plots
-                         # if (!is.null(factor_levels)){
-                         #   # Only sort when factor levels are present to avoid
-                         #   # errors
-                         #   factor_levels <-
-                         #     factor_levels |> 
-                         #     as.character() |> 
-                         #     str_sort(
-                         #       numeric = TRUE,
-                         #       decreasing = TRUE
-                         #     )
-                         # }
-                         
-                         # print("factor_levels")
-                         # print(factor_levels)
-                         # if (is.null(factor_levels)){
-                         #   print(
-                         #     object()@meta.data[[
-                         #       plot_selections$group_by()]] |>
-                         #       unique() |> 
-                         #       #as.character() |> 
-                         #       #class()
-                         #       str_sort(
-                         #         numeric = TRUE,
-                         #         decreasing = TRUE
-                         #       )
-                         #   )
-                         # }
-
                          # Menu UI
                          div(
                            class = "compact-options-container",
@@ -2245,7 +2210,9 @@ plot_module_server <- function(id,
                            ncol = plot_selections$ncol(),
                            assay_config = assay_config(),
                            palette = palette(),
-                           sort_groups = plot_selections$sort_groups()
+                           sort_groups = plot_selections$sort_groups(),
+                           custom_factor_levels = 
+                             plot_selections$custom_refactoring()
                            )
                        })
                    
