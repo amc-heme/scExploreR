@@ -337,15 +337,24 @@ plot_module_ui <- function(id,
           )
         } else NULL,
       
-      ## Order of groups (dot plots) ####
+      ## Refactor groups (dot, violin plots) ####
       if (sort_groups_menu == TRUE){
-        selectInput(
-          inputId = ns("sort_groups"),
-          label = "Order of Groups on plot",
-          # Can select all options except "none"
-          choices = 
-            c("Ascending" = "ascending",
-              "Descending" = "descending")
+        tagList(
+          selectInput(
+            inputId = ns("sort_groups"),
+            label = "Order of Groups on plot",
+            # Can select all options except "none"
+            choices =
+              c("Ascending" = "ascending",
+                "Descending" = "descending",
+                "Custom" = "custom")
+            ),
+          # Custom refactoring sortable input (shows when custom is chosen above)
+          hidden(
+            uiOutput(
+              outputId = ns("refactor_sortable")
+              )
+            )
           )
         } else NULL,
       
@@ -392,7 +401,7 @@ plot_module_ui <- function(id,
         )
       } else NULL,
       
-      ## Oder cells by expression (feature plots only) ####
+      ## Order cells by expression (feature plots only) ####
       if (order_checkbox == TRUE){
         checkboxInput(
           inputId = ns("order"),
@@ -1330,14 +1339,6 @@ plot_module_server <- function(id,
                            } else NULL
                          }),
                      
-                     # Re-order groups (dot plots)
-                     `sort_groups` = 
-                       reactive({
-                         if (isTruthy(input$sort_groups)){
-                           input$sort_groups
-                           } else NULL
-                         }),
-                     
                      # Number of columns in multi-panel plot
                      # Special conditional used (in some cases ncol will still 
                      # have a value in situations where it shouldn't, and this
@@ -1419,6 +1420,28 @@ plot_module_server <- function(id,
                        reactive({
                          if (isTruthy(input$legend_title)){
                            input$legend_title
+                         } else NULL
+                       }),
+                     
+                     # Re-order groups (dot plots)
+                     `sort_groups` = 
+                       reactive({
+                         if (isTruthy(input$sort_groups)){
+                           input$sort_groups
+                         } else NULL
+                       }),
+                     
+                     # Custom refactoring of group order on plots
+                     `custom_refactoring` = 
+                       reactive({
+                         # Value of custom factoring input is interpereted when
+                         # the user selects "custom" for the group order menu
+                         if (isTruthy(input$sort_groups)){
+                           if (input$sort_groups == "custom"){
+                             input$custom_refactor
+                             # NULL is returned when "custom" is not selected, 
+                             # or when input$sort_groups does not exist
+                           } else NULL
                          } else NULL
                        }),
                      
@@ -1840,7 +1863,85 @@ plot_module_server <- function(id,
                        ui
                      })
                  
-                 ## 7.4. Render Dynamic UI ####
+                 ## 7.4. Menu for custom refactoring of Group_by metadata ####
+                 if (plot_type %in% c("violin", "dot")){
+                   ### 7.4.1. Define menu UI ####
+                   refactor_sortable <-
+                     eventReactive(
+                       c(object(), plot_selections$group_by()),
+                       {
+                         # Responds to both the object and the group by 
+                         # variable, but only runs when the group by variable is
+                         # defined
+                         req(plot_selections$group_by())
+                         
+                         # Menu choices
+                         # Based on unique values or levels of current group by 
+                         # category
+                         group_by_metadata <- 
+                           object()@meta.data[[plot_selections$group_by()]]
+
+                         # Test if the current group by category is a factor
+                         if (is.factor(group_by_metadata)){
+                           # If so, extract factor levels
+                           menu_levels <-
+                             group_by_metadata |>
+                             levels() 
+                         } else {
+                           # Otherwise, fetch the unique values
+                           menu_levels <-
+                             group_by_metadata |> 
+                             unique()
+                         }
+                         
+                         # Sort to initialize menu in ascending 
+                         # alphanumeric order
+                         menu_levels <-
+                           menu_levels |> 
+                           str_sort(
+                             numeric = TRUE,
+                             decreasing = FALSE
+                               # Use descending order for dot plots (DotPlot() 
+                               # inverts factor levels when plotting)
+                               #if (plot_type == "dot") TRUE else FALSE
+                           )
+                         
+                         # Menu UI
+                         div(
+                           class = "compact-options-container",
+                           rank_list(
+                             text = "Drag-and drop to set order of groups:",
+                             labels = menu_levels,
+                             input_id = ns("custom_refactor"),
+                             class =
+                               c("default-sortable", "bucket-select")
+                             )
+                           )
+                         })
+
+                   ### 7.4.2. Show/hide menu ####
+                   observe({
+                     # The output container is shown/hidden
+                     target_id <- "refactor_sortable"
+
+                     # Show when "custom" is chosen from the group order menu
+                     if (isTruthy(input$sort_groups)){
+                       if (input$sort_groups == "custom"){
+                         showElement(
+                           id = target_id,
+                           anim = TRUE
+                           )
+                       } else {
+                         hideElement(
+                           id = target_id,
+                           anim = TRUE
+                           )
+                       }
+                     }
+                   })
+                 }
+                 
+                 ## 7.5. Render Dynamic UI ####
                  output$ncol_slider <- 
                    renderUI({
                      ncol_slider()
@@ -1860,6 +1961,21 @@ plot_module_server <- function(id,
                    renderUI({
                      plot_output_ui()
                      })
+                 
+                 if (plot_type %in% c("violin", "dot")){
+                   output$refactor_sortable <-
+                     renderUI({
+                       refactor_sortable()
+                     })
+                   
+                   # The UI should still compute when hidden, so it displays 
+                   # smoothly when the user selects "custom"
+                   outputOptions(
+                     output, 
+                     "refactor_sortable", 
+                     suspendWhenHidden = FALSE
+                   )
+                 }
 
                  # 8. Separate Features Entry: Dynamic Update ------------------
                  # Observers for separate features only update for server 
@@ -2094,7 +2210,9 @@ plot_module_server <- function(id,
                            ncol = plot_selections$ncol(),
                            assay_config = assay_config(),
                            palette = palette(),
-                           sort_groups = plot_selections$sort_groups()
+                           sort_groups = plot_selections$sort_groups(),
+                           custom_factor_levels = 
+                             plot_selections$custom_refactoring()
                            )
                        })
                    
@@ -2116,7 +2234,9 @@ plot_module_server <- function(id,
                            group_by = plot_selections$group_by(),
                            show_legend = plot_selections$legend(),
                            palette = palette(),
-                           sort_groups = plot_selections$sort_groups()
+                           sort_groups = plot_selections$sort_groups(),
+                           custom_factor_levels = 
+                             plot_selections$custom_refactoring()
                            )
                          })
                  } else if (plot_type == "scatter"){
@@ -2212,7 +2332,7 @@ plot_module_server <- function(id,
                    plot()
                  })
                  
-                 # 10. Download Handler -----------------------------------------
+                 # 10. Download Handler ----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 

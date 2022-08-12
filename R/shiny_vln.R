@@ -13,15 +13,16 @@
 # is_subset: reactive boolean value stating whether the object is a subset
 # assay_config: the assays section of the config file loaded at app startup.
 shiny_vln <- function(
-  object, # Reactive
-  features_entered, # Reactive
-  group_by, # Reactive
-  split_by, # Reactive
-  show_legend, # Reactive
-  ncol, # Reactive
-  assay_config, # Reactive
-  palette, #Reactive
-  sort_groups = NULL
+  object, 
+  features_entered, 
+  group_by, 
+  split_by, 
+  show_legend, 
+  ncol, 
+  assay_config, 
+  palette, 
+  sort_groups = NULL,
+  custom_factor_levels = NULL
 ){
   # Default value of sort_groups: set to "ascending" if groups is NULL
   if (is.null(sort_groups)){
@@ -50,20 +51,37 @@ shiny_vln <- function(
       factor(
         object@meta.data[[group_by]],
         levels = 
-          object@meta.data[[group_by]] |> 
-          unique() |> 
-          str_sort(
-            numeric = TRUE,
-            # For violin plots, groups plot from left to right in same order
-            # vector levels appear (therefore ascending should use
-            # deceasing = FALSE)
-            decreasing = 
-              if (sort_groups == "ascending"){
-                FALSE
-              } else if (sort_groups == "descending"){
-                TRUE
-              }
-          )
+          # If sort_groups is "ascending" or "descending", re-factor based on
+          # an alphanumeric order
+          if (sort_groups %in% c("ascending", "descending")){
+            object@meta.data[[group_by]] |> 
+              unique() |> 
+              str_sort(
+                numeric = TRUE,
+                # For violin plots, groups plot from left to right in same order
+                # vector levels appear (therefore ascending should use
+                # deceasing = FALSE)
+                decreasing = 
+                  if (sort_groups == "ascending"){
+                    FALSE
+                  } else if (sort_groups == "descending"){
+                    TRUE
+                  }
+              )
+          } else if (sort_groups == "custom"){
+            # If sort_groups is custom but custom_factor_levels is not 
+            # defined, throw an informative error message (error returned
+            # by by factor() is too generic) 
+            if (is.null(custom_factor_levels)){
+              stop(
+                'When `sort_groups` is equal to "custom", 
+                  `custom_factor_levels` must be defined.'
+              )
+            }
+            
+            # If sort_groups is "custom", use the user-defined levels 
+            custom_factor_levels
+          }
       )
     
     # Palette: must determine number of colors to create from provided palette
