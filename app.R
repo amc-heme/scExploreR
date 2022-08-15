@@ -305,8 +305,8 @@ datasets <-
       list(
         `label` = "Longitudinal Data",
         `object` = 
-          readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds"),
-        `config` = "./Seurat_Objects/d0-d30-config.rds",
+          readRDS("./Seurat_Objects/longitudinal_samples_20220311.Rds"),
+        `config` = "./Seurat_Objects/longitudinal_samples_20211025.config.Rds",
         `description` = 
           "Contains 3 normal bone marrow samples, and longitudinal samples from 
           6 patients with the first sample taken at time of diagnosis and the
@@ -317,8 +317,8 @@ datasets <-
       list(
         `label` = "AML (Pheresis) Dataset",
         `object` = 
-          readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds"),
-        `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
+          readRDS("./Seurat_Objects/aml_bmmc_totalvi_20220311_slim1000.rds"),
+        `config` = "./Seurat_Objects/aml_bmmc_totalvi_20220311_slim1000.config.rds",
         `description` = 
           "Contains 3 normal bone marrow samples, and 23 AML samples.",
         `plot` = "./www/aml_UMAP.png"
@@ -947,6 +947,7 @@ server <- function(input, output, session){
         )
       
       # Execute Rmarkdown document
+      Sys.setenv(RSTUDIO_PANDOC="/Applications/RStudio.app/Contents/MacOS/pandoc")
       rmarkdown::render(
         # Rmd document to render
         input = "./Auto_Dictionary.Rmd",
