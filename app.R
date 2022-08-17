@@ -47,6 +47,9 @@ library(cowplot, quietly = TRUE, warn.conflicts = FALSE)
 library(presto, quietly = TRUE, warn.conflicts = FALSE)
 library(R.devices, quietly = TRUE, warn.conflicts = FALSE)
 
+# Other packages
+library(yaml, quietly = TRUE, warn.conflicts = FALSE)
+
 # Load CSS, JavaScript, and R scripts ------------------------------------------
 # Load functions in ./R directory
 # Get list of files
@@ -296,49 +299,23 @@ error_list <-
       ) # End subset error sub-list
     )# End list of error definitions
 
-# Datasets: a list of available datasets with paths to object and config files,
-# as well as a description
+# Load Datasets ####
 log_info("R process initialization: loading datasets")
+
+# Construct list of datasets using YAML file provided by user
 datasets <- 
-  list(
-    `d0_d30` = 
-      list(
-        `label` = "Longitudinal Data",
-        `object` = 
-          readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds"),
-        `config` = "./Seurat_Objects/d0-d30-config.rds",
-        `description` = 
-          "Contains 3 normal bone marrow samples, and longitudinal samples from 
-          6 patients with the first sample taken at time of diagnosis and the
-          second sample taken approximately one month afterward.",
-        `plot` = "./www/d0_d30_UMAP.png"
-          ),
-    `AML_samples` = 
-      list(
-        `label` = "AML (Pheresis) Dataset",
-        `object` = 
-          readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds"),
-        `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
-        `description` = 
-          "Contains 3 normal bone marrow samples, and 23 AML samples.",
-        `plot` = "./www/aml_UMAP.png"
-        )
-    # Important:
-    # Uncomment entry below when working on NA handling, 
-    # then ***comment out before committing***
-    # ,
-    # `AML_NA_Test` =
-    #   list(
-    #     `label` = "NA Test Object",
-    #     `object` = readRDS("./Seurat_Objects/NA_example.rds"),
-    #     `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
-    #     `description` =
-    #       "Seurat Object used purely to test the handling of NA values. This
-    #       object is identical to the pheresis dataset; the only difference is
-    #      that clusters that were labeled as 'unknown' are instead labeled NA.",
-    #     `plot` = "./www/aml_UMAP.png"
-    #     )
-    )
+  read_yaml("./datasets.yaml")
+
+# Objects must be loaded at startup. If they are loaded separately for each
+# user, the RAM will quickly be exhausted. 
+# Each dataset is loaded below. The "object" variable in the YAML file is a 
+# path to the dataset, and the corresponding "object" element in the R list will
+# be replaced with the dataset itself.
+for (data_key in names(datasets)){
+  datasets[[data_key]]$object <- 
+    readRDS(datasets[[data_key]]$object)
+}
+
 log_info("Datasets successfully loaded")
 
 # Table of Contents ------------------------------------------------------------
