@@ -1,2 +1,2 @@
 *.Rmd linguist-detectable
-*.html linguist-vendored
+*.html -linguist-detectable
