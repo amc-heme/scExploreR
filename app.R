@@ -305,7 +305,7 @@ datasets <-
         `label` = "Longitudinal Data",
         `object` = 
           readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds"),
-        `config` = "./Seurat_Objects/d0-d30-config.rds",
+        `config` = "./Seurat_Objects/d0-d30-config-with-thresholds.rds",
         `description` = 
           "Contains 3 normal bone marrow samples, and longitudinal samples from 
           6 patients with the first sample taken at time of diagnosis and the
@@ -708,9 +708,6 @@ server <- function(input, output, session){
         # designate multiple in app, but file could be modified to do so)
         if (!is.null(designated_ADT_assay)){
           if (length(designated_ADT_assay) == 1){
-            print("Object before addition")
-            print(object())
-            
             # Fetch copy of object
             object_copy <- object()
             
@@ -718,25 +715,40 @@ server <- function(input, output, session){
             object_copy[["ADT_threshold"]] <- 
               object_copy[[designated_ADT_assay]]
             
+            # Clamp assays to thresholds in config app
+            # Subset assay to features for which threshold information exists
+            #  to conserve memory
+            object_copy[["ADT_threshold"]] <- 
+              subset(
+                object_copy[["ADT_threshold"]], 
+                features = config()$adt_thresholds$adt
+                )
+            
+            for (i in 1:nrow(config()$adt_thresholds)){
+              # Fetch ith ADT and threshold value
+              ADT <- config()$adt_thresholds$adt[i]
+              threshold <- config()$adt_thresholds$value[i]
+              
+              # Subtract threshold
+              object_copy@assays$ADT_threshold@data[ADT,] <-
+                object_copy@assays$ADT_threshold@data[ADT,] - threshold 
+              
+              # "Clamp" expression values for ADT to zero
+              object_copy@assays$ADT_threshold@data[ADT,] <- 
+                sapply(
+                  object_copy@assays$ADT_threshold@data[ADT,],
+                  function(value){
+                    if (value < 0) 0 else value
+                  }
+                )
+            }
+            
             # Save object with new assay
             object(object_copy)
-            
-            print("Object after addition")
-            print(object())
           }
         }
       }
     })
-  
-  observe({
-      print("Object")
-      print(object())
-      if (!is.null(object())){
-        if (nrow(object()) > 0){
-          
-          }
-        }
-      })
   
   ## 1.6. Save Key of Dataset Selected When Window is Closed ####
   # Save the selected key for the next time the window is opened (the 
