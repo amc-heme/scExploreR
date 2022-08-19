@@ -15,8 +15,8 @@ library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
 options(
-  shiny.reactlog = TRUE, 
-  # Full stack trace for errors 
+  shiny.reactlog = TRUE,
+  # Full stack trace for errors
   shiny.fullstacktrace = TRUE
   )
 
@@ -88,7 +88,7 @@ css_files <-
     )
 
 # Create list of style tags for each CSS file
-css_list <- lapply(css_files,includeCSS)
+css_list <- lapply(css_files, includeCSS)
 
 # Load Javascript files for app: find all .js files in www/ directory
 # and create a list of script() tags using includeScript().
@@ -641,7 +641,7 @@ server <- function(input, output, session){
       print(dataset_change$depend())
       })
   
-  ## 1.4. Load/Update Object ####
+  ## 1.4. Load/update object ####
   observeEvent(
     # Loads when the reactive trigger in "Loading Conditional" is activated
     dataset_change$depend(),
@@ -656,7 +656,8 @@ server <- function(input, output, session){
       app_spinner$hide()
       })
   
-  ## 1.5. Load/Update Config File ####
+  ## 1.5. Config file
+  ### 1.5.1. Load/update config file ####
   # Update config file with the one from the selected dataset, if it has changed
   observeEvent( 
     dataset_change$depend(),
@@ -668,6 +669,74 @@ server <- function(input, output, session){
       # Load config file using defined path and set reactiveVal object
       config(readRDS(path))
     })
+  
+  ### 1.5.2. Check version of config file ####
+  # observeEvent(
+  #   config(),
+  #   ignoreNULL = TRUE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     
+  #   })
+  
+  ### 1.5.3. Copy ADT assay for thresholding ####
+  # If thresholding information is provided, copy the ADT assay to a new 
+  # assay, and save the new assay to the object
+  observeEvent(
+    config(),
+    ignoreNULL = TRUE,
+    #ignoreInit = TRUE,
+    {
+      print("Trigger ADT threshold observer")
+      
+      if (!is.null(config()$adt_thresholds)){
+        # First, determine which assay is designated as the ADT assay
+        is_designated <-
+          sapply(
+            config()$assays, 
+            # Fetch value of designated_adt for each assay (TRUE or FALSE)
+            function(assay) assay$designated_adt
+            )
+        
+        # Subset for assays where designated_adt is TRUE
+        designated_ADT_assay <- names(config()$assays)[is_designated]
+        
+        print("is.null test for designated_ADT_assay")
+        print(is.null(designated_ADT_assay))
+        
+        # Only proceed if one assay has been designated (not possible to 
+        # designate multiple in app, but file could be modified to do so)
+        if (!is.null(designated_ADT_assay)){
+          if (length(designated_ADT_assay) == 1){
+            print("Object before addition")
+            print(object())
+            
+            # Fetch copy of object
+            object_copy <- object()
+            
+            # Copy ADT assay
+            object_copy[["ADT_threshold"]] <- 
+              object_copy[[designated_ADT_assay]]
+            
+            # Save object with new assay
+            object(object_copy)
+            
+            print("Object after addition")
+            print(object())
+          }
+        }
+      }
+    })
+  
+  observe({
+      print("Object")
+      print(object())
+      if (!is.null(object())){
+        if (nrow(object()) > 0){
+          
+          }
+        }
+      })
   
   ## 1.6. Save Key of Dataset Selected When Window is Closed ####
   # Save the selected key for the next time the window is opened (the 
