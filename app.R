@@ -112,6 +112,10 @@ js_files <-
 # Create list of style tags for each CSS file
 js_list <- lapply(js_files, includeScript)
 
+# Read browser config yaml
+browser_config <- 
+  read_yaml("./config.yaml")
+
 # Non-reactive Global Variables ------------------------------------------------
 
 # Non-zero proportion threshold: if the proportion of cells for a 
@@ -302,9 +306,9 @@ error_list <-
 # Load Datasets ####
 log_info("R process initialization: loading datasets")
 
-# Construct list of datasets using YAML file provided by user
+# Construct list of datasets using config file provided by user
 datasets <- 
-  read_yaml("./datasets.yaml")
+  browser_config$datasets
 
 # Objects must be loaded at startup. If they are loaded separately for each
 # user, the RAM will quickly be exhausted. 
@@ -924,6 +928,9 @@ server <- function(input, output, session){
         )
       
       # Execute Rmarkdown document
+      if (any(names(browser_config) == "RSTUDIO_PANDOC")) {
+        Sys.setenv(RSTUDIO_PANDOC = browser_config$RSTUDIO_PANDOC)
+      }
       rmarkdown::render(
         # Rmd document to render
         input = "./Auto_Dictionary.Rmd",
