@@ -114,6 +114,9 @@ js_list <- lapply(js_files, includeScript)
 # gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
 
+# Display name for thresholded ADT features in the feature entry dropdown
+adt_threshold_dropdown_title <- NULL
+
 ## Color palettes for plotting categorical variables ####
 # Define available palettes
 
@@ -830,7 +833,7 @@ server <- function(input, output, session){
   # Create a list of valid features using the assays defined above
   valid_features <-
     eventReactive(
-      assay_config(),
+      c(assay_config(), object()),
       label= "valid_features",
       ignoreNULL = FALSE,
       {
@@ -843,7 +846,24 @@ server <- function(input, output, session){
             # defined in the config file
             numeric_metadata = include_numeric_metadata, 
             # The same is true for numeric_metadata_title
-            numeric_metadata_title = numeric_metadata_title
+            numeric_metadata_title = numeric_metadata_title,
+            # ADT thresholds: add to list if the ADT_threshold assay has been
+            # created in the object
+            adt_threshold_features = 
+              if ("ADT_threshold" %in% names(object()@assays)){
+                TRUE
+              } else {
+                FALSE
+              },
+            # Display name for threshold features (can be set in the browser 
+            # config file)
+            adt_threshold_title = 
+              if (!is.null(adt_threshold_dropdown_title)){
+                adt_threshold_dropdown_title
+              } else {
+                # Supply default if the value is undefined
+                "ADT Values (Threshold Applied)"
+              }
             )
         
         valid_features
@@ -933,7 +953,7 @@ server <- function(input, output, session){
         unique_metadata
         })
   
-  ## 2.8 Reductions in object ####
+  ## 2.8. Reductions in object ####
   reductions <- 
     reactive({
       req(object())
@@ -998,7 +1018,7 @@ server <- function(input, output, session){
         lim_orig
       })
   
-  ## 2.10 Store number of cells in full object ####
+  ## 2.10. Store number of cells in full object ####
   # used to determine if a subset is selected.
   # TODO: does this apply to non-CITEseq datasets?
   n_cells_original <- 
@@ -1007,7 +1027,7 @@ server <- function(input, output, session){
       ncol(object())
     })
     
-  ## 2.11 Auto-Generated Object Dictionary ####
+  ## 2.11. Auto-Generated Object Dictionary ####
   # Data dictionary
   # The data dictionary gives the names of all metadata in the object as a 
   # guide for string subsetting.
@@ -1146,6 +1166,14 @@ server <- function(input, output, session){
       # server instances for each tab.
       if (!current_key %in% main_server$modules_created){
         print(glue("New module for plots tab (key = {current_key})"))
+        
+        print("Data in valid_features")
+        print(names(valid_features()))
+        print("ADT assay")
+        print(head(valid_features()[["Surface Protein"]]))
+        print("Threshold ADTs")
+        print(head(valid_features()[["ADT Values (Threshold Applied)"]]))
+        
         plots_tab_server(
           id = glue("{current_key}_plots"),
           object = object,
