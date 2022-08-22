@@ -690,8 +690,6 @@ server <- function(input, output, session){
     ignoreNULL = TRUE,
     #ignoreInit = TRUE,
     {
-      print("Trigger ADT threshold observer")
-      
       if (!is.null(config()$adt_thresholds)){
         # First, determine which assay is designated as the ADT assay
         is_designated <-
@@ -703,9 +701,6 @@ server <- function(input, output, session){
         
         # Subset for assays where designated_adt is TRUE
         designated_ADT_assay <- names(config()$assays)[is_designated]
-        
-        print("is.null test for designated_ADT_assay")
-        print(is.null(designated_ADT_assay))
         
         # Only proceed if one assay has been designated (not possible to 
         # designate multiple in app, but file could be modified to do so)
@@ -1166,13 +1161,6 @@ server <- function(input, output, session){
       # server instances for each tab.
       if (!current_key %in% main_server$modules_created){
         print(glue("New module for plots tab (key = {current_key})"))
-        
-        print("Data in valid_features")
-        print(names(valid_features()))
-        print("ADT assay")
-        print(head(valid_features()[["Surface Protein"]]))
-        print("Threshold ADTs")
-        print(head(valid_features()[["ADT Values (Threshold Applied)"]]))
         
         plots_tab_server(
           id = glue("{current_key}_plots"),
