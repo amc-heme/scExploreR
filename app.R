@@ -10,14 +10,15 @@ library(shinydashboard, quietly = TRUE, warn.conflicts = FALSE)
 library(waiter, quietly = TRUE, warn.conflicts = FALSE)
 library(shinycssloaders, quietly = TRUE, warn.conflicts = FALSE)
 library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
+library(sortable, quietly = TRUE, warn.conflicts = FALSE)
 # library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
 
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
 options(
-  shiny.reactlog = TRUE,
-  # Full stack trace for errors
-  shiny.fullstacktrace = TRUE
+  shiny.reactlog = TRUE#, 
+  # Full stack trace for errors 
+  #shiny.fullstacktrace = TRUE
   )
 
 # Logging and performance monitoring
@@ -45,6 +46,9 @@ library(cowplot, quietly = TRUE, warn.conflicts = FALSE)
 # Additional backend packages
 library(presto, quietly = TRUE, warn.conflicts = FALSE)
 library(R.devices, quietly = TRUE, warn.conflicts = FALSE)
+
+# Other packages
+library(yaml, quietly = TRUE, warn.conflicts = FALSE)
 
 # Load CSS, JavaScript, and R scripts ------------------------------------------
 # Load functions in ./R directory
@@ -107,6 +111,10 @@ js_files <-
     )
 # Create list of style tags for each CSS file
 js_list <- lapply(js_files, includeScript)
+
+# Read browser config yaml
+browser_config <- 
+  read_yaml("./config.yaml")
 
 # Non-reactive Global Variables ------------------------------------------------
 
@@ -298,49 +306,23 @@ error_list <-
       ) # End subset error sub-list
     )# End list of error definitions
 
-# Datasets: a list of available datasets with paths to object and config files,
-# as well as a description
+# Load Datasets ####
 log_info("R process initialization: loading datasets")
+
+# Construct list of datasets using config file provided by user
 datasets <- 
-  list(
-    `d0_d30` = 
-      list(
-        `label` = "Longitudinal Data",
-        `object` = 
-          readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds"),
-        `config` = "./Seurat_Objects/d0-d30-config-with-thresholds.rds",
-        `description` = 
-          "Contains 3 normal bone marrow samples, and longitudinal samples from 
-          6 patients with the first sample taken at time of diagnosis and the
-          second sample taken approximately one month afterward.",
-        `plot` = "./www/d0_d30_UMAP.png"
-          ),
-    `AML_samples` = 
-      list(
-        `label` = "AML (Pheresis) Dataset",
-        `object` = 
-          readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds"),
-        `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
-        `description` = 
-          "Contains 3 normal bone marrow samples, and 23 AML samples.",
-        `plot` = "./www/aml_UMAP.png"
-        )
-    # Important:
-    # Uncomment entry below when working on NA handling, 
-    # then ***comment out before committing***
-    # ,
-    # `AML_NA_Test` =
-    #   list(
-    #     `label` = "NA Test Object",
-    #     `object` = readRDS("./Seurat_Objects/NA_example.rds"),
-    #     `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
-    #     `description` =
-    #       "Seurat Object used purely to test the handling of NA values. This
-    #       object is identical to the pheresis dataset; the only difference is
-    #      that clusters that were labeled as 'unknown' are instead labeled NA.",
-    #     `plot` = "./www/aml_UMAP.png"
-    #     )
-    )
+  browser_config$datasets
+
+# Objects must be loaded at startup. If they are loaded separately for each
+# user, the RAM will quickly be exhausted. 
+# Each dataset is loaded below. The "object" variable in the YAML file is a 
+# path to the dataset, and the corresponding "object" element in the R list will
+# be replaced with the dataset itself.
+for (data_key in names(datasets)){
+  datasets[[data_key]]$object <- 
+    readRDS(datasets[[data_key]]$object)
+}
+
 log_info("Datasets successfully loaded")
 
 # Table of Contents ------------------------------------------------------------
@@ -1042,6 +1024,9 @@ server <- function(input, output, session){
         )
       
       # Execute Rmarkdown document
+      if (any(names(browser_config) == "RSTUDIO_PANDOC")) {
+        Sys.setenv(RSTUDIO_PANDOC = browser_config$RSTUDIO_PANDOC)
+      }
       rmarkdown::render(
         # Rmd document to render
         input = "./Auto_Dictionary.Rmd",

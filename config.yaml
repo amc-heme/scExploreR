@@ -1,0 +1,22 @@
+%YAML 1.1
+---
+datasets:
+    # Longitudinal object
+    d0_d30:
+        label: Longitudinal Data
+        object: ./Seurat_Objects/longitudinal_samples_20211025.rds
+        config: ./Seurat_Objects/d0-d30-config.rds
+        description: >
+            Contains 3 normal bone marrow samples, and longitudinal samples from
+            6 patients with the first sample taken at time of diagnosis and the
+            second sample taken approximately one month afterward.
+        plot: ./www/d0_d30_UMAP.png
+    # Pheresis object
+    pheresis_samples:
+        label: AML (Pheresis) Dataset
+        object: ./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds
+        config: ./Seurat_Objects/AML_TotalVI_config.rds
+        description: Contains 3 normal bone marrow samples, and 23 AML samples.
+        plot: ./www/aml_UMAP.png
+        
+#RSTUDIO_PANDOC: "/Applications/RStudio.app/Contents/MacOS/pandoc"
