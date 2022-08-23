@@ -49,9 +49,7 @@ source_files <-
 # Add threshold_picker module from main app modules
 source_files <-
   c(source_files, 
-    "./Modules/threshold_picker.R", 
-    # Threshold_picker also depends on xlim_modal
-    "./Modules/xlim_modal.R",
+    "./Modules/threshold_picker.R",
     "./Modules/warning_modal.R"
     )
 
