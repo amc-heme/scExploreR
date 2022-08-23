@@ -89,6 +89,7 @@ plot_module_ui <- function(id,
                            display_coeff =                         FALSE,
                            limits_checkbox =                       FALSE,
                            custom_colors =                         FALSE,
+                           custom_x_axis_ui =                      FALSE,
                            manual_dimensions =                     FALSE,
                            separate_features =                     FALSE,
                            download_button =                       FALSE,
@@ -265,25 +266,6 @@ plot_module_ui <- function(id,
               id = ns("custom_title_div"),
               class = "compact-options-container",
               tags$b("Enter Custom Title"),
-              # tags$p(
-              #   sytle = "font-size: 0.9em;",
-              #   "(Press enter to update)"
-              #   ),
-              # searchInput(
-              #   inputId = ns("custom_title_searchinput"),
-              #   label = NULL,
-              #   # Default value depends on current group-by category and is 
-              #   # set server-side 
-              #   value = "",
-              #   # Search button: must be defined for updateSearchInput 
-              #   # to trigger properly, but will be hidden 
-              #   btnSearch = icon("sync"),
-              #   # Icon for reset button
-              #   btnReset = icon("redo-alt"),
-              #   # resetValue: set to NULL to disable automatic resetting
-              #   # resetting will occur manually via the server function
-              #   resetValue = NULL
-              # ),
               textInput(
                 inputId = ns("custom_title"),
                 label = NULL,
@@ -482,6 +464,28 @@ plot_module_ui <- function(id,
             )
           )
         } else NULL,
+      
+      ## Custom x-axis limits ####
+      # Currently for ridge plots only
+      if (custom_x_axis_ui == TRUE){
+        hidden(
+          div(
+            id = ns("custom_xlim_checkbox"),
+            checkboxInput(
+              inputId = ns("use_custom_xlim"),
+              label = "Define Custom X-axis Limits",
+              value = FALSE
+              )
+             ),
+          div(
+            id = ns("custom_xlim_interface"),
+            custom_xlim_ui(
+              id = ns("custom_xlim"),
+              compact = TRUE
+              )
+            )
+          )
+      } else NULL,
       
       ## UI for user control of plot dimensions ####
       if (manual_dimensions == TRUE){
@@ -1100,7 +1104,7 @@ plot_module_server <- function(id,
                    }
                  }
                  
-                 # 4. Show/Hide Feature Plot-Specific Menus --------------------
+                 # 4. Show/Hide Menus ------------------------------------------
                  ## 4.1. Super Title Menu ####
                  if (plot_type == "feature"){
                    observe({
@@ -1308,6 +1312,60 @@ plot_module_server <- function(id,
                          id = elem_id
                          )
                        }
+                   })
+                 }
+                 
+                 ## 4.6. Custom x-axis limits on ridge plots ####
+                 ### 4.6.1. Checkbox to enable custom limits ####
+                 if (plot_type == "ridge"){
+                   observe({
+                     # Show checkbox when the plot is defined
+                     show <- FALSE
+                     elem_id <- "custom_xlim_checkbox"
+                     
+                     # Initially tried isTruthy(plot()), but this evaluated to 
+                     # TRUE even when the plot was not rendered. 
+                     # isTruthy(features_entered) will be TRUE when the plot is
+                     # defined, since the plot requires a feature. This will be
+                     # used instead
+                     if (isTruthy(features_entered())){
+                       show <- TRUE
+                     }
+                     
+                     if (show == TRUE){
+                       showElement(
+                         id = elem_id
+                       )
+                     } else {
+                       hideElement(
+                         id = elem_id
+                       )
+                     }
+                   })
+                 }
+                 
+                 ### 4.6.2. Interface for setting custom limits ####
+                 if (plot_type == "ridge"){
+                   observe({
+                     # Show interface when the checkbox in 4.6.1. is selected
+                     show <- FALSE
+                     elem_id <- "custom_xlim_interface"
+                     
+                     if (isTruthy(input$use_custom_xlim)){
+                       show <- TRUE
+                     }
+                     
+                     if (show == TRUE){
+                       showElement(
+                         id = elem_id,
+                         anim = TRUE
+                       )
+                     } else {
+                       hideElement(
+                         id = elem_id,
+                         anim = TRUE
+                       )
+                     }
                    })
                  }
                  
@@ -1723,7 +1781,7 @@ plot_module_server <- function(id,
                        # inputs are incorrect
                        message = NULL
                       
-                       ### 6.3.1. Test for correct inputs #### 
+                       ### 7.3.1. Test for correct inputs #### 
                        # UI displayed depends on if inputs have been entered
                        # correctly. "Correct" inputs depend on plot type
                        # input_error is set to TRUE or FALSE based on input 
@@ -2056,7 +2114,7 @@ plot_module_server <- function(id,
                            # If separate features are used in this module,
                            # input them if the user checks the box to use
                            # them 
-                           if(input$use_separate_features == TRUE){
+                           if (input$use_separate_features == TRUE){
                              #Use separate features
                              input$separate_features
                            } else if (input$use_separate_features == FALSE){
@@ -2267,7 +2325,16 @@ plot_module_server <- function(id,
                             features_entered = features_entered(),
                             group_by = plot_selections$group_by(),
                             show_legend = plot_selections$legend(),
-                            palette = palette()
+                            palette = palette(),
+                            xlim = 
+                              # Use custom limits if the user requests them,
+                              # and if they are provided
+                              if (!is.null(custom_xlim) & 
+                                  isTruthy(input$use_custom_xlim)){
+                                custom_xlim()
+                              } else {
+                                NULL
+                              }
                             ) 
                          }
                        )
@@ -2332,7 +2399,17 @@ plot_module_server <- function(id,
                    plot()
                  })
                  
-                 # 10. Download Handler ----------------------------------------
+                 # 10. Custom x-axis limits server (ridge plots) ---------------
+                 # Server recieves plot in 9. and outputs the chosen limits
+                 if (plot_type == "ridge"){
+                   custom_xlim <-
+                     custom_xlim_server(
+                       id = "custom_xlim",
+                       plot = plot
+                     )
+                 }
+                 
+                 # 11. Download handler ----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 

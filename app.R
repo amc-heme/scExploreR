@@ -70,9 +70,9 @@ source_files <-
       path = "./Modules", 
       # Pattern, any set of characters, followed by ".R"
       # Period is double escaped
-      pattern=".*\\.R", 
-      full.names=TRUE, 
-      ignore.case=TRUE
+      pattern = ".*\\.R", 
+      full.names = TRUE, 
+      ignore.case = TRUE
       )
     )
 
@@ -92,7 +92,7 @@ css_files <-
     )
 
 # Create list of style tags for each CSS file
-css_list <- lapply(css_files,includeCSS)
+css_list <- lapply(css_files, includeCSS)
 
 # Load Javascript files for app: find all .js files in www/ directory
 # and create a list of script() tags using includeScript().
@@ -121,6 +121,9 @@ browser_config <-
 # Non-zero proportion threshold: if the proportion of cells for a 
 # gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
+
+# Display name for thresholded ADT features in the feature entry dropdown
+adt_threshold_dropdown_title <- NULL
 
 ## Color palettes for plotting categorical variables ####
 # Define available palettes
@@ -623,7 +626,7 @@ server <- function(input, output, session){
       print(dataset_change$depend())
       })
   
-  ## 1.4. Load/Update Object ####
+  ## 1.4. Load/update object ####
   observeEvent(
     # Loads when the reactive trigger in "Loading Conditional" is activated
     dataset_change$depend(),
@@ -638,7 +641,8 @@ server <- function(input, output, session){
       app_spinner$hide()
       })
   
-  ## 1.5. Load/Update Config File ####
+  ## 1.5. Config file
+  ### 1.5.1. Load/update config file ####
   # Update config file with the one from the selected dataset, if it has changed
   observeEvent( 
     dataset_change$depend(),
@@ -649,6 +653,81 @@ server <- function(input, output, session){
       
       # Load config file using defined path and set reactiveVal object
       config(readRDS(path))
+    })
+  
+  ### 1.5.2. Check version of config file ####
+  # observeEvent(
+  #   config(),
+  #   ignoreNULL = TRUE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     
+  #   })
+  
+  ### 1.5.3. Copy ADT assay for thresholding ####
+  # If thresholding information is provided, copy the ADT assay to a new 
+  # assay, and save the new assay to the object
+  observeEvent(
+    config(),
+    ignoreNULL = TRUE,
+    #ignoreInit = TRUE,
+    {
+      if (!is.null(config()$adt_thresholds)){
+        # First, determine which assay is designated as the ADT assay
+        is_designated <-
+          sapply(
+            config()$assays, 
+            # Fetch value of designated_adt for each assay (TRUE or FALSE)
+            function(assay) assay$designated_adt
+            )
+        
+        # Subset for assays where designated_adt is TRUE
+        designated_ADT_assay <- names(config()$assays)[is_designated]
+        
+        # Only proceed if one assay has been designated (not possible to 
+        # designate multiple in app, but file could be modified to do so)
+        if (!is.null(designated_ADT_assay)){
+          if (length(designated_ADT_assay) == 1){
+            # Fetch copy of object
+            object_copy <- object()
+            
+            # Copy ADT assay
+            object_copy[["ADT_threshold"]] <- 
+              object_copy[[designated_ADT_assay]]
+            
+            # Clamp assays to thresholds in config app
+            # Subset assay to features for which threshold information exists
+            #  to conserve memory
+            object_copy[["ADT_threshold"]] <- 
+              subset(
+                object_copy[["ADT_threshold"]], 
+                features = config()$adt_thresholds$adt
+                )
+            
+            for (i in 1:nrow(config()$adt_thresholds)){
+              # Fetch ith ADT and threshold value
+              ADT <- config()$adt_thresholds$adt[i]
+              threshold <- config()$adt_thresholds$value[i]
+              
+              # Subtract threshold
+              object_copy@assays$ADT_threshold@data[ADT,] <-
+                object_copy@assays$ADT_threshold@data[ADT,] - threshold 
+              
+              # "Clamp" expression values for ADT to zero
+              object_copy@assays$ADT_threshold@data[ADT,] <- 
+                sapply(
+                  object_copy@assays$ADT_threshold@data[ADT,],
+                  function(value){
+                    if (value < 0) 0 else value
+                  }
+                )
+            }
+            
+            # Save object with new assay
+            object(object_copy)
+          }
+        }
+      }
     })
   
   ## 1.6. Save Key of Dataset Selected When Window is Closed ####
@@ -731,7 +810,7 @@ server <- function(input, output, session){
   # Create a list of valid features using the assays defined above
   valid_features <-
     eventReactive(
-      assay_config(),
+      c(assay_config(), object()),
       label= "valid_features",
       ignoreNULL = FALSE,
       {
@@ -744,7 +823,24 @@ server <- function(input, output, session){
             # defined in the config file
             numeric_metadata = include_numeric_metadata, 
             # The same is true for numeric_metadata_title
-            numeric_metadata_title = numeric_metadata_title
+            numeric_metadata_title = numeric_metadata_title,
+            # ADT thresholds: add to list if the ADT_threshold assay has been
+            # created in the object
+            adt_threshold_features = 
+              if ("ADT_threshold" %in% names(object()@assays)){
+                TRUE
+              } else {
+                FALSE
+              },
+            # Display name for threshold features (can be set in the browser 
+            # config file)
+            adt_threshold_title = 
+              if (!is.null(adt_threshold_dropdown_title)){
+                adt_threshold_dropdown_title
+              } else {
+                # Supply default if the value is undefined
+                "ADT Values (Threshold Applied)"
+              }
             )
         
         valid_features
@@ -834,7 +930,7 @@ server <- function(input, output, session){
         unique_metadata
         })
   
-  ## 2.8 Reductions in object ####
+  ## 2.8. Reductions in object ####
   reductions <- 
     reactive({
       req(object())
@@ -899,7 +995,7 @@ server <- function(input, output, session){
         lim_orig
       })
   
-  ## 2.10 Store number of cells in full object ####
+  ## 2.10. Store number of cells in full object ####
   # used to determine if a subset is selected.
   # TODO: does this apply to non-CITEseq datasets?
   n_cells_original <- 
@@ -908,7 +1004,7 @@ server <- function(input, output, session){
       ncol(object())
     })
     
-  ## 2.11 Auto-Generated Object Dictionary ####
+  ## 2.11. Auto-Generated Object Dictionary ####
   # Data dictionary
   # The data dictionary gives the names of all metadata in the object as a 
   # guide for string subsetting.
@@ -1050,6 +1146,7 @@ server <- function(input, output, session){
       # server instances for each tab.
       if (!current_key %in% main_server$modules_created){
         print(glue("New module for plots tab (key = {current_key})"))
+        
         plots_tab_server(
           id = glue("{current_key}_plots"),
           object = object,
