@@ -1029,10 +1029,28 @@ dge_tab_server <- function(id,
       # })
       
       # 5. Download Handler for DGE Table --------------------------------------
-      output$dge_download_table <- 
+      output$download_table <- 
         downloadHandler(
           filename = function() {
-            glue("DGE_table_{test_selections()$group_by}.csv")
+            if (thresholding_present()){
+              # When thresholding is used, form name based on threshold used and
+              # the value
+              thresh_feature <- test_selections()$threshold_feature
+              thresh_value <- test_selections()$threshold_value
+              
+              glue("DGE_table_{thresh_feature}_threshold-{thresh_value}.csv")
+            } else {
+              # Otherwise, form name using group by metadata category
+              group_var <- test_selections()$group_by
+              
+              # Test if the group by variable is defined. If it is not, output
+              # a generic file name
+              if (!is.null(group_var) & !is.na(group_var)){
+                glue("DGE_table_{group_var}.csv")
+              } else {
+                "DGE_table.csv"
+                }
+              }
             },
           content = function(file) {
             write.csv(
