@@ -1040,6 +1040,14 @@ server <- function(input, output, session){
         )
     })
   
+  ## 2.12. Patient/sample level metadata category ####
+  patient_colname <-
+    reactive({
+      # Extract category name from "other_metadata_options" 
+      # section of the config file 
+      config()$other_metadata_options$patient_colname
+    })
+  
   # 3. Initialize Modules ------------------------------------------------------
   ## 3.1. Dynamic UI ####
   # All UI for modules is dynamic as it depends on the currently 
@@ -1069,7 +1077,8 @@ server <- function(input, output, session){
             metadata_config = metadata_config,
             reductions = reductions,
             categorical_palettes = categorical_palettes,
-            continuous_palettes = continuous_palettes
+            continuous_palettes = continuous_palettes,
+            patient_colname = patient_colname
             )
         
         # Hide spinner and return module UI
@@ -1160,7 +1169,8 @@ server <- function(input, output, session){
           n_cells_original = n_cells_original,
           lim_orig = lim_orig,
           categorical_palettes = categorical_palettes,
-          continuous_palettes = continuous_palettes
+          continuous_palettes = continuous_palettes,
+          patient_colname = patient_colname
           )
         
         # Add current key to list of modules created so module is not re-created

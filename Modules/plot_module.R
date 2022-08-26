@@ -71,6 +71,7 @@ plot_module_ui <- function(id,
                            meta_choices = NULL,
                            plot_label = "",
                            reductions = NULL,
+                           patient_colname = NULL,
                            # UI Elements: Included when the arguments are TRUE
                            reductions_menu =                       FALSE,
                            scatterplot_ui =                        FALSE,
@@ -100,11 +101,14 @@ plot_module_ui <- function(id,
                            group_by_include_none =                 FALSE,
                            split_by_include_none =                 TRUE,
                            # Alternate label for group_by/split_by menus
-                           group_by_label =                   NULL,
-                           split_by_label =                   NULL,
+                           group_by_label =                        NULL,
+                           split_by_label =                        NULL,
                            # Default values for group by and split by choices
                            group_by_default =                      NULL,
-                           split_by_default =                      NULL
+                           split_by_default =                      NULL,
+                           # Remove column for patient/sample level metadata 
+                           # from group by choices
+                           remove_patient_column =                 FALSE
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -162,6 +166,13 @@ plot_module_ui <- function(id,
           } else {
             meta_choices()
           }
+        
+        # Remove the metadata category used for patient- or sample- level 
+        # metadata, if the plot employs patient/sample level metadata
+        if (remove_patient_column == TRUE){
+          group_by_choices <-
+            group_by_choices[!group_by_choices %in% patient_colname()]
+        }
         
         # If TRUE, add element
         selectInput(
@@ -614,8 +625,12 @@ plot_module_ui <- function(id,
 #' startup.
 #' @param palette A palette of colors currently selected by the user, to be used
 #' on the plot.
+#' @param metadata_config The metadata section of the config file loaded in the
+#' main server function, at startup and upon changing the object.
 #' @param assay_config The assay section of the config file loaded in the main
-#' server function
+#' server function, at startup and upon changing the object.
+#' @param patient_colname The metadata column to use for computing patient- or 
+#' sample level metadata for pie charts. 
 #' @param separate_features_server A boolean giving whether server code to 
 #' process separate features (features specific to the plot created by this 
 #' module) should be ran. This should be TRUE for all plots where the user can 
@@ -635,6 +650,7 @@ plot_module_server <- function(id,
                                palette = NULL, #Reactive
                                metadata_config = NULL,
                                assay_config = NULL,
+                               patient_colname = NULL,
                                separate_features_server = FALSE #Non-reactive
                                ){
   moduleServer(id,
@@ -651,7 +667,8 @@ plot_module_server <- function(id,
                        "dot",
                        "scatter",
                        "ridge",
-                       "proportion"
+                       "proportion",
+                       "pie"
                        )
                  ){
                    showNotification(
@@ -660,7 +677,7 @@ plot_module_server <- function(id,
                          icon = "skull-crossbones",
                          # Change to feature when other 
                          # features are supported
-                         glue("Plot module for {id} has an unrecognized 
+                         glue("Plot module {id} has an unrecognized 
                               value for argument `plot_type`. This is a 
                               development error, please contact us and we will 
                               resolve the issue.")
@@ -700,9 +717,10 @@ plot_module_server <- function(id,
                    }
                  
                  # 3. Title Settings Menu --------------------------------------
-                 # Title settings and custom titles are currently only enabled 
-                 # for DimPlots and Feature Plots
-                 if (plot_type %in% c("dimplot", "feature", "proportion")){
+                 # Title settings and custom titles are enabled for the plot 
+                 # types below
+                 if (plot_type %in% 
+                     c("dimplot", "feature", "proportion", "pie")){
                    # Reactive trigger for updating single custom title input
                    update_title_single <- makeReactiveTrigger()
                    
@@ -723,7 +741,7 @@ plot_module_server <- function(id,
                        
                        # Conditional tree to determine if 
                        # custom titles are possible
-                       if (plot_type %in% c("dimplot", "proportion")){
+                       if (plot_type %in% c("dimplot", "proportion", "pie")){
                          # DimPlots: custom titles are always possible
                          # Proportion stacked bar plots use same behavior as
                          # DimPlots
@@ -822,7 +840,7 @@ plot_module_server <- function(id,
                    # selections that influence the default title change
                    observeEvent(
                      # EventExpr depends on plot type
-                     if (plot_type %in% c("dimplot", "proportion")){
+                     if (plot_type %in% c("dimplot", "proportion", "pie")){
                        c(input$title_settings,
                          object(),
                          plot_selections$group_by()
@@ -1017,8 +1035,9 @@ plot_module_server <- function(id,
                      #     )
                    }
                    
-                   ## 3.7. Custom title input to dimplots, stacked bar plots ####
-                   if (plot_type %in% c("dimplot", "proportion")){
+                   ## 3.7. Custom title input #### 
+                   # Used for dimplots, stacked bar plots, pie charts ####
+                   if (plot_type %in% c("dimplot", "proportion", "pie")){
                      plot_title <-
                        reactive({
                          # Define default title to use if a custom title is not
@@ -2339,7 +2358,10 @@ plot_module_server <- function(id,
                          }
                        )
                  } else if (plot_type == "proportion"){
-                   ### 9.2.7. Cell Type Proportion Stacked Bar Plot ####
+                   ### 9.2.7. Stacked bar plot ####
+                   # For cell type (and other metadata) proportions
+                   # Compares proportions of one cell-level metadata category
+                   # according to the levels of another category
                    plot <-
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -2364,6 +2386,33 @@ plot_module_server <- function(id,
                           palette = palette(),
                           sort_groups = plot_selections$sort_groups()
                         ) 
+                       })
+                 } else if (plot_type == "pie"){
+                   ### 9.2.8. Metadata pie chart ####
+                   # Currently used for patient/sample-level metadata, but could
+                   # also be used for cell-level metadata
+                   plot <-
+                     reactive(
+                       label = glue("{plot_label}: Create Plot"),
+                       {
+                         shiny_pie(
+                           object = object(),
+                           patient_colname = patient_colname(),
+                           group_by = plot_selections$group_by(),
+                           palette = palette(),
+                           show_legend = plot_selections$legend(),
+                           show_title =
+                             # show_title controls how NULL values for 
+                             # plot_title are interpreted (NULL will remove the 
+                             # label by default, but plot_title will be NULL if 
+                             # a label is not set in the config file (want the 
+                             # default title to be used in this case))
+                             if (input$title_settings == "none"){
+                               FALSE
+                             } else TRUE,
+                           # Plot title: from 3.7.
+                           plot_title = plot_title()
+                         )
                        })
                    }
                  
