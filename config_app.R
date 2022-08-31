@@ -238,14 +238,36 @@ metadata_tab <-
           )
         ),
       applet_main_panel(
-        # Options for Numeric metadata (Numeric metadata is currently not
-        # displayed)
-        
-        # Options for Categorical, logical metadata
-        # Create a metadata options "card" for each non-numeric metadata column
-        # in the object. Cards below are hidden and display when the
-        # corresponding metadata category is selected
         tagList(
+          # Card for generic metadata options 
+          div(
+            class = "optcard single-space-bottom",
+            tags$strong(
+              glue("General Options"),
+              class="large center"
+              ),
+            # Select metadata column to use for patient/sample level metadata
+            # analysis
+            selectInput(
+              inputId = "patient_colname",
+              label = 
+                "Patient ID column (optional, used for patient-level 
+                metadata analysis)",
+              # Can select "none" or any categorical metadata column
+              choices = c("none", non_numeric_cols),
+              selected = NULL,
+              width = "380px"
+              )
+            ),
+          
+          # Options specific to each metadata column
+          # Options for Numeric metadata (Numeric metadata is currently not
+          # displayed)
+          
+          # Options for Categorical, logical metadata
+          # Create a metadata options "card" for each non-numeric metadata 
+          # column in the object. Cards below are hidden and display when the
+          # corresponding metadata category is selected
           lapply(
             non_numeric_cols,
             function(colname){
@@ -253,14 +275,9 @@ metadata_tab <-
                 id = colname,
                 object = object,
                 optcard_type = "metadata"
-              )
+                )
             }
           ),
-          
-          # uiOutput(
-          #   outputId = "metadata_cards"
-          #   ),
-          
           # TEMP: add an additional card displaying the outputs 
           # from the metadata tab
           div(
@@ -658,7 +675,24 @@ server <- function(input, output, session) {
         input$metadata_selected
         })
   
-  ### 3.2.2. Options modules for metadata ####
+  ### 3.2.2. Generic metadata options ####
+  #### 3.2.2.1. Store selection from patient metadata column menu ####
+  patient_colname <-
+    reactive(
+      label = "Process selection for patient level metadata column",
+      {
+        req(input$patient_colname)
+        
+        # Value to record/export: NULL if "none" is selected for the patient 
+        # column name, otherwise use the column selected
+        if (input$patient_colname == "none"){
+          NULL
+        } else {
+          input$patient_colname
+        }
+      })
+  
+  ### 3.2.3. Options modules for metadata ####
   # One server instance is created for each metadata category in the object
   all_metadata_options <- list()
   
@@ -693,27 +727,42 @@ server <- function(input, output, session) {
   # 
   # })
   
-  ### 3.2.3. Store metadata options in config data ####
+  ### 3.2.4. Store metadata options in config data ####
+  #### 3.2.4.1. Category-specific options ####
+  # Stores options for each metadata category selected in the app
   config_data$metadata <- 
     reactive({
       # Options list is only processed when metadata columns have been selected
       if (!is.null(input$metadata_selected)){
         # Extracts each reactive module output and stores them in a list
-        list <- lapply(all_metadata_options, function(x) x())
+        options_list <- lapply(all_metadata_options, function(x) x())
         # Filter list for metadata columns that have been selected by the user
-        list <- list[names(list) %in% input$metadata_selected]
+        options_list <- options_list[names(options_list) %in% input$metadata_selected]
         # Sort list according to the order specified by the user in the drag
         # and drop menu
-        list <- list[input$metadata_selected]
-        return(list)
+        options_list <- options_list[input$metadata_selected]
+        return(options_list)
         } else {
           # Return NULL if no columns are selected
           return(NULL)
           }
       })
   
-  ### 3.2.4. Reactive UI components ####
-  #### 3.2.4.1. UI for sortable menu ####
+  #### 3.2.4.2. General metadata options ####
+  # Stored separately from config_data$metadata, since many functions in the 
+  # main app use the list structure defined in the above reactive expression, 
+  # and they would be disrupted if general options were added with the options
+  # specific to each category.
+  config_data$other_metadata_options <-
+    reactive({
+      list(
+        # Column to be used for patient/sample level metadata
+        `patient_colname` = patient_colname()
+      )
+    })
+  
+  ### 3.2.5. Reactive UI components ####
+  #### 3.2.5.1. UI for sortable menu ####
   # Uses the bucket_list input from the sortable package
   metadata_bucket_ui <-
     eventReactive(
@@ -750,7 +799,7 @@ server <- function(input, output, session) {
         )
         })
   
-  #### 3.2.4.2. Set order of metadata cards based on sortable input ####
+  #### 3.2.5.2. Set order of metadata cards based on sortable input ####
   observeEvent(
     c(input$metadata_selected, input$metadata_not_selected),
     label = "Metadata: set order of metadata options cards",
@@ -810,7 +859,7 @@ server <- function(input, output, session) {
       }
       })
   
-  #### 3.2.4.3 Show/hide Metadata Options Cards ####
+  #### 3.2.5.3 Show/hide Metadata Options Cards ####
   observe({
     for (colname in non_numeric_cols){
       # Show all cards that are in the "Metadata selected" column of the 
@@ -829,7 +878,7 @@ server <- function(input, output, session) {
     }
   })
   
-  #### 3.2.4.4. Render Sortable UI ####
+  #### 3.2.5.4. Render Sortable UI ####
   output$metadata_sortable_bucket <-
     renderUI({
       metadata_bucket_ui()
