@@ -5,7 +5,7 @@ datasets:
     d0_d30:
         label: Longitudinal Data
         object: ./Seurat_Objects/longitudinal_samples_20211025.rds
-        config: ./Seurat_Objects/d0-d30-config-with-thresholds-and-patient-level.rds
+        config: ./Seurat_Objects/d0-d30-config-with-thresholds-and-patient-level-corrected.rds
         description: >
             Contains 3 normal bone marrow samples, and longitudinal samples from
             6 patients with the first sample taken at time of diagnosis and the
