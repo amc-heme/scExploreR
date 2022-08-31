@@ -124,12 +124,12 @@ insertAfterjs <-
 
 # Load object #### 
 # (hard-coded for now but will soon be chosen using a file input)
-object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+object <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
 # Need a conditional to test if the loaded object is a Seurat object
 
 # Define Config file path for loading ####
 # (eventually will use file input)
-config_filename <- "./Seurat_Objects/d0-d30-config-with-thresholds.rds"
+config_filename <- "./Seurat_Objects/AML_TotalVI_config.rds"
 
 # Version of config app #### 
 # Printed in config file. Will be used to alert user if they are using a 
@@ -472,7 +472,7 @@ ui <- fluidPage(
     icon = icon("ellipsis-h"),
     downloadLink(
       outputId = "export_selections",
-      label = "Export Config File",
+      label = "Save Config File",
       class = "orange_hover"
     ),
     actionLink(
@@ -1258,13 +1258,6 @@ server <- function(input, output, session) {
           gsub("edit_", "", input$lastClickId) |> 
           as.numeric()
         
-        # print(module_data$threshold_data)
-        # print(module_data$threshold_data$adt)
-        # print("Row selected")
-        # print(row_selected)
-        # print("ADT selected")
-        # print(module_data$threshold_data$adt[row_selected])
-        
         # Determine which ADT was on the row selected
         adt_selected <- 
           module_data$threshold_data$adt[row_selected]
@@ -1310,9 +1303,6 @@ server <- function(input, output, session) {
         
         # Prevents crashing in the event the selected_row is undefined
         if (!is.null(row_selected) | is.na(row_selected)){
-          print("Delete Target")
-          print(module_data$threshold_data$adt[row_selected])
-          
           # Delete the selected row from the table and save the new table
           module_data$threshold_data <-
             module_data$threshold_data[-row_selected,]

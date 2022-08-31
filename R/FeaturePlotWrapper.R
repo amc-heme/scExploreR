@@ -550,9 +550,6 @@ MultiFeatureSimple <-
           NULL
         } 
       
-      print("Computed legend title:")
-      print(plot_legend_title)
-      
       # 4.2. Create plot 
       p <- 
         FeaturePlot(
