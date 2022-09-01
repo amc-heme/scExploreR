@@ -25,6 +25,8 @@ library(ggplot2)
 library(glue)
 library(DT)
 
+library(yaml)
+
 # Load functions in ./R directory ####
 # Get list of files
 source_files <- 
@@ -122,17 +124,17 @@ insertAfterjs <-
 
 # Load object #### 
 # (hard-coded for now but will soon be chosen using a file input)
-object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
+object <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
 # Need a conditional to test if the loaded object is a Seurat object
 
 # Define Config file path for loading ####
 # (eventually will use file input)
-config_filename <- "./Seurat_Objects/d0-d30-config-with-thresholds.rds"
+config_filename <- "./Seurat_Objects/AML_TotalVI_config.rds"
 
 # Version of config app #### 
 # Printed in config file. Will be used to alert user if they are using a 
 # config file that is not compatible with the current version of the main app
-config_version <- "0.2.0"
+config_version <- "0.3.0"
 
 # Numeric Metadata Columns
 meta_columns <- names(object@meta.data)
@@ -204,13 +206,6 @@ assay_tab <- function(){
               )
             }
           ),
-        # TEMP: add an additional card displaying the outputs from all tabs
-        div(
-          class = "optcard",
-          verbatimTextOutput(
-            outputId = "assay_options"
-            )
-        ),
         
         # Button to activate warning modal (for testing purposes)
         # actionButton(
@@ -477,7 +472,7 @@ ui <- fluidPage(
     icon = icon("ellipsis-h"),
     downloadLink(
       outputId = "export_selections",
-      label = "Export Config File",
+      label = "Save Config File",
       class = "orange_hover"
     ),
     actionLink(
@@ -658,13 +653,6 @@ server <- function(input, output, session) {
     }
   })
   
-  
-  # Temp: print assay options to screen ####
-  output$assay_options <- 
-    renderPrint({
-      config_data$assays()
-      })
-  
   ## 3.2. Metadata Panel ####
   ### 3.2.1. Record selected metadata ####
   metadata_selected <- 
@@ -733,7 +721,7 @@ server <- function(input, output, session) {
   config_data$metadata <- 
     reactive({
       # Options list is only processed when metadata columns have been selected
-      if (!is.null(input$metadata_selected)){
+      if (isTruthy(input$metadata_selected)){
         # Extracts each reactive module output and stores them in a list
         options_list <- lapply(all_metadata_options, function(x) x())
         # Filter list for metadata columns that have been selected by the user
@@ -1270,13 +1258,6 @@ server <- function(input, output, session) {
           gsub("edit_", "", input$lastClickId) |> 
           as.numeric()
         
-        # print(module_data$threshold_data)
-        # print(module_data$threshold_data$adt)
-        # print("Row selected")
-        # print(row_selected)
-        # print("ADT selected")
-        # print(module_data$threshold_data$adt[row_selected])
-        
         # Determine which ADT was on the row selected
         adt_selected <- 
           module_data$threshold_data$adt[row_selected]
@@ -1322,9 +1303,6 @@ server <- function(input, output, session) {
         
         # Prevents crashing in the event the selected_row is undefined
         if (!is.null(row_selected) | is.na(row_selected)){
-          print("Delete Target")
-          print(module_data$threshold_data$adt[row_selected])
-          
           # Delete the selected row from the table and save the new table
           module_data$threshold_data <-
             module_data$threshold_data[-row_selected,]
@@ -1348,10 +1326,10 @@ server <- function(input, output, session) {
       module_data$threshold_data
     })
   
-  ## 3.4. Config file download handler ####
+  ## 3.4. Export Config file as YAML ####
   output$export_selections <- 
     downloadHandler(
-      filename = "config.rds",
+      filename = "object-config.yaml",
       content = 
         function(file){
           # Compile config file data from the config_data list 
@@ -1370,9 +1348,9 @@ server <- function(input, output, session) {
                 }
               ) 
           
-          # Download above object as .rds 
-          saveRDS(
-            object = config_data_export,
+          # Convert R list format to YAML and download
+          write_yaml(
+            config_data_export, 
             file = file
             )
           })

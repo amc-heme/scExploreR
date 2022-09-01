@@ -651,8 +651,19 @@ server <- function(input, output, session){
     {
       path <- datasets[[selected_key()]]$config
       
-      # Load config file using defined path and set reactiveVal object
-      config(readRDS(path))
+      # Load config YAML using defined path (file is converted to an R list)
+      config_r <- read_yaml(path)
+      
+      # Convert the "adt_thresholds" section to a tibble (when converting from
+      # R to YAML, tibble formats are converted to a YAML format that generates
+      # a named list when loading back to R)
+      if (isTruthy(config_r$adt_thresholds)){
+        config_r$adt_thresholds <-
+          as.tibble(config_r$adt_thresholds)
+      }
+      
+      # Store list in the config reactiveVal object
+      config(config_r)
     })
   
   ### 1.5.2. Check version of config file ####
