@@ -12,6 +12,8 @@ library(shinyjs)
 library(shinyFeedback)
 # Sortable.JS: Creates a drag-and-drop menu
 library(sortable)
+# Shinyalert: more intuitive modals
+library(shinyalert)
 
 # Reactlog (for debugging)
 library(reactlog)

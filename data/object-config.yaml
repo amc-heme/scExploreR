@@ -1,0 +1,20 @@
+config_version: 0.3.0
+assays:
+  RNA:
+    assay: RNA
+    key: rna_
+    suffix_human: ''
+    dropdown_title: Gene
+    designated_adt: no
+metadata:
+  column_1:
+    meta_colname: column_1
+    label: First Column
+    groups: ~
+  column_2:
+    meta_colname: column_2
+    label: Second Column
+    groups: ~
+other_metadata_options:
+  patient_colname: ~
+adt_thresholds: ~
