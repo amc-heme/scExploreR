@@ -651,6 +651,13 @@ server <- function(input, output, session){
     {
       path <- datasets[[selected_key()]]$config
       
+      # Add informative error message when a non-yaml config file is loaded
+      if (!grepl("\\.yaml$", path)){
+        stop("Only .yaml config files are supported as of version v0.5.0. 
+             Existing .rds config files can be converted to .yaml files by 
+             loading them into config_app.R and then re-saving as a .yaml file.")
+      }
+      
       # Load config YAML using defined path (file is converted to an R list)
       config_r <- read_yaml(path)
       
