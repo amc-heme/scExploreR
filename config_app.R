@@ -1323,7 +1323,13 @@ server <- function(input, output, session) {
   ### 3.3.11. Record threshold table in config data ####
   config_data$adt_thresholds <-
     reactive({
-      module_data$threshold_data
+      # Store the table if it is defined and has at least one row. Otherwise, 
+      # set adt_thresholds to NULL.
+      if (isTruthy(module_data$threshold_data)){
+        if (nrow(module_data$threshold_data) > 0){
+          module_data$threshold_data
+        } else NULL
+      } else NULL
     })
   
   ## 3.4. Export Config file as YAML ####
