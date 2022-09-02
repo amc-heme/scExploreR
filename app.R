@@ -666,7 +666,7 @@ server <- function(input, output, session){
       # a named list when loading back to R)
       if (isTruthy(config_r$adt_thresholds)){
         config_r$adt_thresholds <-
-          as.tibble(config_r$adt_thresholds)
+          as_tibble(config_r$adt_thresholds)
       }
       
       # Store list in the config reactiveVal object
