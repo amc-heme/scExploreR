@@ -1,0 +1,7 @@
+/* CSS classes specific to the modals returned via shinyalert */
+.scexplorer-modal .error{
+  color: #750000;
+  font-size: 0.9em;
+  font-style: italic;
+  font-weight: 400;
+}

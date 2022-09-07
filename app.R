@@ -71,6 +71,7 @@ source_files <-
       # Pattern, any set of characters, followed by ".R"
       # Period is double escaped
       pattern = ".*\\.R", 
+      recursive = TRUE,
       full.names = TRUE, 
       ignore.case = TRUE
       )

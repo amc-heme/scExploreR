@@ -34,9 +34,10 @@ library(yaml)
 source_files <- 
   list.files(
     path = "./R", 
-    pattern="*.R$", 
-    full.names=TRUE, 
-    ignore.case=TRUE
+    pattern = "*.R$", 
+    recursive = TRUE,
+    full.names = TRUE, 
+    ignore.case = TRUE
     )
 
 # Load modules from ./Config_App_Modules
@@ -44,9 +45,9 @@ source_files <-
   c(source_files,
     list.files(
       path = "./Config_App_Modules", 
-      pattern="*.R$", 
-      full.names=TRUE, 
-      ignore.case=TRUE
+      pattern = "*.R$", 
+      full.names = TRUE, 
+      ignore.case = TRUE
       )
     )
 
@@ -478,6 +479,11 @@ ui <- fluidPage(
       class = "orange_hover"
     ),
     actionLink(
+      inputId = "file_load",
+      label = "Load Config File (FileInput)",
+      class = "orange_hover"
+    ),
+    actionLink(
       inputId = "load_config",
       label = "Load Config File",
       class = "orange_hover"
@@ -508,6 +514,208 @@ ui <- fluidPage(
 
 ## 3. Main Server Function ####
 server <- function(input, output, session) {
+  config_reactive <- reactiveVal(NULL)
+  object_reactive <- reactiveVal(NULL)
+  
+  # Spinner that displays at startup while the seurat object is being loaded
+  app_spinner <-
+    Waiter$new(
+      # When the ID is null, the waiter is applied to the 
+      # <body> element (entire app)
+      id = NULL,
+      html = 
+        tagList(
+          spin_loaders(id = 2, color = "#555588"), 
+          div(
+            class = "spinner_text",
+            "Loading Seurat object, please wait...")
+        ),
+      color = "#FFFFFF",
+      #Gives manual control of showing/hiding spinner
+      hide_on_render = FALSE
+    )
+  
+  ## 3.0. Startup Modal ####
+  # Display modal for the user to either load an existing config file from the 
+  # /data directory, or create a new file based on an object in that directory.
+  ### 3.0.1. Display modal ####
+  # Modal shown at startup
+  object_loader_modal(
+    modal_inputId = "object_modal",
+    object_path_inputId = "object_path"
+  )
+  
+  # Load object from path chosen in above modal
+  observeEvent(
+    input$object_modal,
+    label = "Load Seurat Object",
+    ignoreInit = TRUE,
+    {
+      # Construct path from selected file in modal
+      path <-
+        paste0(
+          "./data/",
+          input$object_path
+        )
+      
+      # Show a spinner while the object is loading 
+      app_spinner$show()
+      
+      object <- readRDS(path)
+      
+      # Hide spinner when complete
+      app_spinner$hide()
+      
+      # Test if the object is a Seurat object
+      if (!is.null(object)){
+        # If the object is not a Seurat object, re-open the datasets modal with
+        # an error.
+        if (!"Seurat" %in% class(object)){
+          object_loader_modal(
+            modal_inputId = "object_modal",
+            object_path_inputId = "object_path",
+            error_msg = 
+              glue("Error: {path} is not a Seurat object. Please choose a different object.")
+          )
+        }
+      } else {
+        object_loader_modal(
+          modal_inputId = "object_modal",
+          object_path_inputId = "object_path",
+          error_msg = 
+            glue("Error: no data was read from {path}.")
+        )
+      }
+      
+      # Store in reactiveVal for object
+      object_reactive(object)
+      })
+  
+  observe({
+    print("Change in object. Value:")
+    print(object_reactive())
+  })
+  
+  observe({
+    print("Selected path:")
+    print(
+      paste0(
+        "./data/",
+        input$object_path
+      )
+    )
+  })
+ 
+  
+  # observe({
+  #   print("Change in config file. Value:")
+  #   print(config_reactive())
+  # })
+  
+  ### 3.0.2. Respond to load button ####
+  
+  # Load config file based on path selected in the modal
+  # observeEvent(
+  #   input$load,
+  #   label = glue("Loading sceens: load config file"),
+  #   ignoreInit = TRUE,
+  #   ignoreNULL = TRUE,
+  #   {
+  #     config_reactive(
+  #       read_yaml(
+  #         file =
+  #           paste0(
+  #             "./data/",
+  #             input$config_path
+  #             )
+  #         )
+  #       )
+  #     
+  #     print(config_reactive())
+  #   })
+  
+  ### 3.0.3. Respond to new config button ####
+  # observeEvent(
+  #   input$new_config,
+  #   label = glue("Loading sceens: Seurat object modal"),
+  #   ignoreInit = TRUE,
+  #   ignoreNULL = TRUE,
+  #   {
+  #     print("New config")
+  #     
+  #     # Show a second modal where the user chooses an object for the 
+  #     # new config file
+  #     shinyalert(
+  #       html = TRUE,
+  #       # Modal will only close when either button is clicked
+  #       closeOnEsc = FALSE,
+  #       showCancelButton = FALSE,
+  #       showConfirmButton = FALSE,
+  #       class = "scexplorer-modal",
+  #       # Modal content (use html = TRUE to define UI instead of text)
+  #       text =
+  #         tagList(
+  #           selectInput(
+  #             inputId = "object_path",
+  #             label =
+  #               'Choose a Seurat object from the data/ directory,
+  #               or select "cancel" to load an existing config file',
+  #             choices =
+  #               list.files(
+  #                 path = "./data/",
+  #                 pattern = "*.rds$",
+  #                 ignore.case = TRUE,
+  #                 recursive = TRUE
+  #               )
+  #           ),
+  #           actionButton(
+  #             inputId = "confirm_object",
+  #             class = "button-primary float-right",
+  #             style = "margin-left: 10px;",
+  #             label = "Confirm"
+  #           ),
+  #           # Cancel button (takes user back to screen to load config file)
+  #           #### TODO ####
+  #           actionButton(
+  #             inputId = "to_config_loader",
+  #             class = "button-ghost float-right",
+  #             label = "Cancel"
+  #             )
+  #           ),
+  #       callbackR = 
+  #         function(x){print(glue("Value of modal: {x}"))}
+  #       )
+  #     })
+  
+  # Verify that the object selected is a Seurat object. If not, notify the user
+  # and re-open the object window.
+  
+  ### 3.0.4. Load object for new config file ####
+  # Load config file based on path selected in the modal
+  # observeEvent(
+  #   input$confirm_object,
+  #   label = glue("Loading sceens: load Seurat object"),
+  #   ignoreInit = TRUE,
+  #   #ignoreNULL = TRUE,
+  #   {
+  #     print("Confirm Seurat object")
+  #     
+  #     # Load object
+  #     object <-  
+  #       readRDS(
+  #         file =
+  #           paste0(
+  #             "./data/",
+  #             input$object_path
+  #             )
+  #         )
+  #     
+  #     # Store in reactiveVal for object 
+  #     object_reactive(object)
+  #     
+  #     print(object_reactive())
+  #   })
+  
   # Hide ADT Threshold Tab at startup: this is shown when the user designates
   # an assay as the surface protein assay 
   # Use jQuery selector (tab does not have an ID). Selector is based on content
@@ -1367,6 +1575,36 @@ server <- function(input, output, session) {
   ### 3.5.1 Load File ####
   # Loads a previously created config file and imports contents into app
   # storing in session$userdata makes file visible to all modules
+  observeEvent(
+    input$file_load,
+    ignoreNULL = FALSE,
+    ignoreInit = TRUE,
+    {
+      showModal(
+        session = session,
+        ui = 
+          tagList(
+            modalDialog(
+              title = "Load Config File",
+              size = "l",
+              footer = 
+                modalButton(
+                  label = "Cancel"
+                  ),
+              # Modal content
+              div(
+                fileInput(
+                  inputId = "load_config_path",
+                  label = "Load config file (accepts .rds and .yaml files)",
+                  accept = c(".rds", ".yaml"),
+                  width = "300px"
+                  )
+                )
+              )
+            )
+        )
+    })
+  
   session$userData$config <-
     eventReactive(
       input$load_config,
@@ -1386,7 +1624,7 @@ server <- function(input, output, session) {
           id = "load_config",
           session = session
         )
-        
+
         readRDS(config_filename)
       })
   

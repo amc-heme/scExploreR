@@ -1,39 +1,66 @@
 /******************************************************************************/
 /* CSS for Primary Button */
-.button-primary{
+/* Same style also applies to confirm button in modals created with shinyalert */
+.button-primary,
+.scexplorer-modal .confirm {
   background-color: var(--mid-blue);
   color: #FFFFFF;
   border-color: var(--markdown-blue);
   border-radius: var(--button-border-radius);
 }
 
-.button-primary:hover{
-  background-color: var(--mid-blue-hover);
+/* shinyAlert modal dialogs will hide the borders of buttons. border-style is
+   explicitly specified as solid to avoid this issue */
+.scexplorer-modal .confirm {
+  border-style: solid;
+  border-width: 1px;
+  /* Must override the background color for the confirm button since it is set
+   using an inline style argument when the modal is created */
+  background-color: var(--mid-blue) !important;
+  /* box-shadow attribute is also added inline. I am disabling it for now */
+  box-shadow: none !important;
+}
+
+.button-primary:hover,
+.scexplorer-modal .confirm:hover {
+  background-color: var(--mid-blue-hover) !important;
   color: #FFFFFF;
 }
 
-.button-primary:active{
-  background-color: var(--mid-blue-active);
+.button-primary:active,
+.scexplorer-modal .confirm:active {
+  background-color: var(--mid-blue-active) !important;
   color: #FFFFFF;
 }
 
 /******************************************************************************/
 /* Secondary (ghost) button */
-.button-ghost{
+.button-ghost,
+.scexplorer-modal .cancel {
   background-color: #FFFFFF;
   color: #000000;
   border-color: #000000;
   border-radius: var(--button-border-radius);
 }
 
-.button-ghost:hover{
-  border-color: #333333;
-  background-color: #E8E8E8
+/* shinyAlert modal dialogs will hide the borders of buttons. border-style is
+   explicitly specified as solid to avoid this issue */
+.scexplorer-modal .cancel {
+  border-style: solid;
+  border-width: 1px;
+  background-color: #FFFFFF !important;
 }
 
-.button-ghost:active{
+.button-ghost:hover,
+.scexplorer-modal .cancel:hover {
+  border-color: #333333;
+  background-color: #E8E8E8 !important;
+}
+
+.button-ghost:active,
+.scexplorer-modal .cancel:active {
   border-color: #4444444;
-  background-color: #E1E1E1
+  background-color: #E1E1E1 !important;
 }
 
 /******************************************************************************/
