@@ -21,3 +21,5 @@ corr_table_full_sparse.csv
 *.rds
 big_corr_table.rds
 Test_Document*
+data/*.yaml
+!data/object-config.yaml
