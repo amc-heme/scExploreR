@@ -9,7 +9,7 @@
 #' @param config a reactiveVal object for storing the contents of a loaded 
 #' config file.
 #'
-object_loader_modal <-
+shinyalert_object_loader_modal <-
   function(
     modal_inputId,
     object_path_inputId,

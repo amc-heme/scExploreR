@@ -539,18 +539,23 @@ server <- function(input, output, session) {
   # Display modal for the user to either load an existing config file from the 
   # /data directory, or create a new file based on an object in that directory.
   ### 3.0.1. Display modal ####
-  # Modal shown at startup
-  object_loader_modal(
-    modal_inputId = "object_modal",
-    object_path_inputId = "object_path"
-  )
+  # Modal shown at startup  
+  showModal(
+    object_loader_modal(
+      object_path_inputId = "object_path",
+      action_button_inputId = "object_modal_load"
+      )
+    )
   
   # Load object from path chosen in above modal
   observeEvent(
-    input$object_modal,
+    input$object_modal_load,
     label = "Load Seurat Object",
     ignoreInit = TRUE,
-    {
+    { 
+      # Remove modal when the load button is pressed
+      removeModal()
+      
       # Construct path from selected file in modal
       path <-
         paste0(
@@ -571,21 +576,26 @@ server <- function(input, output, session) {
         # If the object is not a Seurat object, re-open the datasets modal with
         # an error.
         if (!"Seurat" %in% class(object)){
-          object_loader_modal(
-            modal_inputId = "object_modal",
-            object_path_inputId = "object_path",
-            error_msg = 
-              glue("Error: {path} is not a Seurat object. Please choose a different object.")
+          showModal(
+            object_loader_modal(
+              object_path_inputId = "object_path",
+              action_button_inputId = "object_modal_load",
+              error_msg = 
+                glue("Error: {path} is not a Seurat object. Please choose a 
+                     different object.")
+            )
           )
         }
       } else {
-        object_loader_modal(
-          modal_inputId = "object_modal",
-          object_path_inputId = "object_path",
-          error_msg = 
-            glue("Error: no data was read from {path}.")
-        )
-      }
+        showModal(
+          object_loader_modal(
+            object_path_inputId = "object_path",
+            action_button_inputId = "object_modal_load",
+            error_msg = 
+              glue("Error: no data was read from {path}.")
+            )
+          )
+        }
       
       # Store in reactiveVal for object
       object_reactive(object)
@@ -789,11 +799,11 @@ server <- function(input, output, session) {
     # <<- is required for all_assay_options to be accessible to other server
     # code (not sure why)
     all_assay_options <<- list()
-    
-    # Create an assay options module for each assay in the object 
+
+    # Create an assay options module for each assay in the object
     for (id in names(object@assays)){
       # Must also use <<- here
-      all_assay_options[[id]] <<- 
+      all_assay_options[[id]] <<-
         options_server(
           id = id,
           object = object,
@@ -1005,49 +1015,49 @@ server <- function(input, output, session) {
     ignoreInit = TRUE,
     {
       print("Rearrange metadata options cards")
-      
+
       # Guide vector for ordering the metadata options cards
-      # Lists the metadata included by the user in the order defined in the 
-      # sortable, followed by all other categories (the corresponding cards 
-      # will be invisible, but they should be sorted after the included 
+      # Lists the metadata included by the user in the order defined in the
+      # sortable, followed by all other categories (the corresponding cards
+      # will be invisible, but they should be sorted after the included
       # metadata categories)
       metadata_categories_order <-
         c(input$metadata_selected, input$metadata_not_selected)
-      
+
       for (i in 1:length(metadata_categories_order)){
         if (i == 1){
-          # First element is left as-is 
+          # First element is left as-is
           next
         } else if (i == 2) {
           # Second element: move after first element
-          
+
           # First element (destination, second element will be inserted after
           # this element)
           destination_column <- metadata_categories_order[1]
           # ID of the first options card, which is passed to the JavaScript
           # function
           destination_id <- glue("{destination_column}-optcard")
-          
+
           # Second element (target)
           elem_column <- metadata_categories_order[i]
           elem_id <- glue("{elem_column}-optcard")
-          
+
           # Custom JavaScript function to move options card
           js$insertElemAfter(
             elem_id = elem_id,
             destination_id = destination_id
           )
-          
+
         } else {
           # All subsequent elements: move after the previous element
           # ID of previous card (destination of move)
           destination_column <- metadata_categories_order[i - 1]
           destination_id <- glue("{destination_column}-optcard")
-          
+
           # ID of current card (element to be moved)
           elem_column <- metadata_categories_order[i]
           elem_id <- glue("{elem_column}-optcard")
-          
+
           # Custom JavaScript function to move options card
           js$insertElemAfter(
             elem_id = elem_id,
@@ -1675,11 +1685,6 @@ server <- function(input, output, session) {
       module_data$threshold_data <-
         session$userData$config()$adt_thresholds
     })
-  
-  warning_modal_server(
-    id = "warning",
-    reactive_trigger = reactive({input$warning_modal})
-  )
   
   #### TEMP: Observers for Debugging ####
   # config_file_load <- eventReactive(

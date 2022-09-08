@@ -25,7 +25,7 @@ h2, h3 {
 
 /* Text CSS Classes */
 /* Center Header Tags */
-.center{
+.center {
   text-align: center;
   /* Display must be set to block for centering to work */
   display: block;
@@ -47,7 +47,7 @@ h2, h3 {
 }
 
 /* Extra-large font */
-.x-large{
+.x-large {
   font-size: 1.3em;
 }
 
@@ -63,12 +63,12 @@ h2, h3 {
 
 
 /* Spacing before element */
-.space-top{
+.space-top {
   margin-top: 0.5em;
 }
 
 /* Spacing after element */
-.half-space-bottom{
+.half-space-bottom {
   margin-bottom: 0.5em;
 }
 

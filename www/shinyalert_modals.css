@@ -5,3 +5,29 @@
   font-style: italic;
   font-weight: 400;
 }
+
+/* Class for error message displayed in modal */
+.error{
+  color: #750000;
+  font-size: 0.9em;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.scexplorer-modal-content {
+  /* CSS attributes set in shinyjs sweetalert modals*/
+  /*background-color: #fff;
+  font-family: 'Open Sans','Helvetica Neue',Helvetica,Arial,sans-serif;
+  width: 478px;
+  padding: 17px;
+  border-radius: 5px;
+  text-align: center;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  margin-left: -256px;
+  margin-top: -200px;
+  overflow: hidden;
+  display: none;
+  z-index: 99999; */
+}
