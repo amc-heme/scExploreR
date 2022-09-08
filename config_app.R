@@ -602,7 +602,29 @@ server <- function(input, output, session) {
         )
     })
   
-  ### 3.0.4. Load Object after modal is closed ####
+  ### 3.0.4. Cancel for object modal ####
+  # Returns user to the config file loader modal
+  observeEvent(
+    input$object_load_cancel,
+    label = "Modal to Load Object",
+    ignoreInit = TRUE,
+    {
+      # Remove the modal for loading the config file, then replace with a
+      # modal to choose the object for a new config file
+      removeModal()
+      
+      showModal(
+        config_loader_modal(
+          primaryId = "config_load_confirm",
+          ghostId = "config_load_cancel",
+          configPathId = "config_path"
+        )
+      )
+    })
+  
+  
+  
+  ### 3.0.5. Load Object after modal is closed ####
   observeEvent(
     input$object_load_confirm,
     label = "Load Seurat Object",
