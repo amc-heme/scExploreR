@@ -7,11 +7,13 @@
 #' @param config a reactiveVal object for storing the contents of a loaded 
 #' config file.
 #'
-config_loader_modal <- 
+shinyalert_config_loader_modal <- 
   function(
     object,
     config
   ){
+    
+    
     shinyalert(
       html = TRUE,
       # Modal will only close when either button is clicked

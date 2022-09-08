@@ -12,25 +12,34 @@
 object_loader_modal <-
   function(
     #modal_inputId,
-    object_path_inputId,
-    action_button_inputId,
+    primaryId,
+    ghostId,
+    objectPathId,
     error_msg = ""
     # object,
     # config
     ){
     modalDialog(
+      title = "Create New Config File",
       footer = 
-        actionButton(
-          inputId = action_button_inputId,
-          label = "Load",
-          class = "button-primary"
+        tagList(
+          actionButton(
+            inputId = ghostId,
+            label = "Cancel",
+            class = "button-ghost"
+          ),
+          actionButton(
+            inputId = primaryId,
+            label = "Load",
+            class = "button-primary"
+          )
         ),
       size = "l",
       # Modal content
       div(
         class = "scexplorer-modal-content",
         selectInput(
-          inputId = object_path_inputId,
+          inputId = objectPathId,
           label =
             'Choose a Seurat object from the data/ directory.',
           choices =
