@@ -104,6 +104,31 @@
   padding: 5px 7px;
 }
 
+/* Buttons in initial screen in config app */
+/* Button should take up most of the space in the modal */
+.welcome-screen-button {
+  width: 80%;
+}
+
+/* Adds extra space to sides of buttons */
+button.extra-space {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* Vertical buttons: applied to division element containing buttons. Makes the
+   buttons display vertically and centered, instead of displaying inline */
+.vertical-button-group button {
+  /* Uses block display instead of inline for vertical arrangement */
+  display: block;
+  /* centers the buttons */
+  margin-left: auto;
+  margin-right: auto;
+  /* Adds space between buttons */
+  margin-bottom: 10px;
+  margin-top: 10px;
+}
+
 /******************************************************************************/
 /* Buttons on top of plot outputs */
 /* The class below should be applied to a div element that contains both the
@@ -219,10 +244,13 @@
   min-width: 220px;
 }
 
-/* CSS properties for links. These are default for links in the dropdown menu
-   that are not wrapped in the introBox()*/
+/******************************************************************************/
+
+/* CSS properties for links */
+/* These are default for links in the dropdown menu that are not wrapped in
+   the introBox() */
 /* (Default styles apply to the hierarchy dropdown-menu>li>a, but not to
-   dropdown-menu>li>div>a (introBox adds div tag))*/
+   dropdown-menu>li>div>a (introBox adds div tag)) */
 /* The blue_hover class must be added to apply style of neighboring links to
    links wrapped in introBox() */
 .blue_hover {

@@ -541,19 +541,37 @@ server <- function(input, output, session) {
   ### 3.0.1. Display modal ####
   # Modal shown at startup  
   showModal(
-    # object_loader_modal(
-    #   object_path_inputId = "object_path",
-    #   action_button_inputId = "object_modal_load"
-    #   )
-    
-    config_loader_modal(
-      primaryId = "config_load_confirm",
-      ghostId = "config_load_cancel",
-      configPathId = "config_path"
+    config_start_modal(
+      createId = "goto_object_load",
+      loadId = "goto_config_load"
       )
-    )
+    
+    # config_loader_modal(
+    #   primaryId = "config_load_confirm",
+    #   ghostId = "config_load_cancel",
+    #   configPathId = "config_path"
+    #   )
+  )
   
-  ### 3.0.2. Load Config File ####
+  ### 3.0.2. Load Config Modal ####
+  observeEvent(
+    input$goto_config_load,
+    label = "Modal to Load Config File",
+    ignoreInit = TRUE,
+    {
+      # Remove startup modal and show modal to load config file
+      removeModal()
+      
+      showModal(
+        config_loader_modal(
+          primaryId = "config_load_confirm",
+          ghostId = "config_load_cancel",
+          configPathId = "config_path"
+          ) 
+        )
+      })
+  
+  ### 3.0.2.A. Load Config File ####
   # Loads file or returns modal with error message
   observeEvent(
     input$config_load_confirm,
@@ -568,7 +586,7 @@ server <- function(input, output, session) {
         paste0(
           "./data/",
           input$config_path
-        )
+          )
       
       # Show a spinner while the object is loading 
       app_spinner$show()
@@ -583,14 +601,31 @@ server <- function(input, output, session) {
       config_reactive(config)
     })
   
-  ### 3.0.3. New config - modal to load object ####
+  ### 3.0.3.B. Load config - cancel button ####
+  # Returns user to the startup modal
   observeEvent(
     input$config_load_cancel,
     label = "Modal to Load Object",
     ignoreInit = TRUE,
     {
-      # Remove the modal for loading the config file, then replace with a
-      # modal to choose the object for a new config file
+      # Remove the modal for loading the config file, then return to the modal 
+      removeModal()
+      
+      showModal(
+        config_start_modal(
+          createId = "goto_object_load",
+          loadId = "goto_config_load"
+        )
+      )
+    })
+  
+  ### 3.0.3. New config modal ####
+  observeEvent(
+    input$goto_object_load,
+    label = "Modal to Create Config File",
+    ignoreInit = TRUE,
+    {
+      # Remove startup modal and show modal to load object for new config file
       removeModal()
       
       showModal(
@@ -602,29 +637,7 @@ server <- function(input, output, session) {
         )
     })
   
-  ### 3.0.4. Cancel for object modal ####
-  # Returns user to the config file loader modal
-  observeEvent(
-    input$object_load_cancel,
-    label = "Modal to Load Object",
-    ignoreInit = TRUE,
-    {
-      # Remove the modal for loading the config file, then replace with a
-      # modal to choose the object for a new config file
-      removeModal()
-      
-      showModal(
-        config_loader_modal(
-          primaryId = "config_load_confirm",
-          ghostId = "config_load_cancel",
-          configPathId = "config_path"
-        )
-      )
-    })
-  
-  
-  
-  ### 3.0.5. Load Object after modal is closed ####
+  ### 3.0.3.A. Load Object after modal is closed ####
   observeEvent(
     input$object_load_confirm,
     label = "Load Seurat Object",
@@ -638,7 +651,7 @@ server <- function(input, output, session) {
         paste0(
           "./data/",
           input$object_path
-        )
+          )
       
       # Show a spinner while the object is loading 
       app_spinner$show()
@@ -650,8 +663,8 @@ server <- function(input, output, session) {
       
       # Test if the object is a Seurat object
       if (!is.null(object)){
-        # If the object is not a Seurat object, re-open the datasets modal with
-        # an error.
+        # If the object is not a Seurat object, re-open the datasets modal
+        # with an error.
         if (!"Seurat" %in% class(object)){
           showModal(
             object_loader_modal(
@@ -659,8 +672,8 @@ server <- function(input, output, session) {
               ghostId = "object_load_cancel",
               objectPathId = "object_path",
               error_msg = 
-                glue("Error: {path} is not a Seurat object. Please choose a 
-                     different object.")
+                glue("Error: {path} is not a Seurat object. Please 
+                      choose a different object.")
             )
           )
         }
@@ -680,21 +693,30 @@ server <- function(input, output, session) {
       object_reactive(object)
       })
   
+  ### 3.0.3.B. Cancel button for load object modal ####
+  # Returns user to the startup modal
+  observeEvent(
+    input$object_load_cancel,
+    label = "Modal to Load Object",
+    ignoreInit = TRUE,
+    {
+      # Remove the modal for loading the config file, then replace with a
+      # modal to choose the object for a new config file
+      removeModal()
+      
+      showModal(
+        config_start_modal(
+          createId = "goto_object_load",
+          loadId = "goto_config_load"
+        )
+      )
+    })
+ 
   observe({
     print("Change in object. Value:")
     print(object_reactive())
   })
   
-  observe({
-    print("Selected path:")
-    print(
-      paste0(
-        "./data/",
-        input$object_path
-      )
-    )
-  })
- 
   observe({
     print("Change in config file. Value:")
     print(config_reactive())

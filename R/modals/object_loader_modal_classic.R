@@ -26,12 +26,12 @@ object_loader_modal <-
           actionButton(
             inputId = ghostId,
             label = "Cancel",
-            class = "button-ghost"
+            class = "button-ghost extra-space"
           ),
           actionButton(
             inputId = primaryId,
             label = "Load",
-            class = "button-primary"
+            class = "button-primary extra-space"
           )
         ),
       size = "l",
@@ -41,7 +41,8 @@ object_loader_modal <-
         selectInput(
           inputId = objectPathId,
           label =
-            'Choose a Seurat object from the data/ directory.',
+            'Choose a Seurat object from the data/ directory. The object will 
+             be used as the basis for the new config file.',
           choices =
             list.files(
               path = "./data/",
@@ -60,65 +61,4 @@ object_loader_modal <-
         }
       )
     )
-    
-    
-    
-    # shinyalert(
-    #   inputId = modal_inputId,
-    #   html = TRUE,
-    #   # Modal will only close when either button is clicked
-    #   closeOnEsc = FALSE,
-    #   showCancelButton = FALSE,
-    #   #cancelButtonText = "Cancel",
-    #   showConfirmButton = TRUE,
-    #   confirmButtonText = "Confirm",
-    #   class = "scexplorer-modal",
-    #   # Modal content (use html = TRUE to define UI instead of text)
-    #   text =
-    #     tagList(
-    #       selectInput(
-    #         inputId = object_path_inputId,
-    #         label =
-    #           'Choose a Seurat object from the data/ directory.',
-    #         choices =
-    #           list.files(
-    #             path = "./data/",
-    #             pattern = "*.rds$",
-    #             ignore.case = TRUE,
-    #             recursive = TRUE
-    #           )
-    #       ),
-    #       # If an error message is specified, display it underneath the
-    #       # selection window.
-    #       if (isTruthy(error_msg)){
-    #         tags$p(
-    #           class = "error",
-    #           error_msg
-    #         )
-    #       }
-    #     )
-    
-      # callbackR = 
-      #   function(value){
-      #     if (value == TRUE){
-      #       # Load object
-      #       object <-  
-      #         readRDS(
-      #           file =
-      #             paste0(
-      #               "./data/",
-      #               input$object_path
-      #             )
-      #         )
-      #       
-      #       # Store in reactiveVal for object 
-      #       object(object)
-      #     } else {
-      #       config_loader_modal(
-      #         object = object,
-      #         config = config
-      #       )
-      #     }
-      #   }
-    #)
   }

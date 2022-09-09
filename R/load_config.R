@@ -1,3 +1,5 @@
+library(yaml)
+
 #' Load config file from YAML
 #'
 #' Loads an scExploreR object-specific .yaml config file and converts all

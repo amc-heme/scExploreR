@@ -1,9 +1,8 @@
-/* CSS classes specific to the modals returned via shinyalert */
-.scexplorer-modal .error{
-  color: #750000;
-  font-size: 0.9em;
-  font-style: italic;
-  font-weight: 400;
+/* CSS classes specific to modals */
+/* Make shiny inputs cover the full width of the modal */
+.scexplorer-modal-content .shiny-input-container {
+  width: 100%;
+  /*padding-left: 10px;*/
 }
 
 /* Class for error message displayed in modal */
