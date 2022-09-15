@@ -22,3 +22,4 @@ corr_table_full_sparse.csv
 Test_Document*
 data/*.yaml
 !data/object-config.yaml
+!data/object-config-example.yaml
