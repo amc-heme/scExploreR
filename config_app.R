@@ -17,7 +17,10 @@ library(shinyalert)
 
 # Reactlog (for debugging)
 library(reactlog)
-options(shiny.reactlog=TRUE)
+options(
+  shiny.reactlog=TRUE, 
+  shiny.fullstacktrace = TRUE
+  )
 
 # Tidyverse Packages
 library(tidyverse)
@@ -139,7 +142,7 @@ config_filename <- "./Seurat_Objects/AML_TotalVI_config.rds"
 # config file that is not compatible with the current version of the main app
 config_version <- "0.3.0"
 
-# Numeric Metadata Columns
+# Metadata Columns in object
 meta_columns <- names(object@meta.data)
 
 # is_numeric: a vector of boolean values used to subset meta_columns for 
@@ -159,7 +162,8 @@ non_numeric_cols <- meta_columns[!is_numeric]
 ## 1. Tabs in Main UI ####
 ## 1.1. Assays Tab #### 
 # (not the assay options module)
-assay_tab <- function(){
+assay_tab <- 
+  function(){
   sidebarLayout(
     applet_sidebar_panel(
       # input-no-margin class: removes margin of input containers within div
@@ -263,7 +267,7 @@ metadata_tab <-
           # displayed)
           
           # Options for Categorical, logical metadata
-          # Create a metadata options "card" for each non-numeric metadata 
+          # Create a metadata options "card" for each non-numeric metadata 
           # column in the object. Cards below are hidden and display when the
           # corresponding metadata category is selected
           lapply(
@@ -415,17 +419,22 @@ ui <- fluidPage(
     id = "navbar",
     #Tabs are displayed below
     tabPanel(
-      title="Assays",
-      assay_tab()
+      title = "Assays",
+      uiOutput(
+        outputId = "assays_tab_ui"
+        )
+      #assay_tab()
       ),
-    tabPanel(
-      title = "Metadata",
-      metadata_tab()
-      ),
+    # tabPanel(
+    #   title = "Metadata",
+    #   metadata_tab()
+    #   ),
     tabPanel(
       title = "ADT Threshold",
-      threshold_tab()
-    )
+      # Placeholder container
+      div()
+      #threshold_tab()
+      )
     ),
   
   # Elements below will be moved to the navbar using JavaScript
@@ -517,7 +526,7 @@ server <- function(input, output, session) {
   config_reactive <- reactiveVal(NULL)
   object_reactive <- reactiveVal(NULL)
   
-  # Spinner that displays at startup while the seurat object is being loaded
+  # Spinner that displays at startup while the Seurat object is being loaded
   app_spinner <-
     Waiter$new(
       # When the ID is null, the waiter is applied to the 
@@ -528,8 +537,9 @@ server <- function(input, output, session) {
           spin_loaders(id = 2, color = "#555588"), 
           div(
             class = "spinner_text",
-            "Loading Seurat object, please wait...")
-        ),
+            "Loading Seurat object, please wait..."
+            )
+          ),
       color = "#FFFFFF",
       #Gives manual control of showing/hiding spinner
       hide_on_render = FALSE
@@ -778,909 +788,1003 @@ server <- function(input, output, session) {
   # Index of row being edited
   editing_data$target_row <- NULL
   
-  ## 3.1. Assay Panel ####
-  ### 3.1.1. Store selected assays as a reactive variable ####
-  assays_selected <- 
+  ## 3.1. Object Data ####
+  # Stores the names of the metadata columns in the object, along with the 
+  # columns that are numeric and non-numeric
+  object_data <-
     eventReactive(
-      input$assays_selected,
-      ignoreNULL=FALSE,
+      object_reactive(),
+      ignoreNULL = TRUE,
       {
-        input$assays_selected
-        })
-  
-  ### 3.1.2. Create module server instances for each possible assay ####
-  # Observe is used to reactively update outputs when inputs in the module and
-  # its sub-modules are changed
-  observe({
-    # <<- is required for all_assay_options to be accessible to other server
-    # code (not sure why)
-    all_assay_options <<- list()
-
-    # Create an assay options module for each assay in the object
-    for (id in names(object@assays)){
-      # Must also use <<- here
-      all_assay_options[[id]] <<-
-        options_server(
-          id = id,
-          object = object,
-          categories_selected = assays_selected,
-          options_type = "assays"
-        )
-      }
-    })
-  
-  ### 3.1.3. Process list of assay module outputs #### 
-  # Filter list of options module outputs and combine into a single 
-  # reactive object, which is added to the config_data list. 
-  config_data$assays <- 
-    reactive({
-      #Options list is only processed when metadata columns have been selected
-      if (!is.null(input$assays_selected)){
-        #Extracts each reactive module output and stores them in a list
-        list <- lapply(all_assay_options, function(x) x())
-        #Filter list for metadata columns that have been selected by the user
-        return(list[names(list) %in% input$assays_selected])
-        } else {
-          #Return NULL if no columns are selected
-          return(NULL)
-          }
-      })
-  
-  ### 3.1.4. Determine designated ADT assay ####
-  ADT_assay <-
-    reactive({
-      # Get TRUE/FALSE values for whether each assay is an ADT assay
-      is_adt <-
-        sapply(
-          config_data$assays(),
-          function(x){
-            x$designated_adt
-            }
-          )
-      
-      # Return the name of the assay designated as the ADT assay
-      if (any(is_adt == TRUE)){
+        # Metadata Columns in object
+        meta_columns <- names(object_reactive()@meta.data)
+        
+        # Numeric and non-numeric metadata columns
+        # is_numeric: a vector of boolean values used to subset meta_columns for 
+        # numeric metadata
+        is_numeric <- 
+          sapply(
+            meta_columns,
+            function(x, object){
+              class(object@meta.data[[x]]) %in% c("numeric", "integer")
+            },
+            object_reactive()
+            )
+        
+        numeric_cols <- meta_columns[is_numeric]
+        non_numeric_cols <- meta_columns[!is_numeric]
+        
         return(
-          names(
-            is_adt[is_adt == TRUE]
+          list(
+            `meta_columns` = meta_columns,
+            `numeric_cols` = numeric_cols,
+            `non_numeric_cols` = non_numeric_cols
             )
           )
-      } else {
-        # If none are designated, return NULL.
-        return(
-          NULL
-          )
-      }
-    })
+        })
   
-  ### 3.1.5. Show/Hide ADT thresholding tab ####
-  observe({
-    # When an assay is designated as the ADT assay, show the corresponding tab
-    if (!is.null(ADT_assay())){
-      showElement(
-        # ADT_tab_selector is defined at the beginning of the server function
-        selector = ADT_tab_selector
-      )
-    } else {
-      # Hide the tab if there is no designated ADT assay
-      hideElement(
-        selector = ADT_tab_selector
-      )
-    }
-  })
+  ## 3.2. Assay Panel ####
+          # ### 3.2.1. UI ####
+          # assay_tab_ui <-
+          #   eventReactive(
+          #     object_reactive(),
+          #     ignoreNULL = FALSE,
+          #     ignoreInit = TRUE,
+          #     {
+          #       print("Create assays tab UI")
+          #       assays_tab_ui(
+          #         id = "assays",
+          #         object = object_reactive()
+          #         )
+          #       })
+          # 
+          # output$assay_tab_ui <-
+          #   renderUI({
+          #       assay_tab_ui()
+          #     })
+          # 
+  ### 3.2.2. Server ####
+  assays_tab_server(
+    id = "assays",
+    object = object_reactive,
+    ADT_tab_selector = ADT_tab_selector
+  )
+  
+  ### 3.2.0. Render UI for assays tab based on object ####
+  assays_tab_ui <-
+    eventReactive(
+      object_reactive(),
+      ignoreNULL = TRUE,
+      ignoreInit = TRUE,
+      {
+        assays_tab_module_ui(
+                  id = "assays",
+                  object = object_reactive()
+                  )
+        })
+  
+  output$assays_tab_ui <-
+    renderUI(
+      assays_tab_ui()
+    )
+  
+  ### 3.2.1. Store selected assays as a reactive variable ####
+  # assays_selected <-
+  #   eventReactive(
+  #     input$assays_selected,
+  #     ignoreNULL = FALSE,
+  #     {
+  #       input$assays_selected
+  #       })
+  # 
+  # ### 3.2.2. Create module server instances for each possible assay ####
+  # # Observe is used to reactively update outputs when inputs in the module and
+  # # its sub-modules are changed
+  # observe({
+  #   req(object_reactive())
+  # 
+  #   # <<- is required for all_assay_options to be accessible to other server
+  #   # code (not sure why)
+  #   all_assay_options <<- list()
+  # 
+  #   # Create an assay options module for each assay in the object
+  #   for (id in names(object_reactive()@assays)){
+  #     # Must also use <<- here
+  #     all_assay_options[[id]] <<-
+  #       options_server(
+  #         id = id,
+  #         object = object_reactive,
+  #         categories_selected = assays_selected,
+  #         options_type = "assays"
+  #       )
+  #     }
+  #   })
+  # 
+  # ### 3.2.3. Process list of assay module outputs ####
+  # # Filter list of options module outputs and combine into a single
+  # # reactive object, which is added to the config_data list.
+  # config_data$assays <-
+  #   reactive({
+  #     req(object_reactive())
+  #     
+  #     #Options list is only processed when metadata columns have been selected
+  #     if (!is.null(input$assays_selected)){
+  #       #Extracts each reactive module output and stores them in a list
+  #       list <- 
+  #         lapply(
+  #           all_assay_options, 
+  #           function(x){
+  #             print("lapply extraction")
+  #             x()
+  #             }
+  #           )
+  #       #Filter list for metadata columns that have been selected by the user
+  #       return(list[names(list) %in% input$assays_selected])
+  #       } else {
+  #         #Return NULL if no columns are selected
+  #         return(NULL)
+  #         }
+  #     })
+  # 
+  # ### 3.2.4. Determine designated ADT assay ####
+  # ADT_assay <-
+  #   reactive({
+  #     req(object_reactive())
+  #     
+  #     # Get TRUE/FALSE values for whether each assay is an ADT assay
+  #     is_adt <-
+  #       sapply(
+  #         config_data$assays(),
+  #         function(x){
+  #           x$designated_adt
+  #           }
+  #         )
+  # 
+  #     # Return the name of the assay designated as the ADT assay
+  #     if (any(is_adt == TRUE)){
+  #       return(
+  #         names(
+  #           is_adt[is_adt == TRUE]
+  #           )
+  #         )
+  #     } else {
+  #       # If none are designated, return NULL.
+  #       return(
+  #         NULL
+  #         )
+  #     }
+  #   })
+  # 
+  # ### 3.2.5. Show/Hide ADT thresholding tab ####
+  # observe({
+  #   req(object_reactive())
+  #   
+  #   # When an assay is designated as the ADT assay, show the corresponding tab
+  #   if (!is.null(ADT_assay())){
+  #     showElement(
+  #       # ADT_tab_selector is defined at the beginning of the server function
+  #       selector = ADT_tab_selector
+  #     )
+  #   } else {
+  #     # Hide the tab if there is no designated ADT assay
+  #     hideElement(
+  #       selector = ADT_tab_selector
+  #     )
+  #   }
+  # })
   
   ## 3.2. Metadata Panel ####
   ### 3.2.1. Record selected metadata ####
-  metadata_selected <- 
-    eventReactive(
-      input$metadata_selected,
-      ignoreNULL = FALSE,
-      {
-        input$metadata_selected
-        })
-  
-  ### 3.2.2. Generic metadata options ####
-  #### 3.2.2.1. Store selection from patient metadata column menu ####
-  patient_colname <-
-    reactive(
-      label = "Process selection for patient level metadata column",
-      {
-        req(input$patient_colname)
-        
-        # Value to record/export: NULL if "none" is selected for the patient 
-        # column name, otherwise use the column selected
-        if (input$patient_colname == "none"){
-          NULL
-        } else {
-          input$patient_colname
-        }
-      })
-  
-  ### 3.2.3. Options modules for metadata ####
-  # One server instance is created for each metadata category in the object
-  all_metadata_options <- list()
-  
-  for (id in names(object@meta.data)){
-    server_output <- 
-      options_server(
-        id = id,
-        object = object,
-        categories_selected = metadata_selected,
-        options_type = "metadata"
-        )
-    
-    all_metadata_options[[id]] <- server_output
-  }
-  
-  # observe({
-  #   # <<- is required for all_metadata_options to be accessible to other server
-  #   # code (variables defined within observers are defined in the local 
-  #   # environment of the observer by default, unless superassignment (<<-) 
-  #   # is used
-  #   all_metadata_options <<- list()
+  # metadata_selected <- 
+  #   eventReactive(
+  #     input$metadata_selected,
+  #     ignoreNULL = FALSE,
+  #     {
+  #       input$metadata_selected
+  #       })
+  # 
+  # ### 3.2.2. Generic metadata options ####
+  # #### 3.2.2.1. Store selection from patient metadata column menu ####
+  # patient_colname <-
+  #   reactive(
+  #     label = "Process selection for patient level metadata column",
+  #     {
+  #       req(input$patient_colname)
+  #       
+  #       # Value to record/export: NULL if "none" is selected for the patient 
+  #       # column name, otherwise use the column selected
+  #       if (input$patient_colname == "none"){
+  #         NULL
+  #       } else {
+  #         input$patient_colname
+  #       }
+  #     })
+  # 
+  # ### 3.2.3. Options modules for metadata ####
+  # # One server instance is created for each metadata category in the object
+  # all_metadata_options <- list()
+  # 
+  # for (id in names(object@meta.data)){
+  #   server_output <- 
+  #     options_server(
+  #       id = id,
+  #       object = object,
+  #       categories_selected = metadata_selected,
+  #       options_type = "metadata"
+  #       )
   #   
-  #   for (id in names(object@meta.data)){
-  #     all_metadata_options[[id]] <<- 
-  #       options_server(
-  #         id = id,
-  #         object = object,
-  #         categories_selected = metadata_selected,
-  #         options_type = "metadata"
+  #   all_metadata_options[[id]] <- server_output
+  # }
+  # 
+  # # observe({
+  # #   # <<- is required for all_metadata_options to be accessible to other server
+  # #   # code (variables defined within observers are defined in the local 
+  # #   # environment of the observer by default, unless superassignment (<<-) 
+  # #   # is used
+  # #   all_metadata_options <<- list()
+  # #   
+  # #   for (id in names(object@meta.data)){
+  # #     all_metadata_options[[id]] <<- 
+  # #       options_server(
+  # #         id = id,
+  # #         object = object,
+  # #         categories_selected = metadata_selected,
+  # #         options_type = "metadata"
+  # #       )
+  # #     }
+  # # 
+  # # })
+  # 
+  # ### 3.2.4. Store metadata options in config data ####
+  # #### 3.2.4.1. Category-specific options ####
+  # # Stores options for each metadata category selected in the app
+  # config_data$metadata <- 
+  #   reactive({
+  #     # Options list is only processed when metadata columns have been selected
+  #     if (isTruthy(input$metadata_selected)){
+  #       # Extracts each reactive module output and stores them in a list
+  #       options_list <- lapply(all_metadata_options, function(x) x())
+  #       # Filter list for metadata columns that have been selected by the user
+  #       options_list <- options_list[names(options_list) %in% input$metadata_selected]
+  #       # Sort list according to the order specified by the user in the drag
+  #       # and drop menu
+  #       options_list <- options_list[input$metadata_selected]
+  #       return(options_list)
+  #       } else {
+  #         # Return NULL if no columns are selected
+  #         return(NULL)
+  #         }
+  #     })
+  # 
+  # #### 3.2.4.2. General metadata options ####
+  # # Stored separately from config_data$metadata, since many functions in the 
+  # # main app use the list structure defined in the above reactive expression, 
+  # # and they would be disrupted if general options were added with the options
+  # # specific to each category.
+  # config_data$other_metadata_options <-
+  #   reactive({
+  #     list(
+  #       # Column to be used for patient/sample level metadata
+  #       `patient_colname` = patient_colname()
+  #     )
+  #   })
+  # 
+  # ### 3.2.5. Reactive UI components ####
+  # #### 3.2.5.1. UI for sortable menu ####
+  # # Uses the bucket_list input from the sortable package
+  # metadata_bucket_ui <-
+  #   eventReactive(
+  #     c(module_data$metadata_sortable_not_selected,
+  #       module_data$metadata_sortable_selected),
+  #     label = "Metadata: define sortable",
+  #     {
+  #       tagList(
+  #         tags$b("Choose Metadata to Include in App"),
+  #         bucket_list(
+  #           header = 
+  #             "Drag metadata categories to the \"Included Metadata\" 
+  #             column to include. Metadata will appear in app menus in 
+  #             the order they appear in the right-hand column.",
+  #           orientation = "horizontal",
+  #           group_name = "metadata_bucket",
+  #           # Use the default class, and a class specific to this app
+  #           # Many sub-classes are tied to the default class, and styling will
+  #           # not be applied to those classes if the default class is not also 
+  #           # passed to this argument.
+  #           class = 
+  #             c("default-sortable", "bucket-select"),
+  #           add_rank_list(
+  #             input_id = "metadata_not_selected",
+  #             text = "Available Metadata",
+  #             labels = module_data$metadata_sortable_not_selected
+  #           ),
+  #           add_rank_list(
+  #             input_id = "metadata_selected",
+  #             text = "Included Metadata",
+  #             labels = module_data$metadata_sortable_selected
+  #           )
+  #         )
+  #       )
+  #       })
+  # 
+  # #### 3.2.5.2. Set order of metadata cards based on sortable input ####
+  # observeEvent(
+  #   c(input$metadata_selected, input$metadata_not_selected),
+  #   label = "Metadata: set order of metadata options cards",
+  #   ignoreNULL = FALSE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     print("Rearrange metadata options cards")
+  # 
+  #     # Guide vector for ordering the metadata options cards
+  #     # Lists the metadata included by the user in the order defined in the
+  #     # sortable, followed by all other categories (the corresponding cards
+  #     # will be invisible, but they should be sorted after the included
+  #     # metadata categories)
+  #     metadata_categories_order <-
+  #       c(input$metadata_selected, input$metadata_not_selected)
+  # 
+  #     for (i in 1:length(metadata_categories_order)){
+  #       if (i == 1){
+  #         # First element is left as-is
+  #         next
+  #       } else if (i == 2) {
+  #         # Second element: move after first element
+  # 
+  #         # First element (destination, second element will be inserted after
+  #         # this element)
+  #         destination_column <- metadata_categories_order[1]
+  #         # ID of the first options card, which is passed to the JavaScript
+  #         # function
+  #         destination_id <- glue("{destination_column}-optcard")
+  # 
+  #         # Second element (target)
+  #         elem_column <- metadata_categories_order[i]
+  #         elem_id <- glue("{elem_column}-optcard")
+  # 
+  #         # Custom JavaScript function to move options card
+  #         js$insertElemAfter(
+  #           elem_id = elem_id,
+  #           destination_id = destination_id
+  #         )
+  # 
+  #       } else {
+  #         # All subsequent elements: move after the previous element
+  #         # ID of previous card (destination of move)
+  #         destination_column <- metadata_categories_order[i - 1]
+  #         destination_id <- glue("{destination_column}-optcard")
+  # 
+  #         # ID of current card (element to be moved)
+  #         elem_column <- metadata_categories_order[i]
+  #         elem_id <- glue("{elem_column}-optcard")
+  # 
+  #         # Custom JavaScript function to move options card
+  #         js$insertElemAfter(
+  #           elem_id = elem_id,
+  #           destination_id = destination_id
+  #         )
+  #       }
+  #     }
+  #     })
+  # 
+  # #### 3.2.5.3 Show/hide Metadata Options Cards ####
+  # observe({
+  #   for (colname in non_numeric_cols){
+  #     # Show all cards that are in the "Metadata selected" column of the 
+  #     # sortable, and hide all cards that are not
+  #     if (colname %in% input$metadata_selected){
+  #       showElement(
+  #         id = glue("{colname}-optcard"),
+  #         asis = TRUE
+  #       )
+  #     } else {
+  #       hideElement(
+  #         id = glue("{colname}-optcard"),
+  #         asis = TRUE
   #       )
   #     }
-  # 
+  #   }
   # })
-  
-  ### 3.2.4. Store metadata options in config data ####
-  #### 3.2.4.1. Category-specific options ####
-  # Stores options for each metadata category selected in the app
-  config_data$metadata <- 
-    reactive({
-      # Options list is only processed when metadata columns have been selected
-      if (isTruthy(input$metadata_selected)){
-        # Extracts each reactive module output and stores them in a list
-        options_list <- lapply(all_metadata_options, function(x) x())
-        # Filter list for metadata columns that have been selected by the user
-        options_list <- options_list[names(options_list) %in% input$metadata_selected]
-        # Sort list according to the order specified by the user in the drag
-        # and drop menu
-        options_list <- options_list[input$metadata_selected]
-        return(options_list)
-        } else {
-          # Return NULL if no columns are selected
-          return(NULL)
-          }
-      })
-  
-  #### 3.2.4.2. General metadata options ####
-  # Stored separately from config_data$metadata, since many functions in the 
-  # main app use the list structure defined in the above reactive expression, 
-  # and they would be disrupted if general options were added with the options
-  # specific to each category.
-  config_data$other_metadata_options <-
-    reactive({
-      list(
-        # Column to be used for patient/sample level metadata
-        `patient_colname` = patient_colname()
-      )
-    })
-  
-  ### 3.2.5. Reactive UI components ####
-  #### 3.2.5.1. UI for sortable menu ####
-  # Uses the bucket_list input from the sortable package
-  metadata_bucket_ui <-
-    eventReactive(
-      c(module_data$metadata_sortable_not_selected,
-        module_data$metadata_sortable_selected),
-      label = "Metadata: define sortable",
-      {
-        tagList(
-          tags$b("Choose Metadata to Include in App"),
-          bucket_list(
-            header = 
-              "Drag metadata categories to the \"Included Metadata\" 
-              column to include. Metadata will appear in app menus in 
-              the order they appear in the right-hand column.",
-            orientation = "horizontal",
-            group_name = "metadata_bucket",
-            # Use the default class, and a class specific to this app
-            # Many sub-classes are tied to the default class, and styling will
-            # not be applied to those classes if the default class is not also 
-            # passed to this argument.
-            class = 
-              c("default-sortable", "bucket-select"),
-            add_rank_list(
-              input_id = "metadata_not_selected",
-              text = "Available Metadata",
-              labels = module_data$metadata_sortable_not_selected
-            ),
-            add_rank_list(
-              input_id = "metadata_selected",
-              text = "Included Metadata",
-              labels = module_data$metadata_sortable_selected
-            )
-          )
-        )
-        })
-  
-  #### 3.2.5.2. Set order of metadata cards based on sortable input ####
-  observeEvent(
-    c(input$metadata_selected, input$metadata_not_selected),
-    label = "Metadata: set order of metadata options cards",
-    ignoreNULL = FALSE,
-    ignoreInit = TRUE,
-    {
-      print("Rearrange metadata options cards")
-
-      # Guide vector for ordering the metadata options cards
-      # Lists the metadata included by the user in the order defined in the
-      # sortable, followed by all other categories (the corresponding cards
-      # will be invisible, but they should be sorted after the included
-      # metadata categories)
-      metadata_categories_order <-
-        c(input$metadata_selected, input$metadata_not_selected)
-
-      for (i in 1:length(metadata_categories_order)){
-        if (i == 1){
-          # First element is left as-is
-          next
-        } else if (i == 2) {
-          # Second element: move after first element
-
-          # First element (destination, second element will be inserted after
-          # this element)
-          destination_column <- metadata_categories_order[1]
-          # ID of the first options card, which is passed to the JavaScript
-          # function
-          destination_id <- glue("{destination_column}-optcard")
-
-          # Second element (target)
-          elem_column <- metadata_categories_order[i]
-          elem_id <- glue("{elem_column}-optcard")
-
-          # Custom JavaScript function to move options card
-          js$insertElemAfter(
-            elem_id = elem_id,
-            destination_id = destination_id
-          )
-
-        } else {
-          # All subsequent elements: move after the previous element
-          # ID of previous card (destination of move)
-          destination_column <- metadata_categories_order[i - 1]
-          destination_id <- glue("{destination_column}-optcard")
-
-          # ID of current card (element to be moved)
-          elem_column <- metadata_categories_order[i]
-          elem_id <- glue("{elem_column}-optcard")
-
-          # Custom JavaScript function to move options card
-          js$insertElemAfter(
-            elem_id = elem_id,
-            destination_id = destination_id
-          )
-        }
-      }
-      })
-  
-  #### 3.2.5.3 Show/hide Metadata Options Cards ####
-  observe({
-    for (colname in non_numeric_cols){
-      # Show all cards that are in the "Metadata selected" column of the 
-      # sortable, and hide all cards that are not
-      if (colname %in% input$metadata_selected){
-        showElement(
-          id = glue("{colname}-optcard"),
-          asis = TRUE
-        )
-      } else {
-        hideElement(
-          id = glue("{colname}-optcard"),
-          asis = TRUE
-        )
-      }
-    }
-  })
-  
-  #### 3.2.5.4. Render Sortable UI ####
-  output$metadata_sortable_bucket <-
-    renderUI({
-      metadata_bucket_ui()
-    })
-  
-  # Also set suspendWhenHidden to FALSE to allow reactives that lead to the
-  # output to compute when the sortable is hidden 
-  # (this is desired when loading a config file, as the metadata tab may not 
-  # be active when it is loaded)
-  outputOptions(
-    output, 
-    "metadata_sortable_bucket", 
-    suspendWhenHidden = FALSE
-  )
-  
-  # TEMP: print all metadata options
-  output$print_metadata <-
-    renderPrint({
-      config_data$metadata()
-      })
-  
-  ## 3.3 ADT thresholding panel ####
-  ### 3.3.1. Define/update available ADTs ####
-  # Reactive variable will be used for updating the selection menu with
-  # ADTs in the designated assay that have not already been added to the table
-  available_adts <-
-    reactive({
-      req(ADT_assay())
-      
-      # Fetch ADTs in the designated assay (reacts to assay)
-      adts <- 
-        object[[ADT_assay()]] |> 
-        rownames()
-      
-      # return adts that are not included in the table of defined thresholds
-      # (also reacts to changes in the table)
-      if (!is.null(module_data$threshold_data)){
-        return(adts[!adts %in% module_data$threshold_data$adt])
-      } else {
-        return(adts)
-      }
-    })
-  
-  ### 3.3.2. Populate ADT Choices when designated ADT assay is changed ####
-  observeEvent(
-    ADT_assay(),
-    ignoreNULL = TRUE,
-    ignoreInit = TRUE,
-    {
-      # Fetch features (surface proteins) for the designated ADT assay
-      adts <- 
-        object[[ADT_assay()]] |> 
-        rownames()
-      
-      # Populate select input with ADT choices 
-      updateSelectizeInput(
-        session = session,
-        inputId = "selected_adt",
-        choices = adts,
-        selected = character(0),
-        server = TRUE
-        )
-      
-      # Also, set state of threshold menus back to "idle" if the designated 
-      # ADT assay changes
-      module_data$threshold_menu_state <- "idle"
-    })
-  
-  ### 3.3.3. Threshold picker server ####
-  #### 3.3.3.1. ADT passed to server ####
-  threshold_server_adt <- 
-    reactive({
-      # Value passed to server depends on state
-      if (module_data$threshold_menu_state == "add"){
-        # When the menus are in the "add" state, use input$selected_adt
-        # Selected ADT must be defined to avoid errors
-        req(input$selected_adt)
-        req(ADT_assay())
-        
-        # When adding a new threshold, use the adt selected by the user in
-        # the search window
-        # Add assay key to ADT (threshold server expects this)
-        paste0(
-          Key(object[[isolate({ADT_assay()})]]),
-          input$selected_adt
-          )
-      } else if (module_data$threshold_menu_state == "edit") {
-        # Will be equal to the ADT requested for editing
-        # (this is set using a reactiveValues object)
-        paste0(
-          # Add assay key
-          Key(object[[isolate({ADT_assay()})]]),
-          editing_data$adt_target
-        )
-      } 
-    })
-
-  #### 3.3.3.2. Server instance ####
-  threshold_value <- 
-    threshold_picker_server(
-      id = "threshold_picker", 
-      # `object` argument must be reactive, but the object is non-reactive
-      # in the config file
-      object = reactive({object}), 
-      feature = threshold_server_adt,
-      showhide_animation = TRUE,
-      # Used to show the previous threshold on the interactive ridge 
-      # plot during editing
-      set_threshold = 
-        reactive({
-          editing_data$previous_threshold
-          })
-      )
-  
-  ### 3.3.4. "Add threshold" button ####
-  #### 3.3.4.1. Respond to button ####
-  # Set state to "add", which will show menus with the class "show-on-add"
-  observeEvent(
-    input$add_threshold,
-    ignoreNULL = FALSE,
-    ignoreInit = TRUE,
-    {
-      module_data$threshold_menu_state <- "add"
-    })
-  
-  #### 3.3.4.2. Disable button while adding or editing a feature ####
-  # Prevents user from adding a new feature while editing the current one
-  observe({
-    target_id <- "add_threshold"
-    
-    if (module_data$threshold_menu_state %in% c("add", "edit")){
-      disable(
-        id = target_id
-      )
-    } else if (module_data$threshold_menu_state == "idle"){
-      enable(
-        id = target_id
-      )
-    }
-  })
-  
-  ### 3.3.5. Show/hide menus based on state ####
-  #### 3.3.5.1. Generic Menus ####
-  observe({
-    # jQuery selectors for classes that show elements based on state
-    add_selector <- "[class *= 'show-on-add']"
-    edit_selector <- "[class *= 'show-on-edit']"
-    idle_selector <- "[class *= 'show-on-idle']"
-    
-    if (module_data$threshold_menu_state == "add"){
-      showElement(
-        selector = add_selector
-        )
-    } else if (module_data$threshold_menu_state == "edit"){
-      showElement(
-        selector = edit_selector
-        )
-    } else if (module_data$threshold_menu_state == "idle") {
-      hideElement(
-        selector = add_selector
-        )
-      hideElement(
-        selector = edit_selector
-        )
-      }
-  })
-  
-  #### 3.3.5.2. Show/Hide threshold picker UI ####
-  # Shown when the state is "add" and an adt is entered in the search input
-  # OR when the state is "edit" (feature being edited is provided when changing 
-  # to this state)
-  observe({
-    target_id <- "threshold_picker_div"
-    
-    if (module_data$threshold_menu_state == "add"){
-      if (!is.null(input$selected_adt)){
-        showElement(
-          id = target_id,
-          anim = TRUE
-        )
-      } else {
-        hideElement(
-          id = target_id,
-          anim = TRUE
-        )
-      }
-    } else if (module_data$threshold_menu_state == "edit"){
-      showElement(
-        id = target_id
-      )
-    } else {
-      hideElement(
-        id = target_id
-      )
-    }
-  })
-  
-  ### 3.3.6. Cancel threshold button ####
-  observeEvent(
-    input$cancel_threshold,
-    ignoreNULL = FALSE,
-    ignoreInit = TRUE,
-    {
-      # Clear data for ADT being added or edited
-      if (module_data$threshold_menu_state == "edit"){
-        # If editing, set editing_data variables back to NULL
-        editing_data$adt_target <- NULL 
-        editing_data$target_row <- NULL
-        editing_data$previous_threshold <- NULL
-      }
-      
-      # Reset ADT selection input
-      # Get names of all ADTs 
-      adts <- 
-        object[[ADT_assay()]] |> 
-        rownames()
-      
-      updateSelectizeInput(
-        session = session,
-        inputId = "selected_adt",
-        # Exclude the ADTs currently in the table
-        choices = adts[!adts %in% module_data$threshold_data$adt],
-        selected = character(0),
-        server = TRUE
-      )
-      
-      # Set state of menus back to "idle" 
-      module_data$threshold_menu_state <- "idle"
-    })
-  
-  
-  ### 3.3.7. Accept threshold button ####
-  #### 3.3.7.1. Enable "confirm" button when a threshold is selected ####
-  observe({
-    print("threshold value")
-    print(threshold_value())
-    
-    if (!is.null(threshold_value())){
-      enable(
-        id = "accept_threshold"
-        )
-    } else {
-        disable(
-          id = "accept_threshold"
-          )
-      }
-    })
-  
-  #### 3.3.7.2. Save data and close menu when the confirm button is pressed ####
-  observeEvent(
-    input$accept_threshold,
-    ignoreNULL = FALSE,
-    ignoreInit = TRUE,
-    {
-      if (module_data$threshold_menu_state == "add"){
-        # If the state is "add", add the threshold value for the currently 
-        # selected ADT to the table
-        module_data$threshold_data <-
-          module_data$threshold_data |> 
-          add_row(
-            adt = input$selected_adt,
-            value = threshold_value()
-          )
-      } else if (module_data$threshold_menu_state == "edit"){
-        # Set the "adt" entry of the row being edited to the feature name
-        # module_data$threshold_data[editing_data$target_row, 1] <-
-        #   editing_data$adt_target
-        
-        # Set the "value" entry (column 2) of the row being edited to the new 
-        # value chosen on the interactive plot
-        module_data$threshold_data[editing_data$target_row, 2] <-
-          threshold_value()
-       
-        # Set editing_data variables back to NULL
-        editing_data$adt_target <- NULL 
-        editing_data$target_row <- NULL
-        editing_data$previous_threshold <- NULL
-      }
-      
-      # Update ADT choices to exclude the ADTs currently in the table
-      adts <- 
-        object[[ADT_assay()]] |> 
-        rownames()
-      
-      updateSelectizeInput(
-        session = session,
-        inputId = "selected_adt",
-        choices = adts[!adts %in% module_data$threshold_data$adt],
-        selected = character(0),
-        server = TRUE
-        )
-      
-      # Set state of menus back to "idle"
-      module_data$threshold_menu_state <- "idle"
-    })
-  
-  ### 3.3.8. Render table of ADT thresholds ####
-  #### 3.3.8.1. DT datatable ####
-  threshold_DT <-
-    reactive({
-      DT <- module_data$threshold_data
-      
-      # Add edit and delete buttons to table
-      # Code adapted from https://github.com/AntoineGuillot2/ButtonsInDataTable
-      if (nrow(DT) > 0){
-        DT[["Actions"]] <-
-          glue(
-            '<div class = "btn-group" style = "float: right;" role = "group" 
-            aria-label = "Options for {DT[[\'adt\']]}">
-              <button type="button" class="btn icon-button edit" 
-                id = edit_{1:nrow(module_data$threshold_data)}> 
-                <i class = "fa fa-pencil" role = "presentation" 
-                  aria-label = "Edit" style = "font-size: 1.7em;"></i>
-                </button>
-              
-              <button type="button" class="btn icon-button delete" 
-                id = delete_{1:nrow(module_data$threshold_data)}> 
-                  <i class = "fa fa-times-circle" role = "presentation" 
-                  aria-label = "Delete" style = "font-size: 1.7em;"></i>
-              </button>
-           </div>'
-          )
-      }
-      
-      # Create DT Datatable
-      datatable(
-        DT,
-        # DT classes applied
-        # See https://datatables.net/manual/styling/classes
-        class = "compact stripe cell-border hover",
-        # Disallow selection of rows/cells (currently)
-        selection = "none",
-        # Remove rownames
-        rownames = FALSE,
-        colnames = c("ADT" = "adt", "Chosen Threshold" = "value"),
-        # Escape set to FALSE so HTML above is rendered properly
-        escape = FALSE
-        )
-      })
-  
-  output$threshold_table <-
-    renderDT({
-      threshold_DT()
-    })
-  
-  #### 3.3.8.2. JavaScript for inline buttons ####
-  button_script <-
-    reactive({
-      req(module_data$threshold_data)
-      
-      # Adapted from 
-      # https://github.com/AntoineGuillot2/ButtonsInDataTable/blob/master/server.R
-      if (nrow(module_data$threshold_data > 0)){
-        # Script: when the user clicks a button within the DT table 
-        # (#threshold_table button) register the id of the button the user 
-        # clicked on as input$lastClickId, and a random number as 
-        # input$lastClick (this is the trigger for responding to the click, and 
-        # must therefore always change with each click.)
-        tags$script(
-          "
-          $(document).on('click', '#threshold_table button', function () {
-              Shiny.onInputChange('lastClickId', this.id);
-              Shiny.onInputChange('lastClick', Math.random())
-              });
-          "
-        )
-      }
-    })
-  
-  output$threshold_table_button_script <-
-    renderUI({
-      button_script()
-    })
-  
-  ### 3.3.9. Respond to edit/delete buttons ####
-  observeEvent(
-    input$lastClick,
-    ignoreNULL = FALSE,
-    ignoreInit = TRUE,
-    {
-      # input$lastClickId stores the id of the button that was clicked
-      if (grepl("edit", input$lastClickId)){
-        # If the button is an edit button, initialize menus for editing.
-        # Set the state of the menus to "edit"
-        module_data$threshold_menu_state <- "edit"
-        
-        # Determine which row the edit button was on
-        row_selected <- 
-          gsub("edit_", "", input$lastClickId) |> 
-          as.numeric()
-        
-        # Determine which ADT was on the row selected
-        adt_selected <- 
-          module_data$threshold_data$adt[row_selected]
-        
-        if (is.na(adt_selected) | is.null(adt_selected)){
-          warning(
-            "Threshold table: ADT selected for editing is undefined."
-            )
-        }
-        
-        # Fetch previous threshold and pass to interactive ridge plot
-        # (will display previous selection )
-        editing_data$previous_threshold <- 
-          module_data$threshold_data$value[row_selected]
-        
-        # Pass feature to reactive variable to update the ridge plot
-        editing_data$adt_target <- 
-          adt_selected
-        
-        # Store the index of the row selected for 
-        editing_data$target_row <-
-          row_selected
-        
-        # Set the selected ADT to the one being edited. 
-        # The ADT selectize input is modified and is still accessed, 
-        # but it is not visible when the state is "edit"
-        # updateSelectizeInput(
-        #   session = session,
-        #   inputId = "selected_adt",
-        #   # Choices do not change, but must be added for update to proceed
-        #   choices = available_adts(),
-        #   selected = adt_selected,
-        #   server = TRUE
-        #   )
-        
-        
-      } else if (grepl("delete", input$lastClickId)) {
-        # Delete the row corresponding to the button from the table
-        # Determine which row the delete button was on
-        row_selected <- 
-          gsub("delete_", "", input$lastClickId) |> 
-          as.numeric()
-        
-        # Prevents crashing in the event the selected_row is undefined
-        if (!is.null(row_selected) | is.na(row_selected)){
-          # Delete the selected row from the table and save the new table
-          module_data$threshold_data <-
-            module_data$threshold_data[-row_selected,]
-        } else {
-          warning("Unable to determine the index of the row selected for deletion")
-        }
-      }
-    })
-  
-  ### 3.3.10. Threshold settings window header text (edit mode) ####
-  output$threshold_header <-
-    renderUI({
-      tags$h4(
-        glue("Edit threshold for {editing_data$adt_target}")
-      )
-    })
-  
-  ### 3.3.11. Record threshold table in config data ####
-  config_data$adt_thresholds <-
-    reactive({
-      # Store the table if it is defined and has at least one row. Otherwise, 
-      # set adt_thresholds to NULL.
-      if (isTruthy(module_data$threshold_data)){
-        if (nrow(module_data$threshold_data) > 0){
-          module_data$threshold_data
-        } else NULL
-      } else NULL
-    })
-  
-  ## 3.4. Export Config file as YAML ####
-  output$export_selections <- 
-    downloadHandler(
-      filename = "object-config.yaml",
-      content = 
-        function(file){
-          # Compile config file data from the config_data list 
-          config_data_export <- 
-            lapply(
-              config_data, 
-              function(x){
-                # The config_data list contains a mix of reactive and 
-                # non-reactive values. Reactive values are unpacked, while 
-                # non-reactive values are left as-is.
-                if (is.reactive(x)){
-                  x()
-                  } else {
-                    x
-                  }
-                }
-              ) 
-          
-          # Convert R list format to YAML and download
-          write_yaml(
-            config_data_export, 
-            file = file
-            )
-          })
-  
-  ## 3.5. Load Config File ####
-  ### 3.5.1 Load File ####
-  # Loads a previously created config file and imports contents into app
-  # storing in session$userdata makes file visible to all modules
-  observeEvent(
-    input$file_load,
-    ignoreNULL = FALSE,
-    ignoreInit = TRUE,
-    {
-      showModal(
-        session = session,
-        ui = 
-          tagList(
-            modalDialog(
-              title = "Load Config File",
-              size = "l",
-              footer = 
-                modalButton(
-                  label = "Cancel"
-                  ),
-              # Modal content
-              div(
-                fileInput(
-                  inputId = "load_config_path",
-                  label = "Load config file (accepts .rds and .yaml files)",
-                  accept = c(".rds", ".yaml"),
-                  width = "300px"
-                  )
-                )
-              )
-            )
-        )
-    })
-  
-  session$userData$config <-
-    eventReactive(
-      input$load_config,
-      ignoreNULL = FALSE,
-      ignoreInit = TRUE,
-      {
-        print("Load config pressed")
-        # For now, use a pre-determined config file
-        # will soon be chosen with a file input
-        showNotification(
-          ui =
-            div(
-              style = "width: 350px;",
-              glue('Loading file at {config_filename}')
-            ),
-          duration = NULL,
-          id = "load_config",
-          session = session
-        )
-
-        readRDS(config_filename)
-      })
-  
-  ### 3.5.2. Update inputs in main server function with file contents ####
-  #### 3.5.2.1. Assays selected ####
-  observeEvent(
-    session$userData$config(),
-    {
-      updateMultiInput(
-        session,
-        inputId = "assays_selected",
-        selected = 
-          # Names of assays in config file are the names selected when the 
-          # file was created
-          names(
-            session$userData$config()$assays
-          )
-      )
-    })
-  
-  #### 3.5.2.2. Metadata selected ####
-  observeEvent(
-    session$userData$config(),
-    {
-      # Set selected vs. not selected metadata categories using the information
-      # in the loaded file
-      # sortable inputs will update when the values below change.
-      module_data$metadata_sortable_selected <- 
-        # Selected metadata: equal to the names of the metadata list in the
-        # config file. The order of the sortable will reflect the order of the
-        # metadata categories in the config file
-        session$userData$config()$metadata |> 
-        names()
-      
-      # Non-selected metadata: all non-numeric metadata columns that are not
-      # in the loaded file
-      module_data$metadata_sortable_not_selected <-
-        non_numeric_cols[
-          !non_numeric_cols %in% module_data$metadata_sortable_selected]
-      })
-  
-  #### 3.5.2.3 ADT threshold table ####
-  observeEvent(
-    session$userData$config(),
-    {
-      # Set the threshold table in the app equal to the table recorded in the
-      # file being loaded
-      module_data$threshold_data <-
-        session$userData$config()$adt_thresholds
-    })
+  # 
+  # #### 3.2.5.4. Render Sortable UI ####
+  # output$metadata_sortable_bucket <-
+  #   renderUI({
+  #     metadata_bucket_ui()
+  #   })
+  # 
+  # # Also set suspendWhenHidden to FALSE to allow reactives that lead to the
+  # # output to compute when the sortable is hidden 
+  # # (this is desired when loading a config file, as the metadata tab may not 
+  # # be active when it is loaded)
+  # outputOptions(
+  #   output, 
+  #   "metadata_sortable_bucket", 
+  #   suspendWhenHidden = FALSE
+  # )
+  # 
+  # # TEMP: print all metadata options
+  # output$print_metadata <-
+  #   renderPrint({
+  #     config_data$metadata()
+  #     })
+  # 
+  # ## 3.3 ADT thresholding panel ####
+  # ### 3.3.1. Define/update available ADTs ####
+  # # Reactive variable will be used for updating the selection menu with
+  # # ADTs in the designated assay that have not already been added to the table
+  # available_adts <-
+  #   reactive({
+  #     req(ADT_assay())
+  #     
+  #     # Fetch ADTs in the designated assay (reacts to assay)
+  #     adts <- 
+  #       object[[ADT_assay()]] |> 
+  #       rownames()
+  #     
+  #     # return adts that are not included in the table of defined thresholds
+  #     # (also reacts to changes in the table)
+  #     if (!is.null(module_data$threshold_data)){
+  #       return(adts[!adts %in% module_data$threshold_data$adt])
+  #     } else {
+  #       return(adts)
+  #     }
+  #   })
+  # 
+  # ### 3.3.2. Populate ADT Choices when designated ADT assay is changed ####
+  # observeEvent(
+  #   ADT_assay(),
+  #   ignoreNULL = TRUE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     # Fetch features (surface proteins) for the designated ADT assay
+  #     adts <- 
+  #       object[[ADT_assay()]] |> 
+  #       rownames()
+  #     
+  #     # Populate select input with ADT choices 
+  #     updateSelectizeInput(
+  #       session = session,
+  #       inputId = "selected_adt",
+  #       choices = adts,
+  #       selected = character(0),
+  #       server = TRUE
+  #       )
+  #     
+  #     # Also, set state of threshold menus back to "idle" if the designated 
+  #     # ADT assay changes
+  #     module_data$threshold_menu_state <- "idle"
+  #   })
+  # 
+  # ### 3.3.3. Threshold picker server ####
+  # #### 3.3.3.1. ADT passed to server ####
+  # threshold_server_adt <- 
+  #   reactive({
+  #     # Value passed to server depends on state
+  #     if (module_data$threshold_menu_state == "add"){
+  #       # When the menus are in the "add" state, use input$selected_adt
+  #       # Selected ADT must be defined to avoid errors
+  #       req(input$selected_adt)
+  #       req(ADT_assay())
+  #       
+  #       # When adding a new threshold, use the adt selected by the user in
+  #       # the search window
+  #       # Add assay key to ADT (threshold server expects this)
+  #       paste0(
+  #         Key(object[[isolate({ADT_assay()})]]),
+  #         input$selected_adt
+  #         )
+  #     } else if (module_data$threshold_menu_state == "edit") {
+  #       # Will be equal to the ADT requested for editing
+  #       # (this is set using a reactiveValues object)
+  #       paste0(
+  #         # Add assay key
+  #         Key(object[[isolate({ADT_assay()})]]),
+  #         editing_data$adt_target
+  #       )
+  #     } 
+  #   })
+  # 
+  # #### 3.3.3.2. Server instance ####
+  # threshold_value <- 
+  #   threshold_picker_server(
+  #     id = "threshold_picker", 
+  #     # `object` argument must be reactive, but the object is non-reactive
+  #     # in the config file
+  #     object = reactive({object}), 
+  #     feature = threshold_server_adt,
+  #     showhide_animation = TRUE,
+  #     # Used to show the previous threshold on the interactive ridge 
+  #     # plot during editing
+  #     set_threshold = 
+  #       reactive({
+  #         editing_data$previous_threshold
+  #         })
+  #     )
+  # 
+  # ### 3.3.4. "Add threshold" button ####
+  # #### 3.3.4.1. Respond to button ####
+  # # Set state to "add", which will show menus with the class "show-on-add"
+  # observeEvent(
+  #   input$add_threshold,
+  #   ignoreNULL = FALSE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     module_data$threshold_menu_state <- "add"
+  #   })
+  # 
+  # #### 3.3.4.2. Disable button while adding or editing a feature ####
+  # # Prevents user from adding a new feature while editing the current one
+  # observe({
+  #   target_id <- "add_threshold"
+  #   
+  #   if (module_data$threshold_menu_state %in% c("add", "edit")){
+  #     disable(
+  #       id = target_id
+  #     )
+  #   } else if (module_data$threshold_menu_state == "idle"){
+  #     enable(
+  #       id = target_id
+  #     )
+  #   }
+  # })
+  # 
+  # ### 3.3.5. Show/hide menus based on state ####
+  # #### 3.3.5.1. Generic Menus ####
+  # observe({
+  #   # jQuery selectors for classes that show elements based on state
+  #   add_selector <- "[class *= 'show-on-add']"
+  #   edit_selector <- "[class *= 'show-on-edit']"
+  #   idle_selector <- "[class *= 'show-on-idle']"
+  #   
+  #   if (module_data$threshold_menu_state == "add"){
+  #     showElement(
+  #       selector = add_selector
+  #       )
+  #   } else if (module_data$threshold_menu_state == "edit"){
+  #     showElement(
+  #       selector = edit_selector
+  #       )
+  #   } else if (module_data$threshold_menu_state == "idle") {
+  #     hideElement(
+  #       selector = add_selector
+  #       )
+  #     hideElement(
+  #       selector = edit_selector
+  #       )
+  #     }
+  # })
+  # 
+  # #### 3.3.5.2. Show/Hide threshold picker UI ####
+  # # Shown when the state is "add" and an adt is entered in the search input
+  # # OR when the state is "edit" (feature being edited is provided when changing 
+  # # to this state)
+  # observe({
+  #   target_id <- "threshold_picker_div"
+  #   
+  #   if (module_data$threshold_menu_state == "add"){
+  #     if (!is.null(input$selected_adt)){
+  #       showElement(
+  #         id = target_id,
+  #         anim = TRUE
+  #       )
+  #     } else {
+  #       hideElement(
+  #         id = target_id,
+  #         anim = TRUE
+  #       )
+  #     }
+  #   } else if (module_data$threshold_menu_state == "edit"){
+  #     showElement(
+  #       id = target_id
+  #     )
+  #   } else {
+  #     hideElement(
+  #       id = target_id
+  #     )
+  #   }
+  # })
+  # 
+  # ### 3.3.6. Cancel threshold button ####
+  # observeEvent(
+  #   input$cancel_threshold,
+  #   ignoreNULL = FALSE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     # Clear data for ADT being added or edited
+  #     if (module_data$threshold_menu_state == "edit"){
+  #       # If editing, set editing_data variables back to NULL
+  #       editing_data$adt_target <- NULL 
+  #       editing_data$target_row <- NULL
+  #       editing_data$previous_threshold <- NULL
+  #     }
+  #     
+  #     # Reset ADT selection input
+  #     # Get names of all ADTs 
+  #     adts <- 
+  #       object[[ADT_assay()]] |> 
+  #       rownames()
+  #     
+  #     updateSelectizeInput(
+  #       session = session,
+  #       inputId = "selected_adt",
+  #       # Exclude the ADTs currently in the table
+  #       choices = adts[!adts %in% module_data$threshold_data$adt],
+  #       selected = character(0),
+  #       server = TRUE
+  #     )
+  #     
+  #     # Set state of menus back to "idle" 
+  #     module_data$threshold_menu_state <- "idle"
+  #   })
+  # 
+  # 
+  # ### 3.3.7. Accept threshold button ####
+  # #### 3.3.7.1. Enable "confirm" button when a threshold is selected ####
+  # observe({
+  #   print("threshold value")
+  #   print(threshold_value())
+  #   
+  #   if (!is.null(threshold_value())){
+  #     enable(
+  #       id = "accept_threshold"
+  #       )
+  #   } else {
+  #       disable(
+  #         id = "accept_threshold"
+  #         )
+  #     }
+  #   })
+  # 
+  # #### 3.3.7.2. Save data and close menu when the confirm button is pressed ####
+  # observeEvent(
+  #   input$accept_threshold,
+  #   ignoreNULL = FALSE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     if (module_data$threshold_menu_state == "add"){
+  #       # If the state is "add", add the threshold value for the currently 
+  #       # selected ADT to the table
+  #       module_data$threshold_data <-
+  #         module_data$threshold_data |> 
+  #         add_row(
+  #           adt = input$selected_adt,
+  #           value = threshold_value()
+  #         )
+  #     } else if (module_data$threshold_menu_state == "edit"){
+  #       # Set the "adt" entry of the row being edited to the feature name
+  #       # module_data$threshold_data[editing_data$target_row, 1] <-
+  #       #   editing_data$adt_target
+  #       
+  #       # Set the "value" entry (column 2) of the row being edited to the new 
+  #       # value chosen on the interactive plot
+  #       module_data$threshold_data[editing_data$target_row, 2] <-
+  #         threshold_value()
+  #      
+  #       # Set editing_data variables back to NULL
+  #       editing_data$adt_target <- NULL 
+  #       editing_data$target_row <- NULL
+  #       editing_data$previous_threshold <- NULL
+  #     }
+  #     
+  #     # Update ADT choices to exclude the ADTs currently in the table
+  #     adts <- 
+  #       object[[ADT_assay()]] |> 
+  #       rownames()
+  #     
+  #     updateSelectizeInput(
+  #       session = session,
+  #       inputId = "selected_adt",
+  #       choices = adts[!adts %in% module_data$threshold_data$adt],
+  #       selected = character(0),
+  #       server = TRUE
+  #       )
+  #     
+  #     # Set state of menus back to "idle"
+  #     module_data$threshold_menu_state <- "idle"
+  #   })
+  # 
+  # ### 3.3.8. Render table of ADT thresholds ####
+  # #### 3.3.8.1. DT datatable ####
+  # threshold_DT <-
+  #   reactive({
+  #     DT <- module_data$threshold_data
+  #     
+  #     # Add edit and delete buttons to table
+  #     # Code adapted from https://github.com/AntoineGuillot2/ButtonsInDataTable
+  #     if (nrow(DT) > 0){
+  #       DT[["Actions"]] <-
+  #         glue(
+  #           '<div class = "btn-group" style = "float: right;" role = "group" 
+  #           aria-label = "Options for {DT[[\'adt\']]}">
+  #             <button type="button" class="btn icon-button edit" 
+  #               id = edit_{1:nrow(module_data$threshold_data)}> 
+  #               <i class = "fa fa-pencil" role = "presentation" 
+  #                 aria-label = "Edit" style = "font-size: 1.7em;"></i>
+  #               </button>
+  #             
+  #             <button type="button" class="btn icon-button delete" 
+  #               id = delete_{1:nrow(module_data$threshold_data)}> 
+  #                 <i class = "fa fa-times-circle" role = "presentation" 
+  #                 aria-label = "Delete" style = "font-size: 1.7em;"></i>
+  #             </button>
+  #          </div>'
+  #         )
+  #     }
+  #     
+  #     # Create DT Datatable
+  #     datatable(
+  #       DT,
+  #       # DT classes applied
+  #       # See https://datatables.net/manual/styling/classes
+  #       class = "compact stripe cell-border hover",
+  #       # Disallow selection of rows/cells (currently)
+  #       selection = "none",
+  #       # Remove rownames
+  #       rownames = FALSE,
+  #       colnames = c("ADT" = "adt", "Chosen Threshold" = "value"),
+  #       # Escape set to FALSE so HTML above is rendered properly
+  #       escape = FALSE
+  #       )
+  #     })
+  # 
+  # output$threshold_table <-
+  #   renderDT({
+  #     threshold_DT()
+  #   })
+  # 
+  # #### 3.3.8.2. JavaScript for inline buttons ####
+  # button_script <-
+  #   reactive({
+  #     req(module_data$threshold_data)
+  #     
+  #     # Adapted from 
+  #     # https://github.com/AntoineGuillot2/ButtonsInDataTable/blob/master/server.R
+  #     if (nrow(module_data$threshold_data > 0)){
+  #       # Script: when the user clicks a button within the DT table 
+  #       # (#threshold_table button) register the id of the button the user 
+  #       # clicked on as input$lastClickId, and a random number as 
+  #       # input$lastClick (this is the trigger for responding to the click, and 
+  #       # must therefore always change with each click.)
+  #       tags$script(
+  #         "
+  #         $(document).on('click', '#threshold_table button', function () {
+  #             Shiny.onInputChange('lastClickId', this.id);
+  #             Shiny.onInputChange('lastClick', Math.random())
+  #             });
+  #         "
+  #       )
+  #     }
+  #   })
+  # 
+  # output$threshold_table_button_script <-
+  #   renderUI({
+  #     button_script()
+  #   })
+  # 
+  # ### 3.3.9. Respond to edit/delete buttons ####
+  # observeEvent(
+  #   input$lastClick,
+  #   ignoreNULL = FALSE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     # input$lastClickId stores the id of the button that was clicked
+  #     if (grepl("edit", input$lastClickId)){
+  #       # If the button is an edit button, initialize menus for editing.
+  #       # Set the state of the menus to "edit"
+  #       module_data$threshold_menu_state <- "edit"
+  #       
+  #       # Determine which row the edit button was on
+  #       row_selected <- 
+  #         gsub("edit_", "", input$lastClickId) |> 
+  #         as.numeric()
+  #       
+  #       # Determine which ADT was on the row selected
+  #       adt_selected <- 
+  #         module_data$threshold_data$adt[row_selected]
+  #       
+  #       if (is.na(adt_selected) | is.null(adt_selected)){
+  #         warning(
+  #           "Threshold table: ADT selected for editing is undefined."
+  #           )
+  #       }
+  #       
+  #       # Fetch previous threshold and pass to interactive ridge plot
+  #       # (will display previous selection )
+  #       editing_data$previous_threshold <- 
+  #         module_data$threshold_data$value[row_selected]
+  #       
+  #       # Pass feature to reactive variable to update the ridge plot
+  #       editing_data$adt_target <- 
+  #         adt_selected
+  #       
+  #       # Store the index of the row selected for 
+  #       editing_data$target_row <-
+  #         row_selected
+  #       
+  #       # Set the selected ADT to the one being edited. 
+  #       # The ADT selectize input is modified and is still accessed, 
+  #       # but it is not visible when the state is "edit"
+  #       # updateSelectizeInput(
+  #       #   session = session,
+  #       #   inputId = "selected_adt",
+  #       #   # Choices do not change, but must be added for update to proceed
+  #       #   choices = available_adts(),
+  #       #   selected = adt_selected,
+  #       #   server = TRUE
+  #       #   )
+  #       
+  #       
+  #     } else if (grepl("delete", input$lastClickId)) {
+  #       # Delete the row corresponding to the button from the table
+  #       # Determine which row the delete button was on
+  #       row_selected <- 
+  #         gsub("delete_", "", input$lastClickId) |> 
+  #         as.numeric()
+  #       
+  #       # Prevents crashing in the event the selected_row is undefined
+  #       if (!is.null(row_selected) | is.na(row_selected)){
+  #         # Delete the selected row from the table and save the new table
+  #         module_data$threshold_data <-
+  #           module_data$threshold_data[-row_selected,]
+  #       } else {
+  #         warning("Unable to determine the index of the row selected for deletion")
+  #       }
+  #     }
+  #   })
+  # 
+  # ### 3.3.10. Threshold settings window header text (edit mode) ####
+  # output$threshold_header <-
+  #   renderUI({
+  #     tags$h4(
+  #       glue("Edit threshold for {editing_data$adt_target}")
+  #     )
+  #   })
+  # 
+  # ### 3.3.11. Record threshold table in config data ####
+  # config_data$adt_thresholds <-
+  #   reactive({
+  #     # Store the table if it is defined and has at least one row. Otherwise, 
+  #     # set adt_thresholds to NULL.
+  #     if (isTruthy(module_data$threshold_data)){
+  #       if (nrow(module_data$threshold_data) > 0){
+  #         module_data$threshold_data
+  #       } else NULL
+  #     } else NULL
+  #   })
+  # 
+  # ## 3.4. Export Config file as YAML ####
+  # output$export_selections <- 
+  #   downloadHandler(
+  #     filename = "object-config.yaml",
+  #     content = 
+  #       function(file){
+  #         # Compile config file data from the config_data list 
+  #         config_data_export <- 
+  #           lapply(
+  #             config_data, 
+  #             function(x){
+  #               # The config_data list contains a mix of reactive and 
+  #               # non-reactive values. Reactive values are unpacked, while 
+  #               # non-reactive values are left as-is.
+  #               if (is.reactive(x)){
+  #                 x()
+  #                 } else {
+  #                   x
+  #                 }
+  #               }
+  #             ) 
+  #         
+  #         # Convert R list format to YAML and download
+  #         write_yaml(
+  #           config_data_export, 
+  #           file = file
+  #           )
+  #         })
+  # 
+  # ## 3.5. Load Config File ####
+  # ### 3.5.1 Load File ####
+  # # Loads a previously created config file and imports contents into app
+  # # storing in session$userdata makes file visible to all modules
+  # observeEvent(
+  #   input$file_load,
+  #   ignoreNULL = FALSE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     showModal(
+  #       session = session,
+  #       ui = 
+  #         tagList(
+  #           modalDialog(
+  #             title = "Load Config File",
+  #             size = "l",
+  #             footer = 
+  #               modalButton(
+  #                 label = "Cancel"
+  #                 ),
+  #             # Modal content
+  #             div(
+  #               fileInput(
+  #                 inputId = "load_config_path",
+  #                 label = "Load config file (accepts .rds and .yaml files)",
+  #                 accept = c(".rds", ".yaml"),
+  #                 width = "300px"
+  #                 )
+  #               )
+  #             )
+  #           )
+  #       )
+  #   })
+  # 
+  # session$userData$config <-
+  #   eventReactive(
+  #     input$load_config,
+  #     ignoreNULL = FALSE,
+  #     ignoreInit = TRUE,
+  #     {
+  #       print("Load config pressed")
+  #       # For now, use a pre-determined config file
+  #       # will soon be chosen with a file input
+  #       showNotification(
+  #         ui =
+  #           div(
+  #             style = "width: 350px;",
+  #             glue('Loading file at {config_filename}')
+  #           ),
+  #         duration = NULL,
+  #         id = "load_config",
+  #         session = session
+  #       )
+  # 
+  #       readRDS(config_filename)
+  #     })
+  # 
+  # ### 3.5.2. Update inputs in main server function with file contents ####
+  # #### 3.5.2.1. Assays selected ####
+  # observeEvent(
+  #   session$userData$config(),
+  #   {
+  #     updateMultiInput(
+  #       session,
+  #       inputId = "assays_selected",
+  #       selected = 
+  #         # Names of assays in config file are the names selected when the 
+  #         # file was created
+  #         names(
+  #           session$userData$config()$assays
+  #         )
+  #     )
+  #   })
+  # 
+  # #### 3.5.2.2. Metadata selected ####
+  # observeEvent(
+  #   session$userData$config(),
+  #   {
+  #     # Set selected vs. not selected metadata categories using the information
+  #     # in the loaded file
+  #     # sortable inputs will update when the values below change.
+  #     module_data$metadata_sortable_selected <- 
+  #       # Selected metadata: equal to the names of the metadata list in the
+  #       # config file. The order of the sortable will reflect the order of the
+  #       # metadata categories in the config file
+  #       session$userData$config()$metadata |> 
+  #       names()
+  #     
+  #     # Non-selected metadata: all non-numeric metadata columns that are not
+  #     # in the loaded file
+  #     module_data$metadata_sortable_not_selected <-
+  #       non_numeric_cols[
+  #         !non_numeric_cols %in% module_data$metadata_sortable_selected]
+  #     })
+  # 
+  # #### 3.5.2.3 ADT threshold table ####
+  # observeEvent(
+  #   session$userData$config(),
+  #   {
+  #     # Set the threshold table in the app equal to the table recorded in the
+  #     # file being loaded
+  #     module_data$threshold_data <-
+  #       session$userData$config()$adt_thresholds
+  #   })
   
   #### TEMP: Observers for Debugging ####
   # config_file_load <- eventReactive(
