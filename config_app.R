@@ -123,13 +123,15 @@ insertAfterjs <-
       }'
 
 # Load object #### 
-# (hard-coded for now but will soon be chosen using a file input)
-object <- readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds")
+# (Object and config file may soon be chosen in the app, but for now they are
+# loaded from paths defined in config_init.yaml)
+paths <- read_yaml("./config_init.yaml")
+
+object <- readRDS(paths$object_path)
 # Need a conditional to test if the loaded object is a Seurat object
 
 # Define Config file path for loading ####
-# (eventually will use file input)
-config_filename <- "./Seurat_Objects/AML_TotalVI_config.rds"
+config_filename <- paths$config_path
 
 # Version of config app #### 
 # Printed in config file. Will be used to alert user if they are using a 
@@ -1371,21 +1373,39 @@ server <- function(input, output, session) {
       ignoreNULL = FALSE,
       ignoreInit = TRUE,
       {
-        print("Load config pressed")
-        # For now, use a pre-determined config file
-        # will soon be chosen with a file input
-        showNotification(
-          ui =
-            div(
-              style = "width: 350px;",
-              glue('Loading file at {config_filename}')
-            ),
-          duration = NULL,
-          id = "load_config",
-          session = session
-        )
-        
-        readRDS(config_filename)
+        # config_filename: for now, use a path from config_init.yaml
+        # May soon be chosen with a select input
+        if (isTruthy(config_filename)){
+          showNotification(
+            ui =
+              div(
+                style = "width: 350px;",
+                glue('Loading file at {config_filename}')
+              ),
+            duration = NULL,
+            id = "load_config",
+            session = session
+          )
+          
+          # Determine if the file loaded is .rds or .yaml
+          # (supports both for backward compatibility)
+          if (grepl(".yaml$", config_filename)){
+            # Procedure for loading .yaml file
+            # Use the load_config function from `./R` to convert .yaml file to 
+            # R format and properly initialize the ADT threshold tibble
+            load_config(config_filename)
+          } else if (grepl(".rds$", config_filename)){
+            # Procedure for loading .rds file
+            readRDS(config_filename)
+          }
+        } else {
+          # Show error if no config file path is defined
+          icon_notification_ui_2(
+            icon_name = "skull-crossbones",
+            "variable `config_path` is undefined in config_init.yaml. Please 
+            specify a path to load a config file."
+          )
+        }
       })
   
   ### 3.5.2. Update inputs in main server function with file contents ####
