@@ -1,10 +1,12 @@
 %YAML 1.1
 ---
 # Enter the path to an object to use as the basis for the new config file
-object_path: ./Seurat_Objects/longitudinal_samples_20211025.rds
+object_path: ../Public_reference_datasets/Triana_et_al_2021_young_old_healthy_partial_txome.rds
+  #./Seurat_Objects/longitudinal_samples_20211025.rds
   #./Seurat_Objects/Ian_Browser/ssp925_dk_dX_326_925_20220820_scE.rds
 
 # Enter the path of a previously created config file and press the load button
 # in the app to continue editing it
-config_path: ./Seurat_Objects/d0-d30-config.yaml
+config_path: ../Public_reference_datasets/Triana_et_al_young_old_config.yaml
+  #./Seurat_Objects/d0-d30-config.yaml
   #./Seurat_Objects/Ian_Browser/ssp925_dk_dX_326_925_20220820_scE_config.rds

@@ -24,6 +24,8 @@
 #' @param reduction The reduction (UMAP, t-SNE, etc.) to use for plotting
 #' @param palette The palette to use for coloring groups. If the palette passed
 #' to this function is NULL, the default (hue_pal()) is used.
+#' @param legend_ncol The number of columns to use for legend labels. This is 
+#' one by default (currently).
 shiny_umap <- function(object, 
                        group_by, 
                        split_by, 
@@ -37,7 +39,11 @@ shiny_umap <- function(object,
                        show_title = TRUE, 
                        plot_title = NULL, 
                        reduction = NULL, 
-                       palette = NULL 
+                       palette = NULL,
+                       legend_ncol = NULL,
+                       legend_font_size = NULL,
+                       legend_key_size = NULL,
+                       legend_key_spacing = NULL
                        ){
   # print("-----------------------------")
   # print("shiny_umap arguments")
@@ -155,29 +161,63 @@ shiny_umap <- function(object,
               "right"
             } else "none")
         ),
-      # B-C. Axis limits: use limits from full dataset if 
+      # Elements B-C. Axis limits: use limits from full dataset if 
       # specified
       # First, simultaneously test if subset is present and if the corresponding
       # original_limits reactive is truthy (i.e. both present and checked).
       if (is_subset & isTruthy(original_limits)){
-        # If so, add original limits to the list
+        # If so, add original limits to the list
         list(
           scale_x_continuous(limits = xlim_orig),
           scale_y_continuous(limits = ylim_orig)
           )
       },
-      # D: Title: Use label from config file if it is defined
+      # Element D: Title
+      # Use label from config file if it is defined
       # If label is undefined, plot_title will be NULL
       # this would remove the title if not properly handled
       # Must control whether to remove the title, or use the default based on
       # the circumstances in which NULL is specified
       
       # Conditional below passes NULL to labs() only when show_title == FALSE 
+      # Otherwise, labs() is not run and the Seurat default is used
       if (!is.null(plot_title) | show_title == FALSE ){
         list(
           labs(title = plot_title)
         )
-      } # Otherwise, labs() is not run and the Seurat default is used
+      }, 
+      # Element E-F: Number of columns in legend, size of legend keys
+      list(
+        guides(
+          color = 
+            guide_legend(
+              # Element E: key size
+              override.aes = 
+                list(
+                  size = legend_key_size
+                  ),
+              # Element F: number of columns in legend 
+              # (if legend_ncol is NULL, ggplot2 default is used)
+              ncol = 
+                if (!is.null(legend_ncol)){
+                  legend_ncol
+                } else NULL
+              )
+          )
+      ),
+      # Element G: Legend font size
+      if (isTruthy(legend_font_size)){
+        list(
+          theme(
+            legend.text = 
+              element_text(
+                size = legend_font_size
+                ),
+            # Change the spacing between the points (keys) in legend and the text
+            legend.key.size = unit(legend_key_spacing, "points")
+            )
+          )
+      }
     )
 
   # Modify the plot using the layers defined above

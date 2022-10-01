@@ -79,10 +79,10 @@ source_files <-
 # Use source() to import files into R
 sapply(source_files, source)
 
-# Load CSS files for app: CSS files are defined and each file is converted to a
-# <script> tag using includeCSS(). Each tag defined is passed to a list, which 
-# is included in the main UI function.
-# Get list of .css files in www/ directory
+# Load CSS files for app: CSS files are defined and each file is converted to a
+# <script> tag using includeCSS(). Each tag defined is passed to a list, which 
+# is included in the main UI function.
+# Get list of .css files in www/ directory
 css_files <- 
   list.files(
     path = "./www",
@@ -94,9 +94,9 @@ css_files <-
 # Create list of style tags for each CSS file
 css_list <- lapply(css_files, includeCSS)
 
-# Load Javascript files for app: find all .js files in www/ directory
-# and create a list of script() tags using includeScript().
-# Get list of .js files in www/ directory
+# Load Javascript files for app: find all .js files in www/ directory
+# and create a list of script() tags using includeScript().
+# Get list of .js files in www/ directory
 js_files <- 
   list.files(
     path = "./www", 

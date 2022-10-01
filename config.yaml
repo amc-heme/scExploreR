@@ -1,26 +1,46 @@
 %YAML 1.1
 ---
 datasets:
+    # Triana et al. 2021 AML reference object
+    AML_Reference:
+      label: Longitudinal Data
+      # Replace the paths below with the paths to each object and config file
+      # The object should be a .rds file containing a Seurat object.
+      object: ../Public_reference_datasets/Triana_et_al_2021_young_old_healthy_partial_txome.rds
+      # The config file should be a .yaml file. The file is created using
+      # the config app at /config_app.R.
+      config: ../Public_reference_datasets/Triana_et_al_young_old_config.yaml
+      description: >
+          A reference dataset of bone marrow samples from 3 young healthy
+          patients and 3 old healthy patients. Data were collected via abseq.
+          The dataset includes measurements for 97 antibodies, and 462 mRNAs
+          from a panel designed to identify states of HSPCs at all stages of
+          differentiation. The data were obtained by Triana et al.
+          (https://doi.org/10.1038/s41590-021-01059-0).
+      plot: ../Public_reference_datasets/Triana_et_al_young_healthy_preview_umap.png
+      #./www/d0_d30_UMAP.png
+
+
     # Longitudinal object
-    d0_d30:
-        label: Longitudinal Data
-        # Replace the paths below with the paths to each object and config file
-        # The object should be a .rds file containing a Seurat object.
-        object: ./Seurat_Objects/longitudinal_samples_20211025.rds
-        # The config file should be a .yaml file. The file is created using
-        # the config app at /config_app.R.
-        config: ./Seurat_Objects/d0-d30-config.yaml
-        description: >
-            Contains 3 normal bone marrow samples, and longitudinal samples from
-            6 patients with the first sample taken at time of diagnosis and the
-            second sample taken approximately one month afterward.
-        plot: ./www/d0_d30_UMAP.png
-    # Pheresis object
-    pheresis_samples:
-        label: AML (Pheresis) Dataset
-        object: ./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds
-        config: ./Seurat_Objects/AML_TotalVI_config.yaml
-        description: Contains 3 normal bone marrow samples, and 23 AML samples.
-        plot: ./www/aml_UMAP.png
+    # d0_d30:
+    #     label: Longitudinal Data
+    #     # Replace the paths below with the paths to each object and config file
+    #     # The object should be a .rds file containing a Seurat object.
+    #     object: ./Seurat_Objects/longitudinal_samples_20211025.rds
+    #     # The config file should be a .yaml file. The file is created using
+    #     # the config app at /config_app.R.
+    #     config: ./Seurat_Objects/d0-d30-config.yaml
+    #     description: >
+    #         Contains 3 normal bone marrow samples, and longitudinal samples from
+    #         6 patients with the first sample taken at time of diagnosis and the
+    #         second sample taken approximately one month afterward.
+    #     plot: ./www/d0_d30_UMAP.png
+    # # Pheresis object
+    # pheresis_samples:
+    #     label: AML (Pheresis) Dataset
+    #     object: ./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds
+    #     config: ./Seurat_Objects/AML_TotalVI_config.yaml
+    #     description: Contains 3 normal bone marrow samples, and 23 AML samples.
+    #     plot: ./www/aml_UMAP.png
 
 #RSTUDIO_PANDOC: "/Applications/RStudio.app/Contents/MacOS/pandoc"

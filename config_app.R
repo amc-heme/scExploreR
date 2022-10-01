@@ -569,7 +569,7 @@ server <- function(input, output, session) {
   assays_selected <- 
     eventReactive(
       input$assays_selected,
-      ignoreNULL=FALSE,
+      ignoreNULL = FALSE,
       {
         input$assays_selected
         })

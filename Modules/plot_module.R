@@ -80,6 +80,7 @@ plot_module_ui <- function(id,
                            title_menu =                            FALSE,
                            legend_title_menu =                     FALSE,
                            ncol_slider =                           FALSE,
+                           legend_options_menu =                   FALSE,
                            share_scale_checkbox =                  FALSE,
                            color_by_feature_checkbox =             FALSE,
                            super_title_menu =                      FALSE,
@@ -112,6 +113,11 @@ plot_module_ui <- function(id,
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
+  
+  # Disable the "include legend" checkbox if legend_options_menu is TRUE
+  if (legend_options_menu == TRUE){
+    legend_checkbox <- FALSE
+  }
   
   if (ui_component == "options"){
     # UI for plot options ####
@@ -355,6 +361,56 @@ plot_module_ui <- function(id,
       if (ncol_slider == TRUE){
         #Dynamic UI (appears when split_by != "none")
         uiOutput(outputId = ns("ncol_slider"))
+      } else NULL,
+      
+      ## Legend options menu ####
+      if (legend_options_menu == TRUE){
+        collapsible_panel(
+          inputId = ns("legend_options_panel"),
+          label = "Legend Options",
+          active = TRUE,
+          content_background_color = "#D1D1D1",
+          checkboxInput(
+            inputId = ns("legend"),
+            label = "Include Legend",
+            value = TRUE
+            ),
+          sliderInput(
+            inputId = ns("legend_ncol"),
+            label = "Number of columns in legend",
+            ticks = FALSE,
+            value = 1,
+            min = 1,
+            max = 5
+            ),
+          sliderInput(
+            inputId = ns("legend_font_size"),
+            label = "Font size of legend",
+            ticks = FALSE,
+            value = 7,
+            min = 1,
+            max = 15,
+            step = 0.5
+            ),
+          sliderInput(
+            inputId = ns("legend_key_size"),
+            label = "Key size of legend",
+            ticks = FALSE,
+            value = 4,
+            min = 1,
+            max = 8,
+            step = 0.5
+          ),
+          sliderInput(
+            inputId = ns("legend_key_spacing"),
+            label = "Spacing between legend keys",
+            ticks = FALSE,
+            value = 2,
+            min = 0,
+            max = 15,
+            step = 0.25
+          )
+          )
       } else NULL,
       
       ## Display a title above multi-panel plots ####
@@ -2210,7 +2266,32 @@ plot_module_server <- function(id,
                              #     plot_selections$group_by()]]$label
                              # },
                            reduction = plot_selections$reduction(),
-                           palette = palette()
+                           palette = palette(),
+                           # Number of columns in legend
+                           legend_ncol =
+                             if (isTruthy(input$legend_ncol)){
+                               input$legend_ncol
+                             } else {
+                               NULL
+                             },
+                           legend_font_size = 
+                             if (isTruthy(input$legend_font_size)){
+                               input$legend_font_size
+                             } else {
+                               NULL
+                             },
+                           legend_key_size =
+                             if (isTruthy(input$legend_key_size)){
+                               input$legend_key_size
+                             } else {
+                               NULL
+                             },
+                           legend_key_spacing = 
+                             if (isTruthy(input$legend_key_spacing)){
+                               input$legend_key_spacing
+                             } else {
+                               NULL
+                             }
                            )
                      })
                    
