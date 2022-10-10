@@ -16,7 +16,8 @@ library(sortable, quietly = TRUE, warn.conflicts = FALSE)
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
 options(
-  shiny.reactlog = TRUE#, 
+  shiny.reactlog = TRUE#,
+  #shiny.error = browser,
   # Full stack trace for errors 
   #shiny.fullstacktrace = TRUE
   )

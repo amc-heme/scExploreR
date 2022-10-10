@@ -109,7 +109,10 @@ plot_module_ui <- function(id,
                            split_by_default =                      NULL,
                            # Remove column for patient/sample level metadata 
                            # from group by choices
-                           remove_patient_column =                 FALSE
+                           remove_patient_column =                 FALSE,
+                           # If the legend options menu is enabled, whether to
+                           # include slider for legend key spacing
+                           legend_options_menu_include_spacing =   TRUE
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -387,7 +390,7 @@ plot_module_ui <- function(id,
             inputId = ns("legend_font_size"),
             label = "Font size of legend",
             ticks = FALSE,
-            value = 7,
+            value = 9,
             min = 1,
             max = 15,
             step = 0.5
@@ -396,20 +399,24 @@ plot_module_ui <- function(id,
             inputId = ns("legend_key_size"),
             label = "Key size of legend",
             ticks = FALSE,
-            value = 4,
+            value = 2,
             min = 1,
             max = 8,
             step = 0.5
           ),
-          sliderInput(
-            inputId = ns("legend_key_spacing"),
-            label = "Spacing between legend keys",
-            ticks = FALSE,
-            value = 2,
-            min = 0,
-            max = 15,
-            step = 0.25
-          )
+          # Include slider for legend key spacing if enabled
+          # (does not work for bar charts)
+          if (legend_options_menu_include_spacing == TRUE){
+            sliderInput(
+              inputId = ns("legend_key_spacing"),
+              label = "Spacing between legend keys",
+              ticks = FALSE,
+              value = 0,
+              min = 0,
+              max = 15,
+              step = 0.25
+              )
+            } else NULL
           )
       } else NULL,
       
@@ -1598,18 +1605,20 @@ plot_module_server <- function(id,
                      
                      
                      # Include legend
-                     `legend` = reactive({
-                       if (!is.null(input$legend)){
-                         input$legend
-                       } else NULL
-                     }),
+                     `legend` = 
+                       reactive({
+                         if (!is.null(input$legend)){
+                           input$legend
+                           } else NULL
+                         }),
                      
                      # Label groups
-                     `label` = reactive({
-                       if (!is.null(input$label)){
-                         input$label
-                       } else NULL
-                     }),
+                     `label` = 
+                       reactive({
+                         if (!is.null(input$label)){
+                           input$label
+                           } else NULL
+                         }),
                      
                      # Original axes limits
                      # isolate(names(input)) does not work for testing the
@@ -1617,11 +1626,12 @@ plot_module_server <- function(id,
                      # input$original_limits will be either TRUE or FALSE if
                      # the checkbox exists, or NULL if it does not. A suitable
                      # existence test is !is.null(input$original_limits)
-                     `limits` = reactive({
-                       if (!is.null(input$original_limits)){
-                         input$original_limits
-                       } else NULL
-                     }),
+                     `limits` = 
+                       reactive({
+                         if (!is.null(input$original_limits)){
+                           input$original_limits
+                           } else NULL
+                         }),
                      
                      # X-axis feature for scatterplots
                      `scatter_1` = reactive({
@@ -1631,18 +1641,58 @@ plot_module_server <- function(id,
                      }),
                      
                      # Y-axis feature for scatterplots
-                     `scatter_2` = reactive({
-                       if (plot_type == "scatter"){
-                         input$scatter_2
-                       } else NULL
-                     }),
+                     `scatter_2` = 
+                       reactive({
+                         if (plot_type == "scatter"){
+                           input$scatter_2
+                           } else NULL
+                         }),
                      
                      # Remove Title 
-                     `display_coeff` = reactive({
-                       if (!is.null(input$display_coeff)){
-                         input$display_coeff
-                       } else NULL
-                     })
+                     `display_coeff` = 
+                       reactive({
+                         if (!is.null(input$display_coeff)){
+                           input$display_coeff
+                           } else NULL
+                         }),
+                     
+                     # Number of columns in legend
+                     `legend_ncol` = 
+                       reactive({
+                         if (isTruthy(input$legend_ncol)){
+                           input$legend_ncol
+                           } else {
+                             NULL
+                             }
+                         }),
+                     
+                     `legend_font_size` =
+                       reactive({
+                         if (isTruthy(input$legend_font_size)){
+                           input$legend_font_size
+                         } else {
+                           NULL
+                         }
+                       }),
+                     
+                     `legend_key_size` = 
+                       reactive({
+                         if (isTruthy(input$legend_key_size)){
+                           input$legend_key_size
+                         } else {
+                           NULL
+                         }
+                       }),
+                     
+                     `legend_key_spacing` =
+                       reactive({
+                         if (isTruthy(input$legend_key_spacing)){
+                           input$legend_key_spacing
+                         } else {
+                           NULL
+                         }
+                       })
+                       
                    )
                  
                  # 6. Determine if a subset has been used  ---------------------
@@ -2268,30 +2318,16 @@ plot_module_server <- function(id,
                            reduction = plot_selections$reduction(),
                            palette = palette(),
                            # Number of columns in legend
-                           legend_ncol =
-                             if (isTruthy(input$legend_ncol)){
-                               input$legend_ncol
-                             } else {
-                               NULL
-                             },
+                           legend_ncol = plot_selections$legend_ncol(),
+                           # Legend font size
                            legend_font_size = 
-                             if (isTruthy(input$legend_font_size)){
-                               input$legend_font_size
-                             } else {
-                               NULL
-                             },
+                             plot_selections$legend_font_size(),
+                           # Size of legend keys 
                            legend_key_size =
-                             if (isTruthy(input$legend_key_size)){
-                               input$legend_key_size
-                             } else {
-                               NULL
-                             },
+                             plot_selections$legend_key_size(),
+                           # Vertical spacing between each key
                            legend_key_spacing = 
-                             if (isTruthy(input$legend_key_spacing)){
-                               input$legend_key_spacing
-                             } else {
-                               NULL
-                             }
+                             plot_selections$legend_key_spacing()
                            )
                      })
                    
@@ -2465,8 +2501,16 @@ plot_module_server <- function(id,
                           # Plot title: from 3.7.
                           plot_title = plot_title(),
                           palette = palette(),
-                          sort_groups = plot_selections$sort_groups()
-                        ) 
+                          sort_groups = plot_selections$sort_groups(),
+                          # Number of columns in legend
+                          legend_ncol = plot_selections$legend_ncol(),
+                          # Legend font size
+                          legend_font_size = 
+                            plot_selections$legend_font_size(),
+                          # Size of legend keys 
+                          legend_key_size =
+                            plot_selections$legend_key_size()
+                          ) 
                        })
                  } else if (plot_type == "pie"){
                    ### 9.2.8. Metadata pie chart ####

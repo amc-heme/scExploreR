@@ -213,7 +213,8 @@ shiny_umap <- function(object,
               element_text(
                 size = legend_font_size
                 ),
-            # Change the spacing between the points (keys) in legend and the text
+            # Element H: spacing between the points (keys) in legend and the text
+            # Legend.key.size will control spacing for scatterplots
             legend.key.size = unit(legend_key_spacing, "points")
             )
           )
