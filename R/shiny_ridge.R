@@ -171,7 +171,7 @@ shiny_ridge <-
           # Called via guides()
           list(
             guides(
-              # Guide for violin plot is fill
+              # Guide for ridgeplot is fill
               fill = 
                 do.call(
                   guide_legend,

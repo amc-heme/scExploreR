@@ -2493,7 +2493,15 @@ plot_module_server <- function(id,
                            group_by = plot_selections$group_by,
                            show_legend = plot_selections$legend,
                            display_coeff = plot_selections$display_coeff,
-                           palette = palette
+                           palette = palette,
+                           # Number of columns in legend
+                           legend_ncol = plot_selections$legend_ncol(),
+                           # Legend font size
+                           legend_font_size = 
+                             plot_selections$legend_font_size(),
+                           # Size of legend keys 
+                           legend_key_size =
+                             plot_selections$legend_key_size()
                            )
                        })
                  } else if (plot_type == "ridge"){

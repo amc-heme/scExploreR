@@ -119,9 +119,6 @@ shiny_vln <- function(
       # Legend position: "right" if a legend is desired, and "none" if not
       #theme(legend.position = if (show_legend==TRUE) "right" else "none")
     
-    print("legend_ncol")
-    print(legend_ncol)
-    
     # Additional layers
     # legend font size, key size, and number of columns
     layers <-
