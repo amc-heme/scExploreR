@@ -189,38 +189,66 @@ shiny_umap <- function(object,
       # Element E-F: Number of columns in legend, size of legend keys
       list(
         guides(
+          # Guide for dimplot (scatterplot) is color
           color = 
-            guide_legend(
-              # Element E: key size
-              override.aes = 
-                list(
-                  size = legend_key_size
-                  ),
-              # Element F: number of columns in legend 
-              # (if legend_ncol is NULL, ggplot2 default is used)
-              ncol = 
-                if (!is.null(legend_ncol)){
-                  legend_ncol
-                } else NULL
-              )
-          )
-      ),
-      # Element G: Legend font size
-      if (isTruthy(legend_font_size)){
-        list(
-          theme(
-            legend.text = 
-              element_text(
-                size = legend_font_size
-                ),
-            # Element H: spacing between the points (keys) in legend and the text
-            # This is really the size of the boxes displaying each legend key,
-            # which is invisible when using the theme specified by DimPlot
-            # Legend.key.size will control spacing for scatterplots
-            legend.key.size = unit(legend_key_spacing, "points")
+            do.call(
+              guide_legend,
+              # List of arguments to call
+              args =
+                c(
+                  # Empty list: passes no arguments if below values are NULL
+                  list(),
+                  # Element E: Number of columns in legend
+                  if (isTruthy(legend_ncol)){
+                    list(
+                      ncol = legend_ncol
+                    )
+                  },
+                  # Element F: Legend key size
+                  if (isTruthy(legend_key_size)){
+                    list(
+                      override.aes =
+                        list(
+                          size = legend_key_size
+                        )
+                    )
+                  }
+                )
             )
           )
-      }
+      ),
+      
+      list(
+        do.call(
+          theme,
+          # List of arguments to call with theme
+          args = 
+            # Arguments are included in list conditionally. If no elements 
+            # are included, the list() call will return an empty list instead
+            # of NULL (NULL will cause errors with do.call)
+            c(
+              list(),
+              # Element G: Legend font size
+              if (isTruthy(legend_font_size)){
+                list(
+                  legend.text = 
+                    element_text(
+                      size = legend_font_size
+                    )
+                )
+              },
+              # Element H: spacing between the points (keys) in legend and the text
+              # This is really the size of the boxes displaying each legend key,
+              # which are invisible when using the theme set by DimPlot()
+              if (isTruthy(legend_key_spacing)){
+                list(
+                  legend.key.size =
+                    unit(legend_key_spacing, "points")
+                )
+              }
+            )
+        )
+      )
     )
 
   # Modify the plot using the layers defined above

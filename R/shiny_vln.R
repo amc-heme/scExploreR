@@ -1,7 +1,7 @@
-# shiny_vln
+# shiny_vln
 
-# Accepts inputs from plots_selections module and outputs a Seurat FeaturePlot
-# from the Seurat object passed to it. 
+# Accepts inputs from plots_selections module and outputs a Seurat FeaturePlot
+# from the Seurat object passed to it. 
 
 # object: a Seurat object. This can be either the full object or a subset. This 
 # is a reactive-agnostic parameter (can be either reactive or non-reactive).
@@ -22,7 +22,10 @@ shiny_vln <- function(
   assay_config, 
   palette, 
   sort_groups = NULL,
-  custom_factor_levels = NULL
+  custom_factor_levels = NULL,
+  legend_ncol = NULL,
+  legend_font_size = NULL,
+  legend_key_size = NULL
 ){
   # Default value of sort_groups: set to "ascending" if groups is NULL
   if (is.null(sort_groups)){
@@ -112,16 +115,99 @@ shiny_vln <- function(
         # ncol: use value of ncol defined in plot_module when more than
         # one feature is entered
         ncol = if (length(features_entered)==1) NULL else ncol
-        ) +
+        ) #+
       # Legend position: "right" if a legend is desired, and "none" if not
-      theme(legend.position = if (show_legend==TRUE) "right" else "none")
+      #theme(legend.position = if (show_legend==TRUE) "right" else "none")
     
+    print("legend_ncol")
+    print(legend_ncol)
+    
+    # Additional layers
+    # legend font size, key size, and number of columns
+    layers <-
+      c(
+        list(
+          guides(
+            # Guide for violin plot is fill
+            fill = 
+              do.call(
+                guide_legend,
+                # List of arguments to call
+                args =
+                  c(
+                    # Empty list: passes no arguments if none are specified
+                    list(),
+                    # Number of columns in legend
+                    if (isTruthy(legend_ncol)){
+                      list(
+                        ncol = legend_ncol
+                      )
+                    },
+                    # Legend key size
+                    if (isTruthy(legend_key_size)){
+                      list(
+                        override.aes =
+                          list(
+                            size = legend_key_size
+                          )
+                      )
+                    }
+                  )
+              )
+          )
+        ),
+        
+        list(
+          do.call(
+            theme,
+            # List of arguments to call with theme
+            args = 
+              # Arguments are included in list conditionally. If no elements 
+              # are included, the list() call will return an empty list instead
+              # of NULL (NULL will cause errors with do.call)
+              c(
+                list(),
+                # F. Show/hide legend
+                # Legend position: "right" if a legend is desired, 
+                # and "none" if not
+                list(
+                  legend.position = 
+                    if (show_legend == TRUE) {
+                      "right"
+                    } else "none"
+                ),
+                # Legend font size 
+                if (isTruthy(legend_font_size)){
+                  list(
+                    legend.text = 
+                      element_text(
+                        size = legend_font_size
+                      )
+                  )
+                },
+                
+                # Legend key size (passed here as well as guides())
+                if (isTruthy(legend_key_size)){
+                  list(
+                    legend.key.size =
+                      unit(legend_key_size, "points")
+                    )
+                  }
+                )
+            )
+          )
+        )
     
     # Correct titles: change machine-readable name to human-readable name
     # Determine number of plots created
     n_patches <- n_patches(vln_plot)
     # Iterate through each plot, correcting the title
     vln_plot <- hr_title(vln_plot, n_patches, assay_config)
+    
+    # Add layers to plot
+    vln_plot <- 
+      vln_plot +
+      layers
     
     # Return the plot
     vln_plot

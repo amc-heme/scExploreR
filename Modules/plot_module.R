@@ -378,6 +378,7 @@ plot_module_ui <- function(id,
             label = "Include Legend",
             value = TRUE
             ),
+          # Number of columns in legend
           sliderInput(
             inputId = ns("legend_ncol"),
             label = "Number of columns in legend",
@@ -385,7 +386,14 @@ plot_module_ui <- function(id,
             value = 1,
             min = 1,
             max = 5
-            ),
+          ),
+          # If this check box is enabled, the default is used
+          checkboxInput(
+            inputId = ns("default_legend_ncol"),
+            label = "Use default",
+            value = TRUE
+          ),
+          # Font size of legend
           sliderInput(
             inputId = ns("legend_font_size"),
             label = "Font size of legend",
@@ -394,27 +402,45 @@ plot_module_ui <- function(id,
             min = 1,
             max = 15,
             step = 0.5
-            ),
+          ),
+          checkboxInput(
+            inputId = ns("default_legend_font_size"),
+            label = "Use default",
+            value = TRUE
+          ),
+          # Legend key size
           sliderInput(
             inputId = ns("legend_key_size"),
             label = "Key size of legend",
             ticks = FALSE,
-            value = 2,
+            value = 5,
             min = 1,
             max = 10,
             step = 0.5
           ),
+          checkboxInput(
+            inputId = ns("default_legend_key_size"),
+            label = "Use default",
+            value = TRUE
+          ),
           # Include slider for legend key spacing if enabled
           # (does not work for bar charts)
           if (legend_options_menu_include_spacing == TRUE){
-            sliderInput(
-              inputId = ns("legend_key_spacing"),
-              label = "Spacing between legend keys",
-              ticks = FALSE,
-              value = 0,
-              min = 0,
-              max = 15,
-              step = 0.25
+            tagList(
+              sliderInput(
+                inputId = ns("legend_key_spacing"),
+                label = "Spacing between legend keys",
+                ticks = FALSE,
+                value = 0,
+                min = 0,
+                max = 15,
+                step = 0.25
+                ),
+              checkboxInput(
+                inputId = ns("default_legend_key_spacing"),
+                label = "Use default",
+                value = TRUE
+                )
               )
             } else NULL
           )
@@ -1659,7 +1685,10 @@ plot_module_server <- function(id,
                      # Number of columns in legend
                      `legend_ncol` = 
                        reactive({
-                         if (isTruthy(input$legend_ncol)){
+                         # Record value of the legend_ncol slider if the 
+                         # "use default" checkbox is not checked
+                         if (isTruthy(input$legend_ncol) & 
+                             !isTruthy(input$default_legend_ncol)){
                            input$legend_ncol
                            } else {
                              NULL
@@ -1668,7 +1697,10 @@ plot_module_server <- function(id,
                      
                      `legend_font_size` =
                        reactive({
-                         if (isTruthy(input$legend_font_size)){
+                         # Record value of the legend font size slider if the 
+                         # "use default" checkbox is not checked
+                         if (isTruthy(input$legend_font_size) & 
+                             !isTruthy(input$default_legend_font_size)){
                            input$legend_font_size
                          } else {
                            NULL
@@ -1677,7 +1709,10 @@ plot_module_server <- function(id,
                      
                      `legend_key_size` = 
                        reactive({
-                         if (isTruthy(input$legend_key_size)){
+                         # Record value of the legend key size slider if the 
+                         # "use default" checkbox is not checked
+                         if (isTruthy(input$legend_key_size) & 
+                             !isTruthy(input$default_legend_key_size)){
                            input$legend_key_size
                          } else {
                            NULL
@@ -1686,7 +1721,10 @@ plot_module_server <- function(id,
                      
                      `legend_key_spacing` =
                        reactive({
-                         if (isTruthy(input$legend_key_spacing)){
+                         # Record value of the legend key spacing slider if the 
+                         # "use default" checkbox is not checked
+                         if (isTruthy(input$legend_key_spacing) & 
+                             !isTruthy(input$default_legend_key_spacing)){
                            input$legend_key_spacing
                          } else {
                            NULL
@@ -2406,7 +2444,15 @@ plot_module_server <- function(id,
                            palette = palette(),
                            sort_groups = plot_selections$sort_groups(),
                            custom_factor_levels = 
-                             plot_selections$custom_refactoring()
+                             plot_selections$custom_refactoring(),
+                           # Number of columns in legend
+                           legend_ncol = plot_selections$legend_ncol(),
+                           # Legend font size
+                           legend_font_size = 
+                             plot_selections$legend_font_size(),
+                           # Size of legend keys 
+                           legend_key_size =
+                             plot_selections$legend_key_size()
                            )
                        })
                    
