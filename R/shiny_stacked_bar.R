@@ -238,72 +238,8 @@ shiny_stacked_bar <-
                     }
                   )
               )
+            )
           )
-        )
-        
-        # list(
-        #   guides(
-        #     # Stacked bar plots use "fill" aesthetic (umaps, feature plots use
-        #     # "color" instead)
-        #     fill =
-        #       guide_legend(
-        #         # I. Number of columns in legend
-        #         ncol = 
-        #           if (isTruthy(legend_ncol)){
-        #             legend_ncol
-        #             } else NULL,
-        #         # J. Size of legend keys
-        #         override.aes =
-        #           list(
-        #             size = legend_key_size
-        #             )
-        #         )
-        #     )
-        #   )
-        
-        # E. Show/hide plot title
-        # Plot title is shown by default
-        # if (show_title == FALSE){
-        #   list(
-        #     theme(
-        #       plot.title = element_blank()
-        #       )
-        #     )
-        #   },
-        
-        # F. Show/hide legend title (shown by default)
-        # list(
-        #   theme(
-        #     legend.position = 
-        #       if (show_legend==TRUE) {
-        #         "right"
-        #       } else "none"
-        #     )
-        #   ),
-        
-        # G. Legend font size 
-        # if (isTruthy(legend_font_size)){
-        #   list(
-        #     theme(
-        #       legend.text = 
-        #         element_text(
-        #           size = legend_font_size
-        #         )
-        #     )
-        #   )
-        # },
-        
-        # J. Legend key spacing
-        # The amount of space between each key in the legend
-        # if (isTruthy(legend_key_spacing)){
-        #   list(
-        #     theme(
-        #       #Spacing between the points (keys) in legend and the text
-        #       legend.key.size = 
-        #         unit(legend_key_spacing, "points")
-        #     )
-        #   )
-        # }
         )
         
     plot <-

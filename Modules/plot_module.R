@@ -433,7 +433,7 @@ plot_module_ui <- function(id,
                 ticks = FALSE,
                 value = 0,
                 min = 0,
-                max = 15,
+                max = 35,
                 step = 0.25
                 ),
               checkboxInput(
@@ -2516,7 +2516,15 @@ plot_module_server <- function(id,
                                 custom_xlim()
                               } else {
                                 NULL
-                              }
+                              },
+                            # Number of columns in legend
+                            legend_ncol = plot_selections$legend_ncol(),
+                            # Legend font size
+                            legend_font_size = 
+                              plot_selections$legend_font_size(),
+                            # Size of legend keys 
+                            legend_key_size =
+                              plot_selections$legend_key_size()
                             ) 
                          }
                        )
