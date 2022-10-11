@@ -84,7 +84,8 @@ shiny_stacked_bar <-
         # specified in `fill` argument
         mapping = aes(fill = .data[[group_by]]), 
         # "fill" creates a proportion bar chart
-        position = "fill"
+        position = "fill",
+        key_glyph = "rect"
       ) +
       theme_cowplot() +
       theme(
@@ -191,23 +192,15 @@ shiny_stacked_bar <-
                         size = legend_font_size
                       )
                   )
-                } #,
+                },
                 
-                # H. Legend key spacing
-                # The amount of space between each key in the legend
-                # if (isTruthy(legend_key_spacing)){
-                #   list(
-                #     legend.key.size = 
-                #       unit(legend_key_spacing, "points")
-                #     )
-                # }#,
-                # I_ALT. Legend key size 
-                # if (isTruthy(legend_key_size)){
-                #   list(
-                #     legend.key.size = 
-                #       unit(legend_key_size, "points")
-                #   )
-                # }
+                #I_ALT. Legend key size
+                if (isTruthy(legend_key_size)){
+                  list(
+                    legend.key.size =
+                      unit(legend_key_size, "points")
+                  )
+                }
               )
           )
         ),

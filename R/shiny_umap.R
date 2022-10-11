@@ -214,6 +214,8 @@ shiny_umap <- function(object,
                 size = legend_font_size
                 ),
             # Element H: spacing between the points (keys) in legend and the text
+            # This is really the size of the boxes displaying each legend key,
+            # which is invisible when using the theme specified by DimPlot
             # Legend.key.size will control spacing for scatterplots
             legend.key.size = unit(legend_key_spacing, "points")
             )

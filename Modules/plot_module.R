@@ -401,7 +401,7 @@ plot_module_ui <- function(id,
             ticks = FALSE,
             value = 2,
             min = 1,
-            max = 8,
+            max = 10,
             step = 0.5
           ),
           # Include slider for legend key spacing if enabled
@@ -2583,7 +2583,22 @@ plot_module_server <- function(id,
                      )
                  }
                  
-                 # 11. Download handler ----------------------------------------
+                 # 11. Adjust Legend Options -----------------------------------
+                 # if (plot_type %in% c("violin", "proportion")){
+                 #   # The rectangular key glyphs used by violin and cell type 
+                 #   # proportion plots respond differently to changes in the 
+                 #   # legend key size, and thus require different ranges to be
+                 #   # available for the key size entry.
+                 #   updateSliderInput(
+                 #    inputId = "legend_key_size",
+                 #    value = 7,
+                 #    min = 1,
+                 #    max = 20,
+                 #    step = 1
+                 #   )
+                 # }
+                 
+                 # 12. Download handler ----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 
