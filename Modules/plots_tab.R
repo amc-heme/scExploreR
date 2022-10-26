@@ -351,6 +351,7 @@ plots_tab_ui <- function(id,
                super_title_menu =           TRUE,
                share_scale_checkbox =       TRUE,
                color_by_feature_checkbox =  TRUE,
+               blend_checkbox =             TRUE,
                order_checkbox =             TRUE,
                label_checkbox =             TRUE,
                legend_checkbox =            TRUE,
@@ -996,8 +997,8 @@ plots_tab_server <- function(id,
                      ignoreNULL=FALSE,
                      label = "Plots Subset",
                      {
-                       # Display spinner over main window while the
-                       # subset is being computed
+                       # Display spinner over main window while the
+                       # subset is being computed
                        main_spinner$show()
 
                        # Also display a spinner over the text showing
@@ -1028,8 +1029,8 @@ plots_tab_server <- function(id,
                              error_handler(
                                session,
                                cnd_message = cnd$message,
-                               # Uses a list of
-                               # subset-specific errors
+                               # Uses a list of
+                               # subset-specific errors
                                error_list = error_list$subset_errors
                                )
 
@@ -1090,7 +1091,7 @@ plots_tab_server <- function(id,
                              ),
                            #Show notification for 8 seconds
                            duration = 8,
-                           session=session
+                           session = session
                          )
                        }
                      }

@@ -84,6 +84,7 @@ plot_module_ui <- function(id,
                            color_by_feature_checkbox =             FALSE,
                            super_title_menu =                      FALSE,
                            sort_groups_menu =                      FALSE,
+                           blend_checkbox =                        FALSE,
                            order_checkbox =                        FALSE,
                            label_checkbox =                        FALSE,
                            legend_checkbox =                       FALSE,
@@ -393,6 +394,18 @@ plot_module_ui <- function(id,
           )
         )
       } else NULL,
+      
+      ## Blend features (feature plots only, with two features selected) ####
+      if (blend_checkbox == TRUE){
+        hidden(
+          # Checkbox is shown when exactly two features are selected
+          checkboxInput(
+            inputId = ns("blend"),
+            label = "View feature co-expression",
+            value = FALSE
+            )
+          )
+        } else NULL,
       
       ## Order cells by expression (feature plots only) ####
       if (order_checkbox == TRUE){
@@ -1123,7 +1136,7 @@ plot_module_server <- function(id,
                    }
                  }
                  
-                 # 4. Show/Hide Menus ------------------------------------------
+                 # 4. Show/hide...  --------------------------------------------
                  ## 4.1. Super Title Menu ####
                  if (plot_type == "feature"){
                    observe({
@@ -1388,6 +1401,33 @@ plot_module_server <- function(id,
                    })
                  }
                  
+                 ## 4.7. Blend setting for feature plots ####
+                 if (plot_type == "feature"){
+                   observe({
+                     elem_id = "blend"
+                     
+                     # The blend checkbox should only be visible when 
+                     # two features are entered.
+                     if (length(features()) == 2){
+                       showElement(
+                         id = elem_id
+                         )
+                       } else {
+                         hideElement(
+                           id = elem_id
+                           )
+                         
+                         # Also, set the blend checkbox to FALSE 
+                         # if it was checked
+                         updateCheckboxInput(
+                           session = session,
+                           inputId = elem_id,
+                           value = FALSE
+                         )
+                         }
+                     })
+                   }
+                 
                  # 5. Record plot_selections -----------------------------------
                  # list of reactives for storing selected inputs
                  plot_selections <- 
@@ -1483,6 +1523,14 @@ plot_module_server <- function(id,
                            input$color_by_feature
                          } else NULL
                        }),
+                     
+                     # Blend features
+                     `blend` =
+                       reactive({
+                         if (isTruthy(input$blend)){
+                           input$blend
+                           } else NULL
+                         }),
                      
                      # Order cells by expression
                      `order` = 
@@ -2229,6 +2277,7 @@ plot_module_server <- function(id,
                            # Group by: influences label placement
                            group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
+                           blend = plot_selections$blend(),
                            order = plot_selections$order(),
                            show_label = plot_selections$label(),
                            show_legend = plot_selections$legend(),
@@ -2263,6 +2312,16 @@ plot_module_server <- function(id,
                              } else {
                                palette$categorical_palette()
                              },
+                           # Palette for blended feature plots
+                           # Use custom color entry for palette (interim)
+                           blend_palette =
+                             if (
+                               isTruthy(plot_selections$min_color()) & 
+                               isTruthy(plot_selections$max_color())
+                               ){
+                               c(plot_selections$min_color(), 
+                                 plot_selections$max_color())
+                               } else NULL,
                            reduction = plot_selections$reduction(),
                            show_title = 
                              if (input$title_settings == "none") FALSE else TRUE,

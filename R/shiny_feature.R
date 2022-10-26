@@ -1,28 +1,57 @@
-# shiny_feature
-
-# Accepts inputs from plots_selections module and outputs a Seurat FeaturePlot
-# from the Seurat object passed to it. 
-
-# object: a Seurat object. This can be either the full object or a subset. This 
-# is a reactive-agnostic parameter (can be either reactive or non-reactive).
-# features_entered: a character vector giving the features entered by the user.
-# group_by: Influences labels
-# split_by: user specified split_by metadata category.
-# show_label: user choice as to whether labels should be shown on the plot
-# show_legend: user choice as to whether a legend should be shown
-# ncol: number of columns, as specified by user
-# is_subset: reactive boolean value stating whether the object is a subset
-# original_limits: user choice as to whether original axes limits should be used
-# assay_config: the assays section of the config file loaded at app startup.
-# xlim_orig: the original x limits for the plot, computed from the full object 
-# at app startup
-# ylim_orig: the original y limits for the umap, computed from full object at 
-# app startup
+#' Interactive Feature Plots in scExploreR
+#'
+#' Accepts inputs from plots_selections module and outputs a Seurat FeaturePlot 
+#' from the Seurat object passed to it. 
+#'
+#' @param object A Seurat object. This can be either the full object or a subset.
+#' @param features_entered  a character vector giving the features entered by 
+#' the user.
+#' @param assay_config the assays section of the config file, loaded at app 
+#' startup and upon changing datasets.
+#' @param split_by user-specified metadata category for splitting plots.
+#' @param group_by the metadata column to use for showing labels on the plot, 
+#' if labels are enabled.
+#' @param blend Whether to use blended feature plots for feature co-expression. 
+#' Must enter exactly two features to use this setting.
+#' @param order When TRUE, plot each cell in order of expression, so the cells 
+#' with the highest expression are plotted last and appear in front of cells 
+#' with lower expression.
+#' @param show_label User choice as to whether labels should be shown on the plot.
+#' @param show_legend User choice as to whether a legend should be shown.
+#' @param is_subset Reactive boolean value stating whether the object is a subset
+#' @param original_limits User choice as to whether original axes limits should 
+#' be used
+#' @param xlim_orig The original x limits for the plot, computed from the full 
+#' object for each reduction enabled. 
+#' @param ylim_orig The original x limits for the plot, computed from the full 
+#' object for each reduction enabled. 
+#' @param show_title Whether to show a title above the plot
+#' @param super_title A string passed to this variable will appear above all 
+#' panels in the plot, when plotting a feature with a split_by category.
+#' @param share_scale For plots with multiple features, whether to keep the 
+#' limits on the color scale for plotting expression consistent across features.
+#' @param color_by_feature For plots with multiple features. when TRUE, use 
+#' separate colors to plot each feature (derived from the supplied palette).
+#' @param custom_titles A character vector used for the title of a single 
+#' feature plot with no split by category, or the titles of a single feature 
+#' plot with a split by category, or a multi-feature plot with no split by 
+#' category. This currently does not work for multi-feature plots with a 
+#' split_by category and blended feature plots.
+#' @param legend_title A string to display as the title of the legend. Does not 
+#' work for blended feature plots.
+#' @param ncol Number of columns to use for displaying a single-feature plot. 
+#' This does not work for multi-feature plots with a split by category.
+#' @param palette A color palette to use for plotting expression values. This 
+#' is ignored for blended feature plots.
+#' @param blend_palette a two-color palette to use for blended feature plots.
+#' @param reduction the reduction to show for feature expression.
+#'
 shiny_feature <- function(object, 
                           features_entered, 
                           assay_config, 
                           split_by, 
                           group_by = NULL,
+                          blend = FALSE, 
                           order = FALSE, 
                           show_label = FALSE, 
                           show_legend = TRUE, 
@@ -38,16 +67,16 @@ shiny_feature <- function(object,
                           legend_title = NULL,
                           ncol = NULL, 
                           palette = NULL,
-                          blend = FALSE, 
+                          blend_palette = NULL,
                           reduction = NULL
 ){
-  # validate will keep plot code from running if the subset
-  # is NULL (no cells in subset)
+  # validate will keep plot code from running if the subset
+  # is NULL (no cells in subset)
   validate(
     need(
       if (is.reactive(object)) object() else object,
-      # No message displayed (a notification is already
-      # displayed) (*was displayed*)
+      # No message displayed (a notification is already
+      # displayed) (*was displayed*)
       message = ""
     )
   )
@@ -110,8 +139,12 @@ shiny_feature <- function(object,
       label = show_label,
       order = order
       )
-  } else if (length(features_entered) > 1 & blend == FALSE) {
-    # Multi-feature plot: method depends on split_by choice
+  } else if (
+    # Multi-feature plots without blend enabled
+    (length(features_entered) == 2 & !isTruthy(blend))|
+    (length(features_entered) > 2)
+    ) {
+    # Function used for plot depends on split_by choice
     if (split_by == "none"){
       # Use feature plot wrapper for multiple feature plots with 
       # no split_by category 
@@ -147,7 +180,7 @@ shiny_feature <- function(object,
       # If a split_by category is defined, use Seurat FeaturePlot function
       feature_plot <-
         FeaturePlot(
-          # Object or subset (reactive-agnostic)
+          # Object or subset
           object,
           features = features_entered,
           split.by = if (split_by != "none") split_by else NULL,
@@ -177,9 +210,9 @@ shiny_feature <- function(object,
       #     assay_config
       #     )
       
-      # Modify plot after creation with ggplot layers according
-      # to user input
-      # 'layers' is a list of layers that is applied to the plot
+      # Modify plot after creation with ggplot layers according
+      # to user input
+      # 'layers' is a list of layers that is applied to the plot
       layers <-
         c(list(
           # Element A
@@ -202,7 +235,7 @@ shiny_feature <- function(object,
           # original_limits reactive is truthy
           # (i.e. both present and checked).
           if (is_subset & isTruthy(original_limits)){
-            # If so, add original limits to the list
+            # If so, add original limits to the list
             list(
               scale_x_continuous(limits = xlim_orig),
               scale_y_continuous(limits = ylim_orig)
@@ -230,5 +263,74 @@ shiny_feature <- function(object,
       # Return finished plot for display
       feature_plot
     }
-  } 
+  } else if (length(features_entered) == 2 & isTruthy(blend)){
+    # Blended feature plot
+    
+    # Palette for blending: fill to red and blue if NULL
+    if (!isTruthy(blend_palette)){
+      blend_palette <- c("#FF0000", "#0000FF")
+    }
+    
+    # Colors for plot: use the supplied blend palette (default is blue and red)
+    # Add "lightgrey" to the two colors in the blend palette (color to use when
+    # neither feature is expressed. This could be changed in the future, or 
+    # palettes with three colors could be used instead).
+    blend_colors <- 
+      c(
+        c("lightgrey"),
+        blend_palette
+      )
+    
+    # Use Seurat::FeaturePlot
+    feature_plot <-
+      FeaturePlot(
+        # Object or subset
+        object,
+        features = features_entered,
+        cols = blend_colors,
+        blend = blend,
+        split.by = if (split_by != "none") split_by else NULL,
+        # ncol: valid when split.by is not defined
+        ncol = ncol,
+        # Order: whether to plot cells in order by expression
+        # Set to FALSE if undefined
+        order = if (is.null(order)) FALSE else order,
+        # Show/hide cluster labels
+        label = show_label,
+        # Reduction: uses the input for reduction if it exists, otherwise
+        # it is set to NULL and will use default settings.
+        reduction = if(!is.null(reduction)) reduction else NULL
+        )
+
+    # Modify plot after creation with ggplot layers according
+    # to user input
+    # For blended feature plots, the only layer to add is original axes limits.
+    
+    # There is no legend on blended feature plots, so legend position element 
+    # is not shown
+    
+    # Axis limits: use limits from full dataset if specified.
+    # Test if subset is present and if the corresponding original_limits 
+    # reactive is truthy (i.e. both present and checked).
+    if (is_subset & isTruthy(original_limits)){
+      # If so, adjust plot to use x- and y- axis limits from the full object
+      feature_plot <-
+        feature_plot &
+        theme(
+          scale_x_continuous(limits = xlim_orig),
+          scale_y_continuous(limits = ylim_orig)
+        )
+    }
+    
+    # layers <- c()
+    # Modify the plot using the layers defined above
+    # suppressMessages(
+    #   feature_plot <-
+    #     feature_plot &
+    #     layers
+    # )
+    
+    # Return finished plot for display
+    feature_plot
+  }
 }
