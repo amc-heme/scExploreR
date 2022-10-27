@@ -267,19 +267,10 @@ shiny_feature <- function(object,
     # Blended feature plot
     
     # Palette for blending: fill to red and blue if NULL
+    # "lightgrey" is the Seurat default color used when neither feature is expressed 
     if (!isTruthy(blend_palette)){
-      blend_palette <- c("#FF0000", "#0000FF")
+      blend_palette <- c("lightgrey", "#FF0000", "#0000FF")
     }
-    
-    # Colors for plot: use the supplied blend palette (default is blue and red)
-    # Add "lightgrey" to the two colors in the blend palette (color to use when
-    # neither feature is expressed. This could be changed in the future, or 
-    # palettes with three colors could be used instead).
-    blend_colors <- 
-      c(
-        c("lightgrey"),
-        blend_palette
-      )
     
     # Use Seurat::FeaturePlot
     feature_plot <-
@@ -287,7 +278,7 @@ shiny_feature <- function(object,
         # Object or subset
         object,
         features = features_entered,
-        cols = blend_colors,
+        cols = blend_palette,
         blend = blend,
         split.by = if (split_by != "none") split_by else NULL,
         # ncol: valid when split.by is not defined
