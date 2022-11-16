@@ -1,0 +1,65 @@
+---
+title: "scExplorer Tutorial"
+output: 
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# scExploreR Walkthrough
+
+This tutorial will guide you through the use of scExploreR to analyze your data. Key functionality is grouped into three tabs: plots, differential expression, and gene correlations. The interface on each tab displays the plots and analysis results on the right, and the options on the left hand panel (referred to in this document as the options panel). The plots tab is the recommended starting point for analysis. It is useful for gaining a qualitative overview of the dataset as a jumping off point for analysis in the other tabs, and it can also be used to visualize the results generated in analysis-specific tabs. This walkthrough will begin with the plots tab.
+
+# Plots Tab {#plots-tab}
+
+At the top of the options panel you will see several switches, one for each plot type. To show/hide each plot, click the switch. The available plot types are described below. All plots may be created from either the full dataset or a subset of cells based on metadata. For more, see the subsetting section.
+
+-   **DimPlot:** shows each cell on dimensional reduction plot, either a UMAP, or a set of other visualizations enabled by the browser admin.
+
+-   **Feature Plot:** a DimPlot with cells colored by expression of a feature (gene, surface protein, or other data enabled by the browser admin).
+
+-   **Violin Plot:** displays the distribution of expression of a feature across groups of cells in the sample.
+
+-   **Dot Plot:** shows the average expression and extent of expression of multiple features across groups of cells in the sample.
+
+-   **Scatterplot:** compares expression of two genes in a sample. All cells are plotted according to the expression value of each of the two features entered. Correlation between genes may be quantified in the [Gene Correlations Tab](#gene-correlations).
+
+-   **Ridge Plot:** displays a density plot of the expression of a feature in all cells, or in groups of cells.
+
+-   **Cell Proportion Plot:** used to visualize metadata. Shows the proportion of cells belonging to each value of a categorical metadata variable, and compares proportions across each value of a second categorical metadata variable.
+
+-   **Metadata Pie Chart:** shows metadata at the sample/patient level. The pie chart displays the number of samples/patients in each categorical metadata value.
+
+## Dimensional Reduction Plots
+
+Dimensional reduction plots are used to summarize overall gene expression data in the sample (for more, see [Interpereting scRNA-seq plots](scRNA_Plots_Explained.html)).
+
+The cells in the plot are colored by membership in each group of a categorical metadata variable. To change the variable used to color the cells, go to **DimPlot Specific Options -\> Metadata to Group by**.
+
+### Split plots by a Metadata Variable
+
+Dimensional reduction plots may be split by a categorical metadata variable to compare the gene expression summary across different values of the variable. For example, the gif below shows how to view a separate dimensional reduction plot for each patient. Variables may be chosen via **DimPlot Specific Options -\> Metadata to Split by**.
+
+[Add gif here]
+
+### Choose Projection
+
+If the user setting up the browser has added multple projection methods to the current dataset, they may by chosen from **DimPlot Specific Options -\> Choose Projection.** There are numerous means of projecting data, the UMAP being the most common for scRNA-seq data. For more information on the projections included, please contact the user who set up the browser.
+
+### Customizing Plots
+
+Plots in scExplorer may be easily customized for display in presentations or manuscripts. This vignette will explore the options available for dimensionality reduction plots.
+
+#### Plot Title
+
+The title of the dimensional reduction plot defaults to the name of the selected group by metadata variable. This may be set to any value desired, and it may also be removed from the plot. To set a custom title, go to **DimPlot Specific Options -\> Choose Projection -\> Custom**. When this option is selected, a box will display beneath the menu where a custom title may be entered. To apply the title, press Update.
+
+[Custom Title GIF]
+
+## Subsets
+
+# Gene Correlations Tab {#gene-correlations}
