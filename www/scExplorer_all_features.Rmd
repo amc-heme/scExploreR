@@ -41,7 +41,7 @@ At the top of the options panel you will see several switches, one for each plot
 
 -   **Metadata Pie Chart:** shows metadata at the sample/patient level. The pie chart displays the number of samples/patients in each categorical metadata value.
 
-## Feature Entry
+## Feature Selection {#feature-selection}
 
 When plot types based on a gene or multiple genes are selected, the feature entry menu will display beneath the switches. Any gene in the dataset may be entered here. Surface proteins, gene signatures, and other data enabled by the user setting up the browser may also be entered in this menu.
 
@@ -85,13 +85,24 @@ This setting applies to split plots only, and remains hidden until a selection i
 
 When this checkbox is enabled, labels will display above each cluster of cells according to the currently selected group by variable.
 
-#### Include Legend 
+#### Include Legend
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
 
 ## Feature Plots
 
-Feature plots are dimensional reduction plots that are colored according to feature expression instead of categorical metadata. Feature plots are useful for determining which cell
+Feature plots are dimensional reduction plots that are colored according to feature expression instead of categorical metadata. Among other things, feature plots can be used to see which cell types are expressing a feature and to what extent, or to visualize differences in expression between treatment groups when a split by metadata variable is selected.
+
+```{=html}
+<!-- #### Metadata to Group By
+
+For feature plots, the group by selection menu controls the metadata to use for labeling cells, if
+
+This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right. -->
+```
+#### Metadata to Split By
+
+This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side. One panel will be created for each value in the split by variable. If a single feature is entered in the [feature selection](#feature-selection) menu, the number of columns used for the panels may be adjusted. If two or more features are entered , however, the layout is fixed to place features by row and split by groups by column.
 
 ## Violin Plots
 
