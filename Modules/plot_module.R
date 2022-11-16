@@ -71,6 +71,7 @@ plot_module_ui <- function(id,
                            meta_choices = NULL,
                            plot_label = "",
                            reductions = NULL,
+                           patient_colname = NULL,
                            # UI Elements: Included when the arguments are TRUE
                            reductions_menu =                       FALSE,
                            scatterplot_ui =                        FALSE,
@@ -89,6 +90,7 @@ plot_module_ui <- function(id,
                            display_coeff =                         FALSE,
                            limits_checkbox =                       FALSE,
                            custom_colors =                         FALSE,
+                           custom_x_axis_ui =                      FALSE,
                            manual_dimensions =                     FALSE,
                            separate_features =                     FALSE,
                            download_button =                       FALSE,
@@ -99,11 +101,14 @@ plot_module_ui <- function(id,
                            group_by_include_none =                 FALSE,
                            split_by_include_none =                 TRUE,
                            # Alternate label for group_by/split_by menus
-                           group_by_label =                   NULL,
-                           split_by_label =                   NULL,
+                           group_by_label =                        NULL,
+                           split_by_label =                        NULL,
                            # Default values for group by and split by choices
                            group_by_default =                      NULL,
-                           split_by_default =                      NULL
+                           split_by_default =                      NULL,
+                           # Remove column for patient/sample level metadata 
+                           # from group by choices
+                           remove_patient_column =                 FALSE
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -161,6 +166,13 @@ plot_module_ui <- function(id,
           } else {
             meta_choices()
           }
+        
+        # Remove the metadata category used for patient- or sample- level 
+        # metadata, if the plot employs patient/sample level metadata
+        if (remove_patient_column == TRUE){
+          group_by_choices <-
+            group_by_choices[!group_by_choices %in% patient_colname()]
+        }
         
         # If TRUE, add element
         selectInput(
@@ -265,25 +277,6 @@ plot_module_ui <- function(id,
               id = ns("custom_title_div"),
               class = "compact-options-container",
               tags$b("Enter Custom Title"),
-              # tags$p(
-              #   sytle = "font-size: 0.9em;",
-              #   "(Press enter to update)"
-              #   ),
-              # searchInput(
-              #   inputId = ns("custom_title_searchinput"),
-              #   label = NULL,
-              #   # Default value depends on current group-by category and is 
-              #   # set server-side 
-              #   value = "",
-              #   # Search button: must be defined for updateSearchInput 
-              #   # to trigger properly, but will be hidden 
-              #   btnSearch = icon("sync"),
-              #   # Icon for reset button
-              #   btnReset = icon("redo-alt"),
-              #   # resetValue: set to NULL to disable automatic resetting
-              #   # resetting will occur manually via the server function
-              #   resetValue = NULL
-              # ),
               textInput(
                 inputId = ns("custom_title"),
                 label = NULL,
@@ -337,15 +330,24 @@ plot_module_ui <- function(id,
           )
         } else NULL,
       
-      ## Order of groups (dot plots) ####
+      ## Refactor groups (dot, violin plots) ####
       if (sort_groups_menu == TRUE){
-        selectInput(
-          inputId = ns("sort_groups"),
-          label = "Order of Groups on plot",
-          # Can select all options except "none"
-          choices = 
-            c("Ascending" = "ascending",
-              "Descending" = "descending")
+        tagList(
+          selectInput(
+            inputId = ns("sort_groups"),
+            label = "Order of Groups on plot",
+            # Can select all options except "none"
+            choices =
+              c("Ascending" = "ascending",
+                "Descending" = "descending",
+                "Custom" = "custom")
+            ),
+          # Custom refactoring sortable input (shows when custom is chosen above)
+          hidden(
+            uiOutput(
+              outputId = ns("refactor_sortable")
+              )
+            )
           )
         } else NULL,
       
@@ -392,7 +394,7 @@ plot_module_ui <- function(id,
         )
       } else NULL,
       
-      ## Oder cells by expression (feature plots only) ####
+      ## Order cells by expression (feature plots only) ####
       if (order_checkbox == TRUE){
         checkboxInput(
           inputId = ns("order"),
@@ -473,6 +475,28 @@ plot_module_ui <- function(id,
             )
           )
         } else NULL,
+      
+      ## Custom x-axis limits ####
+      # Currently for ridge plots only
+      if (custom_x_axis_ui == TRUE){
+        hidden(
+          div(
+            id = ns("custom_xlim_checkbox"),
+            checkboxInput(
+              inputId = ns("use_custom_xlim"),
+              label = "Define Custom X-axis Limits",
+              value = FALSE
+              )
+             ),
+          div(
+            id = ns("custom_xlim_interface"),
+            custom_xlim_ui(
+              id = ns("custom_xlim"),
+              compact = TRUE
+              )
+            )
+          )
+      } else NULL,
       
       ## UI for user control of plot dimensions ####
       if (manual_dimensions == TRUE){
@@ -601,8 +625,12 @@ plot_module_ui <- function(id,
 #' startup.
 #' @param palette A palette of colors currently selected by the user, to be used
 #' on the plot.
+#' @param metadata_config The metadata section of the config file loaded in the
+#' main server function, at startup and upon changing the object.
 #' @param assay_config The assay section of the config file loaded in the main
-#' server function
+#' server function, at startup and upon changing the object.
+#' @param patient_colname The metadata column to use for computing patient- or 
+#' sample level metadata for pie charts. 
 #' @param separate_features_server A boolean giving whether server code to 
 #' process separate features (features specific to the plot created by this 
 #' module) should be ran. This should be TRUE for all plots where the user can 
@@ -622,6 +650,7 @@ plot_module_server <- function(id,
                                palette = NULL, #Reactive
                                metadata_config = NULL,
                                assay_config = NULL,
+                               patient_colname = NULL,
                                separate_features_server = FALSE #Non-reactive
                                ){
   moduleServer(id,
@@ -638,7 +667,8 @@ plot_module_server <- function(id,
                        "dot",
                        "scatter",
                        "ridge",
-                       "proportion"
+                       "proportion",
+                       "pie"
                        )
                  ){
                    showNotification(
@@ -647,7 +677,7 @@ plot_module_server <- function(id,
                          icon = "skull-crossbones",
                          # Change to feature when other 
                          # features are supported
-                         glue("Plot module for {id} has an unrecognized 
+                         glue("Plot module {id} has an unrecognized 
                               value for argument `plot_type`. This is a 
                               development error, please contact us and we will 
                               resolve the issue.")
@@ -687,9 +717,10 @@ plot_module_server <- function(id,
                    }
                  
                  # 3. Title Settings Menu --------------------------------------
-                 # Title settings and custom titles are currently only enabled 
-                 # for DimPlots and Feature Plots
-                 if (plot_type %in% c("dimplot", "feature", "proportion")){
+                 # Title settings and custom titles are enabled for the plot 
+                 # types below
+                 if (plot_type %in% 
+                     c("dimplot", "feature", "proportion", "pie")){
                    # Reactive trigger for updating single custom title input
                    update_title_single <- makeReactiveTrigger()
                    
@@ -710,7 +741,7 @@ plot_module_server <- function(id,
                        
                        # Conditional tree to determine if 
                        # custom titles are possible
-                       if (plot_type %in% c("dimplot", "proportion")){
+                       if (plot_type %in% c("dimplot", "proportion", "pie")){
                          # DimPlots: custom titles are always possible
                          # Proportion stacked bar plots use same behavior as
                          # DimPlots
@@ -809,7 +840,7 @@ plot_module_server <- function(id,
                    # selections that influence the default title change
                    observeEvent(
                      # EventExpr depends on plot type
-                     if (plot_type %in% c("dimplot", "proportion")){
+                     if (plot_type %in% c("dimplot", "proportion", "pie")){
                        c(input$title_settings,
                          object(),
                          plot_selections$group_by()
@@ -1004,8 +1035,9 @@ plot_module_server <- function(id,
                      #     )
                    }
                    
-                   ## 3.7. Custom title input to dimplots, stacked bar plots ####
-                   if (plot_type %in% c("dimplot", "proportion")){
+                   ## 3.7. Custom title input #### 
+                   # Used for dimplots, stacked bar plots, pie charts ####
+                   if (plot_type %in% c("dimplot", "proportion", "pie")){
                      plot_title <-
                        reactive({
                          # Define default title to use if a custom title is not
@@ -1091,7 +1123,7 @@ plot_module_server <- function(id,
                    }
                  }
                  
-                 # 4. Show/Hide Feature Plot-Specific Menus --------------------
+                 # 4. Show/Hide Menus ------------------------------------------
                  ## 4.1. Super Title Menu ####
                  if (plot_type == "feature"){
                    observe({
@@ -1302,6 +1334,60 @@ plot_module_server <- function(id,
                    })
                  }
                  
+                 ## 4.6. Custom x-axis limits on ridge plots ####
+                 ### 4.6.1. Checkbox to enable custom limits ####
+                 if (plot_type == "ridge"){
+                   observe({
+                     # Show checkbox when the plot is defined
+                     show <- FALSE
+                     elem_id <- "custom_xlim_checkbox"
+                     
+                     # Initially tried isTruthy(plot()), but this evaluated to 
+                     # TRUE even when the plot was not rendered. 
+                     # isTruthy(features_entered) will be TRUE when the plot is
+                     # defined, since the plot requires a feature. This will be
+                     # used instead
+                     if (isTruthy(features_entered())){
+                       show <- TRUE
+                     }
+                     
+                     if (show == TRUE){
+                       showElement(
+                         id = elem_id
+                       )
+                     } else {
+                       hideElement(
+                         id = elem_id
+                       )
+                     }
+                   })
+                 }
+                 
+                 ### 4.6.2. Interface for setting custom limits ####
+                 if (plot_type == "ridge"){
+                   observe({
+                     # Show interface when the checkbox in 4.6.1. is selected
+                     show <- FALSE
+                     elem_id <- "custom_xlim_interface"
+                     
+                     if (isTruthy(input$use_custom_xlim)){
+                       show <- TRUE
+                     }
+                     
+                     if (show == TRUE){
+                       showElement(
+                         id = elem_id,
+                         anim = TRUE
+                       )
+                     } else {
+                       hideElement(
+                         id = elem_id,
+                         anim = TRUE
+                       )
+                     }
+                   })
+                 }
+                 
                  # 5. Record plot_selections -----------------------------------
                  # list of reactives for storing selected inputs
                  plot_selections <- 
@@ -1327,14 +1413,6 @@ plot_module_server <- function(id,
                        reactive({
                          if (!is.null(input$reduction)){
                            input$reduction
-                           } else NULL
-                         }),
-                     
-                     # Re-order groups (dot plots)
-                     `sort_groups` = 
-                       reactive({
-                         if (isTruthy(input$sort_groups)){
-                           input$sort_groups
                            } else NULL
                          }),
                      
@@ -1419,6 +1497,28 @@ plot_module_server <- function(id,
                        reactive({
                          if (isTruthy(input$legend_title)){
                            input$legend_title
+                         } else NULL
+                       }),
+                     
+                     # Re-order groups (dot plots)
+                     `sort_groups` = 
+                       reactive({
+                         if (isTruthy(input$sort_groups)){
+                           input$sort_groups
+                         } else NULL
+                       }),
+                     
+                     # Custom refactoring of group order on plots
+                     `custom_refactoring` = 
+                       reactive({
+                         # Value of custom factoring input is interpereted when
+                         # the user selects "custom" for the group order menu
+                         if (isTruthy(input$sort_groups)){
+                           if (input$sort_groups == "custom"){
+                             input$custom_refactor
+                             # NULL is returned when "custom" is not selected, 
+                             # or when input$sort_groups does not exist
+                           } else NULL
                          } else NULL
                        }),
                      
@@ -1700,7 +1800,7 @@ plot_module_server <- function(id,
                        # inputs are incorrect
                        message = NULL
                       
-                       ### 6.3.1. Test for correct inputs #### 
+                       ### 7.3.1. Test for correct inputs #### 
                        # UI displayed depends on if inputs have been entered
                        # correctly. "Correct" inputs depend on plot type
                        # input_error is set to TRUE or FALSE based on input 
@@ -1840,7 +1940,85 @@ plot_module_server <- function(id,
                        ui
                      })
                  
-                 ## 7.4. Render Dynamic UI ####
+                 ## 7.4. Menu for custom refactoring of Group_by metadata ####
+                 if (plot_type %in% c("violin", "dot")){
+                   ### 7.4.1. Define menu UI ####
+                   refactor_sortable <-
+                     eventReactive(
+                       c(object(), plot_selections$group_by()),
+                       {
+                         # Responds to both the object and the group by 
+                         # variable, but only runs when the group by variable is
+                         # defined
+                         req(plot_selections$group_by())
+                         
+                         # Menu choices
+                         # Based on unique values or levels of current group by 
+                         # category
+                         group_by_metadata <- 
+                           object()@meta.data[[plot_selections$group_by()]]
+
+                         # Test if the current group by category is a factor
+                         if (is.factor(group_by_metadata)){
+                           # If so, extract factor levels
+                           menu_levels <-
+                             group_by_metadata |>
+                             levels() 
+                         } else {
+                           # Otherwise, fetch the unique values
+                           menu_levels <-
+                             group_by_metadata |> 
+                             unique()
+                         }
+                         
+                         # Sort to initialize menu in ascending 
+                         # alphanumeric order
+                         menu_levels <-
+                           menu_levels |> 
+                           str_sort(
+                             numeric = TRUE,
+                             decreasing = FALSE
+                               # Use descending order for dot plots (DotPlot() 
+                               # inverts factor levels when plotting)
+                               #if (plot_type == "dot") TRUE else FALSE
+                           )
+                         
+                         # Menu UI
+                         div(
+                           class = "compact-options-container",
+                           rank_list(
+                             text = "Drag-and drop to set order of groups:",
+                             labels = menu_levels,
+                             input_id = ns("custom_refactor"),
+                             class =
+                               c("default-sortable", "bucket-select")
+                             )
+                           )
+                         })
+
+                   ### 7.4.2. Show/hide menu ####
+                   observe({
+                     # The output container is shown/hidden
+                     target_id <- "refactor_sortable"
+
+                     # Show when "custom" is chosen from the group order menu
+                     if (isTruthy(input$sort_groups)){
+                       if (input$sort_groups == "custom"){
+                         showElement(
+                           id = target_id,
+                           anim = TRUE
+                           )
+                       } else {
+                         hideElement(
+                           id = target_id,
+                           anim = TRUE
+                           )
+                       }
+                     }
+                   })
+                 }
+                 
+                 ## 7.5. Render Dynamic UI ####
                  output$ncol_slider <- 
                    renderUI({
                      ncol_slider()
@@ -1860,6 +2038,21 @@ plot_module_server <- function(id,
                    renderUI({
                      plot_output_ui()
                      })
+                 
+                 if (plot_type %in% c("violin", "dot")){
+                   output$refactor_sortable <-
+                     renderUI({
+                       refactor_sortable()
+                     })
+                   
+                   # The UI should still compute when hidden, so it displays 
+                   # smoothly when the user selects "custom"
+                   outputOptions(
+                     output, 
+                     "refactor_sortable", 
+                     suspendWhenHidden = FALSE
+                   )
+                 }
 
                  # 8. Separate Features Entry: Dynamic Update ------------------
                  # Observers for separate features only update for server 
@@ -1940,7 +2133,7 @@ plot_module_server <- function(id,
                            # If separate features are used in this module,
                            # input them if the user checks the box to use
                            # them 
-                           if(input$use_separate_features == TRUE){
+                           if (input$use_separate_features == TRUE){
                              #Use separate features
                              input$separate_features
                            } else if (input$use_separate_features == FALSE){
@@ -2094,7 +2287,9 @@ plot_module_server <- function(id,
                            ncol = plot_selections$ncol(),
                            assay_config = assay_config(),
                            palette = palette(),
-                           sort_groups = plot_selections$sort_groups()
+                           sort_groups = plot_selections$sort_groups(),
+                           custom_factor_levels = 
+                             plot_selections$custom_refactoring()
                            )
                        })
                    
@@ -2116,7 +2311,9 @@ plot_module_server <- function(id,
                            group_by = plot_selections$group_by(),
                            show_legend = plot_selections$legend(),
                            palette = palette(),
-                           sort_groups = plot_selections$sort_groups()
+                           sort_groups = plot_selections$sort_groups(),
+                           custom_factor_levels = 
+                             plot_selections$custom_refactoring()
                            )
                          })
                  } else if (plot_type == "scatter"){
@@ -2147,12 +2344,24 @@ plot_module_server <- function(id,
                             features_entered = features_entered(),
                             group_by = plot_selections$group_by(),
                             show_legend = plot_selections$legend(),
-                            palette = palette()
+                            palette = palette(),
+                            xlim = 
+                              # Use custom limits if the user requests them,
+                              # and if they are provided
+                              if (!is.null(custom_xlim) & 
+                                  isTruthy(input$use_custom_xlim)){
+                                custom_xlim()
+                              } else {
+                                NULL
+                              }
                             ) 
                          }
                        )
                  } else if (plot_type == "proportion"){
-                   ### 9.2.7. Cell Type Proportion Stacked Bar Plot ####
+                   ### 9.2.7. Stacked bar plot ####
+                   # For cell type (and other metadata) proportions
+                   # Compares proportions of one cell-level metadata category
+                   # according to the levels of another category
                    plot <-
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -2177,6 +2386,33 @@ plot_module_server <- function(id,
                           palette = palette(),
                           sort_groups = plot_selections$sort_groups()
                         ) 
+                       })
+                 } else if (plot_type == "pie"){
+                   ### 9.2.8. Metadata pie chart ####
+                   # Currently used for patient/sample-level metadata, but could
+                   # also be used for cell-level metadata
+                   plot <-
+                     reactive(
+                       label = glue("{plot_label}: Create Plot"),
+                       {
+                         shiny_pie(
+                           object = object(),
+                           patient_colname = patient_colname(),
+                           group_by = plot_selections$group_by(),
+                           palette = palette(),
+                           show_legend = plot_selections$legend(),
+                           show_title =
+                             # show_title controls how NULL values for 
+                             # plot_title are interpreted (NULL will remove the 
+                             # label by default, but plot_title will be NULL if 
+                             # a label is not set in the config file (want the 
+                             # default title to be used in this case))
+                             if (input$title_settings == "none"){
+                               FALSE
+                             } else TRUE,
+                           # Plot title: from 3.7.
+                           plot_title = plot_title()
+                         )
                        })
                    }
                  
@@ -2212,7 +2448,17 @@ plot_module_server <- function(id,
                    plot()
                  })
                  
-                 # 10. Download Handler -----------------------------------------
+                 # 10. Custom x-axis limits server (ridge plots) ---------------
+                 # Server recieves plot in 9. and outputs the chosen limits
+                 if (plot_type == "ridge"){
+                   custom_xlim <-
+                     custom_xlim_server(
+                       id = "custom_xlim",
+                       plot = plot
+                     )
+                 }
+                 
+                 # 11. Download handler ----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 

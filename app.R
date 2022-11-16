@@ -10,14 +10,15 @@ library(shinydashboard, quietly = TRUE, warn.conflicts = FALSE)
 library(waiter, quietly = TRUE, warn.conflicts = FALSE)
 library(shinycssloaders, quietly = TRUE, warn.conflicts = FALSE)
 library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
+library(sortable, quietly = TRUE, warn.conflicts = FALSE)
 # library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
 
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
 options(
-  shiny.reactlog = TRUE, 
+  shiny.reactlog = TRUE#, 
   # Full stack trace for errors 
-  shiny.fullstacktrace = TRUE
+  #shiny.fullstacktrace = TRUE
   )
 
 # Logging and performance monitoring
@@ -46,6 +47,9 @@ library(cowplot, quietly = TRUE, warn.conflicts = FALSE)
 library(presto, quietly = TRUE, warn.conflicts = FALSE)
 library(R.devices, quietly = TRUE, warn.conflicts = FALSE)
 
+# Other packages
+library(yaml, quietly = TRUE, warn.conflicts = FALSE)
+
 # Load CSS, JavaScript, and R scripts ------------------------------------------
 # Load functions in ./R directory
 # Get list of files
@@ -66,9 +70,9 @@ source_files <-
       path = "./Modules", 
       # Pattern, any set of characters, followed by ".R"
       # Period is double escaped
-      pattern=".*\\.R", 
-      full.names=TRUE, 
-      ignore.case=TRUE
+      pattern = ".*\\.R", 
+      full.names = TRUE, 
+      ignore.case = TRUE
       )
     )
 
@@ -88,7 +92,7 @@ css_files <-
     )
 
 # Create list of style tags for each CSS file
-css_list <- lapply(css_files,includeCSS)
+css_list <- lapply(css_files, includeCSS)
 
 # Load Javascript files for app: find all .js files in www/ directory
 # and create a list of script() tags using includeScript().
@@ -108,11 +112,18 @@ js_files <-
 # Create list of style tags for each CSS file
 js_list <- lapply(js_files, includeScript)
 
+# Read browser config yaml
+browser_config <- 
+  read_yaml("./config.yaml")
+
 # Non-reactive Global Variables ------------------------------------------------
 
 # Non-zero proportion threshold: if the proportion of cells for a 
 # gene is below this threshold, return a warning to the user.
 nonzero_threshold <- 0.10
+
+# Display name for thresholded ADT features in the feature entry dropdown
+adt_threshold_dropdown_title <- NULL
 
 ## Color palettes for plotting categorical variables ####
 # Define available palettes
@@ -295,49 +306,23 @@ error_list <-
       ) # End subset error sub-list
     )# End list of error definitions
 
-# Datasets: a list of available datasets with paths to object and config files,
-# as well as a description
+# Load Datasets ####
 log_info("R process initialization: loading datasets")
+
+# Construct list of datasets using config file provided by user
 datasets <- 
-  list(
-    `d0_d30` = 
-      list(
-        `label` = "Longitudinal Data",
-        `object` = 
-          readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds"),
-        `config` = "./Seurat_Objects/d0-d30-config.rds",
-        `description` = 
-          "Contains 3 normal bone marrow samples, and longitudinal samples from 
-          6 patients with the first sample taken at time of diagnosis and the
-          second sample taken approximately one month afterward.",
-        `plot` = "./www/d0_d30_UMAP.png"
-          ),
-    `AML_samples` = 
-      list(
-        `label` = "AML (Pheresis) Dataset",
-        `object` = 
-          readRDS("./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds"),
-        `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
-        `description` = 
-          "Contains 3 normal bone marrow samples, and 23 AML samples.",
-        `plot` = "./www/aml_UMAP.png"
-        )
-    # Important:
-    # Uncomment entry below when working on NA handling, 
-    # then ***comment out before committing***
-    # ,
-    # `AML_NA_Test` =
-    #   list(
-    #     `label` = "NA Test Object",
-    #     `object` = readRDS("./Seurat_Objects/NA_example.rds"),
-    #     `config` = "./Seurat_Objects/AML_TotalVI_config.rds",
-    #     `description` =
-    #       "Seurat Object used purely to test the handling of NA values. This
-    #       object is identical to the pheresis dataset; the only difference is
-    #      that clusters that were labeled as 'unknown' are instead labeled NA.",
-    #     `plot` = "./www/aml_UMAP.png"
-    #     )
-    )
+  browser_config$datasets
+
+# Objects must be loaded at startup. If they are loaded separately for each
+# user, the RAM will quickly be exhausted. 
+# Each dataset is loaded below. The "object" variable in the YAML file is a 
+# path to the dataset, and the corresponding "object" element in the R list will
+# be replaced with the dataset itself.
+for (data_key in names(datasets)){
+  datasets[[data_key]]$object <- 
+    readRDS(datasets[[data_key]]$object)
+}
+
 log_info("Datasets successfully loaded")
 
 # Table of Contents ------------------------------------------------------------
@@ -641,7 +626,7 @@ server <- function(input, output, session){
       print(dataset_change$depend())
       })
   
-  ## 1.4. Load/Update Object ####
+  ## 1.4. Load/update object ####
   observeEvent(
     # Loads when the reactive trigger in "Loading Conditional" is activated
     dataset_change$depend(),
@@ -656,7 +641,8 @@ server <- function(input, output, session){
       app_spinner$hide()
       })
   
-  ## 1.5. Load/Update Config File ####
+  ## 1.5. Config file
+  ### 1.5.1. Load/update config file ####
   # Update config file with the one from the selected dataset, if it has changed
   observeEvent( 
     dataset_change$depend(),
@@ -665,8 +651,101 @@ server <- function(input, output, session){
     {
       path <- datasets[[selected_key()]]$config
       
-      # Load config file using defined path and set reactiveVal object
-      config(readRDS(path))
+      # Add informative error message when a non-yaml config file is loaded
+      if (!grepl("\\.yaml$", path)){
+        stop("Only .yaml config files are supported as of version v0.5.0. 
+             Existing .rds config files can be converted to .yaml files by 
+             loading them into config_app.R and then re-saving as a .yaml file.")
+      }
+      
+      # Load config YAML using defined path (file is converted to an R list)
+      config_r <- read_yaml(path)
+      
+      # Convert the "adt_thresholds" section to a tibble (when converting from
+      # R to YAML, tibble formats are converted to a YAML format that generates
+      # a named list when loading back to R)
+      if (isTruthy(config_r$adt_thresholds)){
+        config_r$adt_thresholds <-
+          as_tibble(config_r$adt_thresholds)
+      }
+      
+      # Store list in the config reactiveVal object
+      config(config_r)
+    })
+  
+  ### 1.5.2. Check version of config file ####
+  # observeEvent(
+  #   config(),
+  #   ignoreNULL = TRUE,
+  #   ignoreInit = TRUE,
+  #   {
+  #     
+  #   })
+  
+  ### 1.5.3. Copy ADT assay for thresholding ####
+  # If thresholding information is provided, copy the ADT assay to a new 
+  # assay, and save the new assay to the object
+  observeEvent(
+    config(),
+    ignoreNULL = TRUE,
+    #ignoreInit = TRUE,
+    {
+      if (!is.null(config()$adt_thresholds)){
+        # First, determine which assay is designated as the ADT assay
+        is_designated <-
+          sapply(
+            config()$assays, 
+            # Fetch value of designated_adt for each assay (TRUE or FALSE)
+            function(assay) assay$designated_adt
+            )
+        
+        # Subset for assays where designated_adt is TRUE
+        designated_ADT_assay <- names(config()$assays)[is_designated]
+        
+        # Only proceed if one assay has been designated (not possible to 
+        # designate multiple in app, but file could be modified to do so)
+        if (!is.null(designated_ADT_assay)){
+          if (length(designated_ADT_assay) == 1){
+            # Fetch copy of object
+            object_copy <- object()
+            
+            # Copy ADT assay
+            object_copy[["ADT_threshold"]] <- 
+              object_copy[[designated_ADT_assay]]
+            
+            # Clamp assays to thresholds in config app
+            # Subset assay to features for which threshold information exists
+            #  to conserve memory
+            object_copy[["ADT_threshold"]] <- 
+              subset(
+                object_copy[["ADT_threshold"]], 
+                features = config()$adt_thresholds$adt
+                )
+            
+            for (i in 1:nrow(config()$adt_thresholds)){
+              # Fetch ith ADT and threshold value
+              ADT <- config()$adt_thresholds$adt[i]
+              threshold <- config()$adt_thresholds$value[i]
+              
+              # Subtract threshold
+              object_copy@assays$ADT_threshold@data[ADT,] <-
+                object_copy@assays$ADT_threshold@data[ADT,] - threshold 
+              
+              # "Clamp" expression values for ADT to zero
+              object_copy@assays$ADT_threshold@data[ADT,] <- 
+                sapply(
+                  object_copy@assays$ADT_threshold@data[ADT,],
+                  function(value){
+                    if (value < 0) 0 else value
+                  }
+                )
+            }
+            
+            # Save object with new assay
+            object(object_copy)
+          }
+        }
+      }
     })
   
   ## 1.6. Save Key of Dataset Selected When Window is Closed ####
@@ -749,7 +828,7 @@ server <- function(input, output, session){
   # Create a list of valid features using the assays defined above
   valid_features <-
     eventReactive(
-      assay_config(),
+      c(assay_config(), object()),
       label= "valid_features",
       ignoreNULL = FALSE,
       {
@@ -762,7 +841,24 @@ server <- function(input, output, session){
             # defined in the config file
             numeric_metadata = include_numeric_metadata, 
             # The same is true for numeric_metadata_title
-            numeric_metadata_title = numeric_metadata_title
+            numeric_metadata_title = numeric_metadata_title,
+            # ADT thresholds: add to list if the ADT_threshold assay has been
+            # created in the object
+            adt_threshold_features = 
+              if ("ADT_threshold" %in% names(object()@assays)){
+                TRUE
+              } else {
+                FALSE
+              },
+            # Display name for threshold features (can be set in the browser 
+            # config file)
+            adt_threshold_title = 
+              if (!is.null(adt_threshold_dropdown_title)){
+                adt_threshold_dropdown_title
+              } else {
+                # Supply default if the value is undefined
+                "ADT Values (Threshold Applied)"
+              }
             )
         
         valid_features
@@ -852,7 +948,7 @@ server <- function(input, output, session){
         unique_metadata
         })
   
-  ## 2.8 Reductions in object ####
+  ## 2.8. Reductions in object ####
   reductions <- 
     reactive({
       req(object())
@@ -917,7 +1013,7 @@ server <- function(input, output, session){
         lim_orig
       })
   
-  ## 2.10 Store number of cells in full object ####
+  ## 2.10. Store number of cells in full object ####
   # used to determine if a subset is selected.
   # TODO: does this apply to non-CITEseq datasets?
   n_cells_original <- 
@@ -926,7 +1022,7 @@ server <- function(input, output, session){
       ncol(object())
     })
     
-  ## 2.11 Auto-Generated Object Dictionary ####
+  ## 2.11. Auto-Generated Object Dictionary ####
   # Data dictionary
   # The data dictionary gives the names of all metadata in the object as a 
   # guide for string subsetting.
@@ -946,6 +1042,9 @@ server <- function(input, output, session){
         )
       
       # Execute Rmarkdown document
+      if (any(names(browser_config) == "RSTUDIO_PANDOC")) {
+        Sys.setenv(RSTUDIO_PANDOC = browser_config$RSTUDIO_PANDOC)
+      }
       rmarkdown::render(
         # Rmd document to render
         input = "./Auto_Dictionary.Rmd",
@@ -957,6 +1056,14 @@ server <- function(input, output, session){
         # (isolates document environment from app)
         envir = new.env(parent = globalenv())
         )
+    })
+  
+  ## 2.12. Patient/sample level metadata category ####
+  patient_colname <-
+    reactive({
+      # Extract category name from "other_metadata_options" 
+      # section of the config file 
+      config()$other_metadata_options$patient_colname
     })
   
   # 3. Initialize Modules ------------------------------------------------------
@@ -988,7 +1095,8 @@ server <- function(input, output, session){
             metadata_config = metadata_config,
             reductions = reductions,
             categorical_palettes = categorical_palettes,
-            continuous_palettes = continuous_palettes
+            continuous_palettes = continuous_palettes,
+            patient_colname = patient_colname
             )
         
         # Hide spinner and return module UI
@@ -1065,6 +1173,7 @@ server <- function(input, output, session){
       # server instances for each tab.
       if (!current_key %in% main_server$modules_created){
         print(glue("New module for plots tab (key = {current_key})"))
+        
         plots_tab_server(
           id = glue("{current_key}_plots"),
           object = object,
@@ -1078,7 +1187,8 @@ server <- function(input, output, session){
           n_cells_original = n_cells_original,
           lim_orig = lim_orig,
           categorical_palettes = categorical_palettes,
-          continuous_palettes = continuous_palettes
+          continuous_palettes = continuous_palettes,
+          patient_colname = patient_colname
           )
         
         # Add current key to list of modules created so module is not re-created

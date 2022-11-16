@@ -1,23 +1,37 @@
-# Plots Tab Module
-
-# Arguments
-# id: ID to use for module elements.
-# meta_choices: a named vector generated at app startup that contains 
-# machine-readable and human-readable names for each metadata category 
-# specified in the config file
-# unique_metadata: a list of the unique metadata values for each of the metadata 
-# categories listed in the config file. This is generated in the main server
-# function at startup.
-# category_labels: list of labels for each metadata category, generated in main
-# server at startup.
-# reductions: a vector giving the reductions used in the Seurat object
-# metadata_config: the metadata section of the config file loaded at startup
+#' Plots Tab Module (UI Instance)
+#'
+#' @param id ID to use for module elements.
+#' @param meta_choices Metadata available for selection from group_by and 
+#' split_by dropdown menus. This is generated in the main server function upon 
+#' app startup and when the object is changed. 
+#' @param unique_metadata A list of the unique metadata values for the metadata
+#' categories passed to `meta_choices`. This is generated in the main server
+#' function upon app startup and when the object is changed. 
+#' @param category_labels List of labels for each metadata category. This is 
+#' loaded in the main server function when the object is changed.
+#' @param assay_config The assays section of the config file. This is loaded in
+#' the main server function at startup and when the object is changed.
+#' @param metadata_config The metadata section of the config file loaded at 
+#' startup. This is loaded in the main server function at startup and when the 
+#' object is changed.
+#' @param patient_colname the name of the metadata column to use for computing
+#' patient- or sample-level metadata for plotting. This is defined in the config
+#' file, and is loaded in the main server function at startup and when the 
+#' object is changed.
+#' @param reductions the reductions in the current object. This is loaded in the 
+#' main server function at startup and when the object is changed.
+#' @param categorical_palettes categorical palettes to show in the palette 
+#' selection window.
+#' @param continuous_palettes continuous palettes to show in the palette 
+#' selection window.
+#'
 plots_tab_ui <- function(id,
                          meta_choices,
                          unique_metadata,
                          category_labels,
                          assay_config,
                          metadata_config,
+                         patient_colname,
                          reductions,
                          categorical_palettes,
                          continuous_palettes
@@ -32,21 +46,22 @@ plots_tab_ui <- function(id,
      sidebarLayout(
        # 1. Sidebar panel for user input ---------------------------------------
        sidebarPanel(
-         fluid=FALSE,
-         ## 1.1 Checkboxes for choosing desired plot ####
-         # Two-column checkboxes: put inside inline block elements 
-         # that span half of the sidebar panel
-         # Division element that contains both columns (this element keeps one 
+         fluid = FALSE,
+         ## 1.1 Plot switches ####
+         # Two-column format used
+         # Division element containing both columns (this element keeps one 
          # of the columns from protruding into the elements beneath of it 
          # becomes larger than the other column)
          div(
-           # two-column-container creates a flexbox container that will allow
-           # switches to resize when the size of the window changes
+           # Flexbox container: allows switches to resize when the size of the
+           # window changes (flexbox behavior is created by adding 
+           # 'display:"flex";' to the "two-column-container" class in the CSS
+           # files)
            class = "two-column-container",
-           #Left column
+           # Left column
            div(
-             class="two_column",
-             style="float: left;",
+             class = "two_column",
+             style = "float: left;",
              # Switch for Dimplot
              materialSwitch(
                inputId = ns("make_dimplot"),
@@ -109,7 +124,20 @@ plots_tab_ui <- function(id,
                value = FALSE,
                right = TRUE,
                status = "default"
-             )
+             ),
+             
+             # Switch for pie chart 
+             # Only appears if a column for patient- or sample- level metadata
+             # is defined
+             if (!is.null(patient_colname())){
+               materialSwitch(
+                 inputId = ns("make_pie"),
+                 label = "Metadata Pie Chart", 
+                 value = FALSE,
+                 right = TRUE,
+                 status = "default"
+                 )
+               }
            ),#End div
          ),
          
@@ -265,8 +293,8 @@ plots_tab_ui <- function(id,
              ) # End subset_panel div
          ), # End 1.4
          
-         ### Plot Specific Options ###
-         ## 1.5. DimPlot Options ####
+         #----- Plot-specific options -----#
+         ## 1.5. DimPlot options ####
          # Panel will display if "Make DimPlot" switch is on
          conditionalPanel(
            # Javascript expression for condition in which to show panel
@@ -300,7 +328,7 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.6. Feature Plot Options ####
+         ## 1.6. Feature plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_feature')}'] == true"),
            collapsible_panel(
@@ -341,7 +369,7 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.7. Violin Plot Options ####
+         ## 1.7. Violin plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_vln')}'] == true"),
            collapsible_panel(
@@ -369,7 +397,7 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.8. Dot Plot Options ####
+         ## 1.8. Dot plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_dot')}'] == true"),
            collapsible_panel(
@@ -398,7 +426,7 @@ plots_tab_ui <- function(id,
              )
            ), #End 1.8
          
-         ## 1.9. Scatterplot Options ####
+         ## 1.9. Scatterplot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_scatter')}'] == true"),
            collapsible_panel(
@@ -427,7 +455,7 @@ plots_tab_ui <- function(id,
            )
          ), # End 1.9.
          
-         ## 1.10. Ridge Plot Options ####
+         ## 1.10. Ridge plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_ridge')}'] == true"),
            collapsible_panel(
@@ -448,6 +476,7 @@ plots_tab_ui <- function(id,
                limits_checkbox =       FALSE,
                display_coeff =         FALSE,
                custom_colors =         FALSE,
+               custom_x_axis_ui =      TRUE,
                manual_dimensions =     TRUE,
                separate_features =     FALSE,
                download_button =       TRUE,
@@ -457,7 +486,7 @@ plots_tab_ui <- function(id,
            )
          ), # End 1.10
          
-         ## 1.11. Proportion Stacked Bar Plot Options ####
+         ## 1.11. Proportion stacked bar plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_proportion')}'] == true"),
            collapsible_panel(
@@ -495,7 +524,52 @@ plots_tab_ui <- function(id,
                  "Choose Metadata for Proportion Comparison"
                )
              )
-           ) # End 1.11.
+           ), # End 1.11.
+         
+         ## 1.12. Pie chart options ####
+         # UI and module are only created if the metadata column used for 
+         # patient/sample level metadata is defined.
+         if (!is.null(patient_colname())){
+           conditionalPanel(
+             condition = glue("input['{ns('make_pie')}'] == true"),
+             collapsible_panel(
+               inputId = ns("pie_collapsible"),
+               label = "Metadata Pie Chart Specific Options",
+               active = FALSE,
+               plot_module_ui(
+                 id = ns("pie"),
+                 ui_component = "options",
+                 meta_choices = meta_choices,
+                 plot_label = "Metadata Pie Chart",
+                 patient_colname = patient_colname,
+                 group_by =              TRUE,
+                 split_by =              FALSE,
+                 title_menu =            TRUE,
+                 sort_groups_menu =      FALSE,
+                 ncol_slider =           FALSE,
+                 order_checkbox =        FALSE,
+                 label_checkbox =        FALSE,
+                 legend_checkbox =       TRUE,
+                 limits_checkbox =       FALSE,
+                 display_coeff =         FALSE,
+                 custom_colors =         FALSE,
+                 manual_dimensions =     TRUE,
+                 separate_features =     FALSE,
+                 download_button =       TRUE,
+                 # Modifications to group by/split by menus
+                 group_by_include_none = FALSE,
+                 # Will later be set by config file
+                 group_by_default =      "response",
+                 group_by_label = 
+                   "View Number of Patients by:",
+                 # The patient/sample level column is removed from the group by
+                 # choices (patient-level plots grouped by this column are not
+                 # informative)
+                 remove_patient_column = TRUE
+                 )
+               )
+             ) # End 1.12.
+           }
          ), # End 1.
        
        # 2. Main panel for displaying plot output ------------------------------
@@ -540,17 +614,25 @@ plots_tab_ui <- function(id,
              ui_component = "plot"
              ),
            
-           ## 2.6. Ridge Plot panel
+           ## 2.6. Ridge plot panel
            plot_module_ui(
              id = ns("ridge"),
              ui_component = "plot"
              ),
            
-           ## 2.7. Cell Proportion Stacked Bar Plot Panel
+           ## 2.7. Cell proportion stacked bar plot panel
            plot_module_ui(
              id = ns("proportion"),
              ui_component = "plot"
-           )
+           ),
+           
+           ## 2.8. Metadata pie chart panel
+           if (!is.null(patient_colname())){
+             plot_module_ui(
+               id = ns("pie"),
+               ui_component = "plot"
+             )
+           }
          ) # End div
        ) # End 2.
      ) # End sidebarLayout() 
@@ -558,30 +640,42 @@ plots_tab_ui <- function(id,
    
 }
 
-# plots_tab_server
-# Arguments
-# id: Used to match server component of module to UI component
-# object: The Seurat Object defined in the main server function
-# metadata_config: the metadata section of the config file corresponding 
-# to the current object.
-# assay_config: the assays section of the config file corresponding to the 
-# current object.
-# meta_categories: metadata categories retrieved from the config file
-# category_labels: list of labels for each metadata category, generated in main
-# server at startup.
-# unique_metadata: a list of all the unique metadata values in the current 
-# object for the categories defined in the config file.
-# valid_features: a list giving the valid features that can be selected from 
-# each assay. This is generated from the config file in the main server function
-# error_list: a list of error messages to use in a tryCatch expression. This is 
-# defined in the main server function at startup
-# n_cells_original: Number of cells in full Seurat object. Calculated in main 
-# server function.
-# lim_orig: a list of original axes limits for each reduction currently enabled.
-
-# TODO: replace metadata_config in the subset selections module with a more 
-# specific variable
-# metadata_config: the metadata section of the config file loaded at startup
+#' Plots Tab Module (Server Instance)
+#'
+#' @param id ID to use for module elements.
+#' @param object The Seurat object or subset. 
+#' @param assay_config The assays section of the config file. This is loaded in
+#' the main server function at startup and when the object is changed.
+#' @param metadata_config The metadata section of the config file loaded at 
+#' startup. This is loaded in the main server function at startup and when the 
+#' object is changed.
+#' @param meta_categories The metadata categories included in `metadata_config` 
+#' (defines selectable metadata). This is generated in the main 
+#' server function upon app startup and when the object is changed. 
+#' @param category_labels List of labels for each metadata category. This is 
+#' loaded in the main server function upon startup and when the object is 
+#' changed.
+#' @param unique_metadata A list of the unique metadata values for the metadata
+#' categories included in `metadata_config`. This is generated in the main 
+#' server function upon app startup and when the object is changed. 
+#' @param valid_features  a list giving the valid features that can be selected 
+#' from each assay. This is generated from the config file in the main server
+#' function upon startup and when the object is changed.
+#' @param error_list A list of error messages to use in a tryCatch expression. 
+#' This is defined in the main server function at startup.
+#' @param n_cells_original Number of cells in full Seurat object. Calculated in
+#' the main server function.
+#' @param lim_orig A list of original axes limits for each reduction 
+#' enabled.
+#' @param categorical_palettes Categorical palettes to show in the palette 
+#' selection window.
+#' @param continuous_palettes Continuous palettes to show in the palette 
+#' selection window.
+#' @param patient_colname The name of the metadata column to use for computing
+#' patient- or sample-level metadata for plotting. This is defined in the config
+#' file, and is loaded in the main server function at startup and when the 
+#' object is changed.
+#' 
 plots_tab_server <- function(id,
                              object,
                              metadata_config,
@@ -594,7 +688,8 @@ plots_tab_server <- function(id,
                              n_cells_original,
                              lim_orig,
                              categorical_palettes,
-                             continuous_palettes
+                             continuous_palettes,
+                             patient_colname
                              ){
   moduleServer(id,
                function(input,output,session){
@@ -819,7 +914,7 @@ plots_tab_server <- function(id,
                    palette = selected_categorical_palette
                    )
                  
-                 ## 2.7. Cell Type Proportion Bar Plot ####
+                 ## 2.7. Cell type proportion bar plot ####
                  plot_module_server(
                    id = "proportion",
                    object = subset,
@@ -833,6 +928,26 @@ plots_tab_server <- function(id,
                    metadata_config = metadata_config,
                    assay_config = assay_config
                  )
+                 
+                 ## 2.8. Metadata pie chart ####
+                 # Server instance is only created when patient_colname() is 
+                 # defined
+                 if (!is.null(patient_colname())){
+                   plot_module_server(
+                     id = "pie",
+                     object = subset,
+                     # plot_switch: uses the input$make_pie switch
+                     plot_switch = reactive({input$make_pie}),
+                     plot_label = "Metadata Pie Chart", 
+                     # Instructs server on which plot function to run
+                     plot_type = "pie",
+                     # Use categorical palettes for cell type proportion plot
+                     palette = selected_categorical_palette,
+                     metadata_config = metadata_config,
+                     assay_config = assay_config,
+                     patient_colname = patient_colname
+                     )
+                   }
                  
                  # 3. Process Subset -------------------------------------------
                  # 3.1 Module server to process user selections and report ####

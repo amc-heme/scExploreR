@@ -9,10 +9,11 @@ shiny_ridge <-
    xlim = NULL
   ){
     # validate will keep plot code from running if the subset 
-    # is NULL (no cells in subset)
+    # is NULL (no cells in subset), or if the group by selection and features
+    # are not yet defined.
     validate(
       need(
-        object,
+        isTruthy(object) & isTruthy(group_by) & isTruthy(features_entered),
         # No message displayed (a notification is already 
         # displayed) (*was displayed*)
         message = ""

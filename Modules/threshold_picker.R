@@ -498,43 +498,12 @@ threshold_picker_server <-
                 # accessed using layer_scales.
                 layer_scales(module_data$initial_ridge_plot)$x$range$range
               }
-              
-              #layer_scales(module_data$initial_ridge_plot)$x$range$range
-              
-              # # Plot to use depends on whether a threshold has been set
-              # if (!is.null(module_data$threshold_x)){
-              #   # Plot must be defined to avoid errors
-              #   req(module_data$ridge_plot_with_threshold)
-              #   
-              #   layer_scales(module_data$ridge_plot_with_threshold)$x$range$range
-              # } else {
-              #   req(module_data$initial_ridge_plot)
-              #   
-              #   layer_scales(module_data$initial_ridge_plot)$x$range$range
-              # }
             })
         
-        ## 6.2. Original X-axis limits for current feature #### 
-        # original_xlim <-
-        #   eventReactive(
-        #     feature(),
-        #     label = glue("{id}: Original X-Axis Limits of Plot"),
-        #     ignoreNULL = TRUE,
-        #     ignoreInit = TRUE,
-        #     {
-        #       req(module_data$initial_ridge_plot)
-        #       # Updates only when the feature is changed (must save original
-        #       # x-axis limits after changing them so the user can easily revert
-        #       # them)
-        #       layer_scales(module_data$initial_ridge_plot)$x$range$range
-        #     })
-        
-        ## 6.3. Update text entry of limits to reflect current values ####
+        ## 6.2. Update text entry of limits to reflect current values ####
         observe(
           label = glue("{id}: Update Text Entry of Limits"),
           {
-            print("Update xlim text inputs")
-            
             # Observer will update whenever the plot axes are re-drawn (when 
             # current_xlim changes)
             updateTextInput(
@@ -550,7 +519,7 @@ threshold_picker_server <-
               )
             })
         
-        ## 6.4. Respond to apply limits button ####
+        ## 6.3. Respond to apply limits button ####
         # Re-draw Plot With New Limits 
         observeEvent(
           input$apply_xlim,
@@ -558,15 +527,6 @@ threshold_picker_server <-
           ignoreInit = TRUE,
           {
             req(feature())
-            
-            # When the upper and lower x-axis limits match the original limits,
-            # re-drawing the plot is not necessary.
-            if (input$lower_xlim != module_data$original_xlim[1] | 
-                input$upper_xlim != module_data$original_xlim[2]){
-              print("Not equal test pass")
-            } else {
-              print("Not equal test fail")
-            }
             
             # Construct plot with new limits
             plot <-
@@ -613,7 +573,7 @@ threshold_picker_server <-
             }
           })
         
-        ## 6.5. Respond to restore limits button ####
+        ## 6.4. Respond to restore limits button ####
         observeEvent(
           input$restore_xlim,
           ignoreNULL = FALSE,
@@ -674,56 +634,6 @@ threshold_picker_server <-
         # Plot
         output$ridge_plot <-
           renderPlot({
-            # Plot returned to output depends on whether a threshold is set,
-            # and whether the user is currently hovering over the plot
-            
-            
-            
-            # # Rendering plot: start with the initial plot, or the plot with 
-            # # threshold, depending on which is defined
-            # plot <-
-            #   if (!is.null(module_data$threshold_x)){
-            #     module_data$ridge_plot_with_threshold
-            #   } else {
-            #     module_data$initial_ridge_plot
-            #   }
-            # 
-            # # If the user is hovering over the plot, draw a vertical line at the 
-            # # location of the hover,
-            # # (Line is added here to avoid the need for a third plot to be 
-            # # stored in module_data)
-            # if (!is.null(input$plot_hover)){
-            #   # Translate hover coordinates to "true" coordinates
-            #   # Hover returns x values from 0 to 1, with one being slightly
-            #   # beyond the upper x limit of the plot, and zero being slightly
-            #   # below the lower x limit. 
-            #   plot_x_coordinate <-
-            #     interactive_transform(
-            #       x_coord = input$plot_hover$x, 
-            #       # Distribution_range: uses the x-axis limits of the plot, 
-            #       # as computed in 6.1. 
-            #       distribution_range = current_xlim()[2] - current_xlim()[1],
-            #       distribution_minimum = module_data$plot_min, 
-            #       plot_min_coord = plot_min_coord, 
-            #       plot_max_coord = plot_max_coord 
-            #       )
-            #   
-            #   # Add vertical line at the x_coordinate of the hover
-            #   plot <-
-            #     plot +
-            #     geom_vline(
-            #       xintercept = plot_x_coordinate,
-            #       color = "#666666",
-            #       size = 0.75
-            #     )
-            #   }
-            # 
-            # # suppressWarnings(
-            # #   
-            # # )
-            # 
-            
-            
             # Must use suppressMessages and print(plot) to suppress a
             # "Picking joint bandwidth of ___" message from ggridges, which
             # overwhelms the console when interactive hovering is used
