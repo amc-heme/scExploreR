@@ -6,6 +6,7 @@ date: '2022-11-15'
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
 ```
 
 ```{=html}
@@ -77,17 +78,25 @@ The title options menu is used to change or remove the title of the dimensional 
 
 #### Choose Number of Columns {#choose-number-of-columns}
 
-This setting applies to split plots only, and remains hidden until a selection is made in the "Choose Metadata to Split by" menu. Drag this slider to specify the number of columns to use when displaying the panels of a split plot. Possible values may be anywhere from 1 to the number of panels created by the current split by variable.
+This setting applies to split plots only, and remains hidden until a selection is made in the "Choose Metadata to Split by" menu. Drag the slider to specify the number of columns to use when displaying the panels of a split plot. Possible values may be anywhere from 1 to the number of panels created by the current split by variable.
 
 ![](Screenshots/scExplorer_all_features/numer_of_columns.png){.centered-image width="460"}
 
 #### Label Groups
 
-When this checkbox is enabled, labels will display above each cluster of cells according to the currently selected group by variable.
+When checked, labels will display above each cluster of cells according to the currently selected group by variable.
 
 #### Include Legend
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the height and width of the plot. The height and width are entered in pixels, and may be chosen using the slider or the text box. When entering a value in the text box, press return to update the plot with the value. Downloaded plots will have the dimensions defined here, if "manually adjust plot dimensions" is checked.
+
+#### Download Button
+
+To download plots, press the download button at the bottom left hand side of the "DimPlot Specific Options" menu. A menu will appear with an option to choose whether to download a .png or .svg file, and a download button will appear beneath that button. Downloads in the .svg format can be edited with Adobe Illustrator or a similar program to add additional labels or modify the text or colors of the plot. All graphical elements added to the plot can be edited individually in an .svg editor.
 
 ## Feature Plots
 
@@ -102,19 +111,131 @@ This menu is used to select a categorical metadata variable to be used to colori
 ```
 #### Metadata to Split By
 
-This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side. One panel will be created for each value in the split by variable. If a single feature is entered in the [feature selection](#feature-selection) menu, the number of columns used for the panels may be adjusted. If two or more features are entered , however, the layout is fixed to place features by row and split by groups by column.
+This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side. One panel will be created for each value in the split by variable. If a single feature is entered in the [feature selection](#feature-selection) menu, the number of columns used for the panels may be adjusted. If two or more features are entered, however, the layout is fixed to place features by row and split by groups by column.
 
-## Violin Plots
+#### Choose Projection
 
-## Dot Plots
+This menu is used to switch between different methods of dimensional reduction: cells are plotted according to the coordinates selected in the current projection method. Projection methods are added by the user setting up the browser, and the default projection is chosen by that user. Common projections include UMAP and t-SNE. For more information on each projection included with the current dataset, contact the user or organization that set up the browser.
 
-## Scatterplots
+#### Title Options
 
-## Ridge Plots
+The title options menu is used to change or remove the titles appearing above each panel of the feature plot. When set to "default", the titles shown are equal to the feature (if one feature or multiple features are entered without a split by variable), or to the values in the split by metadata variable when one feature is entered with a split by variable. When set to "none", no titles are shown.
 
-## Cell Proportion Plot
+The "Custom" option is available in all settings except for when multiple features are entered and a split by variable is chosen. When set to "custom", an interface will appear to customize titles for every panel displayed on the screen. Enter values and press "Update" to apply changes to the title. The `r icon("redo-alt")` buttons to the right of each title entry will revert that individual title to the default. Pressing "Reset" will revert the titles for all panels to the default.
 
-## Metadata Pie Chart
+#### Display Options for Legend Title
+
+Used to control the title that displays above the legend to the right. When set to "Feature Name" (the default), the feature name will display above the legend. When set to "Expression", the legend will be set to "Expression". If "No Title" is selected, the title will be removed. This menu is hidden when multiple features are entered and a split by variable is chosen. In this case, no title will display above the legend.
+
+#### Choose Number of Columns
+
+This setting is available when one feature is selected with a split by variable, or when multiple features are chosen without a split by variable.
+
+Drag the slider to specify the number of columns to distribute the panels across. Possible values may be anywhere from 1 to the number of panels. This setting is not available when feature co-expression is enabled.
+
+![](Screenshots/scExplorer_all_features/numer_of_columns.png){.centered-image width="460"}
+
+#### Share Scale Between Features
+
+This setting is available when multiple features are entered with no split by variable. When enabled, all features will be plotted using the same scale. When disabled, each feature is plotted using a scale defined by the minimum and maximum expression values for that feature. This setting must be enabled to properly compare expression between different features.
+
+#### Display Feature Name Above Panels
+
+This setting is available when one feature is entered and split by metadata is provided. When enabled, the feature name will display centered above the panels created from the split by variable.
+
+#### Order Cells by Expression
+
+When checked, cells with the highest expression values will be plotted on top of the cells with lower expression values. When unchecked (the default), cells will be plotted in random order. Enabling this setting can help with features that are expressed in only a few cells in the sample, but when used with features that are expressed in many cells but with a low average expression, the extent of expression in the sample may be exaggerated. To avoid this, we recommend that feature plots be used alongside other means of visualization for expression, such as [violin plots](#violin-plots), [dot plots](#dot-plots), and [ridge plots](#ridge-plots).
+
+#### Label Groups
+
+When checked, labels will display above each cluster of cells according to the currently selected group by variable.
+
+#### Include Legend
+
+When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the height and width of the plot. The height and width are entered in pixels, and may be chosen using the slider or the text box. When entering a value in the text box, press return to update the plot with the value. Downloaded plots will have the dimensions defined here, if "manually adjust plot dimensions" is checked.
+
+#### Download Button
+
+To download plots, press the download button at the bottom left hand side of the "Feature Plot Specific Options" menu. A menu will appear with an option to choose whether to download a .png or .svg file, and a download button will appear beneath that button. Downloads in the .svg format can be edited with Adobe Illustrator or a similar program to add additional labels or modify the text or colors of the plot. All graphical elements added to the plot can be edited individually in an .svg editor.
+
+## Violin Plots {#violin-plots}
+
+`# TODO: General description`
+
+#### Metadata for Primary Groups
+
+The categorical metadata variable chosen here will determine how cells are grouped. One violin plot will be drawn for each unique value in the chosen metadata variable.
+
+#### Metadata for Secondary Grouping
+
+A second categorical variable may be supplied for more in-depth comparison of groups. When specified, violins for each combination between the values of the primary and secondary metadata variable will be drawn. Violins will be colored according to the secondary variable, and split according to the primary variable (see example below). In general, the plot can be used to compare distributions for each value of the primary variable between each value of the secondary variable.
+
+[ADD IMAGE]
+
+#### Order of Groups on Plot
+
+Sets the order groups specified by the primary metadata selection appear on the plot. When set to "ascending", values in the primary metadata variable will display in alphanumeric order, from A to Z. When set to "descending", values will display in reverse alphanumeric order. When set to "custom", an interface will appear that will allow you to arrange values in any order. To change the order of a value, drag-and-drop the value in the interface.
+
+#### Number of Columns
+
+This setting is available when multiple features have been entered.
+
+Drag the slider to specify the number of columns to distribute the panels across. Possible values may be anywhere from 1 to the number of panels. This setting is not available when feature co-expression is enabled.
+
+![](Screenshots/scExplorer_all_features/numer_of_columns.png){.centered-image width="460"}
+
+#### Include Legend
+
+When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the height and width of the plot. The height and width are entered in pixels, and may be chosen using the slider or the text box. When entering a value in the text box, press return to update the plot with the value. Downloaded plots will have the dimensions defined here, if "manually adjust plot dimensions" is checked.
+
+#### Download Button
+
+To download plots, press the download button at the bottom left hand side of the "Violin Plot Specific Options" menu. A menu will appear with an option to choose whether to download a .png or .svg file, and a download button will appear beneath that button. Downloads in the .svg format can be edited with Adobe Illustrator or a similar program to add additional labels or modify the text or colors of the plot. All graphical elements added to the plot can be edited individually in an .svg editor.
+
+## Dot Plots {#dot-plots}
+
+    # TODO: General description
+
+#### Metadata to group by
+
+Specifies the categorical metadata variable used to group cells. One dot per feature will be created for each value of the selected variable.
+
+#### Order of Groups on Plot
+
+Sets the order groups on the plot. When set to "ascending", values in the group by metadata variable will display in ascending alphanumeric order, from top to bottom. When set to "descending", values will display in descending alphanumeric order. When set to "custom", an interface will appear that will allow you to arrange values in any order. To change the order of a value, drag-and-drop the value in the interface.
+
+#### Include Legend
+
+When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the height and width of the plot. The height and width are entered in pixels, and may be chosen using the slider or the text box. When entering a value in the text box, press return to update the plot with the value. Downloaded plots will have the dimensions defined here, if "manually adjust plot dimensions" is checked.
+
+#### Use Separate Features for Dot Plot
+
+When checked, an interface will appear to enter additional features, or to remove features that were entered in the [feature selection](#feature-selection) menu. Features added or removed in this interface will apply only to the dot plot.
+
+#### Download Button
+
+To download plots, press the download button at the bottom left hand side of the "Dot Plot Specific Options" menu. A menu will appear with an option to choose whether to download a .png or .svg file, and a download button will appear beneath that button. Downloads in the .svg format can be edited with Adobe Illustrator, Inkscape, or a similar program to add additional annotation or to modify the text or colors of the plot. All graphical elements added to the plot can be edited individually in an .svg editor.
+
+## Scatterplots {#scatterplots}
+
+## Ridge Plots {#ridge-plots}
+
+## Cell Proportion Plot {#cell-proportion-plot}
+
+## Metadata Pie Chart {#metadata-pie-chart}
 
 # Differential Gene Expression Tab {#dge-tab}
 
