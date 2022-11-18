@@ -406,7 +406,17 @@ ui <- tagList(
         # Opens link in new tab
         target = "_blank", 
         rel = "noopener noreferrer" 
-        ), # End Detailed Walkthrough link
+        ), # End link
+      
+      # Full Feature Documentation
+      tags$a(
+        "Full Documentation",
+        href = "scExplorer_all_features.html",
+        class = "blue_hover",
+        # Opens link in new tab
+        target = "_blank", 
+        rel = "noopener noreferrer" 
+      ), # End link
       
       # File issue on github
       tags$a(

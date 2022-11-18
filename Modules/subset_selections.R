@@ -117,13 +117,22 @@ subset_selections_ui <- function(id,
               # Feature statistics: summary stats based on feature entered
               uiOutput(ns("feature_statistics")),
               tags$a(
-                "Object Metadata and Help",
+                "View Object Metadata",
                 href = "Auto_Dictionary.html",
                 target = "_blank",
                 rel = "noopener noreferrer",
                 class = "blue_hover underline underline-hover left",
                 # Decrease padding around link
                 style = "padding: 3px 6px; margin-top: 15px;"
+              ),
+              tags$a(
+                "String Substting Help",
+                href = "advanced_subsetting_documentation.html",
+                target = "_blank",
+                rel = "noopener noreferrer",
+                class = "blue_hover underline underline-hover left",
+                # Decrease padding around link; do not add margin above
+                style = "padding: 3px 6px;"
               )
             )
           ),

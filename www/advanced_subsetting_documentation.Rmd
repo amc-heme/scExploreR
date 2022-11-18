@@ -1,0 +1,70 @@
+---
+title: "How to Use String Subseting"
+output: html_document
+date: '2022-11-18'
+---
+
+## How to Use String Subsetting 
+
+### Overview
+
+String subsetting allows you to specify a manual subset of the data using conditions based on metadata or features in the object. Cells that match the conditions specified in the string will be returned for downstream analysis in the app. Among other things, this allows for the selection of cells that express a given surface protein above or below a specified value, or within a specified range.
+
+While string subsetting is very capable at selecting specific groups of cells, the entry must follow R syntax rules for subsetting to function properly. A description of the syntax to use for common conditions is given below, along with examples of proper syntax. 
+
+### Subsetting for Categorical Data
+
+To subset on categorical data, enter the metadata category exactly as it displays in the list under the "Metadata" tab, **without quotes**. Next, enter `%in%`, followed by the list of values you would like to subset for. 
+
+The list of values must use standard R notation for vectors. This includes:
+
+* Quotes around each value
+* Commas between values
+* Enclosure of the list with `c()`. 
+
+The values in the data dictionary are displayed without quotes, so you will need to add quotes when entering them using this format.
+
+Example subsetting command for categorical data:
+```
+clusters %in% c("DCs", "Megakaryocytes", "B Cells")
+```
+
+Here, `clusters` is the category to subset based on, and vector notation is used to select DCs, megakaryocytes, and B cells. Cells that have a `clusters` annotation that matches either of these three clusters will be selected.
+
+### Subsetting for Numeric Metadata 
+
+To subset on numeric metadata, string subsetting can be used to specify upper and lower bounds for the metadata in question. 
+
+As with categorical metadata, the metadata category should be entered as it appears under the "Metadata" tab, without quotes. To specify an upper bound, use the `<` operator, and to specify a lower bound, use the `>` operator.
+
+For example, `percent.mt < 10` will select cells with a mitochondrial DNA content less than 10 percent. `percent.mt > 2` would select cells with a content of at least 2 percent. To include the threshold in the selection, use `>=` and `<=` (greater than or equal to and less than or equal to, respectively). 
+
+### Subsetting for Feature Expression 
+
+Feature expression can be used to form subsets using the same syntax as for numeric metadata. Simply use syntax for numeric metadata to define ranges based on feature expression. Gene signatures and surface proteins can also be used with this method.
+
+The desired feature must be entered using its ID, which includes its designation as a gene, surface protein, or gene signature. Please use the selection menu in the "Feature Search" tab to obtain the proper ID for the feature you are looking for. A range of normalized expression values is also given for the feature of interest in this tab, and can be used to assist in specifying your threshold for string subsetting. 
+
+### Subsetting Based on Multiple Criteria
+
+The use of the logical operators AND (`&`) and OR (`|`) can be used to specify as many conditions as you would like. 
+
+#### AND Operator 
+
+The AND (`&`) operator is often used to select cells based on multiple types of metadata. For example, say the object has annotations for patient ID, response to treatment, and clusters. To select cells based on a combination of these three criteria, the following string can be entered:
+
+```
+(id %in% c("12778", "27828", "57578")) & (response %in% c("response","no response")) & (clusters %in% c("CD8 T/NK", "CD4 T"))
+```
+
+The selection above would return cells with metadata for `id`, `response`, and `clusters` matching the values specified. Cells must match the values listed in all three categories to be included in the subset.
+
+With the use of the `&` operator on categorical metadata, it is possible to specify criteria that do not match any cells. If no cells are returned for the subset entered, try performing the subset again with broader criteria.
+
+For features and numeric metadata, the `&` operator can be used to specify ranges with lower and upper bounds. For example `(rna_TP53 > 1) & (rna_TP53 < 2)` will select cells that have a normalized expression value for TP53 between 1 and 2. 
+
+#### OR Operator
+
+The OR (`|`) operator can be used to select cells that match one set of criteria or the other. For numeric metadata, this can be used to select both cells below one defined threshold, and above another. For example `(rna_IL6 < 1) | (rna_IL6 > 3)` would select cells where the normalized expression of IL6 is less than 1 or greater than 3.
+
+You may notice that parentheses enclose conditionals between the `&` and `|` operators  in the examples above. While this is not required, this syntax is recommended to prevent errors. 
