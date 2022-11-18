@@ -1045,6 +1045,7 @@ server <- function(input, output, session){
       if (any(names(browser_config) == "RSTUDIO_PANDOC")) {
         Sys.setenv(RSTUDIO_PANDOC = browser_config$RSTUDIO_PANDOC)
       }
+      
       rmarkdown::render(
         # Rmd document to render
         input = "./Auto_Dictionary.Rmd",
