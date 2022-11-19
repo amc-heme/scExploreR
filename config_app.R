@@ -1379,7 +1379,7 @@ server <- function(input, output, session) {
           showNotification(
             ui =
               div(
-                style = "width: 350px;",
+                style = "width: 500px;",
                 glue('Loading file at {config_filename}')
               ),
             duration = NULL,
@@ -1389,12 +1389,13 @@ server <- function(input, output, session) {
           
           # Determine if the file loaded is .rds or .yaml
           # (supports both for backward compatibility)
-          if (grepl(".yaml$", config_filename)){
+          # Ignore case of extension when matching
+          if (grepl(".yaml$", config_filename, ignore.case = TRUE)){
             # Procedure for loading .yaml file
             # Use the load_config function from `./R` to convert .yaml file to 
             # R format and properly initialize the ADT threshold tibble
             load_config(config_filename)
-          } else if (grepl(".rds$", config_filename)){
+          } else if (grepl(".rds$", config_filename, ignore.case = TRUE)){
             # Procedure for loading .rds file
             readRDS(config_filename)
           }
