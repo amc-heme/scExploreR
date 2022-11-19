@@ -1,7 +1,18 @@
 ---
 title: "How to Use String Subseting"
-output: html_document
-date: '2022-11-18'
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+      # Floating toc table should not display if the user prints the document
+      print: false
+    # Numbering of sections
+    number_sections: false
+    # Bootswatch 3 themes (https://bootswatch.com/3/cerulean/) 
+    theme: cerulean
 ---
 
 ## How to Use String Subsetting 
