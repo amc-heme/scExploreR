@@ -340,7 +340,7 @@ ui <- tagList(
   useWaiter(),
   # Shinyjs: a Shiny JavaScript extension
   useShinyjs(),
-  # CSS and JS for collapsible panel
+  # CSS and JS for collapsible panel
   navbarPage("Shiny scExplorer",
              windowTitle="Shiny scExplorer",
              position="fixed-top",
@@ -365,9 +365,9 @@ ui <- tagList(
              ), # End navbarPage()
   
   ## Buttons on upper-right hand corner of app ---------------------------------
-  # Help button - Creates a Dropdown menu when clicked
-  # Button should appear in the upper right hand corner of the navbar menu
-  # This will be achieved with the button_wizzard.js script
+  # Help button - Creates a Dropdown menu when clicked
+  # Button should appear in the upper right hand corner of the navbar menu
+  # This will be achieved with the button_wizzard.js script
   dropdownButton(
     inputId = "help",
     status="info",
