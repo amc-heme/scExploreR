@@ -667,7 +667,7 @@ server <- function(input, output, session) {
       }
     })
   
-  ### 3.1.3. Process list of assay module outputs #### 
+  ### 3.1.3. Record list of assay module outputs in config data #### 
   # Filter list of options module outputs and combine into a single 
   # reactive object, which is added to the config_data list. 
   config_data$assays <- 
@@ -791,7 +791,6 @@ server <- function(input, output, session) {
   
   ### 3.2.4. Store metadata options in config data ####
   #### 3.2.4.1. Category-specific options ####
-  # Stores options for each metadata category selected in the app
   config_data$metadata <- 
     reactive({
       # Options list is only processed when metadata columns have been selected
@@ -1095,7 +1094,51 @@ server <- function(input, output, session) {
         input$reductions_selected
       })
   
+  ### 3.2.3. Options for each reduction ####
+  # One server instance of the options module is created for each reduction
+  # in the object (this is done once at startup)
+  all_reductions_options <- list()
+  
+  for (reduction in reductions){
+    server_output <- 
+      options_server(
+        id = reduction,
+        object = object,
+        categories_selected = reductions_selected,
+        options_type = "reductions"
+        )
+    
+    all_reductions_options[[reduction]] <- server_output
+  }
+  
+  ### 3.2.4. Record reductions options in config data ####
+  config_data$reductions <- 
+    reactive({
+      # Options list is only processed when reductions have been selected
+      if (isTruthy(input$reductions_selected)){
+        # Extracts each reactive module output and stores them in a list
+        options_list <- lapply(all_reductions_options, function(x) x())
+        # Filter list for reductions that have been selected by the user
+        options_list <- 
+          options_list[names(options_list) %in% input$reductions_selected]
+        # Sort list according to the order specified by the user in the 
+        # drag and drop menu
+        options_list <- options_list[input$reductions_selected]
+        return(options_list)
+      } else {
+        # Return NULL if no reductions are selected
+        return(NULL)
+      }
+    })
+  
+  # TEMP: print all reduction options
+  output$print_reductions <-
+    renderPrint({
+      config_data$reductions()
+    })
+  
   ## 3.4 ADT thresholding tab ####
+  
   ### 3.4.1. Define/update available ADTs ####
   # Reactive variable will be used for updating the selection menu with
   # ADTs in the designated assay that have not already been added to the table
