@@ -104,9 +104,9 @@ js_files <-
     # Pattern arguments require double backslashes for eacape 
     # characters to work (R and regex use the same string 
     # character)
-    pattern=".*\\.js", 
-    full.names=TRUE, 
-    ignore.case=TRUE,
+    pattern = ".*\\.js", 
+    full.names = TRUE, 
+    ignore.case = TRUE,
     include.dirs = FALSE
     )
 # Create list of style tags for each CSS file
@@ -952,17 +952,47 @@ server <- function(input, output, session){
   reductions <- 
     reactive({
       req(object())
-      reductions <- names(object()@reductions)
       
-      # Order UMAP reduction first by default, if it exists
-      if ("umap" %in% reductions){
-        reductions <-
-          c(
-            reductions[reductions=="umap"],
-            reductions[!reductions=="umap"]
+      # If a reductions section exists in the config file, use the config file
+      # to determine the reductions to include
+      if (isTruthy(config()$reductions)){
+        # Machine-readable names for reductions, in the order selected 
+        # in the config file
+        ids <- 
+          sapply(
+            config()$reductions,
+            function(reduction_entry){
+              reduction_entry$reduction
+            }
+          ) 
+        
+        labels <-
+          sapply(
+            config()$reductions,
+            function(reduction_entry){
+              reduction_entry$label
+              }
             )
+        
+        # Reductions: named list. Elements are machine-readable reduction
+        # names, and names are human-readable reduction names
+        reductions <- ids
+        names(reductions) <- labels
+        
+      } else {
+        # Otherwise, get reductions in object, and use the default
+        # (UMAP is placed first, if it exists)
+        reductions <- names(object()@reductions)
+        
+        if ("umap" %in% reductions){
+          reductions <-
+            c(
+              reductions[reductions=="umap"],
+              reductions[!reductions=="umap"]
+            )
+        }
       }
-      
+
       reductions
     })
   
