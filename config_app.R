@@ -154,6 +154,9 @@ is_numeric <-
 numeric_cols <- meta_columns[is_numeric]
 non_numeric_cols <- meta_columns[!is_numeric]
 
+# Reductions in object
+reductions <- names(object@reductions)
+
 # Main UI and Server Functions ####
 ## 1. Tabs in Main UI ####
 ## 1.1. Assays Tab #### 
@@ -262,7 +265,7 @@ metadata_tab <-
           # displayed)
           
           # Options for Categorical, logical metadata
-          # Create a metadata options "card" for each non-numeric metadata 
+          # Create a metadata options "card" for each non-numeric metadata 
           # column in the object. Cards below are hidden and display when the
           # corresponding metadata category is selected
           lapply(
@@ -286,7 +289,66 @@ metadata_tab <-
       )
     }
 
-## 1.3. ADT Threshold Tab ####
+## 1.3. reductions Tab ####
+reductions_tab <- 
+  function(){
+    sidebarLayout(
+      applet_sidebar_panel(
+        div(
+          class = "input-no-margin",
+          uiOutput(
+            outputId = "reductions_sortable_bucket"
+          )
+        )
+      ),
+      applet_main_panel(
+        tagList(
+          # Card for generic options (taken from metadata tab; unused) 
+          # div(
+          #   class = "optcard single-space-bottom",
+          #   tags$strong(
+          #     glue("General Options"),
+          #     class="large center"
+          #   ),
+          #   # Select metadata column to use for patient/sample level metadata
+          #   # analysis
+          #   selectInput(
+          #     inputId = "patient_colname",
+          #     label = 
+          #       "Patient ID column (optional, used for patient-level 
+          #       metadata analysis)",
+          #     # Can select "none" or any categorical metadata column
+          #     choices = c("none", non_numeric_cols),
+          #     selected = NULL,
+          #     width = "380px"
+          #   )
+          # ),
+          
+          # Create an options "card" for each reduction included (dynamic UI)
+          lapply(
+            reductions,
+            function(reduction_name){
+              options_ui(
+                id = reduction_name,
+                object = object,
+                optcard_type = "reductions"
+              )
+            }
+          ),
+          # TEMP: add an additional card displaying the outputs 
+          # from the current tab
+          div(
+            class = "optcard",
+            verbatimTextOutput(
+              outputId = "print_reductions"
+              )
+          )
+        )
+      )
+    )
+  }
+
+## 1.4. ADT Threshold Tab ####
 threshold_tab <-
   function(){
     sidebarLayout(
@@ -422,9 +484,13 @@ ui <- fluidPage(
       metadata_tab()
       ),
     tabPanel(
+      title = "Reductions",
+      reductions_tab()
+      ),
+    tabPanel(
       title = "ADT Threshold",
       threshold_tab()
-    )
+      )
     ),
   
   # Elements below will be moved to the navbar using JavaScript
@@ -530,6 +596,7 @@ server <- function(input, output, session) {
   # module_data: reactiveValues object for storing data specific to this module
   module_data <- reactiveValues()
   
+  # Sortable Data: Metadata #### 
   # Metadata choices selected vs. not selected
   # Nothing selected by default. The variables below are modified when loading
   # a config file
@@ -537,8 +604,13 @@ server <- function(input, output, session) {
   # Choices not selected: equal to all non-numeric metadata.
   module_data$metadata_sortable_not_selected <- non_numeric_cols
   
+  # Sortable Data: Reductions ####
+  # Nothing selected by default, and all reductions are choicesa
+  module_data$reductions_sortable_selected <- character(0)
+  module_data$reductions_sortable_not_selected <- reductions
+  
   # Store assays for which ADT thresholding modules have been created 
-  # (to avoid duplicates)
+  # (to avoid duplicates
   module_data$existing_adt_modules <- c()
   
   # Threshold tab data
@@ -890,8 +962,141 @@ server <- function(input, output, session) {
       config_data$metadata()
       })
   
-  ## 3.3 ADT thresholding panel ####
-  ### 3.3.1. Define/update available ADTs ####
+  ## 3.3 Reductions tab ####
+  ### 3.3.1. Dynamic UI ####
+  #### 3.3.1.1. Sortable Menu UI ####
+  # Uses the bucket_list input from the sortable package
+  reductions_bucket_ui <-
+    eventReactive(
+      c(module_data$reductions_sortable_not_selected,
+        module_data$reductions_sortable_selected),
+      label = "Reductions: define sortable",
+      {
+        tagList(
+          tags$b("Choose Reductions to Include in App"),
+          bucket_list(
+            header = 
+              "Drag reductions categories to the \"Included Reductions\" 
+              column to include. Reductions will appear in app menus in 
+              the order they appear in the right-hand column.",
+            orientation = "horizontal",
+            group_name = "reductions_bucket",
+            # Use the default class, and a class specific to this app
+            # Many sub-classes are tied to the default class, and styling will
+            # not be applied to those classes if the default class is not also 
+            # passed to this argument.
+            class = 
+              c("default-sortable", "bucket-select"),
+            add_rank_list(
+              input_id = "reductions_not_selected",
+              text = "Available Reductions",
+              labels = module_data$reductions_sortable_not_selected
+            ),
+            add_rank_list(
+              input_id = "reductions_selected",
+              text = "Included Reductions",
+              labels = module_data$reductions_sortable_selected
+            )
+          )
+        )
+      })
+  
+  #### 3.3.1.2. Change Order of Cards to Match Selected Reductions ####
+  observeEvent(
+    c(input$reductions_selected, input$reductions_not_selected),
+    label = "Reductions: set order of reductions options cards",
+    ignoreNULL = FALSE,
+    ignoreInit = TRUE,
+    {
+      print("Rearrange reductions options cards")
+      
+      # Guide vector for ordering the reductions options cards
+      # Lists the reductions included by the user in the order defined in the 
+      # sortable, followed by non-selected reductions (the corresponding cards 
+      # will be invisible, but they should be sorted after the included 
+      # reductions)
+      reductions_categories_order <-
+        c(input$reductions_selected, input$reductions_not_selected)
+      
+      for (i in 1:length(reductions_categories_order)){
+        if (i == 1){
+          # First element is left as-is 
+          next
+        } else if (i == 2) {
+          # Second element: move after first element
+          
+          # First element (destination, second element will be inserted after
+          # this element)
+          destination_column <- reductions_categories_order[1]
+          # ID of the first options card, which is passed to the JavaScript
+          # function
+          destination_id <- glue("{destination_column}-optcard")
+          
+          # Second element (target)
+          elem_column <- reductions_categories_order[i]
+          elem_id <- glue("{elem_column}-optcard")
+          
+          # Custom JavaScript function to move options card
+          js$insertElemAfter(
+            elem_id = elem_id,
+            destination_id = destination_id
+          )
+          
+        } else {
+          # All subsequent elements: move after the previous element
+          # ID of previous card (destination of move)
+          destination_column <- reductions_categories_order[i - 1]
+          destination_id <- glue("{destination_column}-optcard")
+          
+          # ID of current card (element to be moved)
+          elem_column <- reductions_categories_order[i]
+          elem_id <- glue("{elem_column}-optcard")
+          
+          # Custom JavaScript function to move options card
+          js$insertElemAfter(
+            elem_id = elem_id,
+            destination_id = destination_id
+          )
+        }
+      }
+    })
+  
+  #### 3.3.1.3 Show/hide Reductions Options Cards ####
+  observe({
+    for (reduction in reductions){
+      # Show all cards that are in the "Metadata selected" column of the 
+      # sortable, and hide all cards that are not
+      if (reduction %in% input$reductions_selected){
+        showElement(
+          id = glue("{reduction}-optcard"),
+          asis = TRUE
+        )
+      } else {
+        hideElement(
+          id = glue("{reduction}-optcard"),
+          asis = TRUE
+        )
+      }
+    }
+  })
+  
+  #### 3.3.1.4. Render Sortable UI ####
+  output$reductions_sortable_bucket <-
+    renderUI({
+      reductions_bucket_ui()
+    })
+  
+  ### 3.3.2. Record selected reductions ####
+  reductions_selected <- 
+    eventReactive(
+      input$reductions_selected,
+      ignoreNULL = FALSE,
+      {
+        input$reductions_selected
+      })
+  
+  ## 3.4 ADT thresholding tab ####
+  ### 3.4.1. Define/update available ADTs ####
   # Reactive variable will be used for updating the selection menu with
   # ADTs in the designated assay that have not already been added to the table
   available_adts <-
@@ -912,7 +1117,7 @@ server <- function(input, output, session) {
       }
     })
   
-  ### 3.3.2. Populate ADT Choices when designated ADT assay is changed ####
+  ### 3.4.2. Populate ADT Choices when designated ADT assay is changed ####
   observeEvent(
     ADT_assay(),
     ignoreNULL = TRUE,
@@ -937,8 +1142,8 @@ server <- function(input, output, session) {
       module_data$threshold_menu_state <- "idle"
     })
   
-  ### 3.3.3. Threshold picker server ####
-  #### 3.3.3.1. ADT passed to server ####
+  ### 3.4.3. Threshold picker server ####
+  #### 3.4.3.1. ADT passed to server ####
   threshold_server_adt <- 
     reactive({
       # Value passed to server depends on state
@@ -966,7 +1171,7 @@ server <- function(input, output, session) {
       } 
     })
 
-  #### 3.3.3.2. Server instance ####
+  #### 3.4.3.2. Server instance ####
   threshold_value <- 
     threshold_picker_server(
       id = "threshold_picker", 
@@ -983,8 +1188,8 @@ server <- function(input, output, session) {
           })
       )
   
-  ### 3.3.4. "Add threshold" button ####
-  #### 3.3.4.1. Respond to button ####
+  ### 3.4.4. "Add threshold" button ####
+  #### 3.4.4.1. Respond to button ####
   # Set state to "add", which will show menus with the class "show-on-add"
   observeEvent(
     input$add_threshold,
@@ -994,7 +1199,7 @@ server <- function(input, output, session) {
       module_data$threshold_menu_state <- "add"
     })
   
-  #### 3.3.4.2. Disable button while adding or editing a feature ####
+  #### 3.4.4.2. Disable button while adding or editing a feature ####
   # Prevents user from adding a new feature while editing the current one
   observe({
     target_id <- "add_threshold"
@@ -1010,8 +1215,8 @@ server <- function(input, output, session) {
     }
   })
   
-  ### 3.3.5. Show/hide menus based on state ####
-  #### 3.3.5.1. Generic Menus ####
+  ### 3.4.5. Show/hide menus based on state ####
+  #### 3.4.5.1. Generic Menus ####
   observe({
     # jQuery selectors for classes that show elements based on state
     add_selector <- "[class *= 'show-on-add']"
@@ -1036,7 +1241,7 @@ server <- function(input, output, session) {
       }
   })
   
-  #### 3.3.5.2. Show/Hide threshold picker UI ####
+  #### 3.4.5.2. Show/Hide threshold picker UI ####
   # Shown when the state is "add" and an adt is entered in the search input
   # OR when the state is "edit" (feature being edited is provided when changing 
   # to this state)
@@ -1066,7 +1271,7 @@ server <- function(input, output, session) {
     }
   })
   
-  ### 3.3.6. Cancel threshold button ####
+  ### 3.4.6. Cancel threshold button ####
   observeEvent(
     input$cancel_threshold,
     ignoreNULL = FALSE,
@@ -1100,8 +1305,8 @@ server <- function(input, output, session) {
     })
   
   
-  ### 3.3.7. Accept threshold button ####
-  #### 3.3.7.1. Enable "confirm" button when a threshold is selected ####
+  ### 3.4.7. Accept threshold button ####
+  #### 3.4.7.1. Enable "confirm" button when a threshold is selected ####
   observe({
     print("threshold value")
     print(threshold_value())
@@ -1117,7 +1322,7 @@ server <- function(input, output, session) {
       }
     })
   
-  #### 3.3.7.2. Save data and close menu when the confirm button is pressed ####
+  #### 3.4.7.2. Save data and close menu when the confirm button is pressed ####
   observeEvent(
     input$accept_threshold,
     ignoreNULL = FALSE,
@@ -1165,8 +1370,8 @@ server <- function(input, output, session) {
       module_data$threshold_menu_state <- "idle"
     })
   
-  ### 3.3.8. Render table of ADT thresholds ####
-  #### 3.3.8.1. DT datatable ####
+  ### 3.4.8. Render table of ADT thresholds ####
+  #### 3.4.8.1. DT datatable ####
   threshold_DT <-
     reactive({
       DT <- module_data$threshold_data
@@ -1214,7 +1419,7 @@ server <- function(input, output, session) {
       threshold_DT()
     })
   
-  #### 3.3.8.2. JavaScript for inline buttons ####
+  #### 3.4.8.2. JavaScript for inline buttons ####
   button_script <-
     reactive({
       req(module_data$threshold_data)
@@ -1243,7 +1448,7 @@ server <- function(input, output, session) {
       button_script()
     })
   
-  ### 3.3.9. Respond to edit/delete buttons ####
+  ### 3.4.9. Respond to edit/delete buttons ####
   observeEvent(
     input$lastClick,
     ignoreNULL = FALSE,
@@ -1314,7 +1519,7 @@ server <- function(input, output, session) {
       }
     })
   
-  ### 3.3.10. Threshold settings window header text (edit mode) ####
+  ### 3.4.10. Threshold settings window header text (edit mode) ####
   output$threshold_header <-
     renderUI({
       tags$h4(
@@ -1322,7 +1527,7 @@ server <- function(input, output, session) {
       )
     })
   
-  ### 3.3.11. Record threshold table in config data ####
+  ### 3.4.11. Record threshold table in config data ####
   config_data$adt_thresholds <-
     reactive({
       # Store the table if it is defined and has at least one row. Otherwise, 
@@ -1334,7 +1539,7 @@ server <- function(input, output, session) {
       } else NULL
     })
   
-  ## 3.4. Export Config file as YAML ####
+  ## 3.5. Export Config file as YAML ####
   output$export_selections <- 
     downloadHandler(
       filename = "object-config.yaml",
@@ -1363,8 +1568,8 @@ server <- function(input, output, session) {
             )
           })
   
-  ## 3.5. Load Config File ####
-  ### 3.5.1 Load File ####
+  ## 3.6. Load Config File ####
+  ### 3.6.1 Load File ####
   # Loads a previously created config file and imports contents into app
   # storing in session$userdata makes file visible to all modules
   session$userData$config <-
@@ -1408,8 +1613,8 @@ server <- function(input, output, session) {
         }
       })
   
-  ### 3.5.2. Update inputs in main server function with file contents ####
-  #### 3.5.2.1. Assays selected ####
+  ### 3.6.2. Update inputs in main server function with file contents ####
+  #### 3.6.2.1. Assays selected ####
   observeEvent(
     session$userData$config(),
     {
@@ -1425,7 +1630,7 @@ server <- function(input, output, session) {
       )
     })
   
-  #### 3.5.2.2. Metadata selected ####
+  #### 3.6.2.2. Metadata selected ####
   observeEvent(
     session$userData$config(),
     {
@@ -1443,10 +1648,11 @@ server <- function(input, output, session) {
       # in the loaded file
       module_data$metadata_sortable_not_selected <-
         non_numeric_cols[
-          !non_numeric_cols %in% module_data$metadata_sortable_selected]
+          !non_numeric_cols %in% module_data$metadata_sortable_selected
+          ]
       })
   
-  #### 3.5.2.3 ADT threshold table ####
+  #### 3.6.2.3 ADT threshold table ####
   observeEvent(
     session$userData$config(),
     {

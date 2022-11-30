@@ -1,14 +1,21 @@
 ## Options Module (first level) ####
-### Options Module UI
-# id: the namespace id given to this module. In the config app, this is either 
-# the assay name or the metadata type.
-# Optcard_type: the type of data to display options for. This can be either 
-# "assays" or "metadata", and is used to show the relevant options based 
-# on the type.
+
+#' Config App: Options Card UI
+#'
+#' @param id the module ID, used for namespacing. This will be equal to the name
+#' of the assay, metadata variable, or reduction represented by the current 
+#' options card.
+#' @param object the Seurat object for which config settings are being defined.
+#' @param optcard_type 
+#' @param card_name the name of the current assay/metadata variable/reduction,
+#' etc., represented by the current options card. This defaults to the id.
+#' @param restore_inputs a list of input values, used for restoring inputs
+#' when cards are sorted by the user.
+#' 
 options_ui <- function(id,
                        object,
-                       optcard_type = c("assays", "metadata"),
-                       category_name = id,
+                       optcard_type = c("assays", "metadata", "reductions"),
+                       card_name = id,
                        restore_inputs = list()
                        ){
   # NS(id): namespace function, defined here and called for every input ID. One
@@ -17,15 +24,16 @@ options_ui <- function(id,
   # different modules without namespace collisions.
   ns <- NS(id)
   
-  # Calculations for options UI ---------------------------------------------
-  # Metadata-specific calculations used to define UI for each metadata type
+  # Calculations for options UI ---------------------------------------------
+  # For metadata options, calculations are performed before UI is created.
+  # Metadata-specific calculations used to define UI for each metadata type
   if (optcard_type == "metadata"){
     # Get unique values of metadata field for display of summary statistics
-    values <- unique(object@meta.data[[category_name]])
+    values <- unique(object@meta.data[[card_name]])
     # Create list of sorted values for display
     values_sorted <- str_sort(values, numeric=TRUE)
     # Determine type of metadata
-    metadata_type <- metadata_type(object, category_name)
+    metadata_type <- metadata_type(object, card_name)
     
     # Metadata description
     # Display number of unique values if categorical; display range if numeric
@@ -38,13 +46,13 @@ options_ui <- function(id,
       # metadata_description <- 
       #   glue("{range: {min(values)} to {max(values)}, avg {mean(values)}}")
     } else {
-      # Potential unforseen metadata types: leave the description blank
+      # Potential unforeseen metadata types: leave the description blank
       metadata_description <- ""
     }
   }
   
-  # Create UI for options card ----------------------------------------------
-  # Assays UI
+  # Create UI for options card ----------------------------------------------
+  # Assays UI
   if (optcard_type == "assays"){
     ui <- 
       # Shinyjs hidden class applied initially to assay options cards
@@ -53,7 +61,7 @@ options_ui <- function(id,
           id = ns("optcard"),
           class = "optcard single-space-bottom",
           tags$strong(
-            glue("Options for {category_name}"),
+            glue("Options for {card_name}"),
             class = "large half-space-bottom center"
           ),
           
@@ -84,85 +92,117 @@ options_ui <- function(id,
         )
       )
     
-    # Metadata UI
-  } else if (optcard_type == "metadata"){
-    ui <- div(
-      id = ns("optcard"),
-      class = "optcard single-space-bottom",
-      tags$strong(glue("Options for {category_name}"),
-                  class="large center"),
-      
-      # Print the type of metadata beneath the title, and a brief description
-      tags$p(glue("({metadata_type}, {metadata_description})"), 
-             class = "center small half-space-bottom"),
-      
-      # If the metadata is categorical and there are 15 values or less,
-      # print the values to screen
-      if (metadata_type == "Categorical" & length(values) <= 15){
-        tags$p(glue("Values: {paste(values_sorted, collapse=', ')}"))
-      } else NULL,
-      
-      # Human-readable suffix: appears on plots and search entries
-      textInput(
-        inputId = ns("hr"),
-        label = 
-          "Set label for metadata column (will appear 
-          as entered in app interface)",
-        width = "380px",
-        value = 
-          if (!is.null(restore_inputs$hr)) {
-            restore_inputs$hr
-          } else {
-            ""
-          } 
-        ),
-      
-      # Option to classify metadata into list (ex. group patients 
-      # by sample conditions)
-      # Only available for categorical metadata columns
-      if (metadata_type == "Categorical"){
-        tagList(
-          materialSwitch(
-            inputId =  ns("group_metadata"),
-            label = "Group metadata into categories?", 
-            value = 
-              if (!is.null(restore_inputs$group_metadata)){
-                restore_inputs$group_metadata
-              } else {
-                FALSE
-              },
-            right = TRUE,
-            status = "default"
-            ),
-          tags$p(
-            "(Choices for possible values in the metadata 
-            column will appear in the app)",
-            class = "center small"
-          ),
-          # Metadata groups interface
-          # One instance of the fields UI, with a button to 
-          # add more fields to the interface
-          hidden(
-            div(
-              id = ns("groups_interface"),
-              #Namespace id for module is based on a 
-              #numeric id since there are multiple fields.
-              metadata_group_fields_ui(
-                id = ns("groups"),
-                unique_values =
-                  str_sort(
-                    unique(object@meta.data[[category_name]]),
-                    numeric = TRUE
-                    )
-                )
-            )#End tagList of input containers
+    # UI for reductions options cards
+  } else if (optcard_type == "reductions"){
+    ui <-
+      # Shinyjs hidden class applied initially to assay options cards
+      hidden(
+        div(
+          id = ns("optcard"),
+          class = "optcard single-space-bottom",
+          tags$strong(
+            glue("Options for {card_name}"),
+            class = "large half-space-bottom center"
           ),
           
-          verbatimTextOutput(
-            outputId = ns("test_print")
+          # Human-readable name: appears in app menus
+          textInput(
+            inputId = ns("hr"),
+            label = "Set label for reduction (will appear as entered in app)",
+            # Default value is the name of the reduction as defined in
+            # the object. Restore_inputs is used if the reductions card is 
+            # re-sorted. 
+            value = 
+              if (!is.null(restore_inputs$hr)) {
+                restore_inputs$hr
+              } else {
+                card_name
+              },
+            width = "380px"
+            )
           )
         )
-      } else NULL,
+    
+    # Metadata UI
+  } else if (optcard_type == "metadata"){
+    ui <- 
+      div(
+        id = ns("optcard"),
+        class = "optcard single-space-bottom",
+        tags$strong(glue("Options for {card_name}"),
+                    class="large center"),
+        
+        # Print the type of metadata beneath the title, and a brief description
+        tags$p(glue("({metadata_type}, {metadata_description})"), 
+               class = "center small half-space-bottom"),
+        
+        # If the metadata is categorical and there are 15 values or less,
+        # print the values to screen
+        if (metadata_type == "Categorical" & length(values) <= 15){
+          tags$p(glue("Values: {paste(values_sorted, collapse=', ')}"))
+        } else NULL,
+      
+        # Human-readable suffix: appears on plots and search entries
+        textInput(
+          inputId = ns("hr"),
+          label = 
+            "Set label for metadata column (will appear 
+            as entered in app interface)",
+          width = "380px",
+          value = 
+            if (!is.null(restore_inputs$hr)) {
+              restore_inputs$hr
+            } else {
+              ""
+            } 
+          ),
+      
+        # Option to classify metadata into list (ex. group patients 
+        # by sample conditions)
+        # Only available for categorical metadata columns
+        if (metadata_type == "Categorical"){
+          tagList(
+            materialSwitch(
+              inputId =  ns("group_metadata"),
+              label = "Group metadata into categories?", 
+              value = 
+                if (!is.null(restore_inputs$group_metadata)){
+                  restore_inputs$group_metadata
+                } else {
+                  FALSE
+                },
+              right = TRUE,
+              status = "default"
+              ),
+            tags$p(
+              "(Choices for possible values in the metadata 
+              column will appear in the app)",
+              class = "center small"
+            ),
+            # Metadata groups interface
+            # One instance of the fields UI, with a button to 
+            # add more fields to the interface
+            hidden(
+              div(
+                id = ns("groups_interface"),
+                #Namespace id for module is based on a 
+                #numeric id since there are multiple fields.
+                metadata_group_fields_ui(
+                  id = ns("groups"),
+                  unique_values =
+                    str_sort(
+                      unique(object@meta.data[[card_name]]),
+                      numeric = TRUE
+                      )
+                  )
+              )#End tagList of input containers
+            )#,
+            
+            # verbatimTextOutput(
+            #   outputId = ns("test_print")
+            # )
+          )
+        } else NULL,
     )
   }
   
@@ -177,18 +217,18 @@ options_ui <- function(id,
 # of the module is created for every available selection across each tab.
 
 # Arguments
-# id: the id passed to the module
-# categories_selected: a reactive variable describing the variables (assays, 
+# id: the id passed to the module
+# categories_selected: a reactive variable describing the variables (assays, 
 # metadata, etc., selected by the user)
-# options_type: the type of options to create a server function for. Can be one 
-# of "assays" or "metadata"
-# category_name: the name of the individual category that the instance of the
-# module applies to. This is the id by default, and can be changed.
+# options_type: the type of options to create a server function for. Can be one 
+# of "assays" or "metadata"
+# card_name: the name of the individual category that the instance of the
+# module applies to. This is the id by default, and can be changed.
 options_server <- function(id, 
                            object,
                            categories_selected, 
-                           options_type = c("assays", "metadata"),
-                           category_name = id,
+                           options_type = c("assays", "metadata", "reductions"),
+                           card_name = id,
                            disable_adt_checkbox = NULL
                            ){
   # Initialize module
@@ -223,13 +263,13 @@ options_server <- function(id,
           # Examine the list of currently selected categories, and
           # check if the module's category name is selected.
           # If so, show the options card
-          # print(glue("show/hide test for {category_name}"))
+          # print(glue("show/hide test for {card_name}"))
           # print("categories selected")
           # print(categories_selected())
-          # print(glue("{category_name} %in% categories_selected"))
-          # print(category_name %in% categories_selected())
+          # print(glue("{card_name} %in% categories_selected"))
+          # print(card_name %in% categories_selected())
           
-          if (category_name %in% categories_selected()){
+          if (card_name %in% categories_selected()){
             showElement("optcard")
             # Otherwise, hide the card
           } else {
@@ -240,7 +280,7 @@ options_server <- function(id,
       # 2. Metadata-tab specific functions -------------------------------------
       # Determine if metadata field is categorical or numeric
       if (options_type == "metadata"){
-        type <- metadata_type(object,id)
+        type <- metadata_type(object, id)
       }
       
       ## 2.1. Metadata Groups ####
@@ -275,9 +315,9 @@ options_server <- function(id,
           group_data <- 
             metadata_group_fields_server(
               id = "groups",
-              category_name = category_name,
+              category_name = card_name,
               unique_values = 
-                unique(object@meta.data[[category_name]]) |> 
+                unique(object@meta.data[[card_name]]) |> 
                 str_sort(numeric=TRUE)
               )
           
@@ -416,12 +456,12 @@ options_server <- function(id,
           label = glue("{id}: Update Options Based on Config File"),
           {
             # Search for category name in loaded config file
-            if (category_name %in% names(session$userData$config()$metadata)){
+            if (card_name %in% names(session$userData$config()$metadata)){
               print(glue("Update options for {id}"))
               
               # Get config info for matching metadata category
               config_individual <-
-                session$userData$config()$metadata[[category_name]]
+                session$userData$config()$metadata[[card_name]]
 
               # Freeze inputs
               freezeReactiveValue(input, "hr")
@@ -511,7 +551,7 @@ options_server <- function(id,
               #             remove_button = TRUE,
               #             temp_choices =
               #               str_sort(
-              #                 unique(object@meta.data[[category_name]]),
+              #                 unique(object@meta.data[[card_name]]),
               #                 numeric=TRUE
               #               )
               #           )
@@ -527,7 +567,7 @@ options_server <- function(id,
               #       # Store output in group_choices and use observe() to
               #       # reactively update group_choices when the output changes
               #       # observe(
-              #       #   label = glue("Observer for {category_name}-{nested_id}"),
+              #       #   label = glue("Observer for {card_name}-{nested_id}"),
               #       #   {
               #       #     print("ID")
               #       #     print(id)
@@ -570,7 +610,7 @@ options_server <- function(id,
           return_list_metadata <- 
             reactive({
               list(
-                `meta_colname` = category_name,
+                `meta_colname` = card_name,
                 `label` = input$hr,
                 # groups: defined if the switch to group metadata is turned on, 
                 # and set to NULL otherwise.
@@ -586,7 +626,7 @@ options_server <- function(id,
           return_list_metadata <- 
             reactive({
               list(
-                `meta_colname`= category_name,
+                `meta_colname`= card_name,
                 `label`= input$hr,
                 `groups`= NULL
               )
@@ -596,20 +636,20 @@ options_server <- function(id,
         return(return_list_metadata)
         
       } else if (options_type=="assays"){
-        # For assays, return
-        # 1. Assay: the name of the assay as defined in the Seurat object
-        # 2. Key: the prefix to be added to features server-side to search for 
-        # them from the assay
-        # 3. Suffix_human: a suffix that is added to the feature in parentheses 
-        # and displayed in the app in dropdown menus and in the titles of plots
-        # 4. Dropdown_title: a user-defined label for the assay that will be 
-        # added to all dropdown menus in the app that display features from 
+        # For assays, return
+        # 1. Assay: the name of the assay as defined in the Seurat object
+        # 2. Key: the prefix to be added to features server-side to search for 
+        # them from the assay
+        # 3. Suffix_human: a suffix that is added to the feature in parentheses 
+        # and displayed in the app in dropdown menus and in the titles of plots
+        # 4. Dropdown_title: a user-defined label for the assay that will be 
+        # added to all dropdown menus in the app that display features from 
         # multiple assays 
         return_list_assays <- 
           reactive({
             list(
-              `assay` = category_name,
-              `key` = Key(object[[category_name]]),
+              `assay` = card_name,
+              `key` = Key(object[[card_name]]),
               `suffix_human` = 
                 if (input$include_label == TRUE) input$hr else "",
               `dropdown_title` = input$hr,
