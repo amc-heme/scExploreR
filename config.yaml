@@ -9,7 +9,7 @@ datasets:
         object: ./Seurat_Objects/longitudinal_samples_20211025.rds
         # The config file should be a .yaml file. The file is created using
         # the config app at /config_app.R.
-        config: ./Seurat_Objects/d0-d30-config.yaml
+        config: ./Seurat_Objects/d0-d30-config-with-reductions.yaml
         description: >
             Contains 3 normal bone marrow samples, and longitudinal samples from
             6 patients with the first sample taken at time of diagnosis and the
@@ -19,7 +19,7 @@ datasets:
     pheresis_samples:
         label: AML (Pheresis) Dataset
         object: ./Seurat_Objects/aml_bmmc_totalvi_20211206_slim1000.rds
-        config: ./Seurat_Objects/AML_TotalVI_config.yaml
+        config: ./Seurat_Objects/AML_TotalVI_config_with_reductions.yaml
         description: Contains 3 normal bone marrow samples, and 23 AML samples.
         plot: ./www/aml_UMAP.png
 
