@@ -1693,29 +1693,50 @@ run_config <-
           )
         })
       
-      #### 3.6.2.2. Metadata selected ####
+      #### 3.6.2.2. Metadata Tab ####
+      #### 3.6.2.2.1 Metadata selected ####
       observeEvent(
         session$userData$config(),
         {
-          # Set selected vs. not selected metadata categories using the information
-          # in the loaded file
+          # Set selected vs. not selected metadata variables using the
+          # information in the loaded file.
           # sortable inputs will update when the values below change.
           module_data$metadata_sortable_selected <- 
             # Selected metadata: equal to the names of the metadata list in the
-            # config file. The order of the sortable will reflect the order of the
-            # metadata categories in the config file
+            # config file. The order of the sortable will reflect the order of
+            # the metadata categories in the config file
             session$userData$config()$metadata |> 
             names()
           
-          # Non-selected metadata: all non-numeric metadata columns that are not
-          # in the loaded file
+          # Non-selected metadata: all non-numeric metadata columns that are 
+          # not in the loaded file
           module_data$metadata_sortable_not_selected <-
             non_numeric_cols[
               !non_numeric_cols %in% module_data$metadata_sortable_selected
             ]
         })
       
-      #### 3.6.2.3 ADT threshold table ####
+      #### 3.6.2.2.2 Patient level meteadata variable ####
+      
+      
+      #### 3.6.2.3 Reductions selected ####
+      observeEvent(
+        session$userData$config(),
+        {
+          # Set selected vs. not selected reductions using the information
+          # in the loaded file. Also sets the order of reductions selected.
+          module_data$reductions_sortable_selected <- 
+            session$userData$config()$reductions |> 
+            names()
+          
+          # Non-selected reductions (any reductions not in the config file)
+          module_data$reductions_sortable_not_selected <-
+            reductions[
+              !reductions %in% module_data$reductions_sortable_selected
+            ]
+          })
+      
+      #### 3.6.2.4 ADT threshold table ####
       observeEvent(
         session$userData$config(),
         {
@@ -1764,8 +1785,3 @@ run_config <-
     
     shinyApp(ui, server)
   }
-
-run_config(
-  object_path = "./Seurat_Objects/AML_Dataset.rds",
-  config_path = "./Seurat_Objects/AML_TotalVI_config.yaml"
-)
