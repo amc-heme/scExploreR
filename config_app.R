@@ -300,13 +300,13 @@ run_config <-
                     optcard_type = "metadata"
                   )
                 }
-              ),
+              )#,
               # TEMP: add an additional card displaying the outputs 
               # from the metadata tab
-              div(
-                class = "optcard",
-                verbatimTextOutput(outputId = "print_metadata")
-              )
+              # div(
+              #   class = "optcard",
+              #   verbatimTextOutput(outputId = "print_metadata")
+              # )
             )
           )
         )
@@ -357,15 +357,15 @@ run_config <-
                     optcard_type = "reductions"
                   )
                 }
-              ),
+              )#,
               # TEMP: add an additional card displaying the outputs 
               # from the current tab
-              div(
-                class = "optcard",
-                verbatimTextOutput(
-                  outputId = "print_reductions"
-                )
-              )
+              # div(
+              #   class = "optcard",
+              #   verbatimTextOutput(
+              #     outputId = "print_reductions"
+              #   )
+              # )
             )
           )
         )
@@ -979,10 +979,10 @@ run_config <-
       )
       
       # TEMP: print all metadata options
-      output$print_metadata <-
-        renderPrint({
-          config_data$metadata()
-        })
+      # output$print_metadata <-
+      #   renderPrint({
+      #     config_data$metadata()
+      #   })
       
       ## 3.3 Reductions tab ####
       ### 3.3.1. Dynamic UI ####
@@ -1155,10 +1155,10 @@ run_config <-
         })
       
       # TEMP: print all reduction options
-      output$print_reductions <-
-        renderPrint({
-          config_data$reductions()
-        })
+      # output$print_reductions <-
+      #   renderPrint({
+      #     config_data$reductions()
+      #   })
       
       ## 3.4 ADT thresholding tab ####
       
