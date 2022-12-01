@@ -228,7 +228,7 @@ options_server <-
   function(
     id, 
     object,
-    categories_selected, 
+    categories_selected,
     options_type = c("assays", "metadata", "reductions"),
     card_name = id,
     disable_adt_checkbox = NULL
@@ -412,6 +412,7 @@ options_server <-
         
         # 5. Update inputs upon loading config file ----------------------------
         if (options_type == "assays"){
+          ## 5.1. Assays ####
           observeEvent(
             session$userData$config(),
             {
@@ -453,29 +454,8 @@ options_server <-
               }
             })
           
-        } else if (options_type == "reductions"){
-          # Loading information for reductions
-          # observeEvent(
-          #   session$userData$config(),
-          #   {
-          #     # Search for assay name (module ID) in loaded config file
-          #     if (id %in% names(session$userData$config()$reductions)){
-          #       # Get config info for assay matching module ID
-          #       config_individual <- 
-          #         session$userData$config()$reductions[[id]]
-          #       
-          #       
-          #       # Update inputs
-          #       # Text entry for reduction label
-          #       updateTextInput(
-          #         session,
-          #         inputId = "hr",
-          #         # Value for this input is stored in `dropdown_title`
-          #         value = config_individual$dropdown_title
-          #       )
-          #     }
-          #   })
         } else if (options_type == "metadata"){
+          ## 5.2 Metadata ####
           observeEvent(
             session$userData$config(),
             label = glue("{id}: Update Options Based on Config File"),
@@ -510,7 +490,7 @@ options_server <-
                     if (!is.null(config_individual$groups)) TRUE else FALSE
                   )
   
-                #### Create modules for each group #####
+                ## Create modules for each group
                 # One module is already created by updateMaterialSwitch
                 # if groups is not NULL
                 
@@ -612,9 +592,34 @@ options_server <-
               }
   
               })
+          
+        } else if (options_type == "reductions"){
+          ## 5.3. Reductions ####
+          
+          # Loading information for reductions
+          observeEvent(
+            session$userData$config(),
+            {
+              # Search for assay name (module ID) in loaded config file
+              if (id %in% names(session$userData$config()$reductions)){
+                # Get config info for assay matching module ID
+                config_individual <-
+                  session$userData$config()$reductions[[id]]
+
+
+                # Update inputs
+                # Text entry for reduction label
+                updateTextInput(
+                  session,
+                  inputId = "hr",
+                  # Value for this input is stored in `dropdown_title`
+                  value = config_individual$dropdown_title
+                )
+              }
+            })
         }
         
-        # TEMP Observer for status of metadata outputs####
+        # TEMP Observer for status of metadata outputs ####
         observe({
           if (id %in% c("htb", "treatment", "response", "clusters")){
             print(glue("{id}: change in value of input$hr:"))
@@ -623,47 +628,9 @@ options_server <-
         })
         
         # 6. Returns from Module ----------------------------------------------- 
-        if (options_type == "metadata"){
-          # Return options depend on the type of metadata (Categorical metadata 
-          # has a reactive list of metadata group choices; numeric and other types 
-          # have a non-reactive value of NULL for group_choices)
-          if (type == "Categorical"){
-            # Return metadata-specific variables as a list
-            # Returns 
-            # 1. The name of the category (machine-readable and used for 
-            #    the values of choices in the app)
-            # 2. The user-specified label (human-readable and used for the 
-            #   keys of choices)
-            # 3. The metadata groups selected, if specified by the user
-            return_list_metadata <- 
-              reactive({
-                list(
-                  `meta_colname` = card_name,
-                  `label` = input$hr,
-                  # groups: defined if the switch to group metadata is turned on, 
-                  # and set to NULL otherwise.
-                  `groups` = 
-                    if (isTruthy(input$group_metadata)){
-                      group_data()
-                      } else NULL
-                  )
-                })
-            
-            # Numeric metadata and other types: group_choices is NULL
-          } else {
-            return_list_metadata <- 
-              reactive({
-                list(
-                  `meta_colname`= card_name,
-                  `label`= input$hr,
-                  `groups`= NULL
-                )
-              })
-          }
+        if (options_type == "assays"){
+          ## 6.1. Assays ####
           
-          return(return_list_metadata)
-          
-        } else if (options_type=="assays"){
           # For assays, return
           # 1. Assay: the name of the assay as defined in the Seurat object
           # 2. Key: the prefix to be added to features server-side to search for 
@@ -683,11 +650,56 @@ options_server <-
                   if (input$include_label == TRUE) input$hr else "",
                 `dropdown_title` = input$hr,
                 `designated_adt` = input$designate_adt
-                )
-              })
+              )
+            })
           
           return(return_list_assays)
+          
+        } else if (options_type == "metadata"){
+          ## 6.2. Metadata ####
+          
+          # Return options depend on the type of metadata (Categorical metadata 
+          # has a reactive list of metadata group choices; numeric and other
+          # types have a non-reactive value of NULL for group_choices)
+          if (type == "Categorical"){
+            # Return metadata-specific variables as a list
+            # Returns 
+            # 1. The name of the category (machine-readable and used for 
+            #    the values of choices in the app)
+            # 2. The user-specified label (human-readable and used for the 
+            #    keys of choices)
+            # 3. The metadata groups selected, if specified by the user
+            return_list_metadata <- 
+              reactive({
+                list(
+                  `meta_colname` = card_name,
+                  `label` = input$hr,
+                  # groups: defined if the switch to group metadata is turned on, 
+                  # and set to NULL otherwise.
+                  `groups` = 
+                    if (isTruthy(input$group_metadata)){
+                      group_data()
+                    } else NULL
+                )
+              })
+            
+            # Numeric metadata and other types: group_choices is NULL
+          } else {
+            return_list_metadata <- 
+              reactive({
+                list(
+                  `meta_colname`= card_name,
+                  `label`= input$hr,
+                  `groups`= NULL
+                )
+              })
+          }
+          
+          return(return_list_metadata)
+          
         } else if (options_type == "reductions"){
+          ## 6.3 Reductions ####
+          
           # For reductions, return
           # 1. Reduction: the name of the reduction as defined in the Seruat 
           # object, used for accessing the reduction in the app
@@ -702,6 +714,6 @@ options_server <-
             })
           
           return(return_list_reductions)
-        }
+          }
       })
 }
