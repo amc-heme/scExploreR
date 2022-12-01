@@ -460,11 +460,11 @@ options_server <-
             session$userData$config(),
             label = glue("{id}: Update Options Based on Config File"),
             {
-              # Search for category name in loaded config file
+              # Search for variable name in loaded config file
               if (card_name %in% names(session$userData$config()$metadata)){
                 #print(glue("Update options for {id}"))
                 
-                # Get config info for matching metadata category
+                # Get config info for matching metadata variable
                 config_individual <-
                   session$userData$config()$metadata[[card_name]]
   
@@ -477,7 +477,7 @@ options_server <-
                 updateTextInput(
                   session,
                   inputId = "hr",
-                  # Value `label` section of config for category
+                  # Value `label` section of config for variable
                   value = config_individual$label
                 )
   
@@ -612,8 +612,8 @@ options_server <-
                 updateTextInput(
                   session,
                   inputId = "hr",
-                  # Value for this input is stored in `dropdown_title`
-                  value = config_individual$dropdown_title
+                  # Use `label` value for the current reduction
+                  value = config_individual$label
                 )
               }
             })
