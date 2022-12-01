@@ -482,7 +482,7 @@ options_server <-
             {
               # Search for category name in loaded config file
               if (card_name %in% names(session$userData$config()$metadata)){
-                print(glue("Update options for {id}"))
+                #print(glue("Update options for {id}"))
                 
                 # Get config info for matching metadata category
                 config_individual <-

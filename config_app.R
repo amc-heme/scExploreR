@@ -890,8 +890,6 @@ run_config <-
         ignoreNULL = FALSE,
         ignoreInit = TRUE,
         {
-          print("Rearrange metadata options cards")
-          
           # Guide vector for ordering the metadata options cards
           # Lists the metadata included by the user in the order defined in the 
           # sortable, followed by all other categories (the corresponding cards 
@@ -1030,8 +1028,6 @@ run_config <-
         ignoreNULL = FALSE,
         ignoreInit = TRUE,
         {
-          print("Rearrange reductions options cards")
-          
           # Guide vector for ordering the reductions options cards
           # Lists the reductions included by the user in the order defined in the 
           # sortable, followed by non-selected reductions (the corresponding cards 
@@ -1767,3 +1763,8 @@ run_config <-
     
     shinyApp(ui, server)
   }
+
+run_config(
+  object_path = "./Seurat_Objects/AML_Dataset.rds",
+  config_path = "./Seurat_Objects/AML_TotalVI_config.yaml"
+)
