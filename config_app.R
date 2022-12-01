@@ -6,8 +6,9 @@
 #' run_config() will launch a Shiny app used to configure datasets for use in 
 #' the main browser. 
 #'
-#' @param object_path 
-#' @param config_path 
+#' @param object_path the path to the Seurat object to be configured.
+#' @param config_path optional: if provided, the data from this file will be 
+#' loaded when the user selects "load config file" in the config app.
 #'
 #' @return
 #' @export
