@@ -1694,7 +1694,7 @@ run_config <-
         })
       
       #### 3.6.2.2. Metadata Tab ####
-      #### 3.6.2.2.1 Metadata selected ####
+      ##### 3.6.2.2.1 Metadata selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -1716,8 +1716,24 @@ run_config <-
             ]
         })
       
-      #### 3.6.2.2.2 Patient level meteadata variable ####
-      
+      ##### 3.6.2.2.2 Patient level meteadata variable ####
+      observeEvent(
+        session$userData$config(),
+        {
+          # Fetch metadata variable used for determining 
+          # patient|sample level metadata 
+          config <- session$userData$config()
+          sample_var <- config$other_metadata_options$patient_colname
+          
+          # Update menu with variable in config file, if it exists
+          if (isTruthy(sample_var)){
+            updateSelectInput(
+              session = session,
+              inputId = "patient_colname",
+              selected = sample_var
+              )
+          }
+        })
       
       #### 3.6.2.3 Reductions selected ####
       observeEvent(
