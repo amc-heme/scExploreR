@@ -808,9 +808,10 @@ plot_module_server <- function(id,
                    # Reactive trigger for updating single custom title input
                    update_title_single <- makeReactiveTrigger()
                    
-                   ## 3.1. Update title settings menu ####
+                   ## 3.1. Allow/disallow custom title ####
                    # If the menu is present, add the "custom" option
                    # if it applies
+                   
                    # menu_type: stores whether a single- or multiple- entry 
                    # menu may be used
                    menu_type = reactiveVal(NULL)
@@ -848,7 +849,10 @@ plot_module_server <- function(id,
                              menu_type("multiple")
                            }
                          } else if (length(features_entered()) > 1){
-                           if (plot_selections$split_by() == "none"){
+                           # Multi-feature plots: custom titles are currently 
+                           # disallowed for blended feature plots
+                           if (plot_selections$split_by() == "none" &
+                               !isTruthy(plot_selections$blend())){
                              enable_custom = TRUE
                              menu_type("multiple")
                            }
@@ -1119,8 +1123,8 @@ plot_module_server <- function(id,
                      #     )
                    }
                    
-                   ## 3.7. Custom title input #### 
-                   # Used for dimplots, stacked bar plots, pie charts ####
+                   ## 3.7. Custom title value #### 
+                   # Used for dimplots, stacked bar plots, pie charts 
                    if (plot_type %in% c("dimplot", "proportion", "pie")){
                      plot_title <-
                        reactive({
@@ -1158,7 +1162,7 @@ plot_module_server <- function(id,
                        })
                    }
                    
-                   ## 3.8. Custom title input to feature plots ####
+                   ## 3.8. Custom title value for feature plots ####
                    # Must pass either single or multiple custom title output 
                    # depending on the current number of panels on the feature 
                    # plot, or NULL 
@@ -1188,7 +1192,28 @@ plot_module_server <- function(id,
                        })
                    }
                    
-                   ## 3.9. X-axis title for Cell Type Proportion Plots ####
+                   ## 3.9. Hide title settings menu for blended plots ####
+                   # Stopgap solution; custom titles may be supported in the 
+                   # future.
+                   if (plot_type == "feature"){
+                     observe({
+                       observe({
+                         target_id <- "title_settings"
+                       
+                         if (isTruthy(plot_selections$blend())){
+                           hideElement(
+                             id = target_id
+                           )
+                         } else {
+                           showElement(
+                             id = target_id
+                           )
+                         }
+                       })
+                     })
+                   }
+                   
+                   ## 3.10. X-axis title for Cell Type Proportion Plots ####
                    # Aim is to eventually add a custom title input
                    if (plot_type == "proportion"){
                      proportion_x_axis_title <- 
@@ -1472,7 +1497,7 @@ plot_module_server <- function(id,
                    })
                  }
                  
-                 ## 4.7. Show/hide blended feature plot settings ####
+                 ## 4.7. Show/hide settings for blended feature plot ####
                  if (plot_type == "feature"){
                    ### 4.7.1. Blend checkbox ####
                    observe({
@@ -1516,7 +1541,7 @@ plot_module_server <- function(id,
                      }
                    })
                    
-                   ### 4.7.3. Custom palette for blend ###
+                   ### 4.7.3. Custom palette for blend ####
                    observe({
                      # When a custom palette is selected, show color inputs to
                      # choose the palette.
@@ -1540,7 +1565,24 @@ plot_module_server <- function(id,
                        )
                      }
                    })
-                 }
+                   
+                   ### 4.7.4. Hide ncol slider for blended featureplots ####
+                   # Blended feature plots are unlikely to support a custom
+                   # number of columns in the future.
+                   observe({
+                     target_id <- "ncol_slider"
+                   
+                     if (isTruthy(plot_selections$blend())){
+                       hideElement(
+                         id = target_id
+                         )
+                     } else {
+                       showElement(
+                         id = target_id
+                         )
+                       }
+                     })
+                   }
                  
                  # 5. Record plot_selections -----------------------------------
                  # list of reactives for storing selected inputs
@@ -1849,6 +1891,7 @@ plot_module_server <- function(id,
                    ncol_slider <-
                      eventReactive(
                        c(plot_selections$split_by(),
+                         plot_selections$blend(),
                          features_entered(),
                          object()),
                        label = glue("{plot_label}: Make ncol slider"),
@@ -1865,7 +1908,14 @@ plot_module_server <- function(id,
                            # when there *is not* a split by selection
                            condition_multiple <- 
                              length(features_entered()) > 1 & 
-                             plot_selections$split_by() == "none"
+                             plot_selections$split_by() == "none" &
+                             # Do not show slider for blended plots
+                             !isTruthy(plot_selections$blend())
+                           
+                           print("plot_selections$blend()")
+                           print(plot_selections$blend())
+                           print("condition_multiple")
+                           print(condition_multiple)
                           
                            if (condition_single | condition_multiple){
                              # Define min, max, and default values for slider
