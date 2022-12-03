@@ -408,6 +408,14 @@ plot_module_ui <- function(id,
             # Container for blend options 
             div(
               id = ns("blend_options_container"),
+              # Layout of blended plot
+              selectInput(
+                inputId = ns("blend_layout"),
+                label = "Choose layout for panels",
+                choices = c("Default" = "2col", "Wide" = "4col"),
+                selected = "2col"
+                ),
+              
               # Blend Palette
               pickerInput(
                 inputId = ns("blend_palette"),
@@ -1688,6 +1696,14 @@ plot_module_server <- function(id,
                            } else NULL
                          }),
                      
+                     # Layout of blended plot
+                     `blend_layout` =
+                       reactive({
+                         if (isTruthy(input$blend_layout)){
+                           input$blend_layout
+                         } else NULL
+                       }),
+                     
                      # Palette to use for blending
                      `blend_palette` =
                        reactive({
@@ -2539,6 +2555,7 @@ plot_module_server <- function(id,
                                  # default palette
                                } else NULL
                              },
+                           blend_layout = plot_selections$blend_layout(),
                            reduction = plot_selections$reduction(),
                            show_title = 
                              if (input$title_settings == "none") FALSE else TRUE,

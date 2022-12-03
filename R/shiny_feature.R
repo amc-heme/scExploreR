@@ -44,6 +44,8 @@
 #' @param palette A color palette to use for plotting expression values. This 
 #' is ignored for blended feature plots.
 #' @param blend_palette a two-color palette to use for blended feature plots.
+#' @param blend_layout for blended plots, sets whether the plot displays in a 
+#' two-column or four-column layout.
 #' @param reduction the reduction to show for feature expression.
 #'
 shiny_feature <- function(object, 
@@ -68,6 +70,7 @@ shiny_feature <- function(object,
                           ncol = NULL, 
                           palette = NULL,
                           blend_palette = NULL,
+                          blend_layout = NULL,
                           reduction = NULL
 ){
   # validate will keep plot code from running if the subset
@@ -300,7 +303,7 @@ shiny_feature <- function(object,
     # There is no legend on blended feature plots, so legend position element 
     # is not shown
     
-    # Axis limits: use limits from full dataset if specified.
+    # A. Axis limits: use limits from full dataset if specified.
     # Test if subset is present and if the corresponding original_limits 
     # reactive is truthy (i.e. both present and checked).
     if (is_subset & isTruthy(original_limits)){
@@ -311,6 +314,20 @@ shiny_feature <- function(object,
           scale_x_continuous(limits = xlim_orig),
           scale_y_continuous(limits = ylim_orig)
         )
+    }
+    
+    # B. split plot Layout: 2x2 or the Seurat default (4 column layout)
+    if (isTruthy(blend_layout)){
+      if (blend_layout == "2col"){
+        # Design: bounds of first three panels and legend
+        feature_plot <-
+          feature_plot +
+          plot_layout(
+            nrow = 2,
+            ncol = 2
+          )
+        }
+      # For a four column layout, no change is necessary.
     }
     
     # layers <- c()
