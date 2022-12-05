@@ -330,6 +330,62 @@ shiny_feature <- function(object,
       # For a four column layout, no change is necessary.
     }
     
+    # C. Default titles for blended feature plots
+    for (i in 1:4){
+      if (i < 3){
+        # Panel 1, 2: features entered (human-readable name)
+        feature_plot[[i]] <-
+          feature_plot[[i]] +
+          ggtitle(
+            hr_name(
+              features_entered[i],
+              assay_config = assay_config
+            )
+          )
+      } else if (i == 3){
+        # Panel 3: blend panel
+        feature_plot[[i]] <-
+          feature_plot[[i]] +
+          ggtitle("Coexpression")
+      } else if (i == 4){
+        # Panel 4: legend title 
+        # X- and Y- axis labels: human-readable name of features entered
+        feature_plot[[i]] <-
+          feature_plot[[i]] +
+          ggtitle("Coexpression Scale") +
+          labs(subtitle = "(Blend threshold: 0.5)") +
+          xlab(
+            hr_name(
+              features_entered[1],
+              assay_config = assay_config,
+              use_suffix = FALSE
+              )
+            ) +
+          ylab(
+            hr_name(
+              features_entered[2],
+              assay_config = assay_config,
+              use_suffix = FALSE
+            )
+          ) +
+          theme(
+            plot.title = 
+              element_text(
+                hjust = 0.5, 
+                size = 12,
+                margin = margin(0, 0, 0, 0, unit = "pt")
+                ),
+            plot.subtitle = 
+              element_text(
+                hjust = 0.5, 
+                size = 9, 
+                face = "italic", 
+                margin = margin(0, 0, 5, 0, unit = "pt")
+                )
+          )
+      }
+    }
+    
     # layers <- c()
     # Modify the plot using the layers defined above
     # suppressMessages(
