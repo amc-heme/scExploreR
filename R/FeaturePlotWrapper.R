@@ -447,7 +447,7 @@ MultiFeatureSimple <-
     
     all_cells <- colnames(object)
     
-    # 1. Build groups ------------------------------------------------------------
+    # 1. Build groups ----------------------------------------------------------
     # Groups are features in this case
     groups <- features  
     
@@ -465,7 +465,7 @@ MultiFeatureSimple <-
       features_palette <- colorRampPalette(colors)(length(groups))
     }
     
-    # 2. Define axes limits ------------------------------------------------------
+    # 2. Define axes limits ----------------------------------------------------
     # The minimal and maximal of the values to make the x and y scales the same.
     # If limits are not defined (default behavior), use the min and max of cell
     # coordinates in the current object
@@ -488,7 +488,7 @@ MultiFeatureSimple <-
     # Create one plot for each group (feature)
     ps <- list()
     
-    # 3. Determine legend limits -------------------------------------------------
+    # 3. Determine legend limits -----------------------------------------------
     # If scales are the same across plots, gather unified legend limits
     if (share_scale == TRUE){
       # Min vector: minimum data values for each feature selected
@@ -532,7 +532,7 @@ MultiFeatureSimple <-
       legend_max <- max(max_vector)
     }
     
-    # 4. Iterative plot creation -------------------------------------------------
+    # 4. Iterative plot creation -----------------------------------------------
     for (group in groups) {
       i <- which(groups == group)
       print(glue("Group: {group}"))
@@ -543,8 +543,8 @@ MultiFeatureSimple <-
         if (legend_title == "feature"){
           group
         } else if (legend_title == "assay_score"){
-          # Assay score: short description of what is being measured in the assay
-          # (expression, enrichment, etc.). Will be set in config file
+          # Assay score: short description of what is being measured in the 
+          # assay (expression, enrichment, etc.). Will be set in config file
           "Expression"
         } else if (legend_title == "none"){
           NULL

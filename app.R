@@ -79,10 +79,10 @@ source_files <-
 # Use source() to import files into R
 sapply(source_files, source)
 
-# Load CSS files for app: CSS files are defined and each file is converted to a
-# <script> tag using includeCSS(). Each tag defined is passed to a list, which 
-# is included in the main UI function.
-# Get list of .css files in www/ directory
+# Load CSS files for app: CSS files are defined and each file is converted to a
+# <script> tag using includeCSS(). Each tag defined is passed to a list, which 
+# is included in the main UI function.
+# Get list of .css files in www/ directory
 css_files <- 
   list.files(
     path = "./www",
@@ -94,9 +94,9 @@ css_files <-
 # Create list of style tags for each CSS file
 css_list <- lapply(css_files, includeCSS)
 
-# Load Javascript files for app: find all .js files in www/ directory
-# and create a list of script() tags using includeScript().
-# Get list of .js files in www/ directory
+# Load Javascript files for app: find all .js files in www/ directory
+# and create a list of script() tags using includeScript().
+# Get list of .js files in www/ directory
 js_files <- 
   list.files(
     path = "./www", 
@@ -189,6 +189,24 @@ continuous_palettes <-
     `mako` = mako(42, direction = -1)
   )
 
+# Blend palettes: for blended feature plots
+# First color is for low expression of both features (default "lightgrey")
+# Subsequent colors are for expression of each of the two features
+blend_palettes <-
+  list(
+    "RdBu" = c("lightgrey", "#FF0000", "#0000FF"),
+    "GnBu" = c("lightgrey", "#00FF00", "#0000FF"),
+    "RdGn" = c("lightgrey", "#FF0000", "#00FF00"),
+    # Blue and orange (co-expression is pink)
+    "BuOr" = c("lightgrey", "#1003FF", "#F76A0D"),
+    # Red-green palette, with co-expression visible at a lower 
+    # threshold for both features
+    "RdGn_accent" = c("lightgrey", "#FF1A1A", "#1AFF1A"),
+    # Dark purple and dark yellow make peach when blended
+    "DkPuDkYl" = c("lightgrey", "#55035C", "#CFAB19"),
+    # Dark putple + dark red-orange -> pink blend
+    "DkPuDkRd" = c("lightgrey", "#7A2180", "#9E2525")
+  )
 
 # Error Handling: define possible errors ---------------------------------------
 # Errors are defined in a list using the functions in "./R/error_handling.R". 
@@ -1100,7 +1118,7 @@ server <- function(input, output, session){
   ## 3.1. Dynamic UI ####
   # All UI for modules is dynamic as it depends on the currently 
   # selected object.
-  ### 3.1.1. Plots tab UI
+  ### 3.1.1. Plots tab UI ####
   # Added "dynamic" to end of variable created to prevent collision with the
   # plots_tab_ui reactive function
   plots_tab_ui_dynamic <-
@@ -1135,7 +1153,7 @@ server <- function(input, output, session){
         ui
       })
   
-  ### 3.1.2. DGE tab UI
+  ### 3.1.2. DGE tab UI ####
   dge_tab_ui_dynamic <-
     eventReactive(
       # UI should only update when the object and config files are switched
@@ -1152,7 +1170,7 @@ server <- function(input, output, session){
           )
       })
   
-  ### 3.1.3. Correlations tab UI
+  ### 3.1.3. Correlations tab UI ####
   corr_tab_ui_dynamic <-
     eventReactive(
       # UI should only update when the object and config files are switched
@@ -1218,6 +1236,7 @@ server <- function(input, output, session){
           lim_orig = lim_orig,
           categorical_palettes = categorical_palettes,
           continuous_palettes = continuous_palettes,
+          blend_palettes = blend_palettes,
           patient_colname = patient_colname
           )
         
