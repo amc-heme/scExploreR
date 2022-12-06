@@ -620,12 +620,12 @@ options_server <-
         }
         
         # TEMP Observer for status of metadata outputs ####
-        observe({
-          if (id %in% c("htb", "treatment", "response", "clusters")){
-            print(glue("{id}: change in value of input$hr:"))
-            print(input$hr)
-          }
-        })
+        # observe({
+        #   if (id %in% c("htb", "treatment", "response", "clusters")){
+        #     print(glue("{id}: change in value of input$hr:"))
+        #     print(input$hr)
+        #   }
+        # })
         
         # 6. Returns from Module ----------------------------------------------- 
         if (options_type == "assays"){
