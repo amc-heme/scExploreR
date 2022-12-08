@@ -589,7 +589,6 @@ metadata_group_fields_server <-
                   }
                   
                   # Also, clear the values in the first field
-                  # Update group name and group members field
                   updateTextInput(
                     session = session,
                     inputId = "001_name", 

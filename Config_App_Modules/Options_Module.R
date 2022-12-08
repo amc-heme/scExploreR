@@ -265,12 +265,6 @@ options_server <-
             # Examine the list of currently selected categories, and
             # check if the module's category name is selected.
             # If so, show the options card
-            # print(glue("show/hide test for {card_name}"))
-            # print("categories selected")
-            # print(categories_selected())
-            # print(glue("{card_name} %in% categories_selected"))
-            # print(card_name %in% categories_selected())
-            
             if (card_name %in% categories_selected()){
               showElement("optcard")
               # Otherwise, hide the card
