@@ -751,6 +751,12 @@ run_config <-
         }
       })
       
+      ### 3.1.6. Store value of "include numeric metadata" checkbox ####
+      config_data$include_numeric_metadata <- 
+        reactive({
+          input$include_numeric_metadata
+          })
+      
       ## 3.2. Metadata Panel ####
       ### 3.2.1. Record selected metadata ####
       metadata_selected <- 
@@ -835,9 +841,9 @@ run_config <-
       
       #### 3.2.4.2. General metadata options ####
       # Stored separately from config_data$metadata, since many functions in the 
-      # main app use the list structure defined in the above reactive expression, 
-      # and they would be disrupted if general options were added with the options
-      # specific to each category.
+      # main app use the list structure defined in the above reactive 
+      # expression, and they would be disrupted if general options were added 
+      # with the options specific to each category.
       config_data$other_metadata_options <-
         reactive({
           list(

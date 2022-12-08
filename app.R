@@ -837,13 +837,35 @@ server <- function(input, output, session){
       {
         config()$assays
         })
+
+  ## 2.3. Valid features ####
+  # Create a list of valid features using the assays defined above
   
-  # TODO: add include_numeric_metadata as an option in the config app 
-  include_numeric_metadata <- TRUE
+  ### 2.3.1 Determine whether to include numeric metadata in feature list ####
+  # Determination depends on the value of `include_numeric_metadata` 
+  # in the config file. 
+  include_numeric_metadata <- 
+    eventReactive(
+      config(),
+      label = "include_numeric_metadata",
+      ignoreNULL = FALSE,
+      {
+        if (isTruthy(config())){
+          if (!is.null(config()$include_numeric_metadata)){
+            config()$include_numeric_metadata
+          } else {
+            # If the include_metadata field does not exist in 
+            # the config file, return TRUE.
+            TRUE
+          }
+        }
+      })
+  
+  # Header text for numeric metadata features in selection menu
+  # May be set in the config app in the future
   numeric_metadata_title <- "Metadata Features"
   
-  ## 2.3. valid_features ####
-  # Create a list of valid features using the assays defined above
+  ### 2.3.2 Create list of valid features
   valid_features <-
     eventReactive(
       c(assay_config(), object()),
@@ -857,7 +879,7 @@ server <- function(input, output, session){
             # include_numeric_metadata: a boolean variable 
             # that is hard-coded for now and will be 
             # defined in the config file
-            numeric_metadata = include_numeric_metadata, 
+            numeric_metadata = include_numeric_metadata(), 
             # The same is true for numeric_metadata_title
             numeric_metadata_title = numeric_metadata_title,
             # ADT thresholds: add to list if the ADT_threshold assay has been
