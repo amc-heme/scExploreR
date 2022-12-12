@@ -1683,7 +1683,8 @@ run_config <-
           })
       
       ### 3.6.2. Update inputs in main server function with file contents ####
-      #### 3.6.2.1. Assays selected ####
+      #### 3.6.2.1. Assay tab ####
+      #### 3.6.2.1.1. Assays selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -1697,6 +1698,17 @@ run_config <-
                 session$userData$config()$assays
               )
           )
+        })
+      
+      #### 3.6.2.1.2. Include numeric metadata ####
+      observeEvent(
+        session$userData$config(),
+        {
+          updateAwesomeCheckbox(
+            session = session,
+            inputId = "include_numeric_metadata",
+            value = session$userData$config()$include_numeric_metadata
+            )
         })
       
       #### 3.6.2.2. Metadata Tab ####
@@ -1745,6 +1757,7 @@ run_config <-
       observeEvent(
         session$userData$config(),
         {
+          print("Reductions update code")
           # Set selected vs. not selected reductions using the information
           # in the loaded file. Also sets the order of reductions selected.
           module_data$reductions_sortable_selected <- 
