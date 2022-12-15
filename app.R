@@ -360,8 +360,8 @@ ui <- tagList(
   useShinyjs(),
   # CSS and JS for collapsible panel
   navbarPage("Shiny scExplorer",
-             windowTitle="Shiny scExplorer",
-             position="fixed-top",
+             windowTitle = "Shiny scExplorer",
+             position = "fixed-top",
              tabPanel(
                "Plots",
                uiOutput(
@@ -388,10 +388,10 @@ ui <- tagList(
   # This will be achieved with the button_wizzard.js script
   dropdownButton(
     inputId = "help",
-    status="info",
-    right=TRUE,
+    status = "info",
+    right = TRUE,
     label = "",
-    size="sm",
+    size = "sm",
     icon = icon("question"),
     # Dropdown menu content
     # Header
