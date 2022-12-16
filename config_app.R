@@ -209,8 +209,8 @@ run_config <-
           choices = 
             c(
               "None" = "none", 
-              "DimPlot" = "dimplot", 
-              "Image" = "image"
+              "DimPlot" = "dimplot"#, 
+              #"Image" = "image"
               ),
           selected = "none"
         ),
