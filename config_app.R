@@ -160,7 +160,7 @@ run_config <-
     # Version of config app #### 
     # Printed in config file. Will be used to alert user if they are using a 
     # config file that is not compatible with the current version of the main app
-    config_version <- "0.3.0"
+    config_version <- "0.5.0"
     
     # Numeric Metadata Columns
     meta_columns <- names(object@meta.data)

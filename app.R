@@ -339,9 +339,75 @@ datasets <-
 for (data_key in names(datasets)){
   datasets[[data_key]]$object <- 
     readRDS(datasets[[data_key]]$object)
+  
+  # Also load the config file into memory
+  path <- datasets[[data_key]]$config
+  
+  # Add informative error message when a non-yaml config file is loaded
+  if (!grepl("\\.yaml$", path)){
+    stop("Only .yaml config files are supported as of version v0.5.0. 
+         Existing .rds config files can be converted to .yaml files by 
+         loading them into config_app.R and then re-saving as a .yaml file.")
+  }
+  
+  # Load config YAML using defined path (file is converted to an R list)
+  config_r <- read_yaml(path)
+  
+  # Convert the "adt_thresholds" section to a tibble (when converting from R to 
+  # YAML, tibble formats are converted to a YAML format that generates a named 
+  # list when loading back to R)
+  if (isTruthy(config_r$adt_thresholds)){
+    config_r$adt_thresholds <-
+      as_tibble(config_r$adt_thresholds)
+  }
+  
+  # Store config file in datasets
+  datasets[[data_key]]$config <- config_r
 }
 
-log_info("Datasets successfully loaded")
+# Tests for location of general dataset info ####
+# Test if the general dataset info is defined in the browser config for all 
+# datasets, or in the dataset config file for all. If neither of these is TRUE,
+# throw an error to the config user.
+if (
+  !(browser_config_has_info(datasets) | dataset_config_has_info(datasets))
+  ){
+    stop("Inconsistent format detected for general dataset info (label, 
+         description, and plot or image). This must be defined in either the 
+         browser config file for all datasets, or the dataset config file for 
+         all datasets. If the config file does not have general information 
+         defined, please load them into the config app and define those fields. 
+         The browser config file should not have this information.")
+  }
+
+# Also throw an error if data is defined in both the browser config and dataset
+# config files.
+if (browser_config_has_info(datasets) & dataset_config_has_info(datasets)){
+  stop('General dataset info is defined both in the browser config file and the
+       dataset config files. Please remove the sections "label", "description", 
+       and "plot" from the browser config file for all datasets, and keep this
+       information in the config file for each datset.')
+}
+
+# And an error if data is in neither source
+if (!browser_config_has_info(datasets) & !dataset_config_has_info(datasets)){
+  stop('General dataset info (dataset label, description, and plot or image) is 
+       not defined for all datasets. For each config file that does not have the
+       sections "label", "description", or "preview", load the config file into 
+       the config app and fill out these fields in the "general" tab (or simply 
+       re-save them to leave these fields defined in the config file, but as 
+       empty entries).')
+}
+
+# Warning if the data is in the browser config but not the dataset config
+if (browser_config_has_info(datasets) & !dataset_config_has_info(datasets)){
+  log_warn("The placement of general dataset info (label, description, 
+           plot/image) in the browser config file is depricated. Please load the
+           config files for each dataset into the latest version of the config 
+           app and add this infomation in the 'general' tab.")
+}
+
+log_info("Datasets successfully loaded.")
 
 # Table of Contents ------------------------------------------------------------
 # TODO: Add module tree here
@@ -667,28 +733,7 @@ server <- function(input, output, session){
     label = "Load/Update Config File",
     ignoreNULL = FALSE,
     {
-      path <- datasets[[selected_key()]]$config
-      
-      # Add informative error message when a non-yaml config file is loaded
-      if (!grepl("\\.yaml$", path)){
-        stop("Only .yaml config files are supported as of version v0.5.0. 
-             Existing .rds config files can be converted to .yaml files by 
-             loading them into config_app.R and then re-saving as a .yaml file.")
-      }
-      
-      # Load config YAML using defined path (file is converted to an R list)
-      config_r <- read_yaml(path)
-      
-      # Convert the "adt_thresholds" section to a tibble (when converting from
-      # R to YAML, tibble formats are converted to a YAML format that generates
-      # a named list when loading back to R)
-      if (isTruthy(config_r$adt_thresholds)){
-        config_r$adt_thresholds <-
-          as_tibble(config_r$adt_thresholds)
-      }
-      
-      # Store list in the config reactiveVal object
-      config(config_r)
+      config(datasets[[selected_key()]]$config)
     })
   
   ### 1.5.2. Check version of config file ####
@@ -1320,18 +1365,79 @@ server <- function(input, output, session){
     }
   })
   
-  # 4. Dataset Description in modal UI -----------------------------------------
+  # 4. Dataset preview in modal UI -----------------------------------------
+  ## 4.1. Description ####
   # Render text for the dataset modal that displays a description of the dataset
   # currently selected
   output$dataset_description <-
     renderText({
-      # Fetch description of the dataset selected (key = input$data_key)
-      datasets[[input$data_key]]$description
+      req(input$data_key)
+      
+      # Use config file for description (newer version), or description from
+      # browser config file, in datasets (depricated version)
+      if (dataset_config_has_info(datasets)){
+        # (key = input$data_key)
+        datasets[[input$data_key]]$config$description
+      } else {
+        # Fetch description of the dataset selected (key = input$data_key)
+        datasets[[input$data_key]]$description
+        }
       })
   
-  output$dataset_dimplot <-
+  ## 4.2. Plot or image ####
+  # Render plots from info in config file: new version only (0.5.0 and greater)
+  if (dataset_config_has_info(datasets)){
+    output$dataset_dimplot <-
+      renderPlot(
+        width = 290,
+        height = 218,
+        res = 36,
+        {
+          req(input$data_key)
+          
+          # If a plot is selected, load plot settings 
+          if (datasets[[input$data_key]]$config$preview$type == "dimplot"){
+            plot_settings <- 
+              datasets[[input$data_key]]$config$preview$plot_settings
+            
+            # Create a dimplot from the settings retrieved
+            shiny_umap(
+              object = datasets[[input$data_key]]$object,
+              group_by = plot_settings$group_by,
+              split_by = plot_settings$split_by,
+              reduction = plot_settings$reduction,
+              ncol = plot_settings$ncol, 
+              show_legend = TRUE,
+              show_label = plot_settings$label,
+              show_title = FALSE,
+              is_subset = FALSE,
+              original_limits = NULL
+              )
+            } else {
+              # If no preview or a image preview is selected, return nothing
+              NULL
+              }
+        })
+    }
+  
+  # Image: new and depricated versions
+  output$dataset_image <-
     renderImage({
-      path <- datasets[[input$data_key]]$plot
+      req(input$data_key)
+      
+      # Path to image: depends on version of config file
+      if (dataset_config_has_info(datasets)){
+        # Version v0.5.0 and later: use preview section of config file
+        
+        # The type of preview in the config file must be an image for the 
+        # render function to proceed
+        req(datasets[[input$data_key]]$config$preview$type == "image")
+      } else {
+        # Older versions: use browser config information stored in `datasets`
+        path <- datasets[[input$data_key]]$plot
+      }
+      
+      print("Proceeding to image render list")
       list(
         `src` = path,
         `width` = 290,
@@ -1340,6 +1446,73 @@ server <- function(input, output, session){
     },
     deleteFile=FALSE
     )
+  
+  # Set suspendWhenHidden to false so the plot and image can render before 
+  # the dataset window is opened
+  outputOptions(
+    output, 
+    "dataset_image", 
+    suspendWhenHidden = FALSE
+  )
+  
+  outputOptions(
+    output, 
+    "dataset_dimplot", 
+    suspendWhenHidden = FALSE
+  )
+  
+  outputOptions(
+    output, 
+    "dataset_description", 
+    suspendWhenHidden = FALSE
+  )
+  
+  ## 4.3. Show plot or image output for dataset ####
+  # For config files produced with version v0.5.0 and later.
+  if (dataset_config_has_info(datasets)){
+    observe({
+      # Observer requires input$data_key to be defined before running
+      req(input$data_key)
+      
+      # Observer also runs when dataset window is opened
+      input$open_dataset_window
+      
+      plot_id <- "dataset_dimplot"
+      image_id <- "dataset_image"
+    
+      # If an image is the chosen preview type, show the image container and not
+      # the plot container.
+      if (datasets[[input$data_key]]$config$preview$type == "image"){
+        showElement(
+          id = image_id
+          )
+        
+        hideElement(
+          id = plot_id
+          )
+      } else if (datasets[[input$data_key]]$config$preview$type == "dimplot"){
+        # If a plot is the chosen preview type, show the plot container and 
+        # not the image container.
+        hideElement(
+          id = image_id
+          )
+        
+        showElement(
+          id = plot_id
+          )
+      } else if (datasets[[input$data_key]]$config$preview$type == "none"){
+        # If the type of preview is "none", hide both containers (only the
+        # description will display in the dataset selection window)
+        hideElement(
+          id = image_id
+        )
+        
+        hideElement(
+          id = plot_id
+        )
+      }
+    })
+  }
   
   # Observe statement to determine memory usage of all objects in the environment
   # observe({
