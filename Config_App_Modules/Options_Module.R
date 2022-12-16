@@ -265,12 +265,6 @@ options_server <-
             # Examine the list of currently selected categories, and
             # check if the module's category name is selected.
             # If so, show the options card
-            # print(glue("show/hide test for {card_name}"))
-            # print("categories selected")
-            # print(categories_selected())
-            # print(glue("{card_name} %in% categories_selected"))
-            # print(card_name %in% categories_selected())
-            
             if (card_name %in% categories_selected()){
               showElement("optcard")
               # Otherwise, hide the card
@@ -620,12 +614,12 @@ options_server <-
         }
         
         # TEMP Observer for status of metadata outputs ####
-        observe({
-          if (id %in% c("htb", "treatment", "response", "clusters")){
-            print(glue("{id}: change in value of input$hr:"))
-            print(input$hr)
-          }
-        })
+        # observe({
+        #   if (id %in% c("htb", "treatment", "response", "clusters")){
+        #     print(glue("{id}: change in value of input$hr:"))
+        #     print(input$hr)
+        #   }
+        # })
         
         # 6. Returns from Module ----------------------------------------------- 
         if (options_type == "assays"){

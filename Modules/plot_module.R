@@ -240,7 +240,10 @@ plot_module_ui <- function(id,
         if (is.null(reductions)){
           # Error handling: return error if reductions is not specified when 
           # reductions_menu is TRUE
-          stop("If reductions_menu is TRUE, `reductions` must be specified.")
+          stop(
+            "If reductions_menu is TRUE, the argument `reductions` 
+            must have a value."
+            )
         } else {
           if(!is.reactive(reductions)){
             # Also, return an error if `reductions` is not a reactive variable

@@ -83,9 +83,9 @@ run_config <-
       source
     )
     
-    # Load CSS files for app: CSS files are defined and each file is converted to a
-    # <script> tag using includeCSS(). Each tag defined is passed to a list, which 
-    # is included in the main UI function.
+    # Load CSS files for app: CSS files are defined and each file is converted 
+    # to a <script> tag using includeCSS(). Each tag defined is passed to a 
+    # list, which is included in the main UI function.
     # Get list of .css files in www/ directory
     css_files <- 
       list.files(
@@ -102,11 +102,11 @@ run_config <-
         includeCSS
       )
     
-    # Load Javascript files for app: find all .js files that apply to the applet and 
-    # create a list of script() tags using includeScript().
+    # Load Javascript files for app: find all .js files that apply to the applet 
+    # and create a list of script() tags using includeScript().
     # Files to include: all files in www/applet_js/ directory, and the 
-    # collapsible_panel.js file in the www/ directory (www/button_wizzard.js must 
-    # be excluded since it conflicts with 'applet_navbar_wizzard' in the 
+    # collapsible_panel.js file in the www/ directory (www/button_wizzard.js 
+    # must be excluded since it conflicts with 'applet_navbar_wizzard' in the 
     # www/applet_js/ directory)
     js_files <- 
       list.files(
@@ -126,8 +126,8 @@ run_config <-
     
     # JavaScript Functions ####
     # The raw Javascript for each function is defined here as text, and each 
-    # function is wrapped in shinyjs::extendShinyjs() in the main UI function for 
-    # use with Shiny.
+    # function is wrapped in shinyjs::extendShinyjs() in the main UI function 
+    # for use with Shiny.
     
     # insertElemAfter: the UI defined by elem_id is repositioned after the UI 
     # defined by destination_id.
@@ -160,7 +160,7 @@ run_config <-
     # Version of config app #### 
     # Printed in config file. Will be used to alert user if they are using a 
     # config file that is not compatible with the current version of the main app
-    config_version <- "0.3.0"
+    config_version <- "0.5.0"
     
     # Numeric Metadata Columns
     meta_columns <- names(object@meta.data)
@@ -182,8 +182,135 @@ run_config <-
     reductions <- names(object@reductions)
     
     # Main UI and Server Functions ####
-    ## 1. Tabs in Main UI ####
-    ## 1.1. Assays Tab #### 
+    # 1. Tabs in Main UI ####
+    ## 1.1. General dataset info tab ####
+    general_info_tab <- function(){
+      div(
+        # Structure: one centered column with fields shown from top to bottom
+        class = "single-column-page",
+        tags$h3("General Dataset Info"),
+        tags$p("Options entered here will display in the dataset preview 
+               window in the main browser."),
+        textInput(
+          inputId = "dataset_label",
+          label = "Label for Dataset",
+          value = ""
+        ),
+        textAreaInput(
+          inputId = "dataset_description",
+          label = "Description of Dataset",
+          width = "100%",
+          rows = 6,
+          resize = "vertical"
+        ),
+        selectInput(
+          inputId = "preview_type",
+          label = "Content for dataset preview",
+          choices = 
+            c(
+              "None" = "none", 
+              "DimPlot" = "dimplot"#, 
+              #"Image" = "image"
+              ),
+          selected = "none"
+        ),
+        hidden(
+          div(
+            id = "preview_dimplot_interface",
+            div(
+              class = "compact-options-container",
+              style = "margin-bottom: 10px;",
+              tags$h3(
+                "Dimplot Preview",
+                class = "container-header"
+                ),
+              div(
+                class = "two-column-container",
+                div(
+                  class = "two-column",
+                  style = 
+                    "float: left; width: 45%; padding: 10px;",
+                  # Display a limited set of settings for the dimplot
+                  preview_dimplot_ui(
+                    id = "dimplot",
+                    object = object,
+                    non_numeric_cols = non_numeric_cols
+                    )
+                  ),
+                div(
+                  class = "two-column",
+                  style = 
+                    "float: right; width: 55%; padding: 10px;",
+                  div(
+                    class = "center",
+                    # tags$b(
+                    #   "Preview"
+                    # ),
+                    tags$p(
+                      "(The plot will display as below in the dataset preview window)",
+                      style = "font-size: 0.9em;"
+                    )
+                  ),
+                  plotOutput(
+                    outputId = "preview_dimplot",
+                    height = "auto"
+                    )
+                  )
+                )
+              )
+            ),
+          div(
+            id = "preview_image_interface",
+            div(
+              class = "compact-options-container",
+              style =
+                "min-height: 400px; 
+                width: 70%; 
+                margin-left: auto; 
+                margin-right: auto;",
+              tags$h3(
+                "Image Preview",
+                class = "container-header"
+                ),
+              div(
+                style = 
+                  "
+                  margin-top: 20px;
+                  margin-bottom: 20px;
+                  width: 80%;
+                  margin-left: auto;
+                  margin-right: auto;
+                  ",
+                fileInput(
+                  inputId = "image_upload",
+                  label = "Choose path for image",
+                  accept = "image/*"
+                ),
+                div(
+                  class = "center",
+                  tags$p(
+                    "(The image will display as below in the dataset preview window)",
+                    style = "font-size: 0.9em;"
+                  )
+                ),
+                imageOutput(
+                  outputId = "preview_image",
+                  height = "auto"
+                )
+              )
+            )#,
+          )
+        )#,
+        # div(
+        #   class = "optcard",
+        #   verbatimTextOutput(
+        #     outputId = "print_data"
+        #   )
+        # )
+      )
+    }
+    
+    ## 1.2. Assays Tab #### 
     # (not the assay options module)
     assay_tab <- function(){
       sidebarLayout(
@@ -191,7 +318,7 @@ run_config <-
           # input-no-margin class: removes margin of input containers within div
           tagList(
             div(
-              class="input-no-margin",
+              class = "input-no-margin",
               multiInput(
                 inputId = "assays_selected",
                 label = "Choose assays to include:",
@@ -220,10 +347,10 @@ run_config <-
         ),
         
         applet_main_panel(
-          # Create an instance of the assay options UI for all possible assays. Each 
-          # UI creates a "card"; all are hidden at first and are shown when their 
-          # corresponding assay is selected by the user. The "id" argument in lapply 
-          # is the name of the assay.
+          # Create an instance of the assay options UI for all possible assays.
+          # Each UI creates a "card"; all are hidden at first and are shown when 
+          # their corresponding assay is selected by the user. The "id" argument
+          # in lapply is the name of the assay.
           tagList(
             lapply(
               names(object@assays),
@@ -249,7 +376,7 @@ run_config <-
       )
     }
     
-    ## 1.2. Metadata Tab ####
+    ## 1.3. Metadata Tab ####
     metadata_tab <- 
       function(){
         sidebarLayout(
@@ -270,8 +397,8 @@ run_config <-
                   glue("General Options"),
                   class="large center"
                 ),
-                # Select metadata column to use for patient/sample level metadata
-                # analysis
+                # Select metadata column to use for patient/sample
+                # level metadata analysis
                 selectInput(
                   inputId = "patient_colname",
                   label = 
@@ -290,8 +417,8 @@ run_config <-
               
               # Options for Categorical, logical metadata
               # Create a metadata options "card" for each non-numeric metadata 
-              # column in the object. Cards below are hidden and display when the
-              # corresponding metadata category is selected
+              # column in the object. Cards below are hidden and display when 
+              # the corresponding metadata category is selected
               lapply(
                 non_numeric_cols,
                 function(colname){
@@ -313,7 +440,7 @@ run_config <-
         )
       }
     
-    ## 1.3. reductions Tab ####
+    ## 1.4. reductions Tab ####
     reductions_tab <- 
       function(){
         sidebarLayout(
@@ -372,7 +499,7 @@ run_config <-
         )
       }
     
-    ## 1.4. ADT Threshold Tab ####
+    ## 1.5. ADT Threshold Tab ####
     threshold_tab <-
       function(){
         sidebarLayout(
@@ -500,7 +627,11 @@ run_config <-
         id = "navbar",
         #Tabs are displayed below
         tabPanel(
-          title="Assays",
+          title = "General",
+          general_info_tab()
+        ),
+        tabPanel(
+          title = "Assays",
           assay_tab()
         ),
         tabPanel(
@@ -617,19 +748,20 @@ run_config <-
           `config_version` = config_version
         )
       
-      # module_data: reactiveValues object for storing data specific to this module
+      # module_data: reactiveValues object for storing data specific 
+      # to this module
       module_data <- reactiveValues()
       
       # Sortable Data: Metadata #### 
       # Metadata choices selected vs. not selected
-      # Nothing selected by default. The variables below are modified when loading
-      # a config file
+      # Nothing selected by default. The variables below are modified 
+      # when loading a config file
       module_data$metadata_sortable_selected <- character(0)
       # Choices not selected: equal to all non-numeric metadata.
       module_data$metadata_sortable_not_selected <- non_numeric_cols
       
       # Sortable Data: Reductions ####
-      # Nothing selected by default, and all reductions are choicesa
+      # Nothing selected by default, and all reductions are choices
       module_data$reductions_sortable_selected <- character(0)
       module_data$reductions_sortable_not_selected <- reductions
       
@@ -638,8 +770,9 @@ run_config <-
       module_data$existing_adt_modules <- c()
       
       # Threshold tab data
-      # State of sidebar: different menus are shown depending on what the user
-      # is doing at the moment (adding a new threshold, editing a threshold, etc.)
+      # State of sidebar: different menus are shown depending on what the 
+      # user is doing at the moment (adding a new threshold, editing a 
+      # threshold, etc.)
       module_data$threshold_menu_state <- "idle"
       
       # Tibble for storing threshold data: a blank tibble with column names for 
@@ -650,8 +783,8 @@ run_config <-
           `value` = numeric(0)
         )
       
-      # Variables set when a ADT in the table is being edited and cleared after a
-      # new threshold is set
+      # Variables set when a ADT in the table is being edited and cleared 
+      # after a new threshold is set
       editing_data <- reactiveValues()
       # Identity of ADT being edited
       editing_data$adt_target <- NULL
@@ -660,8 +793,205 @@ run_config <-
       # Index of row being edited
       editing_data$target_row <- NULL
       
-      ## 3.1. Assay Panel ####
-      ### 3.1.1. Store selected assays as a reactive variable ####
+      ## 3.1. General Dataset Info Tab ####
+      ### 3.1.1. Plot/image window: show/hide interface ####
+      observe({
+        dimplot_preview_id <- "preview_dimplot_interface"
+        image_preview_id <- "preview_image_interface"
+        
+        if (input$preview_type == "dimplot"){
+          # Show only the dimplot preview container (hide the image selection
+          # container)
+          showElement(
+            id = dimplot_preview_id,
+            anim = TRUE
+            )
+          
+          hideElement(
+            id = image_preview_id,
+            anim = TRUE
+            )
+        } else if (input$preview_type == "image"){
+          # Show only the image selection container (hide the dimplot preview
+          # container)
+          hideElement(
+            id = dimplot_preview_id,
+            anim = TRUE
+            )
+          
+          showElement(
+            id = image_preview_id,
+            anim = TRUE
+            )
+        } else if (input$preview_type == "none"){
+          # Hide both containers
+          hideElement(
+            id = dimplot_preview_id,
+            anim = TRUE
+          )
+          
+          hideElement(
+            id = image_preview_id,
+            anim = TRUE
+          )
+        }
+      })
+      
+      ### 3.1.2. Preview dimplot options module ####
+      preview_dimplot_options <-
+        preview_dimplot_server(
+          id = "dimplot",
+          object = object
+          )
+      
+      ### 3.1.3. Construct preview dimplot ####
+      output$preview_dimplot <-
+        renderPlot(
+          res = 36,
+          # Dynamically adjusts height in response to width 
+          # at a fixed aspect ratio
+          # Functions defined for width, height, are evaluated in a reactive
+          # context
+          height = 
+            function(){
+              218/290 * session$clientData$output_preview_dimplot_width
+              },
+          {
+          req(
+            preview_dimplot_options$group_by(),
+            preview_dimplot_options$split_by(),
+            preview_dimplot_options$reduction(),
+            preview_dimplot_options$ncol()
+          )
+          
+          shiny_umap(
+            object = object,
+            group_by = preview_dimplot_options$group_by(),
+            split_by = preview_dimplot_options$split_by(),
+            reduction = preview_dimplot_options$reduction(),
+            ncol = preview_dimplot_options$ncol(), 
+            show_legend = TRUE,
+            show_label = 
+              if (!is.null(preview_dimplot_options$label())){
+                preview_dimplot_options$label()
+              } else TRUE,
+            show_title = FALSE,
+            is_subset = FALSE,
+            original_limits = NULL
+            )
+        })
+      
+      ### 3.1.4. Render preview image, if loaded ####
+      output$preview_image <-
+        renderImage({
+          req(input$image_upload)
+          
+          data_path <- 
+            dplyr::select(input$image_upload, "datapath") |> 
+            as.character() 
+          
+          file_type <-
+            dplyr::select(input$image_upload, "type") |> 
+            as.character()
+          
+          alt <-
+            if (isTruthy(input$dataset_label)){
+              glue("preview image for {input$dataset_label}.")
+            } else {
+              "preview image"
+            }
+          
+          # If the file loaded is an image, render that image
+          if (grepl("image", file_type)){
+            # List used to render image
+            list(
+              `src` = data_path,
+              # Width: equal to size of container
+              `width` = session$clientData$output_preview_image_width,
+              # Height: based on aspect ratio used in the dataset preview window
+              `height` = 218/290 * session$clientData$output_preview_image_width,
+              `alt` = alt
+            )
+          } else {
+            # Otherwise, show a notification to the user
+            showNotification(
+              ui = 
+                icon_notification_ui_2(
+                  icon = "exclamation-triangle",
+                  "
+                  The file uploaded is not of a supported file type. Please upload an image format.
+                  "
+                ),
+              #Show notification for 5 seconds
+              duration = 5,
+              session = session
+            )
+          }
+          
+          
+        },
+        deleteFile = FALSE
+        )
+      
+      ### 3.1.5. Show preview of image when a file is loaded ####
+      observe({
+        target_id <- "image_container"
+      
+        if (isTruthy(input$image_upload)){
+          showElement(
+            id = target_id
+            )
+        } else {
+        hideElement(
+          id = target_id
+          )
+        }
+      })
+      
+      ### 3.1.6. RECORD: options chosen in the general info tab ####
+      config_data$label <- 
+        reactive({input$dataset_label})
+      
+      config_data$description <-
+        reactive({input$dataset_description})
+      
+      config_data$preview <-
+        reactive({
+          preview_info <-
+            list(
+              `type` = input$preview_type
+            )
+          
+          if (input$preview_type == "dimplot"){
+            c(
+              preview_info,
+              list(
+                `plot_settings` = 
+                  print_reactive_list(preview_dimplot_options)
+              )
+            )
+          } else if (input$preview_type == "image"){
+            upload_path <- 
+              dplyr::select(input$image_upload, "name") |> 
+              as.character() 
+            
+            if (isTruthy(upload_path)){
+              c(
+                preview_info,
+                list(
+                  `image_path` = upload_path
+                )
+              )
+            } 
+          } else {
+            # For preview type == none, and unanticipated types, return a list
+            # with just the type defined. 
+            preview_info
+          }
+        })
+      
+      ## 3.2. Assay Tab ####
+      ### 3.2.1. Store selected assays as a reactive variable ####
       assays_selected <- 
         eventReactive(
           input$assays_selected,
@@ -670,7 +1000,7 @@ run_config <-
             input$assays_selected
           })
       
-      ### 3.1.2. Create module server instances for each possible assay ####
+      ### 3.2.2. Create module server instances for each possible assay ####
       # Observe is used to reactively update outputs when inputs in the module and
       # its sub-modules are changed
       observe({
@@ -691,7 +1021,7 @@ run_config <-
         }
       })
       
-      ### 3.1.3. Record list of assay module outputs in config data #### 
+      ### 3.2.3. Record list of assay module outputs in config data #### 
       # Filter list of options module outputs and combine into a single 
       # reactive object, which is added to the config_data list. 
       config_data$assays <- 
@@ -708,7 +1038,7 @@ run_config <-
           }
         })
       
-      ### 3.1.4. Determine designated ADT assay ####
+      ### 3.2.4. Determine designated ADT assay ####
       ADT_assay <-
         reactive({
           # Get TRUE/FALSE values for whether each assay is an ADT assay
@@ -735,7 +1065,7 @@ run_config <-
           }
         })
       
-      ### 3.1.5. Show/Hide ADT thresholding tab ####
+      ### 3.2.5. Show/Hide ADT thresholding tab ####
       observe({
         # When an assay is designated as the ADT assay, show the corresponding tab
         if (!is.null(ADT_assay())){
@@ -751,8 +1081,14 @@ run_config <-
         }
       })
       
-      ## 3.2. Metadata Panel ####
-      ### 3.2.1. Record selected metadata ####
+      ### 3.2.6. RECORD: value of "include numeric metadata" checkbox ####
+      config_data$include_numeric_metadata <- 
+        reactive({
+          input$include_numeric_metadata
+          })
+      
+      ## 3.3. Metadata Tab ####
+      ### 3.3.1. RECORD: selected metadata ####
       metadata_selected <- 
         eventReactive(
           input$metadata_selected,
@@ -761,8 +1097,8 @@ run_config <-
             input$metadata_selected
           })
       
-      ### 3.2.2. Generic metadata options ####
-      #### 3.2.2.1. Store selection from patient metadata column menu ####
+      ### 3.3.2. Generic metadata options ####
+      #### 3.3.2.1. Store selection from patient metadata column menu ####
       patient_colname <-
         reactive(
           label = "Process selection for patient level metadata column",
@@ -778,7 +1114,7 @@ run_config <-
             }
           })
       
-      ### 3.2.3. Options modules for metadata ####
+      ### 3.3.3. Options modules for metadata ####
       # One server instance is created for each metadata category in the object
       all_metadata_options <- list()
       
@@ -813,8 +1149,8 @@ run_config <-
       # 
       # })
       
-      ### 3.2.4. Store metadata options in config data ####
-      #### 3.2.4.1. Category-specific options ####
+      ### 3.3.4. RECORD: metadata options in config data ####
+      #### 3.3.4.1. Category-specific options ####
       config_data$metadata <- 
         reactive({
           # Options list is only processed when metadata columns have been selected
@@ -833,11 +1169,11 @@ run_config <-
           }
         })
       
-      #### 3.2.4.2. General metadata options ####
+      #### 3.3.4.2. General metadata options ####
       # Stored separately from config_data$metadata, since many functions in the 
-      # main app use the list structure defined in the above reactive expression, 
-      # and they would be disrupted if general options were added with the options
-      # specific to each category.
+      # main app use the list structure defined in the above reactive 
+      # expression, and they would be disrupted if general options were added 
+      # with the options specific to each category.
       config_data$other_metadata_options <-
         reactive({
           list(
@@ -846,8 +1182,8 @@ run_config <-
           )
         })
       
-      ### 3.2.5. Reactive UI components ####
-      #### 3.2.5.1. UI for sortable menu ####
+      ### 3.3.5. Reactive UI components ####
+      #### 3.3.5.1. UI for sortable menu ####
       # Uses the bucket_list input from the sortable package
       metadata_bucket_ui <-
         eventReactive(
@@ -859,9 +1195,9 @@ run_config <-
               tags$b("Choose Metadata to Include in App"),
               bucket_list(
                 header = 
-                  "Drag metadata categories to the \"Included Metadata\" 
-              column to include. Metadata will appear in app menus in 
-              the order they appear in the right-hand column.",
+                  "Drag metadata variables to \"Included Metadata\" to include.
+                  Metadata will appear in app menus in the order they appear in 
+                  the right-hand column.",
               orientation = "horizontal",
               group_name = "metadata_bucket",
               # Use the default class, and a class specific to this app
@@ -884,7 +1220,7 @@ run_config <-
             )
           })
       
-      #### 3.2.5.2. Set order of metadata cards based on sortable input ####
+      #### 3.3.5.2. Set order of metadata cards based on sortable input ####
       observeEvent(
         c(input$metadata_selected, input$metadata_not_selected),
         label = "Metadata: set order of metadata options cards",
@@ -942,7 +1278,7 @@ run_config <-
           }
         })
       
-      #### 3.2.5.3 Show/hide Metadata Options Cards ####
+      #### 3.3.5.3 Show/hide Metadata Options Cards ####
       observe({
         for (colname in non_numeric_cols){
           # Show all cards that are in the "Metadata selected" column of the 
@@ -961,7 +1297,7 @@ run_config <-
         }
       })
       
-      #### 3.2.5.4. Render Sortable UI ####
+      #### 3.3.5.4. Render Sortable UI ####
       output$metadata_sortable_bucket <-
         renderUI({
           metadata_bucket_ui()
@@ -977,15 +1313,9 @@ run_config <-
         suspendWhenHidden = FALSE
       )
       
-      # TEMP: print all metadata options
-      # output$print_metadata <-
-      #   renderPrint({
-      #     config_data$metadata()
-      #   })
-      
-      ## 3.3 Reductions tab ####
-      ### 3.3.1. Dynamic UI ####
-      #### 3.3.1.1. Sortable Menu UI ####
+      ## 3.4 Reductions tab ####
+      ### 3.4.1. Dynamic UI ####
+      #### 3.4.1.1. Sortable Menu UI ####
       # Uses the bucket_list input from the sortable package
       reductions_bucket_ui <-
         eventReactive(
@@ -1022,7 +1352,7 @@ run_config <-
             )
           })
       
-      #### 3.3.1.2. Change Order of Cards to Match Selected Reductions ####
+      #### 3.4.1.2. Change Order of Cards to Match Selected Reductions ####
       observeEvent(
         c(input$reductions_selected, input$reductions_not_selected),
         label = "Reductions: set order of reductions options cards",
@@ -1080,7 +1410,7 @@ run_config <-
           }
         })
       
-      #### 3.3.1.3 Show/hide Reductions Options Cards ####
+      #### 3.4.1.3 Show/hide Reductions Options Cards ####
       observe({
         for (reduction in reductions){
           # Show all cards that are in the "Metadata selected" column of the 
@@ -1099,13 +1429,13 @@ run_config <-
         }
       })
       
-      #### 3.3.1.4. Render Sortable UI ####
+      #### 3.4.1.4. Render Sortable UI ####
       output$reductions_sortable_bucket <-
         renderUI({
           reductions_bucket_ui()
         })
       
-      ### 3.3.2. Record selected reductions ####
+      ### 3.4.2. RECORD: selected reductions ####
       reductions_selected <- 
         eventReactive(
           input$reductions_selected,
@@ -1114,7 +1444,7 @@ run_config <-
             input$reductions_selected
           })
       
-      ### 3.2.3. Options for each reduction ####
+      ### 3.4.3. Options for each reduction ####
       # One server instance of the options module is created for each reduction
       # in the object (this is done once at startup)
       all_reductions_options <- list()
@@ -1131,7 +1461,7 @@ run_config <-
         all_reductions_options[[reduction]] <- server_output
       }
       
-      ### 3.2.4. Record reductions options in config data ####
+      ### 3.4.4. RECORD: reductions options in config data ####
       config_data$reductions <- 
         reactive({
           # Options list is only processed when reductions have been selected
@@ -1157,9 +1487,9 @@ run_config <-
       #     config_data$reductions()
       #   })
       
-      ## 3.4 ADT thresholding tab ####
+      ## 3.5 ADT thresholding tab ####
       
-      ### 3.4.1. Define/update available ADTs ####
+      ### 3.5.1. Define/update available ADTs ####
       # Reactive variable will be used for updating the selection menu with
       # ADTs in the designated assay that have not already been added to the table
       available_adts <-
@@ -1180,7 +1510,7 @@ run_config <-
           }
         })
       
-      ### 3.4.2. Populate ADT Choices when designated ADT assay is changed ####
+      ### 3.5.2. Populate ADT Choices when designated ADT assay is changed ####
       observeEvent(
         ADT_assay(),
         ignoreNULL = TRUE,
@@ -1205,8 +1535,8 @@ run_config <-
           module_data$threshold_menu_state <- "idle"
         })
       
-      ### 3.4.3. Threshold picker server ####
-      #### 3.4.3.1. ADT passed to server ####
+      ### 3.5.3. Threshold picker server ####
+      #### 3.5.3.1. ADT passed to server ####
       threshold_server_adt <- 
         reactive({
           # Value passed to server depends on state
@@ -1234,7 +1564,7 @@ run_config <-
           } 
         })
       
-      #### 3.4.3.2. Server instance ####
+      #### 3.5.3.2. Server instance ####
       threshold_value <- 
         threshold_picker_server(
           id = "threshold_picker", 
@@ -1251,8 +1581,8 @@ run_config <-
             })
         )
       
-      ### 3.4.4. "Add threshold" button ####
-      #### 3.4.4.1. Respond to button ####
+      ### 3.5.4. "Add threshold" button ####
+      #### 3.5.4.1. Respond to button ####
       # Set state to "add", which will show menus with the class "show-on-add"
       observeEvent(
         input$add_threshold,
@@ -1262,7 +1592,7 @@ run_config <-
           module_data$threshold_menu_state <- "add"
         })
       
-      #### 3.4.4.2. Disable button while adding or editing a feature ####
+      #### 3.5.4.2. Disable button while adding or editing a feature ####
       # Prevents user from adding a new feature while editing the current one
       observe({
         target_id <- "add_threshold"
@@ -1278,8 +1608,8 @@ run_config <-
         }
       })
       
-      ### 3.4.5. Show/hide menus based on state ####
-      #### 3.4.5.1. Generic Menus ####
+      ### 3.5.5. Show/hide menus based on state ####
+      #### 3.5.5.1. Generic Menus ####
       observe({
         # jQuery selectors for classes that show elements based on state
         add_selector <- "[class *= 'show-on-add']"
@@ -1304,10 +1634,10 @@ run_config <-
         }
       })
       
-      #### 3.4.5.2. Show/Hide threshold picker UI ####
+      #### 3.5.5.2. Show/Hide threshold picker UI ####
       # Shown when the state is "add" and an adt is entered in the search input
-      # OR when the state is "edit" (feature being edited is provided when changing 
-      # to this state)
+      # OR when the state is "edit" (feature being edited is provided when 
+      # changing to this state)
       observe({
         target_id <- "threshold_picker_div"
         
@@ -1334,7 +1664,7 @@ run_config <-
         }
       })
       
-      ### 3.4.6. Cancel threshold button ####
+      ### 3.5.6. Cancel threshold button ####
       observeEvent(
         input$cancel_threshold,
         ignoreNULL = FALSE,
@@ -1368,8 +1698,8 @@ run_config <-
         })
       
       
-      ### 3.4.7. Accept threshold button ####
-      #### 3.4.7.1. Enable "confirm" button when a threshold is selected ####
+      ### 3.5.7. Accept threshold button ####
+      #### 3.5.7.1. Enable "confirm" button when a threshold is selected ####
       observe({
         print("threshold value")
         print(threshold_value())
@@ -1385,7 +1715,7 @@ run_config <-
         }
       })
       
-      #### 3.4.7.2. Save data and close menu when the confirm button is pressed ####
+      #### 3.5.7.2. Save data and close menu when the confirm button is pressed ####
       observeEvent(
         input$accept_threshold,
         ignoreNULL = FALSE,
@@ -1405,8 +1735,8 @@ run_config <-
             # module_data$threshold_data[editing_data$target_row, 1] <-
             #   editing_data$adt_target
             
-            # Set the "value" entry (column 2) of the row being edited to the new 
-            # value chosen on the interactive plot
+            # Set the "value" entry (column 2) of the row being edited to the 
+            # new value chosen on the interactive plot
             module_data$threshold_data[editing_data$target_row, 2] <-
               threshold_value()
             
@@ -1433,14 +1763,15 @@ run_config <-
           module_data$threshold_menu_state <- "idle"
         })
       
-      ### 3.4.8. Render table of ADT thresholds ####
-      #### 3.4.8.1. DT datatable ####
+      ### 3.5.8. Render table of ADT thresholds ####
+      #### 3.5.8.1. DT datatable ####
       threshold_DT <-
         reactive({
           DT <- module_data$threshold_data
           
           # Add edit and delete buttons to table
-          # Code adapted from https://github.com/AntoineGuillot2/ButtonsInDataTable
+          # Code adapted from 
+          # https://github.com/AntoineGuillot2/ButtonsInDataTable
           if (nrow(DT) > 0){
             DT[["Actions"]] <-
               glue(
@@ -1482,7 +1813,7 @@ run_config <-
           threshold_DT()
         })
       
-      #### 3.4.8.2. JavaScript for inline buttons ####
+      #### 3.5.8.2. JavaScript for inline buttons ####
       button_script <-
         reactive({
           req(module_data$threshold_data)
@@ -1493,8 +1824,8 @@ run_config <-
             # Script: when the user clicks a button within the DT table 
             # (#threshold_table button) register the id of the button the user 
             # clicked on as input$lastClickId, and a random number as 
-            # input$lastClick (this is the trigger for responding to the click, and 
-            # must therefore always change with each click.)
+            # input$lastClick (this is the trigger for responding to the click, 
+            # and must therefore always change with each click.)
             tags$script(
               "
           $(document).on('click', '#threshold_table button', function () {
@@ -1511,7 +1842,7 @@ run_config <-
           button_script()
         })
       
-      ### 3.4.9. Respond to edit/delete buttons ####
+      ### 3.5.9. Respond to edit/delete buttons ####
       observeEvent(
         input$lastClick,
         ignoreNULL = FALSE,
@@ -1582,7 +1913,7 @@ run_config <-
           }
         })
       
-      ### 3.4.10. Threshold settings window header text (edit mode) ####
+      ### 3.5.10. Threshold settings window header text (edit mode) ####
       output$threshold_header <-
         renderUI({
           tags$h4(
@@ -1590,11 +1921,11 @@ run_config <-
           )
         })
       
-      ### 3.4.11. Record threshold table in config data ####
+      ### 3.5.11. RECORD: threshold table in config data ####
       config_data$adt_thresholds <-
         reactive({
-          # Store the table if it is defined and has at least one row. Otherwise, 
-          # set adt_thresholds to NULL.
+          # Store the table if it is defined and has at least one row. 
+          # Otherwise, set adt_thresholds to NULL.
           if (isTruthy(module_data$threshold_data)){
             if (nrow(module_data$threshold_data) > 0){
               module_data$threshold_data
@@ -1602,7 +1933,7 @@ run_config <-
           } else NULL
         })
       
-      ## 3.5. Export Config file as YAML ####
+      ## 3.6. Export Config file as YAML ####
       output$export_selections <- 
         downloadHandler(
           filename = "object-config.yaml",
@@ -1631,8 +1962,8 @@ run_config <-
               )
             })
       
-      ## 3.6. Load Config File ####
-      ### 3.6.1 Load File ####
+      ## 3.7. Load Config File ####
+      ### 3.7.1 Load File ####
       # Loads a previously created config file and imports contents into app
       # storing in session$userdata makes file visible to all modules
       session$userData$config <-
@@ -1644,23 +1975,12 @@ run_config <-
             # config_filename: for now, use a path from config_init.yaml
             # May soon be chosen with a select input
             if (isTruthy(config_filename)){
-              showNotification(
-                ui =
-                  div(
-                    style = "width: 350px;",
-                    glue('Loading file at {config_filename}')
-                  ),
-                duration = NULL,
-                id = "load_config",
-                session = session
-              )
-              
               # Determine if the file loaded is .rds or .yaml
               # (supports both for backward compatibility)
               if (grepl(".yaml$", config_filename)){
                 # Procedure for loading .yaml file
-                # Use the load_config function from `./R` to convert .yaml file to 
-                # R format and properly initialize the ADT threshold tibble
+                # Use the load_config function from `./R` to convert .yaml file 
+                # to R format and properly initialize the ADT threshold tibble
                 load_config(config_filename)
               } else if (grepl(".rds$", config_filename)){
                 # Procedure for loading .rds file
@@ -1676,8 +1996,88 @@ run_config <-
             }
           })
       
-      ### 3.6.2. Update inputs in main server function with file contents ####
-      #### 3.6.2.1. Assays selected ####
+      ### Notify user which fields exist and which do not ####
+      # observeEvent(
+      #   session$userData$config(),
+      #   {
+      #     showNotification(
+      #       ui =
+      #         div(
+      #           style = "width: 350px;",
+      #           glue('Loading file at {config_filename}')
+      #         ),
+      #       duration = NULL,
+      #       id = "load_config",
+      #       session = session
+      #     )
+      #   })
+      
+      ### 3.7.2. Update inputs in main server function with file contents ####
+      #### 3.7.2.1. General dataset info tab ####
+      ##### 3.7.2.1.1. Label for dataset ####
+      observeEvent(
+        session$userData$config(),
+        {
+          if (isTruthy(session$userData$config()$label)){
+            updateTextInput(
+              session = session,
+              inputId = "dataset_label",
+              value = session$userData$config()$label
+            )
+          }
+        })
+      
+      ##### 3.7.2.1.2. Dataset description ####
+      observeEvent(
+        session$userData$config(),
+        {
+          if (isTruthy(session$userData$config()$description)){
+            updateTextInput(
+              session = session,
+              inputId = "dataset_description",
+              value = session$userData$config()$description,
+            )
+          }
+        })
+      
+      ##### 3.7.2.1.3. Preview type and settings ####
+      observeEvent(
+        session$userData$config(),
+        {
+          preview_type <- session$userData$config()$preview$type
+          
+          # If the preview type is an image, the input can't be updated 
+          # fileInputs create temporary files when the user selects a file, and
+          # this can't be re-created from a config file
+          if (isTruthy(preview_type)){
+            updateSelectInput(
+              session = session,
+              inputId = "preview_type",
+              selected = preview_type,
+            )
+          }
+        })
+      
+      ##### 3.7.2.1.4. Plot settings for dimplot preview ####
+      # load_inputs <-
+      #   reactive({
+      #     if (isTruthy(session$userData$config())){
+      #       # If the preview type is a dimplot, return the dimplot settings
+      #       if (session$userData$config()$preview$type == "dimplot"){
+      #         print("session$userData$config()$preview$plot_settings")
+      #         print(session$userData$config()$preview$plot_settings)
+      #         session$userData$config()$preview$plot_settings
+      #       } else {
+      #         # Otherwise, return NULL
+      #         NULL
+      #       }
+      #     } else {
+      #       NULL
+      #       }
+      #     })
+      
+      #### 3.7.2.2. Assay tab ####
+      ##### 3.7.2.2.1. Assays selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -1693,8 +2093,19 @@ run_config <-
           )
         })
       
-      #### 3.6.2.2. Metadata Tab ####
-      ##### 3.6.2.2.1 Metadata selected ####
+      ##### 3.7.2.2.2. Include numeric metadata ####
+      observeEvent(
+        session$userData$config(),
+        {
+          updateAwesomeCheckbox(
+            session = session,
+            inputId = "include_numeric_metadata",
+            value = session$userData$config()$include_numeric_metadata
+            )
+        })
+      
+      #### 3.7.2.3. Metadata Tab ####
+      ##### 3.7.2.3.1 Metadata selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -1716,7 +2127,7 @@ run_config <-
             ]
         })
       
-      ##### 3.6.2.2.2 Patient level meteadata variable ####
+      ##### 3.7.2.3.2 Patient level meteadata variable ####
       observeEvent(
         session$userData$config(),
         {
@@ -1735,7 +2146,7 @@ run_config <-
           }
         })
       
-      #### 3.6.2.3 Reductions selected ####
+      #### 3.7.2.4 Reductions selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -1752,12 +2163,12 @@ run_config <-
             ]
           })
       
-      #### 3.6.2.4 ADT threshold table ####
+      #### 3.7.2.5 ADT threshold table ####
       observeEvent(
         session$userData$config(),
         {
-          # Set the threshold table in the app equal to the table recorded in the
-          # file being loaded
+          # Set the threshold table in the app equal to the table recorded 
+          # in the file being loaded
           module_data$threshold_data <-
             session$userData$config()$adt_thresholds
         })
@@ -1766,6 +2177,26 @@ run_config <-
         id = "warning",
         reactive_trigger = reactive({input$warning_modal})
       )
+      
+      # Print all Data (debugging)
+      # output$print_data <-
+      #   renderPrint({
+      #     output_list <-
+      #       lapply(
+      #         names(config_data),
+      #         function(element){
+      #           if (is.reactive(config_data[[element]])){
+      #             config_data[[element]]()
+      #           } else {
+      #             config_data[[element]]
+      #           }
+      #         }
+      #         )
+      #     
+      #     names(output_list) <- names(config_data)
+      #     
+      #     output_list
+      #   })
       
       #### TEMP: Observers for Debugging ####
       # config_file_load <- eventReactive(

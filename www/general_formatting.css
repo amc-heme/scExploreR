@@ -6,7 +6,7 @@
    the navbar tabs and icons to appear on top of content. For now, this will be
    fixed by increasing the margin of the page body, but a solution that responds
    to the new height of the navbar would be ideal. */
-@media (max-width:768px){
+@media (max-width: 768px){
   body{
     padding-top: 220px;
   }
@@ -136,6 +136,45 @@ h2, h3 {
 	padding-bottom: 0px;
 }
 
+.two-column-left {
+  float: left;
+  padding: 10px;
+}
+
+.two-column-right {
+  float: right;
+  padding: 10px;
+}
+
+/* Single column layout */
+/* Class below creates a single column */
+/* */
+
+@media (max-width: 768px){
+  .single-column-page {
+    margin-left: auto;
+    margin-right: auto;
+    width: 85%
+  }
+}
+
+@media(min-width: 769px){
+  .single-column-page {
+    margin-left: auto;
+    margin-right: auto;
+    width: 66%
+  }
+}
+
+@media(min-width: 993px){
+  .single-column-page {
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%
+  }
+}
+
+
 /* -------------------------------------------------------------------------- */
 /* Input container classes */
 
@@ -178,6 +217,19 @@ h2, h3 {
   margin: 0px -2px;
   padding: 10px 7px;
   border-radius: 10px;
+}
+
+/* Special style for headers at the top of a compact options container */
+.compact-options-container > .container-header {
+  background-color: #555588;
+  margin-top: -10px !important;
+  margin-left: -7px;
+  margin-right: -7px;
+  border-radius: 10px 10px 0px 0px;
+  padding: 10px 7px;
+  color: white;
+  font-weight: bolder;
+  text-align: center;
 }
 
 .feature_statistics_container {
