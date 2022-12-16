@@ -207,9 +207,11 @@ run_config <-
           inputId = "preview_type",
           label = "Content for dataset preview",
           choices = 
-            c("None" = "none", 
+            c(
+              "None" = "none", 
               "DimPlot" = "dimplot", 
-              "Image" = "image"),
+              "Image" = "image"
+              ),
           selected = "none"
         ),
         hidden(
@@ -946,7 +948,7 @@ run_config <-
         }
       })
       
-      ### 3.1.6. Store options chosen in the general info tab ####
+      ### 3.1.6. RECORD: options chosen in the general info tab ####
       config_data$label <- 
         reactive({input$dataset_label})
       
@@ -981,6 +983,10 @@ run_config <-
                 )
               )
             } 
+          } else {
+            # For preview type == none, and unanticipated types, return a list
+            # with just the type defined. 
+            preview_info
           }
         })
       
@@ -1075,14 +1081,14 @@ run_config <-
         }
       })
       
-      ### 3.2.6. Store value of "include numeric metadata" checkbox ####
+      ### 3.2.6. RECORD: value of "include numeric metadata" checkbox ####
       config_data$include_numeric_metadata <- 
         reactive({
           input$include_numeric_metadata
           })
       
       ## 3.3. Metadata Tab ####
-      ### 3.3.1. Record selected metadata ####
+      ### 3.3.1. RECORD: selected metadata ####
       metadata_selected <- 
         eventReactive(
           input$metadata_selected,
@@ -1143,7 +1149,7 @@ run_config <-
       # 
       # })
       
-      ### 3.3.4. Store metadata options in config data ####
+      ### 3.3.4. RECORD: metadata options in config data ####
       #### 3.3.4.1. Category-specific options ####
       config_data$metadata <- 
         reactive({
@@ -1189,9 +1195,9 @@ run_config <-
               tags$b("Choose Metadata to Include in App"),
               bucket_list(
                 header = 
-                  "Drag metadata categories to the \"Included Metadata\" 
-              column to include. Metadata will appear in app menus in 
-              the order they appear in the right-hand column.",
+                  "Drag metadata variables to \"Included Metadata\" to include.
+                  Metadata will appear in app menus in the order they appear in 
+                  the right-hand column.",
               orientation = "horizontal",
               group_name = "metadata_bucket",
               # Use the default class, and a class specific to this app
@@ -1429,7 +1435,7 @@ run_config <-
           reductions_bucket_ui()
         })
       
-      ### 3.4.2. Record selected reductions ####
+      ### 3.4.2. RECORD: selected reductions ####
       reductions_selected <- 
         eventReactive(
           input$reductions_selected,
@@ -1455,7 +1461,7 @@ run_config <-
         all_reductions_options[[reduction]] <- server_output
       }
       
-      ### 3.4.4. Record reductions options in config data ####
+      ### 3.4.4. RECORD: reductions options in config data ####
       config_data$reductions <- 
         reactive({
           # Options list is only processed when reductions have been selected
@@ -1915,7 +1921,7 @@ run_config <-
           )
         })
       
-      ### 3.5.11. Record threshold table in config data ####
+      ### 3.5.11. RECORD: threshold table in config data ####
       config_data$adt_thresholds <-
         reactive({
           # Store the table if it is defined and has at least one row. 
@@ -1969,17 +1975,6 @@ run_config <-
             # config_filename: for now, use a path from config_init.yaml
             # May soon be chosen with a select input
             if (isTruthy(config_filename)){
-              showNotification(
-                ui =
-                  div(
-                    style = "width: 350px;",
-                    glue('Loading file at {config_filename}')
-                  ),
-                duration = NULL,
-                id = "load_config",
-                session = session
-              )
-              
               # Determine if the file loaded is .rds or .yaml
               # (supports both for backward compatibility)
               if (grepl(".yaml$", config_filename)){
@@ -2000,6 +1995,22 @@ run_config <-
               )
             }
           })
+      
+      ### Notify user which fields exist and which do not ####
+      # observeEvent(
+      #   session$userData$config(),
+      #   {
+      #     showNotification(
+      #       ui =
+      #         div(
+      #           style = "width: 350px;",
+      #           glue('Loading file at {config_filename}')
+      #         ),
+      #       duration = NULL,
+      #       id = "load_config",
+      #       session = session
+      #     )
+      #   })
       
       ### 3.7.2. Update inputs in main server function with file contents ####
       #### 3.7.2.1. General dataset info tab ####

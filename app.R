@@ -1394,29 +1394,27 @@ server <- function(input, output, session){
         res = 36,
         {
           req(input$data_key)
+          # Require preview type to be defined
+          req(datasets[[input$data_key]]$config$preview$type)
+          req(datasets[[input$data_key]]$config$preview$type == "dimplot")
           
-          # If a plot is selected, load plot settings 
-          if (datasets[[input$data_key]]$config$preview$type == "dimplot"){
-            plot_settings <- 
-              datasets[[input$data_key]]$config$preview$plot_settings
-            
-            # Create a dimplot from the settings retrieved
-            shiny_umap(
-              object = datasets[[input$data_key]]$object,
-              group_by = plot_settings$group_by,
-              split_by = plot_settings$split_by,
-              reduction = plot_settings$reduction,
-              ncol = plot_settings$ncol, 
-              show_legend = TRUE,
-              show_label = plot_settings$label,
-              show_title = FALSE,
-              is_subset = FALSE,
-              original_limits = NULL
-              )
-            } else {
-              # If no preview or a image preview is selected, return nothing
-              NULL
-              }
+          # If tests pass, load plot settings
+          plot_settings <- 
+            datasets[[input$data_key]]$config$preview$plot_settings
+          
+          # Create a dimplot from the settings retrieved
+          shiny_umap(
+            object = datasets[[input$data_key]]$object,
+            group_by = plot_settings$group_by,
+            split_by = plot_settings$split_by,
+            reduction = plot_settings$reduction,
+            ncol = plot_settings$ncol, 
+            show_legend = TRUE,
+            show_label = plot_settings$label,
+            show_title = FALSE,
+            is_subset = FALSE,
+            original_limits = NULL
+            )
         })
     }
   
@@ -1473,6 +1471,8 @@ server <- function(input, output, session){
     observe({
       # Observer requires input$data_key to be defined before running
       req(input$data_key)
+      # Also require config$preview$type to be defined
+      req(datasets[[input$data_key]]$config$preview$type)
       
       # Observer also runs when dataset window is opened
       input$open_dataset_window

@@ -84,8 +84,9 @@ data_Modal <- function(datasets,
       )
     )
   } else {
-    # Backwards compatibility: original methods if dataset info is in the broser
-    # config file, and newer methods if datset info is in the dataset config file.
+    # Backwards compatibility: original methods if dataset info is in the 
+    # browser config file, and newer methods if datset info is in the dataset
+    # config file.
     modalDialog(
       title = "Choose Dataset",
       footer = 
