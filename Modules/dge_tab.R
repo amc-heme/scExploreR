@@ -88,7 +88,7 @@ dge_tab_ui <- function(id,
           # Checkbox to return positive markers only (shown for both modes)
           checkboxInput(
             inputId = ns("pos"),
-            label="Positive Markers Only",
+            label = "Positive Markers Only",
             value = TRUE
             ),
           
@@ -700,7 +700,7 @@ dge_tab_server <- function(id,
                   error_handler(
                     session,
                     cnd_message = cnd$message,
-                    # Generic error messages only
+                    # Generic error messages only
                     error_list = list()
                   )
                   
@@ -919,8 +919,8 @@ dge_tab_server <- function(id,
               # Standard DGE or metaclusters: add group by category to
               # header text
               # Label for group by category in config file
-              # TODO: make sure this updates when a different group
-              # by variable is submitted
+              # TODO: make sure this updates when a different group
+              # by variable is submitted
               group_by_label <-
                 metadata_config()[[group_by_category()]]$label
 
@@ -937,7 +937,7 @@ dge_tab_server <- function(id,
           label = "DGE 3.13: UMAP Title",
           {
             print("DGE 3.13: UMAP Title")
-            # UI returned depends on DGE mode
+            # UI returned depends on DGE mode
             if (test_selections()$dge_mode == "mode_dge"){
               # DGE Title
               tags$h3(
