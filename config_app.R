@@ -793,9 +793,9 @@ run_config <-
       module_data$metadata_sortable_not_selected <- non_numeric_cols
       
       # Sortable Data: Reductions ####
-      # Nothing selected by default, and all reductions are choices
-      module_data$reductions_sortable_selected <- character(0)
-      module_data$reductions_sortable_not_selected <- reductions
+      # All reductions are choices, and all are selected by default
+      module_data$reductions_sortable_selected <- reductions
+      module_data$reductions_sortable_not_selected <- character(0)
       
       # Store assays for which ADT thresholding modules have been created 
       # (to avoid duplicates
