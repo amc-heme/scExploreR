@@ -363,9 +363,10 @@ run_config <-
                 inputId = "genes_assay",
                 label = 
                   "Choose genes assay (for DGE and correlation analyses)",
-                # Can select any assay
-                choices = names(object@assays), #c("none", names(object@assays)),
-                selected = names(object@assays)[1],
+                # Only "none" available at first (can only select assays that 
+                # are included by the user). Updated server-side
+                choices = "none",
+                selected = "none",
                 width = "380px"
               ),
               
@@ -373,8 +374,7 @@ run_config <-
                 inputId = "adt_assay",
                 label = 
                   "Choose ADT assay",
-                # Can select any assay, or "none" ("none" is default)
-                choices = c("none", names(object@assays)),
+                choices = "none",
                 selected = "none",
                 width = "380px"
               ),
@@ -1100,7 +1100,61 @@ run_config <-
         }
       })
       
-      ### 3.2.6. RECORD: Generic assay options ####
+      ### 3.2.6. Generic assay options ####
+      #### 3.2.6.1. Update designated assay selections with valid assays ####
+      observe({
+        # Update designated genes assay with valid choices
+        valid_choices_gene <-
+          # None is the only choice when no assays are selected
+          if (!isTruthy(input$assays_selected)){
+            "none"
+          } else {
+            # Otherwise, choose from selected assays (excluding none)
+            input$assays_selected
+          }
+        
+        assay_selected_gene <- isolate({input$genes_assay})
+        
+        updateSelectInput(
+          session = session,
+          inputId = "genes_assay",
+          choices = valid_choices_gene,
+          # Preserve user choice if it is still valid
+          selected = 
+            if (assay_selected_gene %in% valid_choices_gene){
+              assay_selected_gene
+            } else {
+              valid_choices_gene[1]
+            }
+          )
+        
+        # Do the same for the ADT assay
+        valid_choices_adt <-
+          # None is the only choice when no assays are selected
+          if (!isTruthy(input$assays_selected)){
+            "none"
+          } else {
+            # Otherwise, choose from selected assays (including none)
+            c("none", input$assays_selected)
+          }
+        
+        assay_selected_adt <- isolate({input$adt_assay})
+        
+        updateSelectInput(
+          session = session,
+          inputId = "adt_assay",
+          choices = valid_choices_adt,
+          # Preserve user choice if it is still valid
+          selected = 
+            if (assay_selected_adt %in% input$assays_selected){
+              assay_selected_adt
+            } else {
+              valid_choices_adt[1]
+            }
+        )
+      })
+      
+      #### 3.2.6.2. RECORD: Generic assay options ####
       config_data$other_assay_options <-
         reactive({
           list(
