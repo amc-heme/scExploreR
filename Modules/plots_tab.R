@@ -142,9 +142,9 @@ plots_tab_ui <- function(id,
          ),
          
          ## 1.2. Feature Text Entry. #### 
-         # Applies to feature, violin, and dot plots unless the user specifies 
-         # the use of different features for each plot (this is currently only 
-         # possible for dot plots) 
+         # Applies to feature, violin, and dot plots unless the user specifies 
+         # the use of different features for each plot (this is currently only 
+         # possible for dot plots) 
          conditionalPanel(
            condition =
              glue("input['{ns('make_feature')}'] == true |
@@ -293,7 +293,7 @@ plots_tab_ui <- function(id,
              ) # End subset_panel div
          ), # End 1.4
          
-         #----- Plot-specific options -----#
+         #----- Plot-specific options -----#####
          ## 1.5. DimPlot options ####
          # Panel will display if "Make DimPlot" switch is on
          conditionalPanel(
@@ -351,6 +351,7 @@ plots_tab_ui <- function(id,
                super_title_menu =           TRUE,
                share_scale_checkbox =       TRUE,
                color_by_feature_checkbox =  TRUE,
+               blend_checkbox =             TRUE,
                order_checkbox =             TRUE,
                label_checkbox =             TRUE,
                legend_checkbox =            TRUE,
@@ -671,6 +672,7 @@ plots_tab_ui <- function(id,
 #' selection window.
 #' @param continuous_palettes Continuous palettes to show in the palette 
 #' selection window.
+#' @param blend_palettes special palettes used for blended feature plots.
 #' @param patient_colname The name of the metadata column to use for computing
 #' patient- or sample-level metadata for plotting. This is defined in the config
 #' file, and is loaded in the main server function at startup and when the 
@@ -689,6 +691,7 @@ plots_tab_server <- function(id,
                              lim_orig,
                              categorical_palettes,
                              continuous_palettes,
+                             blend_palettes,
                              patient_colname
                              ){
   moduleServer(id,
@@ -850,7 +853,8 @@ plots_tab_server <- function(id,
                      list(
                        "categorical_palette" = selected_categorical_palette,
                        "continuous_palette" = selected_continuous_palette
-                       )
+                       ),
+                   blend_palettes = blend_palettes
                    )
                  
                  ## 2.3. Violin Plot ####
@@ -996,8 +1000,8 @@ plots_tab_server <- function(id,
                      ignoreNULL=FALSE,
                      label = "Plots Subset",
                      {
-                       # Display spinner over main window while the
-                       # subset is being computed
+                       # Display spinner over main window while the
+                       # subset is being computed
                        main_spinner$show()
 
                        # Also display a spinner over the text showing
@@ -1028,8 +1032,8 @@ plots_tab_server <- function(id,
                              error_handler(
                                session,
                                cnd_message = cnd$message,
-                               # Uses a list of
-                               # subset-specific errors
+                               # Uses a list of
+                               # subset-specific errors
                                error_list = error_list$subset_errors
                                )
 
@@ -1090,7 +1094,7 @@ plots_tab_server <- function(id,
                              ),
                            #Show notification for 8 seconds
                            duration = 8,
-                           session=session
+                           session = session
                          )
                        }
                      }

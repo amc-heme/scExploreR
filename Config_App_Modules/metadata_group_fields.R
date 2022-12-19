@@ -123,22 +123,20 @@ metadata_group_fields_server <-
         # loading config file
         add_trigger <- makeReactiveTrigger()
         
-        # Counter: increments when "add group" is pressed and is used to define
-        # input ID's for fields
-        counter <- reactiveVal(1)
-        
-        # n_fields: separate from counter. Counts number of fields currently 
-        # created in the module, and decrements when the "remove" buttons next
-        # to fields are pressed.
-        # One field exists upon module creation.
-        n_fields <- reactiveVal(1)
-        
         # Reactive values object for storing observers, outputs, 
         # reactive triggers
         module_data <- reactiveValues()
+        
         module_data$field_observers <- list()
         module_data$field_values <- list()
         module_data$remove_triggers <- list()
+        
+        # Counter: used to determine ID of new fields created. Increments with
+        # the creation of fields (programmatically upon loading or through user
+        # interaction)
+        module_data$counter <- 1
+        # n_fields: tracks the number of fields currently in existence.
+        module_data$n_fields <- 1
         
         # 1. Add observer for first field --------------------------------------
         # Input ID for first field (not namespaced: no uses of this ID require
@@ -155,7 +153,7 @@ metadata_group_fields_server <-
               list(
                 `group_name` = input[[glue("{field_id_1}_name")]],
                 `group_members` = input[[glue("{field_id_1}_members")]]
-                )
+              )
             
             # Sort list so ID's appear in alphanumeric order
             module_data$field_values <-
@@ -172,12 +170,12 @@ metadata_group_fields_server <-
           ignoreInit = TRUE,
           {
             # Increment counter and form ID based on current value
-            counter <- incrementReactiveVal(counter)
+            module_data$counter <- module_data$counter + 1
             
             # ID of the current field, applied to both the UI and observers
             # Field_id is reactive for subsequent observers and uses counter()
             # to create a new ID for each field created
-            field_id <- sprintf("%03d", counter())
+            field_id <- sprintf("%03d", module_data$counter)
             
             # 2.1. Add UI for new field ####
             insertUI(
@@ -194,7 +192,7 @@ metadata_group_fields_server <-
               )
             
             # Increment n_fields
-            n_fields <- incrementReactiveVal(n_fields)
+            module_data$n_fields <- module_data$n_fields + 1
             
             # 2.2 Reactive Trigger for field ####
             # Allows app to delete fields programmatically when a config file
@@ -217,18 +215,20 @@ metadata_group_fields_server <-
                     )
 
                 # Sort list in alphanumeric order
+                sort_order <- 
+                  str_sort(
+                    names(module_data$field_values), 
+                    numeric = TRUE
+                    )
+                
                 module_data$field_values <-
-                  module_data$field_values[
-                    str_sort(names(module_data$field_values), numeric = TRUE)]
+                  module_data$field_values[sort_order]
                 })
             
             # 2.4. Field deletion observer ####
             # Observer to delete field from data if remove button is pressed
             observeEvent(
               input[[glue("{field_id}_remove")]],
-              # c(input[[glue("{field_id}_remove")]],
-              #   # Also responds to removal reactive trigger for field
-              #   isolate({module_data$remove_triggers[[field_id]]})$depend()),
               label = glue("{ns(field_id)}_delete_field"),
               # Must use ignoreNULL = TRUE, ignoreInit = TRUE to avoid the field
               # being removed as soon as it is created (not yet sure why)
@@ -243,7 +243,7 @@ metadata_group_fields_server <-
                 )
                 
                 # Decrement n_fields
-                n_fields <- decrementReactiveVal(n_fields)
+                module_data$n_fields <- module_data$n_fields - 1 
                 
                 # Destroy field-specific observer
                 module_data$field_observers[[field_id]]$destroy()
@@ -255,31 +255,31 @@ metadata_group_fields_server <-
             # 2.5. Deletion observer, triggered programmatically
             # Code is copied to a separate observer since required ignore* 
             # parameters are different for reactive triggers 
-            observeEvent(
-              isolate({module_data$remove_triggers[[field_id]]})$depend(),
-              ignoreNULL = FALSE,
-              ignoreInit = TRUE,
-              # Observer self-destructs when the removal is complete
-              once = TRUE,
-              {
-                # Remove UI
-                removeUI(
-                  selector = glue("#{ns(field_id)}_field")
-                )
-                
-                # Decrement n_fields
-                n_fields <- decrementReactiveVal(n_fields)
-                
-                # Destroy field-specific observer
-                module_data$field_observers[[field_id]]$destroy()
-                
-                # Remove data from list
-                module_data$field_values[[field_id]] <- NULL
-                
-                # Remove reactive trigger from list
-                module_data$remove_triggers[[field_id]] <- NULL
-              })
-            
+            # observeEvent(
+            #   isolate({module_data$remove_triggers[[field_id]]})$depend(),
+            #   ignoreNULL = FALSE,
+            #   ignoreInit = TRUE,
+            #   # Observer self-destructs when the removal is complete
+            #   once = TRUE,
+            #   {
+            #     # Remove UI
+            #     removeUI(
+            #       selector = glue("#{ns(field_id)}_field")
+            #     )
+            #     
+            #     # Decrement n_fields
+            #     module_data$n_fields <- module_data$n_fields - 1
+            #     
+            #     # Destroy field-specific observer
+            #     module_data$field_observers[[field_id]]$destroy()
+            #     
+            #     # Remove data from list
+            #     module_data$field_values[[field_id]] <- NULL
+            #     
+            #     # Remove reactive trigger from list
+            #     module_data$remove_triggers[[field_id]] <- NULL
+            #   })
+
             })
         
         # 3. Update fields when config file is loaded --------------------------
@@ -301,39 +301,306 @@ metadata_group_fields_server <-
                 
                 # Condition 3.A: more groups in loaded file than 
                 # there are fields
-                if (n_fields() < n_groups){
+                if (module_data$n_fields < n_groups){
                   # Create fields until number of fields matches 
                   # number of groups 
+                  
                   # Beginning of for loop is the value of n_fields *after* the
                   # first new field is added. i is not used in loop.
-                  for (i in (n_fields() + 1):n_groups){
+                  for (i in (module_data$n_fields + 1): n_groups){
                     # Code below is a copy of 2.1-2.3
                     # Unsure how to functionalize code with this many observers
                     # May require an additional module
-                    add_trigger$trigger()
+                    
+                    # Increment counter and form ID based on current value
+                    module_data$counter <- module_data$counter + 1
+                    # store field ID's created in a separate vector to avoid 
+                    # erasure when more than one field is created
+                    field_id <- sprintf("%03d", module_data$counter)
+                    
+                    # Add UI for new field ####
+                    insertUI(
+                      # selector: must use jQuery syntax (#<element_id>)
+                      # Adds before "add group" button
+                      selector = glue("#{ns('add_group')}"),
+                      where = "beforeBegin",
+                      immediate = TRUE,
+                      ui = 
+                        field_ui(
+                          # ID is namespaced when adding UI elements
+                          inputId = ns(field_id),
+                          remove_button = TRUE,
+                          choices = unique_values
+                          )
+                      )
+                    
+                    # Increment n_fields
+                    module_data$n_fields <- module_data$n_fields + 1
+                    
+                    # Reactive Trigger for field ####
+                    # Allows app to delete fields programmatically when a 
+                    # config file is loaded, if there are more fields than 
+                    # there are groups in the config file
+                    module_data$remove_triggers[[field_id]] <-
+                      makeReactiveTrigger()
+
+                    # Observer for field ####
+                    # Add observer to store data in reactive list when the 
+                    # inputs change
+                    
+                    # inject: required for observers in loops. Ensures 
+                    # `field_id` is equal to its value at iteration i of the 
+                    # loop instead of the last version, avoiding an error with
+                    # only the last observer functioning properly
+                    rlang::inject({
+                      module_data$field_observers[[field_id]] <- 
+                        observe(
+                          label = glue("{ns(field_id)}_record_values"),
+                          {
+                            field_id_i <- !!field_id
+                            
+                            # Add new values to list
+                            module_data$field_values[[field_id_i]] <-
+                              list(
+                                `group_name` = 
+                                  input[[glue("{field_id_i}_name")]],
+                                `group_members` = 
+                                  input[[glue("{field_id_i}_members")]]
+                              )
+                            
+                            # Sort list in alphanumeric order
+                            sort_order <- 
+                              str_sort(
+                                names(module_data$field_values), 
+                                numeric = TRUE
+                              )
+                            
+                            module_data$field_values <-
+                              module_data$field_values[sort_order]
+                          })
+                      })
+                    
+                    # ith Field deletion observer ####
+                    # Observer to delete field from data if remove 
+                    # button is pressed
+                    rlang::inject({
+                      observeEvent(
+                        input[[glue("{field_id}_remove")]],
+                        label = glue("{ns(field_id)}_delete_field"),
+                        # Must use ignoreNULL = TRUE, ignoreInit = TRUE to avoid
+                        # the field being removed as soon as it is created (not
+                        # yet sure why)
+                        ignoreNULL = TRUE,
+                        ignoreInit = TRUE,
+                        # Observer self-destructs when the removal is complete
+                        once = TRUE,
+                        {
+                          field_id_i <- !!field_id
+                          
+                          # Remove UI
+                          removeUI(
+                            selector = glue("#{ns(field_id_i)}_field")
+                          )
+
+                          # Decrement n_fields
+                          module_data$n_fields <- module_data$n_fields - 1
+
+                          # Destroy field-specific observer
+                          module_data$field_observers[[field_id_i]]$destroy()
+
+                          # Remove data from list
+                          module_data$field_values[[field_id_i]] <- NULL
+                        })
+                    })
                   }
-                } else if (n_fields() == n_groups){
+                  
+                  # At end of loop (when n_fields == n_groups),
+                  # Update each field with each value in the config file
+                  extant_field_ids <- 
+                    c("001", 
+                      names(module_data$field_observers)
+                      )
+                
+                  # Update fields with information in config file ####
+                  for (k in (1: n_groups)){
+                    # Use the field ID for the k'th field created
+                    field_id <- extant_field_ids[k]
+                    
+                    # Define the ID for group name and members, 
+                    # for the k'th field
+                    group_name_id = glue("{field_id}_name")
+                    group_members_id = glue("{field_id}_members")
+                    
+                    # Extract group data for the k'th group in the loaded file
+                    group_data <- config_individual$groups[[k]]
+                    
+                    # Freeze inputs
+                    freezeReactiveValue(input, group_name_id)
+                    freezeReactiveValue(input, group_members_id)
+                    
+                    # Update group name and group members field
+                    updateTextInput(
+                      session = session,
+                      inputId = group_name_id, 
+                      value = group_data$group_name
+                      )
+                    
+                    updateSelectizeInput(
+                      session = session,
+                      inputId = group_members_id,
+                      selected = group_data$group_members
+                      )
+                    }
+                  } else if (module_data$n_fields == n_groups){
                   # Condition 3.B: as many fields in app as there are 
                   # groups in file
+                    # Update fields with information in config file ####
+                    # Construct vector of field IDs to update
+                    extant_field_ids <- names(module_data$field_values)
+                    
+                    for (k in (1: n_groups)){
+                      # Use the field ID for the k'th field created
+                      field_id <- extant_field_ids[k]
+                      
+                      # Define the ID for group name and members, 
+                      # for the k'th field
+                      group_name_id = glue("{field_id}_name")
+                      group_members_id = glue("{field_id}_members")
+                      
+                      # Extract group data for the k'th group in the loaded file
+                      group_data <- config_individual$groups[[k]]
+                      
+                      # Freeze inputs
+                      freezeReactiveValue(input, group_name_id)
+                      freezeReactiveValue(input, group_members_id)
+                      
+                      # Update group name and group members field
+                      updateTextInput(
+                        session = session,
+                        inputId = group_name_id, 
+                        value = group_data$group_name
+                      )
+                      
+                      updateSelectizeInput(
+                        session = session,
+                        inputId = group_members_id,
+                        selected = group_data$group_members
+                      )
+                    }
                   
-                } else if (n_fields() > n_groups){
+                } else if (module_data$n_fields > n_groups){
                   # Condition 3.C: more fields in app than groups in file
                   # If there are more fields in existence than fields, trigger
                   # the reactive expressions to remove fields until there are
                   # the right number of fields.
                   
-                  # Iterate through n_fields-n_groups observers (number that 
-                  # must be deleted to create the required number of fields)
-                  for (j in 1:(n_fields() - n_groups)){
-                    # Trigger reactive triggers for the first n_fields-n_groups
-                    # triggers in the list of reactive triggers
-                    module_data$remove_triggers[[j]]$trigger()
+                  # Define IDs of fields in existance
+                  extant_fields <- names(module_data$field_observers)
+                  
+                  # Iterate through n_fields-n_groups observers 
+                  # j = number of fields that must be deleted to create the
+                  # required number of fields (n_fields-n_groups)
+                  for (j in 1:(module_data$n_fields - n_groups)){
+                    # Define ID of jth field to remove
+                    field_id <- extant_fields[j]
+                    
+                    # Remove UI
+                    removeUI(
+                      selector = glue("#{ns(field_id)}_field")
+                    )
+
+                    # Decrement n_fields
+                    module_data$n_fields <- module_data$n_fields - 1
+
+                    # Destroy field-specific observer
+                    module_data$field_observers[[field_id]]$destroy()
+
+                    # Remove data from list
+                    module_data$field_values[[field_id]] <- NULL
+
+                    # Remove reactive trigger from list
+                    module_data$remove_triggers[[field_id]] <- NULL
+                  }
+                  
+                  # Update fields with information in config file ####
+                  # Construct vector of field IDs to update
+                  extant_field_ids <- names(module_data$field_values)
+                  
+                  for (k in (1: n_groups)){
+                    # Use the field ID for the k'th field created
+                    field_id <- extant_field_ids[k]
+                    
+                    # Define the ID for group name and members, 
+                    # for the k'th field
+                    group_name_id = glue("{field_id}_name")
+                    group_members_id = glue("{field_id}_members")
+                    
+                    # Extract group data for the k'th group in the loaded file
+                    group_data <- config_individual$groups[[k]]
+                    
+                    # Freeze inputs
+                    freezeReactiveValue(input, group_name_id)
+                    freezeReactiveValue(input, group_members_id)
+                    
+                    # Update group name and group members field
+                    updateTextInput(
+                      session = session,
+                      inputId = group_name_id, 
+                      value = group_data$group_name
+                    )
+                    
+                    updateSelectizeInput(
+                      session = session,
+                      inputId = group_members_id,
+                      selected = group_data$group_members
+                    )
                   }
                 }
                 
               } else {
-                # If there are no groups defined, but the user has 
-                # created multiple fields
+                if (module_data$n_fields > 1){
+                  # If there are no groups defined, but the user has 
+                  # created multiple fields, remove the extra fields
+                  
+                  # Define IDs of fields in existance (besides the first field)
+                  extant_fields <- names(module_data$field_observers)
+                  
+                  # Iterate through all those fields, removing UI and data
+                  for (j in 1:length(extant_fields)){
+                    # Define ID of jth field to remove
+                    field_id <- extant_fields[j]
+                    
+                    # Remove UI
+                    removeUI(
+                      selector = glue("#{ns(field_id)}_field")
+                    )
+                    
+                    # Decrement n_fields
+                    module_data$n_fields <- module_data$n_fields - 1
+                    
+                    # Destroy field-specific observer
+                    module_data$field_observers[[field_id]]$destroy()
+                    
+                    # Remove data from list
+                    module_data$field_values[[field_id]] <- NULL
+                    
+                    # Remove reactive trigger from list
+                    module_data$remove_triggers[[field_id]] <- NULL
+                  }
+                  
+                  # Also, clear the values in the first field
+                  updateTextInput(
+                    session = session,
+                    inputId = "001_name", 
+                    value = ""
+                  )
+                  
+                  updateSelectizeInput(
+                    session = session,
+                    inputId = "001_members",
+                    selected = character(0)
+                  )
+                }
               }
             }
           })

@@ -79,10 +79,10 @@ source_files <-
 # Use source() to import files into R
 sapply(source_files, source)
 
-# Load CSS files for app: CSS files are defined and each file is converted to a
-# <script> tag using includeCSS(). Each tag defined is passed to a list, which 
-# is included in the main UI function.
-# Get list of .css files in www/ directory
+# Load CSS files for app: CSS files are defined and each file is converted to a
+# <script> tag using includeCSS(). Each tag defined is passed to a list, which 
+# is included in the main UI function.
+# Get list of .css files in www/ directory
 css_files <- 
   list.files(
     path = "./www",
@@ -94,9 +94,9 @@ css_files <-
 # Create list of style tags for each CSS file
 css_list <- lapply(css_files, includeCSS)
 
-# Load Javascript files for app: find all .js files in www/ directory
-# and create a list of script() tags using includeScript().
-# Get list of .js files in www/ directory
+# Load Javascript files for app: find all .js files in www/ directory
+# and create a list of script() tags using includeScript().
+# Get list of .js files in www/ directory
 js_files <- 
   list.files(
     path = "./www", 
@@ -104,9 +104,9 @@ js_files <-
     # Pattern arguments require double backslashes for eacape 
     # characters to work (R and regex use the same string 
     # character)
-    pattern=".*\\.js", 
-    full.names=TRUE, 
-    ignore.case=TRUE,
+    pattern = ".*\\.js", 
+    full.names = TRUE, 
+    ignore.case = TRUE,
     include.dirs = FALSE
     )
 # Create list of style tags for each CSS file
@@ -189,6 +189,24 @@ continuous_palettes <-
     `mako` = mako(42, direction = -1)
   )
 
+# Blend palettes: for blended feature plots
+# First color is for low expression of both features (default "lightgrey")
+# Subsequent colors are for expression of each of the two features
+blend_palettes <-
+  list(
+    "RdBu" = c("lightgrey", "#FF0000", "#0000FF"),
+    "GnBu" = c("lightgrey", "#00FF00", "#0000FF"),
+    "RdGn" = c("lightgrey", "#FF0000", "#00FF00"),
+    # Blue and orange (co-expression is pink)
+    "BuOr" = c("lightgrey", "#1003FF", "#F76A0D"),
+    # Red-green palette, with co-expression visible at a lower 
+    # threshold for both features
+    "RdGn_accent" = c("lightgrey", "#FF1A1A", "#1AFF1A"),
+    # Dark purple and dark yellow make peach when blended
+    "DkPuDkYl" = c("lightgrey", "#55035C", "#CFAB19"),
+    # Dark putple + dark red-orange -> pink blend
+    "DkPuDkRd" = c("lightgrey", "#7A2180", "#9E2525")
+  )
 
 # Error Handling: define possible errors ---------------------------------------
 # Errors are defined in a list using the functions in "./R/error_handling.R". 
@@ -321,9 +339,75 @@ datasets <-
 for (data_key in names(datasets)){
   datasets[[data_key]]$object <- 
     readRDS(datasets[[data_key]]$object)
+  
+  # Also load the config file into memory
+  path <- datasets[[data_key]]$config
+  
+  # Add informative error message when a non-yaml config file is loaded
+  if (!grepl("\\.yaml$", path)){
+    stop("Only .yaml config files are supported as of version v0.5.0. 
+         Existing .rds config files can be converted to .yaml files by 
+         loading them into config_app.R and then re-saving as a .yaml file.")
+  }
+  
+  # Load config YAML using defined path (file is converted to an R list)
+  config_r <- read_yaml(path)
+  
+  # Convert the "adt_thresholds" section to a tibble (when converting from R to 
+  # YAML, tibble formats are converted to a YAML format that generates a named 
+  # list when loading back to R)
+  if (isTruthy(config_r$adt_thresholds)){
+    config_r$adt_thresholds <-
+      as_tibble(config_r$adt_thresholds)
+  }
+  
+  # Store config file in datasets
+  datasets[[data_key]]$config <- config_r
 }
 
-log_info("Datasets successfully loaded")
+# Tests for location of general dataset info ####
+# Test if the general dataset info is defined in the browser config for all 
+# datasets, or in the dataset config file for all. If neither of these is TRUE,
+# throw an error to the config user.
+if (
+  !(browser_config_has_info(datasets) | dataset_config_has_info(datasets))
+  ){
+    stop("Inconsistent format detected for general dataset info (label, 
+         description, and plot or image). This must be defined in either the 
+         browser config file for all datasets, or the dataset config file for 
+         all datasets. If the config file does not have general information 
+         defined, please load them into the config app and define those fields. 
+         The browser config file should not have this information.")
+  }
+
+# Also throw an error if data is defined in both the browser config and dataset
+# config files.
+if (browser_config_has_info(datasets) & dataset_config_has_info(datasets)){
+  stop('General dataset info is defined both in the browser config file and the
+       dataset config files. Please remove the sections "label", "description", 
+       and "plot" from the browser config file for all datasets, and keep this
+       information in the config file for each datset.')
+}
+
+# And an error if data is in neither source
+if (!browser_config_has_info(datasets) & !dataset_config_has_info(datasets)){
+  stop('General dataset info (dataset label, description, and plot or image) is 
+       not defined for all datasets. For each config file that does not have the
+       sections "label", "description", or "preview", load the config file into 
+       the config app and fill out these fields in the "general" tab (or simply 
+       re-save them to leave these fields defined in the config file, but as 
+       empty entries).')
+}
+
+# Warning if the data is in the browser config but not the dataset config
+if (browser_config_has_info(datasets) & !dataset_config_has_info(datasets)){
+  log_warn("The placement of general dataset info (label, description, 
+           plot/image) in the browser config file is depricated. Please load the
+           config files for each dataset into the latest version of the config 
+           app and add this infomation in the 'general' tab.")
+}
+
+log_info("Datasets successfully loaded.")
 
 # Table of Contents ------------------------------------------------------------
 # TODO: Add module tree here
@@ -342,8 +426,8 @@ ui <- tagList(
   useShinyjs(),
   # CSS and JS for collapsible panel
   navbarPage("Shiny scExplorer",
-             windowTitle="Shiny scExplorer",
-             position="fixed-top",
+             windowTitle = "Shiny scExplorer",
+             position = "fixed-top",
              tabPanel(
                "Plots",
                uiOutput(
@@ -370,10 +454,10 @@ ui <- tagList(
   # This will be achieved with the button_wizzard.js script
   dropdownButton(
     inputId = "help",
-    status="info",
-    right=TRUE,
+    status = "info",
+    right = TRUE,
     label = "",
-    size="sm",
+    size = "sm",
     icon = icon("question"),
     # Dropdown menu content
     # Header
@@ -659,28 +743,7 @@ server <- function(input, output, session){
     label = "Load/Update Config File",
     ignoreNULL = FALSE,
     {
-      path <- datasets[[selected_key()]]$config
-      
-      # Add informative error message when a non-yaml config file is loaded
-      if (!grepl("\\.yaml$", path)){
-        stop("Only .yaml config files are supported as of version v0.5.0. 
-             Existing .rds config files can be converted to .yaml files by 
-             loading them into config_app.R and then re-saving as a .yaml file.")
-      }
-      
-      # Load config YAML using defined path (file is converted to an R list)
-      config_r <- read_yaml(path)
-      
-      # Convert the "adt_thresholds" section to a tibble (when converting from
-      # R to YAML, tibble formats are converted to a YAML format that generates
-      # a named list when loading back to R)
-      if (isTruthy(config_r$adt_thresholds)){
-        config_r$adt_thresholds <-
-          as_tibble(config_r$adt_thresholds)
-      }
-      
-      # Store list in the config reactiveVal object
-      config(config_r)
+      config(datasets[[selected_key()]]$config)
     })
   
   ### 1.5.2. Check version of config file ####
@@ -829,13 +892,35 @@ server <- function(input, output, session){
       {
         config()$assays
         })
+
+  ## 2.3. Valid features ####
+  # Create a list of valid features using the assays defined above
   
-  # TODO: add include_numeric_metadata as an option in the config app 
-  include_numeric_metadata <- TRUE
+  ### 2.3.1 Determine whether to include numeric metadata in feature list ####
+  # Determination depends on the value of `include_numeric_metadata` 
+  # in the config file. 
+  include_numeric_metadata <- 
+    eventReactive(
+      config(),
+      label = "include_numeric_metadata",
+      ignoreNULL = FALSE,
+      {
+        if (isTruthy(config())){
+          if (!is.null(config()$include_numeric_metadata)){
+            config()$include_numeric_metadata
+          } else {
+            # If the include_metadata field does not exist in 
+            # the config file, return TRUE.
+            TRUE
+          }
+        }
+      })
+  
+  # Header text for numeric metadata features in selection menu
+  # May be set in the config app in the future
   numeric_metadata_title <- "Metadata Features"
   
-  ## 2.3. valid_features ####
-  # Create a list of valid features using the assays defined above
+  ### 2.3.2 Create list of valid features
   valid_features <-
     eventReactive(
       c(assay_config(), object()),
@@ -849,7 +934,7 @@ server <- function(input, output, session){
             # include_numeric_metadata: a boolean variable 
             # that is hard-coded for now and will be 
             # defined in the config file
-            numeric_metadata = include_numeric_metadata, 
+            numeric_metadata = include_numeric_metadata(), 
             # The same is true for numeric_metadata_title
             numeric_metadata_title = numeric_metadata_title,
             # ADT thresholds: add to list if the ADT_threshold assay has been
@@ -962,17 +1047,47 @@ server <- function(input, output, session){
   reductions <- 
     reactive({
       req(object())
-      reductions <- names(object()@reductions)
       
-      # Order UMAP reduction first by default, if it exists
-      if ("umap" %in% reductions){
-        reductions <-
-          c(
-            reductions[reductions=="umap"],
-            reductions[!reductions=="umap"]
+      # If a reductions section exists in the config file, use the config file
+      # to determine the reductions to include
+      if (isTruthy(config()$reductions)){
+        # Machine-readable names for reductions, in the order selected 
+        # in the config file
+        ids <- 
+          sapply(
+            config()$reductions,
+            function(reduction_entry){
+              reduction_entry$reduction
+            }
+          ) 
+        
+        labels <-
+          sapply(
+            config()$reductions,
+            function(reduction_entry){
+              reduction_entry$label
+              }
             )
+        
+        # Reductions: named list. Elements are machine-readable reduction
+        # names, and names are human-readable reduction names
+        reductions <- ids
+        names(reductions) <- labels
+        
+      } else {
+        # Otherwise, get reductions in object, and use the default
+        # (UMAP is placed first, if it exists)
+        reductions <- names(object()@reductions)
+        
+        if ("umap" %in% reductions){
+          reductions <-
+            c(
+              reductions[reductions=="umap"],
+              reductions[!reductions=="umap"]
+            )
+        }
       }
-      
+
       reductions
     })
   
@@ -1080,7 +1195,7 @@ server <- function(input, output, session){
   ## 3.1. Dynamic UI ####
   # All UI for modules is dynamic as it depends on the currently 
   # selected object.
-  ### 3.1.1. Plots tab UI
+  ### 3.1.1. Plots tab UI ####
   # Added "dynamic" to end of variable created to prevent collision with the
   # plots_tab_ui reactive function
   plots_tab_ui_dynamic <-
@@ -1115,7 +1230,7 @@ server <- function(input, output, session){
         ui
       })
   
-  ### 3.1.2. DGE tab UI
+  ### 3.1.2. DGE tab UI ####
   dge_tab_ui_dynamic <-
     eventReactive(
       # UI should only update when the object and config files are switched
@@ -1132,7 +1247,7 @@ server <- function(input, output, session){
           )
       })
   
-  ### 3.1.3. Correlations tab UI
+  ### 3.1.3. Correlations tab UI ####
   corr_tab_ui_dynamic <-
     eventReactive(
       # UI should only update when the object and config files are switched
@@ -1198,6 +1313,7 @@ server <- function(input, output, session){
           lim_orig = lim_orig,
           categorical_palettes = categorical_palettes,
           continuous_palettes = continuous_palettes,
+          blend_palettes = blend_palettes,
           patient_colname = patient_colname
           )
         
@@ -1259,18 +1375,77 @@ server <- function(input, output, session){
     }
   })
   
-  # 4. Dataset Description in modal UI -----------------------------------------
+  # 4. Dataset preview in modal UI -----------------------------------------
+  ## 4.1. Description ####
   # Render text for the dataset modal that displays a description of the dataset
   # currently selected
   output$dataset_description <-
     renderText({
-      # Fetch description of the dataset selected (key = input$data_key)
-      datasets[[input$data_key]]$description
+      req(input$data_key)
+      
+      # Use config file for description (newer version), or description from
+      # browser config file, in datasets (depricated version)
+      if (dataset_config_has_info(datasets)){
+        # (key = input$data_key)
+        datasets[[input$data_key]]$config$description
+      } else {
+        # Fetch description of the dataset selected (key = input$data_key)
+        datasets[[input$data_key]]$description
+        }
       })
   
-  output$dataset_dimplot <-
+  ## 4.2. Plot or image ####
+  # Render plots from info in config file: new version only (0.5.0 and greater)
+  if (dataset_config_has_info(datasets)){
+    output$dataset_dimplot <-
+      renderPlot(
+        width = 290,
+        height = 218,
+        res = 36,
+        {
+          req(input$data_key)
+          # Require preview type to be defined
+          req(datasets[[input$data_key]]$config$preview$type)
+          req(datasets[[input$data_key]]$config$preview$type == "dimplot")
+          
+          # If tests pass, load plot settings
+          plot_settings <- 
+            datasets[[input$data_key]]$config$preview$plot_settings
+          
+          # Create a dimplot from the settings retrieved
+          shiny_umap(
+            object = datasets[[input$data_key]]$object,
+            group_by = plot_settings$group_by,
+            split_by = plot_settings$split_by,
+            reduction = plot_settings$reduction,
+            ncol = plot_settings$ncol, 
+            show_legend = TRUE,
+            show_label = plot_settings$label,
+            show_title = FALSE,
+            is_subset = FALSE,
+            original_limits = NULL
+            )
+        })
+    }
+  
+  # Image: new and depricated versions
+  output$dataset_image <-
     renderImage({
-      path <- datasets[[input$data_key]]$plot
+      req(input$data_key)
+      
+      # Path to image: depends on version of config file
+      if (dataset_config_has_info(datasets)){
+        # Version v0.5.0 and later: use preview section of config file
+        
+        # The type of preview in the config file must be an image for the 
+        # render function to proceed
+        req(datasets[[input$data_key]]$config$preview$type == "image")
+      } else {
+        # Older versions: use browser config information stored in `datasets`
+        path <- datasets[[input$data_key]]$plot
+      }
+      
+      print("Proceeding to image render list")
       list(
         `src` = path,
         `width` = 290,
@@ -1279,6 +1454,75 @@ server <- function(input, output, session){
     },
     deleteFile=FALSE
     )
+  
+  # Set suspendWhenHidden to false so the plot and image can render before 
+  # the dataset window is opened
+  outputOptions(
+    output, 
+    "dataset_image", 
+    suspendWhenHidden = FALSE
+  )
+  
+  outputOptions(
+    output, 
+    "dataset_dimplot", 
+    suspendWhenHidden = FALSE
+  )
+  
+  outputOptions(
+    output, 
+    "dataset_description", 
+    suspendWhenHidden = FALSE
+  )
+  
+  ## 4.3. Show plot or image output for dataset ####
+  # For config files produced with version v0.5.0 and later.
+  if (dataset_config_has_info(datasets)){
+    observe({
+      # Observer requires input$data_key to be defined before running
+      req(input$data_key)
+      # Also require config$preview$type to be defined
+      req(datasets[[input$data_key]]$config$preview$type)
+      
+      # Observer also runs when dataset window is opened
+      input$open_dataset_window
+      
+      plot_id <- "dataset_dimplot"
+      image_id <- "dataset_image"
+    
+      # If an image is the chosen preview type, show the image container and not
+      # the plot container.
+      if (datasets[[input$data_key]]$config$preview$type == "image"){
+        showElement(
+          id = image_id
+          )
+        
+        hideElement(
+          id = plot_id
+          )
+      } else if (datasets[[input$data_key]]$config$preview$type == "dimplot"){
+        # If a plot is the chosen preview type, show the plot container and 
+        # not the image container.
+        hideElement(
+          id = image_id
+          )
+        
+        showElement(
+          id = plot_id
+          )
+      } else if (datasets[[input$data_key]]$config$preview$type == "none"){
+        # If the type of preview is "none", hide both containers (only the
+        # description will display in the dataset selection window)
+        hideElement(
+          id = image_id
+        )
+        
+        hideElement(
+          id = plot_id
+        )
+      }
+    })
+  }
   
   # Observe statement to determine memory usage of all objects in the environment
   # observe({

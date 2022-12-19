@@ -84,6 +84,7 @@ plot_module_ui <- function(id,
                            color_by_feature_checkbox =             FALSE,
                            super_title_menu =                      FALSE,
                            sort_groups_menu =                      FALSE,
+                           blend_checkbox =                        FALSE,
                            order_checkbox =                        FALSE,
                            label_checkbox =                        FALSE,
                            legend_checkbox =                       FALSE,
@@ -239,7 +240,10 @@ plot_module_ui <- function(id,
         if (is.null(reductions)){
           # Error handling: return error if reductions is not specified when 
           # reductions_menu is TRUE
-          stop("If reductions_menu is TRUE, `reductions` must be specified.")
+          stop(
+            "If reductions_menu is TRUE, the argument `reductions` 
+            must have a value."
+            )
         } else {
           if(!is.reactive(reductions)){
             # Also, return an error if `reductions` is not a reactive variable
@@ -393,6 +397,95 @@ plot_module_ui <- function(id,
           )
         )
       } else NULL,
+      
+      ## Blend features (feature plots only, with two features selected) ####
+      if (blend_checkbox == TRUE){
+        hidden(
+          tagList(
+            # Checkbox is shown when exactly two features are selected
+            checkboxInput(
+              inputId = ns("blend"),
+              label = "View feature co-expression",
+              value = FALSE
+            ),
+            # Container for blend options 
+            div(
+              id = ns("blend_options_container"),
+              # Layout of blended plot
+              selectInput(
+                inputId = ns("blend_layout"),
+                label = "Choose layout for panels",
+                choices = c("Default" = "2col", "Wide" = "4col"),
+                selected = "2col"
+                ),
+              
+              # Blend Palette
+              pickerInput(
+                inputId = ns("blend_palette"),
+                label = "Choose palette for co-expression:",
+                # choices are populated server-side
+                choices = NULL,
+                selected = NULL
+                ),
+              
+              
+              # selectInput(
+              #   inputId = ns("blend_palette"),
+              #   label = "Choose palette for co-expression:",
+              #   choices =
+              #     list(
+              #       "RdBu" = c("lightgrey", "#FF0000", "#0000FF"),
+              #       "GnBu" = c("lightgrey", "#00FF00", "#0000FF"),
+              #       "RdGn" = c("lightgrey", "#FF0000", "#0000FF"),
+              #       # Blue and orange (co-expression is pink)
+              #       "BuOr" = c("lightgrey", "#1003FF", "#F76A0D"),
+              #       # Red-green palette, with co-expression visible at a lower 
+              #       # threshold for both features
+              #       "RdGn_accent" = c("lightgrey", "#FF1A1A", "#1AFF1A"),
+              #       # Dark purple and dark yellow make peach when blended
+              #       "DkPuDkYl" = c("lightgrey", "#55035C", "#CFAB19"),
+              #       # Dark putple + dark red-orange -> pink blend
+              #       "DkPuDkRd" = c("lightgrey", "#7A2180", "#9E2525"),
+              #       # Custom: uses custom color inputs
+              #       "Custom" = "custom"
+              #       ),
+              #   selected = "RdBu"
+              # ),
+              
+              # Custom blend colors
+              div(
+                id = ns("blend_palette_custom_colors"),
+                tags$b("Choose custom palette for co-expression"),
+                colourInput(
+                  inputId = ns("blend_custom_low"),
+                  label = "Low expression color",
+                  value = "#E1E1E1"
+                ),
+                colourInput(
+                  inputId = ns("blend_custom_1"),
+                  label = "First feature color",
+                  value = "#FF0000"
+                ),
+                colourInput(
+                  inputId = ns("blend_custom_2"),
+                  label = "Second feature color",
+                  value = "#0000FF"
+                )
+              )#,
+              # Blend Resolution (dev mode)
+              # sliderInput(
+              #   inputId = ns("blend_resolution"),
+              #   label = "Blend resolution",
+              #   min = 0.0,
+              #   max = 1.0,
+              #   value = 0.5,
+              #   step = 0.01,
+              #   ticks = FALSE
+              #   )
+              )
+            )
+          )
+        } else NULL,
       
       ## Order cells by expression (feature plots only) ####
       if (order_checkbox == TRUE){
@@ -635,8 +728,9 @@ plot_module_ui <- function(id,
 #' process separate features (features specific to the plot created by this 
 #' module) should be ran. This should be TRUE for all plots where the user can 
 #' enter features that apply just to that plot.
+#' @param blend_palettes special palettes used for blended feature plots (
+#' this is the full list of palettes).
 #'
-#' @examples
 plot_module_server <- function(id,
                                plot_type, #Non-reactive
                                plot_label, #Non-reactive
@@ -651,7 +745,8 @@ plot_module_server <- function(id,
                                metadata_config = NULL,
                                assay_config = NULL,
                                patient_colname = NULL,
-                               separate_features_server = FALSE #Non-reactive
+                               separate_features_server = FALSE, #Non-reactive
+                               blend_palettes = NULL
                                ){
   moduleServer(id,
                function(input,output,session){
@@ -724,9 +819,10 @@ plot_module_server <- function(id,
                    # Reactive trigger for updating single custom title input
                    update_title_single <- makeReactiveTrigger()
                    
-                   ## 3.1. Update title settings menu ####
+                   ## 3.1. Allow/disallow custom title ####
                    # If the menu is present, add the "custom" option
                    # if it applies
+                   
                    # menu_type: stores whether a single- or multiple- entry 
                    # menu may be used
                    menu_type = reactiveVal(NULL)
@@ -764,7 +860,10 @@ plot_module_server <- function(id,
                              menu_type("multiple")
                            }
                          } else if (length(features_entered()) > 1){
-                           if (plot_selections$split_by() == "none"){
+                           # Multi-feature plots: custom titles are currently 
+                           # disallowed for blended feature plots
+                           if (plot_selections$split_by() == "none" &
+                               !isTruthy(plot_selections$blend())){
                              enable_custom = TRUE
                              menu_type("multiple")
                            }
@@ -1035,8 +1134,8 @@ plot_module_server <- function(id,
                      #     )
                    }
                    
-                   ## 3.7. Custom title input #### 
-                   # Used for dimplots, stacked bar plots, pie charts ####
+                   ## 3.7. Custom title value #### 
+                   # Used for dimplots, stacked bar plots, pie charts 
                    if (plot_type %in% c("dimplot", "proportion", "pie")){
                      plot_title <-
                        reactive({
@@ -1074,7 +1173,7 @@ plot_module_server <- function(id,
                        })
                    }
                    
-                   ## 3.8. Custom title input to feature plots ####
+                   ## 3.8. Custom title value for feature plots ####
                    # Must pass either single or multiple custom title output 
                    # depending on the current number of panels on the feature 
                    # plot, or NULL 
@@ -1104,7 +1203,28 @@ plot_module_server <- function(id,
                        })
                    }
                    
-                   ## 3.9. X-axis title for Cell Type Proportion Plots ####
+                   ## 3.9. Hide title settings menu for blended plots ####
+                   # Stopgap solution; custom titles may be supported in the 
+                   # future.
+                   if (plot_type == "feature"){
+                     observe({
+                       observe({
+                         target_id <- "title_settings"
+                       
+                         if (isTruthy(plot_selections$blend())){
+                           hideElement(
+                             id = target_id
+                           )
+                         } else {
+                           showElement(
+                             id = target_id
+                           )
+                         }
+                       })
+                     })
+                   }
+                   
+                   ## 3.10. X-axis title for Cell Type Proportion Plots ####
                    # Aim is to eventually add a custom title input
                    if (plot_type == "proportion"){
                      proportion_x_axis_title <- 
@@ -1123,7 +1243,7 @@ plot_module_server <- function(id,
                    }
                  }
                  
-                 # 4. Show/Hide Menus ------------------------------------------
+                 # 4. Show/hide...  --------------------------------------------
                  ## 4.1. Super Title Menu ####
                  if (plot_type == "feature"){
                    observe({
@@ -1388,6 +1508,93 @@ plot_module_server <- function(id,
                    })
                  }
                  
+                 ## 4.7. Show/hide settings for blended feature plot ####
+                 if (plot_type == "feature"){
+                   ### 4.7.1. Blend checkbox ####
+                   observe({
+                     elem_id = "blend"
+                     
+                     # The blend checkbox should only be visible when 
+                     # two features are entered.
+                     if (length(features()) == 2){
+                       showElement(
+                         id = elem_id
+                         )
+                       } else {
+                         hideElement(
+                           id = elem_id
+                           )
+                         
+                         # Also, set the blend checkbox to FALSE 
+                         # if it was checked
+                         updateCheckboxInput(
+                           session = session,
+                           inputId = elem_id,
+                           value = FALSE
+                         )
+                         }
+                     })
+                   
+                   ### 4.7.2. Blend options window ####
+                   observe({
+                     elem_id <- "blend_options_container"
+                     
+                     if (isTruthy(input$blend)){
+                       showElement(
+                         id = elem_id,
+                         anim = TRUE
+                       )
+                     } else {
+                       hideElement(
+                         id = elem_id,
+                         anim = TRUE
+                       )
+                     }
+                   })
+                   
+                   ### 4.7.3. Custom palette for blend ####
+                   observe({
+                     # When a custom palette is selected, show color inputs to
+                     # choose the palette.
+                     elem_id <- "blend_palette_custom_colors"
+                     if (isTruthy(plot_selections$blend_palette())){
+                       if (plot_selections$blend_palette() == "custom"){
+                         showElement(
+                           id = elem_id,
+                           anim = TRUE
+                         )
+                       } else {
+                         hideElement(
+                           id = elem_id,
+                           anim = TRUE
+                         )
+                       }
+                     } else {
+                       hideElement(
+                         id = elem_id,
+                         anim = TRUE
+                       )
+                     }
+                   })
+                   
+                   ### 4.7.4. Hide ncol slider for blended featureplots ####
+                   # Blended feature plots are unlikely to support a custom
+                   # number of columns in the future.
+                   observe({
+                     target_id <- "ncol_slider"
+                   
+                     if (isTruthy(plot_selections$blend())){
+                       hideElement(
+                         id = target_id
+                         )
+                     } else {
+                       showElement(
+                         id = target_id
+                         )
+                       }
+                     })
+                   }
+                 
                  # 5. Record plot_selections -----------------------------------
                  # list of reactives for storing selected inputs
                  plot_selections <- 
@@ -1481,6 +1688,44 @@ plot_module_server <- function(id,
                        reactive({
                          if (!is.null(input$color_by_feature)){
                            input$color_by_feature
+                         } else NULL
+                       }),
+                     
+                     # Blend features
+                     `blend` =
+                       reactive({
+                         if (isTruthy(input$blend)){
+                           input$blend
+                           } else NULL
+                         }),
+                     
+                     # Layout of blended plot
+                     `blend_layout` =
+                       reactive({
+                         if (isTruthy(input$blend_layout)){
+                           input$blend_layout
+                         } else NULL
+                       }),
+                     
+                     # Palette to use for blending
+                     `blend_palette` =
+                       reactive({
+                         if (isTruthy(input$blend_palette)){
+                           input$blend_palette
+                         } else NULL
+                       }),
+                     
+                     # Process custom blend palette input
+                     `custom_blend_palette` =
+                       reactive({
+                         # Record value when all inputs are present
+                         if (isTruthy(input$blend_custom_low) & 
+                             isTruthy(input$blend_custom_1) & 
+                             isTruthy(input$blend_custom_2)){
+                           # Return a character vector with all three inputs
+                           c(input$blend_custom_low, 
+                             input$blend_custom_1,
+                             input$blend_custom_2)
                          } else NULL
                        }),
                      
@@ -1665,6 +1910,7 @@ plot_module_server <- function(id,
                    ncol_slider <-
                      eventReactive(
                        c(plot_selections$split_by(),
+                         plot_selections$blend(),
                          features_entered(),
                          object()),
                        label = glue("{plot_label}: Make ncol slider"),
@@ -1681,7 +1927,14 @@ plot_module_server <- function(id,
                            # when there *is not* a split by selection
                            condition_multiple <- 
                              length(features_entered()) > 1 & 
-                             plot_selections$split_by() == "none"
+                             plot_selections$split_by() == "none" &
+                             # Do not show slider for blended plots
+                             !isTruthy(plot_selections$blend())
+                           
+                           print("plot_selections$blend()")
+                           print(plot_selections$blend())
+                           print("condition_multiple")
+                           print(condition_multiple)
                           
                            if (condition_single | condition_multiple){
                              # Define min, max, and default values for slider
@@ -2114,8 +2367,31 @@ plot_module_server <- function(id,
                      })
                  }
                  
-                 # 9. Plot -----------------------------------------------------
-                 ## 9.1 Define Features to use ####
+                 # 9. Blend Palette (feature_plots) ----------------------------
+                 # Initialize blend palette selection menu with blend palettes
+                 if (plot_type == "feature"){
+                   if (isTruthy(blend_palettes)){
+                     # Form vector of choices for blend palettes
+                     # (names of blend_palettes list plus custom)
+                     blend_palettes_choice_vector <-
+                       c(names(blend_palettes), "custom")
+                     names(blend_palettes_choice_vector) <-
+                       c(names(blend_palettes), "Custom")
+                     
+                     # Update blend palette menu
+                     updatePickerInput(
+                       session = session,
+                       inputId = "blend_palette",
+                       # Add custom to available choices
+                       choices = blend_palettes_choice_vector,
+                       # Red-blue palette selected by default
+                       selected = "RdBu"
+                       )
+                     }
+                   }
+                 
+                 # 10. Plot -----------------------------------------------------
+                 ## 10.1 Define Features to use ####
                  # For all plots except dimplot, scatterplot, and ridgeplot 
                  # Uses either the general feature entry (features_entered()),
                  # or the separate features text entry depending on whether
@@ -2148,11 +2424,11 @@ plot_module_server <- function(id,
                        })
                  }
                  
-                 ## 9.2. Construct Plot ####
+                 ## 10.2. Construct Plot ####
                  # Plot created based on the type specified when this server 
                  # function is called
                  if (plot_type == "dimplot"){
-                   ### 9.2.1. DimPlot ####
+                   ### 10.2.1. DimPlot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -2215,7 +2491,7 @@ plot_module_server <- function(id,
                      })
                    
                  } else if (plot_type == "feature") {
-                   ### 9.2.2. Feature Plot ####
+                   ### 10.2.2. Feature Plot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -2229,6 +2505,7 @@ plot_module_server <- function(id,
                            # Group by: influences label placement
                            group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
+                           blend = plot_selections$blend(),
                            order = plot_selections$order(),
                            show_label = plot_selections$label(),
                            show_legend = plot_selections$legend(),
@@ -2263,6 +2540,25 @@ plot_module_server <- function(id,
                              } else {
                                palette$categorical_palette()
                              },
+                           # Palette for blended feature plots
+                           blend_palette =
+                             # Use value from blend palette, unless custom
+                             if (plot_selections$blend_palette() != "custom"){
+                               # Input value in plot_selections represents the
+                               # name of the palette. The actual value is 
+                               # retrieved here
+                               blend_palettes[[plot_selections$blend_palette()]]
+                             } else {
+                               # For custom palettes, use the color inputs
+                               if (
+                                 isTruthy(plot_selections$custom_blend_palette())
+                               ){
+                                 plot_selections$custom_blend_palette()
+                                 # If the inputs are not initialized, use the 
+                                 # default palette
+                               } else NULL
+                             },
+                           blend_layout = plot_selections$blend_layout(),
                            reduction = plot_selections$reduction(),
                            show_title = 
                              if (input$title_settings == "none") FALSE else TRUE,
@@ -2272,7 +2568,7 @@ plot_module_server <- function(id,
                          })
                    
                  } else if (plot_type == "violin") {
-                   ### 9.2.3 Violin Plot ####
+                   ### 10.2.3 Violin Plot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -2294,7 +2590,7 @@ plot_module_server <- function(id,
                        })
                    
                  } else if (plot_type == "dot") {
-                   ### 9.2.4. Dot Plot ####
+                   ### 10.2.4. Dot Plot ####
                    # Dot plot using arguments relevant to shiny_dot()
                    plot <- 
                      reactive(
@@ -2317,7 +2613,7 @@ plot_module_server <- function(id,
                            )
                          })
                  } else if (plot_type == "scatter"){
-                   ### 9.2.5. Scatterplot ####
+                   ### 10.2.5. Scatterplot ####
                    # Scatterplot using relevant inputs
                    plot <- 
                      reactive(
@@ -2334,7 +2630,7 @@ plot_module_server <- function(id,
                            )
                        })
                  } else if (plot_type == "ridge"){
-                   ### 9.2.6. Ridge Plot ####
+                   ### 10.2.6. Ridge Plot ####
                      plot <-
                        reactive(
                          label = glue("{plot_label}: Create Plot"),
@@ -2358,7 +2654,7 @@ plot_module_server <- function(id,
                          }
                        )
                  } else if (plot_type == "proportion"){
-                   ### 9.2.7. Stacked bar plot ####
+                   ### 10.2.7. Stacked bar plot ####
                    # For cell type (and other metadata) proportions
                    # Compares proportions of one cell-level metadata category
                    # according to the levels of another category
@@ -2388,7 +2684,7 @@ plot_module_server <- function(id,
                         ) 
                        })
                  } else if (plot_type == "pie"){
-                   ### 9.2.8. Metadata pie chart ####
+                   ### 10.2.8. Metadata pie chart ####
                    # Currently used for patient/sample-level metadata, but could
                    # also be used for cell-level metadata
                    plot <-
@@ -2416,7 +2712,7 @@ plot_module_server <- function(id,
                        })
                    }
                  
-                 ## 9.3. Render plot ####
+                 ## 10.3. Render plot ####
                  # Height and width arguments are left undefined
                  # If undefined, they will use the values from plotOutput, which
                  # respond to the manual dimensions inputs.
@@ -2448,7 +2744,7 @@ plot_module_server <- function(id,
                    plot()
                  })
                  
-                 # 10. Custom x-axis limits server (ridge plots) ---------------
+                 # 11. Custom x-axis limits server (ridge plots) ---------------
                  # Server recieves plot in 9. and outputs the chosen limits
                  if (plot_type == "ridge"){
                    custom_xlim <-
@@ -2458,7 +2754,7 @@ plot_module_server <- function(id,
                      )
                  }
                  
-                 # 11. Download handler ----------------------------------------
+                 # 12. Download handler ----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 
