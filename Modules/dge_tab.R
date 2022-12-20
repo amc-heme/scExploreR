@@ -181,26 +181,43 @@ dge_tab_ui <- function(id,
     ) # End fluidPage
   }
 
-
-# dge_tab_server
-#
-# Arguments
-# id: Used to match server component of module to UI component
-# object: The Seurat Object defined in the main server function
-# metadata_config: the metadata section of the config file corresponding 
-# to the current object.
-# meta_categories: metadata categories retrieved from the config file
-# unique_metadata: a list of all the unique metadata values in the current 
+#' Differential Gene Expression Tab Module
+#'
+#' The server instance of the differential gene expression tab module. One 
+#' instance should be created for each object to avoid input collisions between 
+#' objects with similarly named metadata columns.
+#'
+#' @param id Used to match server function to ui function. "dge" is the 
+#' recommended value to use.
+#' @param object The Seurat Object defined in the main server function.
+#' @param metadata_config The metadata section of the config file imported in 
+#' the main server function.
+#' @param assay_config The assays section of the config file imported in 
+#' the main server function.
+#' @param designated_genes_assay the name of the assay designated in the config 
+#' file as the genes assay. If NULL, the first assay will be assumed to be the 
+#' genes assay.
+#' @param meta_categories a named vector of metadata categories retrieved from the 
+#' config file.
+#' @param unique_metadata a list of all the unique metadata values in the current 
 # object for the categories defined in the config file.
-# meta_choices: a named vector with name-value pairs for the display name of 
-# the metadata category and the key used to access the category in the Seurat 
-# Object. 
-# object_trigger: a reactive trigger that invalidates downstream reactives when 
-# the object is changed.
+#' @param meta_choices a named vector with name-value pairs for the display name 
+#' of the metadata category and the key used to access the category in the 
+#' Seurat Object.
+#' @param valid_features 
+#' @param object_trigger a reactive trigger that invalidates downstream 
+#' reactives when the object is changed.
+#' @param error_list a list of error messages to catch and notifications to 
+#' display to the user based on the errors detected
+#'
+#' @return server code for the differential gene expression tab. Reactive 
+#' expressions are contained within the namespace set by `id`
+#'
 dge_tab_server <- function(id,
                            object,
                            metadata_config,
                            assay_config,
+                           designated_genes_assay,
                            # This will replace metadata_config at some point
                            # (It is derived from the config file and is the only
                            # information used)
@@ -231,8 +248,8 @@ dge_tab_server <- function(id,
           hide_on_render = FALSE
           )
       
-      # Spinner for main panel
-      # Displays until hidden at the end of computation
+      # Spinner for main panel
+      # Displays until hidden at the end of computation
       main_spinner <-
         Waiter$new(
           id = ns("main_panel_spinner"),
@@ -360,8 +377,8 @@ dge_tab_server <- function(id,
         eventReactive(
           show_spinner(),
           label = "DGE: Determine if Metaclusters are present",
-          # All reactives in 3. must run at startup for output to be
-          # properly generated (endless spinner results otherwise)
+          # All reactives in 3. must run at startup for output to be
+          # properly generated (endless spinner results otherwise)
           # TODO: switch ignoreInit to TRUE and try un-suspending the dge table
           ignoreInit = FALSE,
           {
@@ -392,8 +409,8 @@ dge_tab_server <- function(id,
         eventReactive(
           metaclusters_present(),
           label = "DGE: Determine if Thresholding is Requested",
-          # All reactives in 3. must run at startup for output to be
-          # properly generated (endless spinner results otherwise)
+          # All reactives in 3. must run at startup for output to be
+          # properly generated (endless spinner results otherwise)
           # TODO: switch ignoreInit to TRUE and try un-suspending the dge table
           ignoreInit = FALSE,
           {
@@ -416,8 +433,8 @@ dge_tab_server <- function(id,
         eventReactive(
           thresholding_present(),
           label = "DGE: Subset Criteria",
-          # All reactives in 3. must run at startup for output to be
-          # properly generated (endless spinner results otherwise)
+          # All reactives in 3. must run at startup for output to be
+          # properly generated (endless spinner results otherwise)
           ignoreInit = FALSE,
           ignoreNULL = TRUE,
           {
@@ -447,8 +464,8 @@ dge_tab_server <- function(id,
                   }
               
               # Fetch subset selections
-              # Must unpack from reactive to avoid modifying the
-              # reactive with test_selections data
+              # Must unpack from reactive to avoid modifying the
+              # reactive with test_selections data
               subset_criteria <- subset_selections$selections()
               # Add group by metadata category with 
               # classes/groups to subset instructions
@@ -516,8 +533,8 @@ dge_tab_server <- function(id,
                   error_handler(
                     session,
                     cnd_message = cnd$message,
-                    # Uses a list of
-                    # subset-specific errors
+                    # Uses a list of
+                    # subset-specific errors
                     error_list = error_list$subset_errors
                   )
                   
@@ -716,6 +733,13 @@ dge_tab_server <- function(id,
                     # Run presto on the subset, using the group by category
                     wilcoxauc(
                       subset(), 
+                      # Assay: fixed to the designated gene assay for now
+                      seurat_assay =
+                        if (isTruthy(designated_genes_assay())){
+                          designated_genes_assay()
+                          # If designated assay is undefined, use the first
+                          # assay included in the config file.
+                        } else names(assay_config())[[1]],
                       # If metaclusters are requested, use 
                       # "metaclusters" for dge groups
                       group_by = 

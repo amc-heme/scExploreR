@@ -347,11 +347,43 @@ run_config <-
         ),
         
         applet_main_panel(
-          # Create an instance of the assay options UI for all possible assays.
-          # Each UI creates a "card"; all are hidden at first and are shown when 
-          # their corresponding assay is selected by the user. The "id" argument
-          # in lapply is the name of the assay.
+          # A "card" with assay-specific options is displayed for each 
+          # selected assay
           tagList(
+            # Generic assay options (options that apply to all assays)
+            div(
+              class = "optcard single-space-bottom",
+              tags$strong(
+                glue("General Options"),
+                class="large center"
+              ),
+              # Select metadata column to use for patient/sample
+              # level metadata analysis
+              selectInput(
+                inputId = "genes_assay",
+                label = 
+                  "Choose genes assay (for DGE and correlation analyses)",
+                # Only "none" available at first (can only select assays that 
+                # are included by the user). Updated server-side
+                choices = "none",
+                selected = "none",
+                width = "380px"
+              ),
+              
+              selectInput(
+                inputId = "adt_assay",
+                label = 
+                  "Choose ADT assay",
+                choices = "none",
+                selected = "none",
+                width = "380px"
+              ),
+            ),
+            
+            # Create an instance of the assay options UI for all possible
+            # assays. Each UI creates a "card"; all are hidden at first and are
+            # shown when their corresponding assay is selected by the user. The 
+            # "id" argument in lapply is the name of the assay.
             lapply(
               names(object@assays),
               function(assay){
@@ -761,9 +793,9 @@ run_config <-
       module_data$metadata_sortable_not_selected <- non_numeric_cols
       
       # Sortable Data: Reductions ####
-      # Nothing selected by default, and all reductions are choices
-      module_data$reductions_sortable_selected <- character(0)
-      module_data$reductions_sortable_not_selected <- reductions
+      # All reductions are choices, and all are selected by default
+      module_data$reductions_sortable_selected <- reductions
+      module_data$reductions_sortable_not_selected <- character(0)
       
       # Store assays for which ADT thresholding modules have been created 
       # (to avoid duplicates
@@ -1041,27 +1073,14 @@ run_config <-
       ### 3.2.4. Determine designated ADT assay ####
       ADT_assay <-
         reactive({
-          # Get TRUE/FALSE values for whether each assay is an ADT assay
-          is_adt <-
-            sapply(
-              config_data$assays(),
-              function(x){
-                x$designated_adt
-              }
-            )
-          
-          # Return the name of the assay designated as the ADT assay
-          if (any(is_adt == TRUE)){
-            return(
-              names(
-                is_adt[is_adt == TRUE]
-              )
-            )
+          # Return input$adt_assay, unless it is equal to "none"
+          if (input$adt_assay != "none"){
+            input$adt_assay
           } else {
-            # If none are designated, return NULL.
-            return(
-              NULL
-            )
+            # Return NULL when ADT assay is set to "none"
+            # ADT threshold expressions will no longer run (avoiding an error
+            # when "none" is passed forward as the assay name)
+            NULL
           }
         })
       
@@ -1081,11 +1100,75 @@ run_config <-
         }
       })
       
-      ### 3.2.6. RECORD: value of "include numeric metadata" checkbox ####
+      ### 3.2.6. Generic assay options ####
+      #### 3.2.6.1. Update designated assay selections with valid assays ####
+      observe({
+        # Update designated genes assay with valid choices
+        valid_choices_gene <-
+          # None is the only choice when no assays are selected
+          if (!isTruthy(input$assays_selected)){
+            "none"
+          } else {
+            # Otherwise, choose from selected assays (excluding none)
+            input$assays_selected
+          }
+        
+        assay_selected_gene <- isolate({input$genes_assay})
+        
+        updateSelectInput(
+          session = session,
+          inputId = "genes_assay",
+          choices = valid_choices_gene,
+          # Preserve user choice if it is still valid
+          selected = 
+            if (assay_selected_gene %in% valid_choices_gene){
+              assay_selected_gene
+            } else {
+              valid_choices_gene[1]
+            }
+          )
+        
+        # Do the same for the ADT assay
+        valid_choices_adt <-
+          # None is the only choice when no assays are selected
+          if (!isTruthy(input$assays_selected)){
+            "none"
+          } else {
+            # Otherwise, choose from selected assays (including none)
+            c("none", input$assays_selected)
+          }
+        
+        assay_selected_adt <- isolate({input$adt_assay})
+        
+        updateSelectInput(
+          session = session,
+          inputId = "adt_assay",
+          choices = valid_choices_adt,
+          # Preserve user choice if it is still valid
+          selected = 
+            if (assay_selected_adt %in% input$assays_selected){
+              assay_selected_adt
+            } else {
+              valid_choices_adt[1]
+            }
+        )
+      })
+      
+      #### 3.2.6.2. RECORD: Generic assay options ####
+      config_data$other_assay_options <-
+        reactive({
+          list(
+            # Column to be used for patient/sample level metadata
+            `genes_assay` = input$genes_assay,
+            `adt_assay` = input$adt_assay
+          )
+        })
+      
+      ### 3.2.7. RECORD: value of "include numeric metadata" checkbox ####
       config_data$include_numeric_metadata <- 
         reactive({
           input$include_numeric_metadata
-          })
+        })
       
       ## 3.3. Metadata Tab ####
       ### 3.3.1. RECORD: selected metadata ####
@@ -1169,7 +1252,7 @@ run_config <-
           }
         })
       
-      #### 3.3.4.2. General metadata options ####
+      #### 3.3.4.2. RECORD: General metadata options ####
       # Stored separately from config_data$metadata, since many functions in the 
       # main app use the list structure defined in the above reactive 
       # expression, and they would be disrupted if general options were added 
@@ -2102,6 +2185,64 @@ run_config <-
             inputId = "include_numeric_metadata",
             value = session$userData$config()$include_numeric_metadata
             )
+        })
+      
+      ##### 3.7.2.2.3. Designated Genes assay ####
+      # Load from config$other_assay_options
+      observeEvent(
+        session$userData$config(),
+        {
+          config <- session$userData$config()
+          
+          if (isTruthy(config$other_assay_options)){
+            updateSelectInput(
+              session = session,
+              inputId = "genes_assay",
+              choices = names(object@assays),
+              selected = config$other_assay_options$gene_assay
+            )
+          }
+        })
+      
+      ##### 3.7.2.2.4. Designated ADT assay ####
+      observeEvent(
+        session$userData$config(),
+        {
+          # In previous versions of the config app, the ADT assay was stored
+          # in assay-specific options, instead of general assay options.
+          # (config$assays$asssay_i$designated_adt)
+          # Now, it is stored in config$other_assay_options$adt_assay
+          config <- session$userData$config()
+
+          if (!is.null(config$other_assay_options$adt_assay)){
+            # New version: update select input in main app with the designated
+            # ADT assay.
+            updateSelectInput(
+              session = session,
+              inputId = "adt_assay",
+              choices = names(object@assays),
+              selected = config$other_assay_options$adt_assay
+            )
+          } else {
+            # Old version: use `designated_adt` field in list of assays
+            # Loop through each assay in the config file
+            for (assay in names(config$assays)){
+              # If the designated adt field is TRUE for an assay, update the
+              # new select input with the name of the assay selected
+              if (isTruthy(config$assays[[assay]]$designated_adt)){
+                
+                updateSelectInput(
+                  session = session,
+                  inputId = "adt_assay",
+                  choices = c("none", names(object@assays)),
+                  selected = assay
+                )
+
+                # break the for loop
+                break
+              }
+            }
+          }
         })
       
       #### 3.7.2.3. Metadata Tab ####

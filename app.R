@@ -16,9 +16,9 @@ library(sortable, quietly = TRUE, warn.conflicts = FALSE)
 # Reactlog (for debugging)
 library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
 options(
-  shiny.reactlog = TRUE#, 
+  shiny.reactlog = TRUE, 
   # Full stack trace for errors 
-  #shiny.fullstacktrace = TRUE
+  shiny.fullstacktrace = TRUE
   )
 
 # Logging and performance monitoring
@@ -720,7 +720,7 @@ server <- function(input, output, session){
       print(dataset_change$depend())
       })
   
-  ## 1.4. Load/update object ####
+  ## 1.4. Load/update object ####
   observeEvent(
     # Loads when the reactive trigger in "Loading Conditional" is activated
     dataset_change$depend(),
@@ -765,15 +765,26 @@ server <- function(input, output, session){
     {
       if (!is.null(config()$adt_thresholds)){
         # First, determine which assay is designated as the ADT assay
-        is_designated <-
-          sapply(
-            config()$assays, 
-            # Fetch value of designated_adt for each assay (TRUE or FALSE)
-            function(assay) assay$designated_adt
+        # Method depends on version of config file
+        # Older versions have this info in the assays section
+        # Newer versions have the info in other_assay_options$adt_assay
+        # Test for new version (older versions do not have this section)
+        if (isTruthy(config()$other_assay_options)){
+          # For new version, simply fetch the designated assay from this section
+          designated_ADT_assay <- config()$other_assay_options$adt_assay
+        } else {
+          # Method for old version
+          is_designated <-
+            sapply(
+              config()$assays, 
+              # Fetch value of designated_adt for each assay (TRUE or FALSE)
+              function(assay) assay$designated_adt
             )
+          
+          # Subset for assays where designated_adt is TRUE
+          designated_ADT_assay <- names(config()$assays)[is_designated]
+        }
         
-        # Subset for assays where designated_adt is TRUE
-        designated_ADT_assay <- names(config()$assays)[is_designated]
         
         # Only proceed if one assay has been designated (not possible to 
         # designate multiple in app, but file could be modified to do so)
@@ -883,7 +894,9 @@ server <- function(input, output, session){
         config()$metadata
         })
   
-  ## 2.2. Assay_config ####
+  ## 2.2. Assay Information ####
+  ### 2.2.1. Assay_config ####
+  # Assay-specific options in config file
   assay_config <-
     eventReactive(
       config(),
@@ -893,9 +906,20 @@ server <- function(input, output, session){
         config()$assays
         })
 
-  ## 2.3. Valid features ####
-  # Create a list of valid features using the assays defined above
+  ### 2.2.2. Designated genes assay ####
+  # Only in newer config files. If not found, NULL is passed forward and 
+  # the first assay is assumed to be genes. 
+  designated_genes_assay <-
+    eventReactive(
+      config(),
+      label= "assay_config",
+      ignoreNULL = FALSE,
+      {
+        config()$other_assay_options$gene_assay
+      })
   
+  ## 2.3. Valid features Expressions ####
+  # Create a list of valid features using the assays defined above
   ### 2.3.1 Determine whether to include numeric metadata in feature list ####
   # Determination depends on the value of `include_numeric_metadata` 
   # in the config file. 
@@ -920,7 +944,7 @@ server <- function(input, output, session){
   # May be set in the config app in the future
   numeric_metadata_title <- "Metadata Features"
   
-  ### 2.3.2 Create list of valid features
+  ### 2.3.2 valid_features ####
   valid_features <-
     eventReactive(
       c(assay_config(), object()),
@@ -1021,8 +1045,8 @@ server <- function(input, output, session){
       label = "unique_metadata",
       ignoreNULL = FALSE,
       {
-        # The unique values for each metadata category listed in the config 
-        # file will be stored as vectors in a list 
+        # The unique values for each metadata category listed in the config 
+        # file will be stored as vectors in a list 
         unique_metadata <- list()
         
         # Store unique values for each metadata category entered
@@ -1157,8 +1181,6 @@ server <- function(input, output, session){
     #ignoreNULL = FALSE,
     #ignoreInit = TRUE,
     {
-      print("Rendering new data dictionary")
-      
       # Gather parameters used by document
       params <-
         list(
@@ -1166,10 +1188,15 @@ server <- function(input, output, session){
           valid_features = valid_features()
         )
       
+      print("R studio pandoc check")
       # Execute Rmarkdown document
       if (any(names(browser_config) == "RSTUDIO_PANDOC")) {
         Sys.setenv(RSTUDIO_PANDOC = browser_config$RSTUDIO_PANDOC)
       }
+      print("done")
+      
+      print("Rendering new data dictionary")
+      
       rmarkdown::render(
         # Rmd document to render
         input = "./Auto_Dictionary.Rmd",
@@ -1179,8 +1206,12 @@ server <- function(input, output, session){
         params = params,
         # Set up a new environment that is the child of the global envrionment
         # (isolates document environment from app)
-        envir = new.env(parent = globalenv())
+        envir = new.env(parent = globalenv()),
+        # Do not print rendering messages to console
+        quiet = TRUE
         )
+      
+      print("Complete")
     })
   
   ## 2.12. Patient/sample level metadata category ####
@@ -1334,6 +1365,7 @@ server <- function(input, output, session){
         object = object,
         metadata_config = metadata_config,
         assay_config = assay_config,
+        designated_genes_assay = designated_genes_assay,
         meta_categories = meta_categories,
         unique_metadata = unique_metadata,
         meta_choices = meta_choices,
@@ -1358,6 +1390,8 @@ server <- function(input, output, session){
         id = glue("{current_key}_corr"),
         object = object,
         metadata_config = metadata_config,
+        assay_config = assay_config,
+        designated_genes_assay = designated_genes_assay,
         meta_categories = meta_categories,
         unique_metadata = unique_metadata,
         n_cells_original = n_cells_original,

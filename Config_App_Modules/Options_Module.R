@@ -79,15 +79,6 @@ options_ui <- function(id,
             label = 
               "Include assay name on plots? (This is usually not required for 
               the default assay in your data)"
-            ),
-          
-          # Designate the assay as the ADT assay 
-          # This can only be enabled for one assay at a time
-          # checking the box on one assay will cause the box to be disabled
-          # on other assays
-          checkboxInput(
-            inputId = ns("designate_adt"),
-            label = "Designate as ADT (surface protein) assay",
             )
         )
       )
@@ -438,13 +429,14 @@ options_server <-
                     if (isTruthy(config_individual$suffix_human)) TRUE else FALSE
                 )
                 
-                # Designated ADT assay
-                updateCheckboxInput(
-                  session,
-                  inputId = "designate_adt",
-                  value =
-                    if (isTruthy(config_individual$designated_adt)) TRUE else FALSE
-                )
+                # Designated ADT assay (no longer used; updated in
+                # main interface)
+                # updateCheckboxInput(
+                #   session,
+                #   inputId = "designate_adt",
+                #   value =
+                #     if (isTruthy(config_individual$designated_adt)) TRUE else FALSE
+                # )
               }
             })
           
@@ -642,8 +634,8 @@ options_server <-
                 `key` = Key(object[[card_name]]),
                 `suffix_human` = 
                   if (input$include_label == TRUE) input$hr else "",
-                `dropdown_title` = input$hr,
-                `designated_adt` = input$designate_adt
+                `dropdown_title` = input$hr#,
+                #`designated_adt` = input$designate_adt
               )
             })
           

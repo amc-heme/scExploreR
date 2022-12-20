@@ -1,13 +1,19 @@
-# Correlations tab module
- 
-# corr_tab_ui
-# Arguments
-# id: ID to use for module elements. Should be equal to "corr".
-# unique_metadata: a list of the unique metadata values for each of the metadata 
-# categories listed in the config file. This is generated in the main 
-# server function at startup.
-# metadata_config: the metadata section of the config file imported 
-# in the main server function
+#' Correlations Tab Module
+#'
+#' Module UI function for the correlations tab. This UI function contains 
+#' reactive expressions and therefore must be called within a reactive 
+#' expression.
+#'
+#' @param id ID to use for module elements. It is reccomended for this to be 
+#' equal to "corr".
+#' @param unique_metadata a list of the unique metadata values for each of the 
+#' metadata categories listed in the config file. This is generated in the main 
+#' server function at startup.
+#' @param metadata_config the metadata section of the config file imported in 
+#' the main server function
+#'
+#' @return A list of `shiny.tag` elements forming the UI for the correlations tab.
+#' 
 corr_tab_ui <- function(id,
                         unique_metadata,
                         metadata_config
@@ -135,38 +141,56 @@ corr_tab_ui <- function(id,
   ) # End fluidPage
 }
 
-# corr_tab_server
-# Arguments
-# id: Used to match server function to ui function. "corr" is the recommended 
-# value to use
-# object: The Seurat Object defined in the main server function
-# metadata_config: metadata section of the config file imported in the main server function
-# unique_metadata: a list of the unique metadata values for each of the metadata 
+#' Correlations Tab Module
+#' 
+#' The server instance of the correlations tab module. One instance should be 
+#' created for each object to avoid input collisions between objects with 
+#' similarly named metadata columns.
+#'
+#' @param id Used to match server function to ui function. "corr" is the recommended 
+# value to use.
+#' @param object The Seurat Object defined in the main server function.
+#' @param metadata_config the metadata section of the config file imported in 
+#' the main server function.
+#' @param assay_config the assays section of the config file imported in the
+#'  main server function.
+#' @param designated_genes_assay the name of the assay designated in the config 
+#' file as the genes assay. If NULL, the first assay will be assumed to be the 
+#' genes assay.
+#' @param meta_categories a named vector of metadata categories retrieved from the 
+#' config file.
+#' @param unique_metadata A list of the unique metadata values for each of the metadata 
 # categories listed in the config file. This is generated in the main server function 
 # at startup.
-# n_cells_original: number of cells in full Seurat object. Calculated in main 
+#' @param n_cells_original Number of cells in full Seurat object. Calculated in main 
 # server function.
-# nonzero_threshold: the minimum acceptable proportion of cells with nonzero reads 
-# for the feature used to compute correlations. This is defined in the 
-# main server function.
-# meta_choices: a named vector giving the metadata categories defined in the 
+#' @param nonzero_threshold The minimum acceptable proportion of cells with nonzero reads
+#' for the feature used to compute correlations. This is defined in the main server
+#' function.
+#' @param meta_choices a named vector giving the metadata categories defined in the 
 # config file, with their respective labels for display in dropdown menus. This 
 # is defined in the main server function.
-# valid features: a list giving the valid features that can be selected from each
+#' @param valid_features a list giving the valid features that can be selected from each
 # assay. This is generated from the config file in the main server function
-# error_list: a list of error messages to print custom notifications for, 
+#' @param error_list a list of error messages to print custom notifications for, 
 # if they are encountered while the correlations table is being calculated. This 
 # is defined in the main server function.
-# update_features: a reactive trigger created by the local makeReactiveTrigger() 
+#' @param update_features a reactive trigger created by the local makeReactiveTrigger() 
 # function. The trigger is created in the main server function and ensures that
 # the feature selection input is updated after the input is created (input will
 # have no choices otherwise.)
-# object_trigger: a reactive trigger that invalidates downstream reactives when 
+#' @param object_trigger a reactive trigger that invalidates downstream reactives when 
 # the object is changed.
+#'
+#' @return server code for the correlations tab. Reactive expressions are contained within 
+#' the namespace set by `id`
+#'
 corr_tab_server <- function(id,
                             object,
                             metadata_config,
-                            # This will replace metadata_config at some point
+                            assay_config,
+                            designated_genes_assay,
+                            # meta_categories will replace metadata_config at some point
                             # (It is derived from the config file and is the 
                             # only information used)
                             meta_categories,
@@ -222,8 +246,20 @@ corr_tab_server <- function(id,
                      label = ns("subset_error")
                      )
                  
-                 # 1. Render Choices for Feature selection ---------------------
-                 # 1.1. Render Choices ####
+                 # 1. Define assay to use for correlation computation
+                 assay_used <- 
+                   reactive({
+                     # If a designated gene assay is defined, use that assay.
+                     # Otherwise, use the first assay included in the config file.
+                     if (isTruthy(designated_genes_assay())){
+                       designated_genes_assay()
+                     } else {
+                       names(assay_config())[[1]]
+                     }
+                   })
+                 
+                 # 2. Render Choices for Feature selection ---------------------
+                 # 2.1. Render Choices ####
                  # Reactive - updates in response to change in dataset 
                  observeEvent(
                    # Responds to loading of update and creation of UI (to ensure
@@ -232,22 +268,26 @@ corr_tab_server <- function(id,
                    c(valid_features(), update_features$depend()),
                    label = "Render choices for feature selection",
                    {
+                     # Features list uses the label of the assay instead of the
+                     # assay key. Fetch the label from the config file:
+                     target_assay_label <-
+                       assay_config()[[assay_used()]]$dropdown_title
+                     
                      updateSelectizeInput(
                        session,
                        inputId = "feature_selection",
-                       # Include only genes for now (this will be 
-                       # the first row of valid_features)
-                       choices = valid_features()[[1]],
+                       # Include only genes (genes assay determined in 1.)
+                       choices = valid_features()[[target_assay_label]],
                        selected = character(0),
                        server = TRUE
                        )
                    })
                  
-                 # 2. Process Inputs -------------------------------------------
+                 # 3. Process Inputs -------------------------------------------
                  # Inputs are packaged into reactive values for proper 
                  # processing in downstream modules and functions
                  
-                 ## 2.1. Gene selection for correlation analysis ####
+                 ## 3.1. Gene selection for correlation analysis ####
                  corr_main_gene <- 
                    eventReactive(
                      input$feature_selection,
@@ -264,11 +304,11 @@ corr_tab_server <- function(id,
                        return(sub("rna_", "", input$feature_selection))
                        })
                  
-                 ## 2.2. Inputs in subset selections menus ####
+                 ## 3.2. Inputs in subset selections menus ####
                  # Module to record selections made in for subsetting based on 
                  # metadata categories
                  
-                 ### 2.2.1 Create module instances for each dataset
+                 ### 3.2.1 Create module instances for each dataset
                  subset_selections <- 
                    subset_selections_server(
                      # Use key of dataset in the id to avoid collisions
@@ -280,12 +320,12 @@ corr_tab_server <- function(id,
                      valid_features = valid_features
                      )
                  
-                 # 3. Computation of Correlation Table ####
+                 # 4. Computation of Correlation Table ####
                  # A chain of reactive expressions is used, beginning with a 
                  # reactive showing the spinners after the submit button is 
                  # pressed.
                  
-                 ## 3.1. Process Submit button input ####
+                 ## 4.1. Process Submit button input ####
                  submit_button <- 
                    eventReactive(
                      input$submit,
@@ -329,7 +369,7 @@ corr_tab_server <- function(id,
                        }
                      )
                  
-                 ## 3.2 Define gene to display in UI ####
+                 ## 4.2 Define gene to display in UI ####
                  # The gene to display is equal to the feature selected
                  # when the submit button is pressed. 
                  corr_header_gene <-
@@ -342,7 +382,7 @@ corr_tab_server <- function(id,
                        corr_main_gene() 
                      })
 
-                 ## 3.3 Form subset based on chosen criteria ####
+                 ## 4.3 Form subset based on chosen criteria ####
                  # Initialize variables to control reset of subset when the 
                  # object is changed
                  
@@ -401,8 +441,8 @@ corr_tab_server <- function(id,
                              error_handler(
                                session,
                                cnd_message = cnd$message,
-                               # Uses a list of
-                               # subset-specific errors
+                               # Uses a list of
+                               # subset-specific errors
                                error_list = error_list$subset_errors
                              )
                              
@@ -442,7 +482,7 @@ corr_tab_server <- function(id,
                        subset
                        })
                  
-                 ## 3.3.a. Check Memory usage after making subset
+                 ## 4.3.a. Check Memory usage after making subset
                  observeEvent(
                    label = "Corr: Subset Memory Query",
                    subset(),
@@ -455,7 +495,7 @@ corr_tab_server <- function(id,
                        )
                    })
                  
-                 ## 3.4. Correlations Tab Continuation Conditional ####
+                 ## 4.4. Correlations Tab Continuation Conditional ####
                  # After subset is computed, downstream computations should only 
                  # proceed if the subset has been created as a result of 
                  # pressing the submit button, and not as a result of the reset 
@@ -472,7 +512,7 @@ corr_tab_server <- function(id,
                    # Does not work properly when ignoreInit == TRUE
                    ignoreInit = FALSE,
                    {
-                     # print("3.4. Continuation Conditional")
+                     # print("4.4. Continuation Conditional")
                      
                      # Continue only if the conditions below are met
                      if (
@@ -516,7 +556,7 @@ corr_tab_server <- function(id,
                        }
                    })
                  
-                 ## 3.5. Determine if the subset created is a subset ####
+                 ## 4.5. Determine if the subset created is a subset ####
                  is_subset <- 
                    eventReactive(
                      continue$depend(),
@@ -524,7 +564,7 @@ corr_tab_server <- function(id,
                      ignoreInit = TRUE,
                      label = "Corr: Determine if Object is a Subset",
                      {
-                       # print("3.5 is_subset")
+                       # print("4.5 is_subset")
                        
                        # Print an error if the subset does not exist or is NULL
                        validate(
@@ -546,7 +586,7 @@ corr_tab_server <- function(id,
                        n_cells_original() != n_cells_subset
                        })
                  
-                 ## 3.6. Subset Stats Module ####
+                 ## 4.6. Subset Stats Module ####
                  subset_stats_server(
                    id = "stats",
                    tab = "corr",
@@ -559,7 +599,7 @@ corr_tab_server <- function(id,
                    nonzero_threshold = nonzero_threshold
                  )
                  
-                 ## 3.7. Compute correlation tables ####
+                 ## 4.7. Compute correlation tables ####
                  # Calculations used depend on whether the object is a subset
                  corr_table_content <-
                    eventReactive(
@@ -571,28 +611,30 @@ corr_tab_server <- function(id,
                      {
                        log_session(session)
                        log_info("Corr tab: Begin correlation computations")
-                       # print("3.7 Compute Correlation Tables")
+                       # print("4.7 Compute Correlation Tables")
                        if (is_subset() == TRUE){
                          # Subset is selected: compute tables for full object 
                          # and subset, then merge
                          # Full object
                          table_full <- 
                            compute_correlation(
-                             gene_selected = corr_main_gene,
-                             object = object,
+                             gene_selected = corr_main_gene(),
+                             object = object(),
                              colnames =
                                c("Feature",
-                                 "Correlation_Global")
+                                 "Correlation_Global"),
+                             seurat_assay = assay_used()
                            )
                          
                          # Subset
                          table_subset <- 
                            compute_correlation(
-                             gene_selected = corr_main_gene,
-                             object = subset,
+                             gene_selected = corr_main_gene(),
+                             object = subset(),
                              colnames = 
                                c("Feature",
-                                 "Correlation_Subset")
+                                 "Correlation_Subset"),
+                             seurat_assay = assay_used()
                            )
                          
                          # Merge individual tables and arrange in descending 
@@ -613,9 +655,10 @@ corr_tab_server <- function(id,
                          # full data only (which is the "subset" in this case)
                          corr_table <- 
                            compute_correlation(
-                             gene_selected = corr_main_gene,
-                             object = subset,
-                             colnames = c("Feature","Correlation_Subset")
+                             gene_selected = corr_main_gene(),
+                             object = subset(),
+                             colnames = c("Feature","Correlation_Subset"),
+                             seurat_assay = assay_used()
                            )
                        }
                        
@@ -626,7 +669,7 @@ corr_tab_server <- function(id,
                        corr_table
                      })
 
-                 ## 3.8. Store table in DT format for display in app ####
+                 ## 4.8. Store table in DT format for display in app ####
                  # Reactive trigger to remove spinners upon completion
                  remove_spinners <- makeReactiveTrigger()
                  corr_DT_content <- 
@@ -635,7 +678,7 @@ corr_tab_server <- function(id,
                      label = "Corr: DT Content",
                      ignoreNULL = FALSE,
                      {
-                       # print("3.8. DT Table")
+                       # print("4.8. DT Table")
                        # Define header for datatable using HTML
                        if (is_subset() == TRUE){
                          # If a subset is selected, the header will have three 
@@ -716,7 +759,7 @@ corr_tab_server <- function(id,
                        DT
                        })
                  
-                 ## 3.9 Hide spinners after the DT datatable is computed ####
+                 ## 4.9 Hide spinners after the DT datatable is computed ####
                  observeEvent(
                    remove_spinners$depend(),
                    label="Corr: Hide Spinners",
@@ -733,8 +776,8 @@ corr_tab_server <- function(id,
                      showElement(id = "main_panel_ui")
                      })
                  
-                 # 4. Correlations UI ------------------------------------------
-                 ## 4.1. Subset Stats UI ####
+                 # 5. Correlations UI ------------------------------------------
+                 ## 5.1. Subset Stats UI ####
                  subset_stats_content <-
                    eventReactive(
                      submit_button(),
@@ -749,7 +792,7 @@ corr_tab_server <- function(id,
                          )
                        })
                  
-                 ## 4.2. Correlations scatterplot UI ####
+                 ## 5.2. Correlations scatterplot UI ####
                  # Computed separately from main UI since it responds to a 
                  # different user input (clicking table)
                  scatterplot_ui <- 
@@ -800,7 +843,7 @@ corr_tab_server <- function(id,
                          }
                        })
                  
-                 ## 4.3. UI for customizing the scatterplot ####
+                 ## 5.3. UI for customizing the scatterplot ####
                  # This appears in the sidebar and displays a list of options 
                  # used for customizing the scatterplot
                  scatter_options <- 
@@ -843,8 +886,8 @@ corr_tab_server <- function(id,
                            # Download button for scatterplot (full data)
                            downloadButton(
                              outputId = ns("download_scatter_global"),
-                             # Label changes based on whether 
-                             # a subset is selected
+                             # Label changes based on whether 
+                             # a subset is selected
                              label = if (is_subset() == TRUE){
                                "Download Scatterplot (Full Data)"
                                } else {
@@ -863,7 +906,7 @@ corr_tab_server <- function(id,
                          } # End if statement
                        })
                  
-                 ## 4.4. Download Button for Table ####
+                 ## 5.4. Download Button for Table ####
                  downloads_ui <- 
                    eventReactive(
                      c(submit_button(),
@@ -888,7 +931,7 @@ corr_tab_server <- function(id,
                            } # End else
                        })
                  
-                 # 5. Server Value for Rows Selected from Table ----------------
+                 # 6. Server Value for Rows Selected from Table ----------------
                  # Creates a reactive boolean that is TRUE when the user has 
                  # selected  a gene in the correlations table, and FALSE if not. 
                  # This was created to avoid an error in the display of 
@@ -921,13 +964,13 @@ corr_tab_server <- function(id,
                        })
                  
                  
-                 # 6. Plot of feature selected from table ----------------------
-                 ## 6.1. Correlation scatterplot for subset
-                 # Computes a scatterplot for a secondary gene selected by the 
-                 # user from the correlations table.
-                 # Row index of user selection from table is stored in 
-                 # input$corr_table_rows_selected. eventReactive responds to
-                 # input$corr_table_rows_selected and rows_selected()
+                 # 7. Plot of feature selected from table ----------------------
+                 ## 7.1. Correlation scatterplot for subset
+                 # Computes a scatterplot for a secondary gene selected by the 
+                 # user from the correlations table.
+                 # Row index of user selection from table is stored in 
+                 # input$corr_table_rows_selected. eventReactive responds to
+                 # input$corr_table_rows_selected and rows_selected()
                  # rows_selected()  prevents the code from running when the 
                  # user has de-selected values 
                  subset_scatterplot <- 
@@ -958,7 +1001,7 @@ corr_tab_server <- function(id,
                          }
                        })
                  
-                 ## 6.2. Correlation plot for full data
+                 ## 7.2. Correlation plot for full data
                  full_data_scatterplot <- 
                    eventReactive(
                      c(input$corr_table_rows_selected, 
@@ -989,7 +1032,7 @@ corr_tab_server <- function(id,
                          }
                        })
                  
-                 # 7. Render Correlation UI, table, scatterplot, and statistics ----
+                 # 8. Render Correlation UI, table, scatterplot, and statistics ----
                  # Main panel UI
                  output$corr_header_gene <- 
                    renderText({
@@ -1038,7 +1081,7 @@ corr_tab_server <- function(id,
                      corr_DT_content()
                      })
                  
-                 # 8. Download Handlers ----------------------------------------
+                 # 9. Download Handlers ----------------------------------------
                  # Correlations Table
                  output$download_table <- 
                    downloadHandler(
