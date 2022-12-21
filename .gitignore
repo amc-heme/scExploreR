@@ -11,6 +11,7 @@ Seurat_Objects*
 Downloaded_Plots*
 www/Shiny_Vignette.Rmd
 www/Auto_Dictionary.html
+www/images/*
 *.pptx
 *.docx
 Help_Drafts*
