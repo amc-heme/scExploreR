@@ -205,7 +205,7 @@ run_config <-
         ),
         selectInput(
           inputId = "preview_type",
-          label = "Content for dataset preview",
+          label = "Content for Dataset Preview",
           choices = 
             c(
               "None" = "none", 
@@ -219,7 +219,7 @@ run_config <-
             id = "preview_dimplot_interface",
             div(
               class = "compact-options-container",
-              style = "margin-bottom: 10px;",
+              style = "margin-bottom: 150px;",
               tags$h3(
                 "Dimplot Preview",
                 class = "container-header"
@@ -261,6 +261,7 @@ run_config <-
             ),
           div(
             id = "preview_image_interface",
+            style = "margin-bottom: 150px;",
             div(
               class = "compact-options-container",
               style =
@@ -1275,7 +1276,7 @@ run_config <-
           label = "Metadata: define sortable",
           {
             tagList(
-              tags$b("Choose Metadata to Include in App"),
+              tags$b("Choose Metadata to Include:"),
               bucket_list(
                 header = 
                   "Drag metadata variables to \"Included Metadata\" to include.
@@ -1407,7 +1408,7 @@ run_config <-
           label = "Reductions: define sortable",
           {
             tagList(
-              tags$b("Choose Reductions to Include in App"),
+              tags$b("Choose Reductions to Include:"),
               bucket_list(
                 header = 
                   "Drag reductions categories to the \"Included Reductions\" 

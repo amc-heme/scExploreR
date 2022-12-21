@@ -9,7 +9,7 @@
   border-radius: 8px;
   /* Defines max height of panel and creates a scrollbar when this is exceeded */
   overflow-y: auto;
-  /* Setting the bottom margin to 0 allows for */
+  min-height: 80vh;
   max-height: 90vh;
   margin-bottom: 0px;
 }
