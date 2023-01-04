@@ -435,8 +435,8 @@ run_config <-
                 selectInput(
                   inputId = "patient_colname",
                   label = 
-                    "Patient ID column (optional, used for patient-level 
-                metadata analysis)",
+                    "Patient/Sample Metadata Variable (optional, used
+                    for patient-level metadata analysis)",
                 # Can select "none" or any categorical metadata column
                 choices = c("none", non_numeric_cols),
                 selected = NULL,
@@ -1412,8 +1412,8 @@ run_config <-
               bucket_list(
                 header = 
                   "Drag reductions categories to the \"Included Reductions\" 
-              column to include. Reductions will appear in app menus in 
-              the order they appear in the right-hand column.",
+                  column to include. Reductions will appear in app menus in 
+                  the order they appear in the right-hand column.",
               orientation = "horizontal",
               group_name = "reductions_bucket",
               # Use the default class, and a class specific to this app

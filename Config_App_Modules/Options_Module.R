@@ -137,7 +137,7 @@ options_ui <- function(id,
         textInput(
           inputId = ns("hr"),
           label = 
-            "Set label for metadata column (will appear 
+            "Set label for metadata variable (will appear 
             as entered in app interface)",
           width = "380px",
           value = 
@@ -167,7 +167,7 @@ options_ui <- function(id,
               ),
             tags$p(
               "(Choices for possible values in the metadata 
-              column will appear in the app)",
+              variable will appear in the app)",
               class = "center small"
             ),
             # Metadata groups interface
