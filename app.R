@@ -41,6 +41,7 @@ library(viridisLite, quietly = TRUE, warn.conflicts = FALSE)
 library(colourpicker, quietly = TRUE, warn.conflicts = FALSE)
 library(ggsci, quietly = TRUE, warn.conflicts = FALSE)
 library(scales, quietly = TRUE, warn.conflicts = FALSE)
+library(patchwork, quietly = TRUE, warn.conflicts = FALSE)
 library(cowplot, quietly = TRUE, warn.conflicts = FALSE)
 
 # Additional backend packages
@@ -223,7 +224,7 @@ error_list <-
         error_data(
           message = "cannot allocate vector of size",
           notification_ui = 
-            icon_notification_ui_2(
+            icon_notification_ui(
               icon_name = "skull-crossbones",
               tagList(
                 "Memory Error: RAM is insufficient for analyzing the specified 
@@ -240,7 +241,7 @@ error_list <-
         error_data(
           message = "vector memory exhausted",
           notification_ui = 
-            icon_notification_ui_2(
+            icon_notification_ui(
               icon_name = "skull-crossbones",
               "Error: vector memory exhausted. If this issue persists, please ",
               github_link("contact us"),
@@ -254,7 +255,7 @@ error_list <-
         error_data(
           message = "No cells found",
           notification_ui = 
-            icon_notification_ui_2(
+            icon_notification_ui(
               icon_name = "skull-crossbones",
               "No cells were found matching the defined subset criteria. Please 
               check the subset dropdowns for mutually exclusive selections. If
@@ -271,7 +272,7 @@ error_list <-
         error_data(
           message = "unexpected end of input",
           notification_ui = 
-            icon_notification_ui_2(
+            icon_notification_ui(
               icon_name = "skull-crossbones",
               "Invalid format for string subsetting entry. Please check that all 
               opened parentheses have been closed and try again. If the issue
@@ -289,7 +290,7 @@ error_list <-
         error_data(
           message = "INCOMPLETE_STRING",
           notification_ui = 
-            icon_notification_ui_2(
+            icon_notification_ui(
               icon_name = "skull-crossbones",
               "String subsetting entry has an incomplete string. Please make 
               sure all opening quotation marks have a matching closing quotation
@@ -308,7 +309,7 @@ error_list <-
         error_data(
           message = "unexpected",
           notification_ui = 
-            icon_notification_ui_2(
+            icon_notification_ui(
               icon_name = "skull-crossbones",
               "Invalid format for string subsetting entry. Please check your 
               entry and try again. If the issue persists, please email us with 

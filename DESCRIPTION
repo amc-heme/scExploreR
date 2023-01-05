@@ -1,0 +1,11 @@
+Package: scExploreR
+Type: Package
+Title: scExploreR
+Version: 0.6.0
+Author: William Showers, Krysta Engel, Austin Gillen
+Maintainer: Heme Informatics Group <heme.informatics@ucdenver.edu>
+Description: Shiny app for scRNA-seq visualization and analysis
+License:
+LazyData: FALSE
+Imports:
+Suggests:

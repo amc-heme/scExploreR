@@ -1,77 +1,20 @@
-### Icon Notification Function ####
-# (updated for error handling functions) 
-# Defines the HTML to be printed within a notification box. The function takes 
-# the name of a Font Awesome icon and a message as input, and will display the 
-# icon and the message inline. The message is defined using
-# any number of UI elements. 
-icon_notification_ui_2 <- 
-  function(
-    icon_name,
-    ...
-    ){
-    span(
-      # Icon (inline and enlarged)
-      icon(
-        icon_name, 
-        style="display: inline-block; font-size: 1.7em;"
-        ),
-      # Message (inline with icon, font slightly enlarged)
-      span(
-        tagList(...),
-        style="font-size: 1.17em;"
-        )
-      )
-    }
-###
-
-### Github_link ####
-# creates an <a> tag with a link to the issues page of the github repository 
-github_link <- 
-  function(
-    display_text,
-    href="https://github.com/amc-heme/DataExploreShiny/issues"
-    ){
-    tags$a(
-      display_text,
-      href=href,
-      # Opens link in new tab
-      target="_blank", 
-      # Cybersecurity measure
-      rel="noopener noreferrer"
-      )
-    }
-
-# error_data() ####
-# error_data() will store information for an error message to 
-# be handled, and the desired Shiny notification to show for that error.
-# The argument notification_ui should be a shiny.tag or shiny.tag.list object, 
-# and it is recommended to use the icon_notification_ui() function defined 
-# in this source file. 
-error_data <- 
-  function(
-    message,
-    notification_ui,
-    notification_id
-    ){
-    # Create a list to store information on the error, including 
-    # the message and the notification UI
-    error <- list()
-    error$err_message <- message
-    error$notification <- notification_ui
-    error$notification_id <- notification_id
-    # Return the error info
-    error
-    }
-
-# Error Handler Function #### 
-#Given an error condition message returned in a tryCatch() 
-#statement and a list connecting error messages to UI for shiny notifications,
-#error_handler() will compare the error condition to the errors in the list and 
-#show the notification that matches the error. If no matches are found, the 
-#function will display a generic notification giving the error code and the link
-#to the github issues page. The URL of the issues page can be specified with the
-#issue_href argument. The duration the message remains on the screen can be set 
-#and is NULL by default; this will result in a persistent notification. 
+#' Error Handler Function
+#' 
+#' Compares an error condition to the errors in the provided error_list and 
+#' shows the notification that matches the error. If no matches are found, the 
+#' function will display a generic notification giving the error text and the 
+#' link to the github issues page.  
+#' 
+#' @param session Shiny session object.
+#' @param cnd_message the error message read by tryCatch.
+#' @param error_list a list of list objects generated with the error_data() 
+#' function from this package, connecting error messages to UI for shiny 
+#' notifications.
+#' @param issue_href The URL of the github issues page
+#' @param duration the duration for which the notification displays. The default 
+#' is NULL, which results in the notification remaining until dismissed.
+#'
+#' @noRd
 error_handler <- 
   function(
     session,
@@ -117,7 +60,7 @@ error_handler <-
     if (error_match == FALSE){
       #Define UI for generic error
       other_err_ui <- 
-        icon_notification_ui_2(
+        icon_notification_ui(
           icon_name = "skull-crossbones",
           glue("Error: {cnd_message}. Please "),
           github_link("report this issue"),

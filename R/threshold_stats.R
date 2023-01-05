@@ -26,6 +26,8 @@
 #' `n_below`: Number of cells with expression below the threshold value.
 #' `percent_below`: Percentage of cells with expression below the threshold
 #' value.
+#' 
+#' @noRd
 threshold_stats <- 
   function(
     object,

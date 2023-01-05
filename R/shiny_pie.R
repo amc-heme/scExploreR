@@ -1,5 +1,3 @@
-library(dplyr)
-
 #' Pie charts for summarizing metadata in object
 #'
 #' shiny_pie() summarizes the object by showing the number of patients 
@@ -22,6 +20,7 @@ library(dplyr)
 #' @param plot_title If defined, the value entered will be displayed as the plot
 #' title, if `show_title` is TRUE.
 #'
+#' @noRd
 shiny_pie <- 
   function(
     object,

@@ -16,6 +16,7 @@
 #' If FALSE (the default) the panel starts in the closed position
 #' @param transparent If TRUE, panel will appear transparent (default is FALSE).
 #'
+#' @noRd
                               
 collapsible_panel <- 
   function(

@@ -12,7 +12,9 @@
 #' @param display_coeff (Reactive) if TRUE, show the correlation coefficient 
 #' as the title of the plot (default behavior).
 #'
-#' @examples
+#' @return a ggplot2 object with a scatterplot created from the Seurat object according to user specifications.
+#' 
+#' @noRd
 shiny_scatter <- function(object,
                           feature_1,
                           feature_2,

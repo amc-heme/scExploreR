@@ -768,7 +768,7 @@ plot_module_server <- function(id,
                  ){
                    showNotification(
                      ui = 
-                       icon_notification_ui_2(
+                       icon_notification_ui(
                          icon = "skull-crossbones",
                          # Change to feature when other 
                          # features are supported

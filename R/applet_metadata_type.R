@@ -1,5 +1,12 @@
-# metadata_type: takes a Seurat object and a metadata field, and returns the 
-# class of the metadata field
+#' Metadata Type
+#'
+#' Takes a Seurat object and a metadata field, and returns the class of the 
+#' metadata field
+#'
+#' @param object a Seurat object.
+#' @param metadata_field a column name of the object's `@meta.data` table
+#'
+#' @noRd
 metadata_type <- function(object, metadata_field){
   # Get unique values of metadata field for display of summary statistics
   values <- unique(object@meta.data[[metadata_field]])

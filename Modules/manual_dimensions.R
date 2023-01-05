@@ -125,7 +125,7 @@ manual_dimensions_server <- function(id,
                        # Also, display a notification to the user
                        showNotification(
                          ui = 
-                           icon_notification_ui_2(
+                           icon_notification_ui(
                              icon = "exclamation-triangle",
                              glue("Value lower than minimum 
                                   width ({min_width}px).")
@@ -152,7 +152,7 @@ manual_dimensions_server <- function(id,
                        # Also, display a notification to the user
                        showNotification(
                          ui = 
-                           icon_notification_ui_2(
+                           icon_notification_ui(
                              icon = "exclamation-triangle",
                              glue("Value greater than max width 
                                   ({max_width}px).")
@@ -207,7 +207,7 @@ manual_dimensions_server <- function(id,
                        # Also, display a notification to the user
                        showNotification(
                          ui = 
-                           icon_notification_ui_2(
+                           icon_notification_ui(
                              icon = "exclamation-triangle",
                              glue("Value lower than minimum 
                                   height ({min_height}px).")
@@ -234,7 +234,7 @@ manual_dimensions_server <- function(id,
                        # Also, display a notification to the user
                        showNotification(
                          ui = 
-                           icon_notification_ui_2(
+                           icon_notification_ui(
                              icon = "exclamation-triangle",
                              glue("Value greater than max height: 
                                   ({max_height}px).")

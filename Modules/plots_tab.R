@@ -1085,7 +1085,7 @@ plots_tab_server <- function(id,
                        if (length(Cells(subset())) == 1){
                          showNotification(
                            ui = 
-                             icon_notification_ui_2(
+                             icon_notification_ui(
                                icon = "exclamation-triangle",
                                # Change to feature when other 
                                # features are supported

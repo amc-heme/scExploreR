@@ -1,3 +1,23 @@
+#' scExploreR stacked bar plot
+#'
+#' Accepts inputs from plots_selections module and outputs a stacked bar plot
+#' giving cell proportions by metadata groups from the Seurat object passed to 
+#' it. 
+#'
+#' @param object A Seurat object. This can be either the full object or a subset.
+#' @param group_by metadata variable used for cell type proportions. The number of cells in each level of this variable will be plotted.
+#' @param split_by metadata variable used for comparing cell type proportions. The number of cells in each level of this variable will be plotted.
+#' @param x_axis_title the title to use for the x-axis.
+#' @param y_axis_title the title to use for the y-axis.
+#' @param plot_title the title of the plot. Defaults to NULL; in this case, the group_by variable name will be displayed.
+#' @param show_title if TRUE, the title is displayed above the plot.
+#' @param show_legend if TRUE, the legend is shown to the right side of the plot. The default is TRUE.
+#' @param palette a color palette to use for the plot. The plot uses a categorical palette.
+#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. 
+#'
+#' @return  a ggplot2 object with a stacked bar plot created according to user specifications.
+#' 
+#' @noRd
 shiny_stacked_bar <-
   function(
     object,

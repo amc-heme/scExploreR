@@ -1,6 +1,13 @@
-# env_size: a function used to determine the total memory usage of all objects 
-# in the environment. This does not work well with Shiny however since it is 
-# currently unable to find reactive objects; due to this, it is currently unused.
+#' env_size
+#'
+#' a function used to determine the total memory usage of all objects in the 
+#' environment. This does not work well with Shiny however since it is currently 
+#' unable to find reactive objects; due to this, it is currently unused.
+#' 
+#' @param env R environment object
+#' @param units Units to use for size ("B", "kb", "MB", "GB")
+#'
+#' @noRd
 env_size <- function(env, 
                      units = c("B", "kB", "MB", "GB")) {
   if (!units %in% c("B", "kB", "MB", "GB")){

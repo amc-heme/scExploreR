@@ -1,6 +1,3 @@
-# Convenience function for running config app. This script will be moved to the
-# R directory upon release of the app.
-
 #' scExploreR config app
 #'
 #' run_config() will launch a Shiny app used to configure datasets for use in 
@@ -949,7 +946,7 @@ run_config <-
             # Otherwise, show a notification to the user
             showNotification(
               ui = 
-                icon_notification_ui_2(
+                icon_notification_ui(
                   icon = "exclamation-triangle",
                   "
                   The file uploaded is not of a supported file type. Please upload an image format.
@@ -2072,7 +2069,7 @@ run_config <-
               }
             } else {
               # Show error if no config file path is defined
-              icon_notification_ui_2(
+              icon_notification_ui(
                 icon_name = "skull-crossbones",
                 "variable `config_path` is undefined in config_init.yaml. Please 
             specify a path to load a config file."

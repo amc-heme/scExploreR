@@ -19,7 +19,7 @@
 #' @return a table giving the correlation coefficients for all genes in the 
 #' object relative to the gene selected. 
 #' 
-#' @examples
+#' @noRd
 compute_correlation <- 
   function(
     gene_selected,

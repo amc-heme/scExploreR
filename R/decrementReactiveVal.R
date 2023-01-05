@@ -12,6 +12,7 @@
 #' # counter will now be equal to 0
 #' counter <- decrementReactiveVal(counter)
 #' 
+#' @noRd
 decrementReactiveVal <- 
   function(val){
     # Take a reactiveVal object and decrease by one

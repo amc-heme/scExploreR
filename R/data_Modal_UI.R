@@ -1,9 +1,11 @@
-# data_Modal - UI Function
-
-# Displays a popup (modal) with the available dataset choices.
-
-# Arguments
-# selected_key (reactive): this 
+#' Data Modal
+#' 
+#' A UI function. Displays a popup (modal) with the available dataset choices.
+#'
+#' @param datasets a list of the available datasets, generated in the main app.
+#' @param selected_key the key of the selected dataset (from the main app).
+#'
+#' @noRd
 data_Modal <- function(datasets,
                        selected_key){
   # Test if `selected_key` is reactive 

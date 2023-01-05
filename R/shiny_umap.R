@@ -1,7 +1,7 @@
 #' shiny_umap
 #'
-#'Accepts inputs from plots_selections module and outputs a Seurat DimPlot from 
-#'the Seurat object passed to it. 
+#' Accepts inputs from plots_selections module and outputs a Seurat DimPlot from 
+#' the Seurat object passed to it. 
 #'
 #' @param object A Seurat object. This can be either the full object or a subset. 
 #' This is a reactive-agnostic parameter (can be either reactive or non-reactive).
@@ -24,6 +24,10 @@
 #' @param reduction The reduction (UMAP, t-SNE, etc.) to use for plotting
 #' @param palette The palette to use for coloring groups. If the palette passed
 #' to this function is NULL, the default (hue_pal()) is used.
+#' 
+#' @return a ggplot2 object with a DimPlot created according to user specifications.
+#' 
+#' @noRd
 shiny_umap <- function(object, 
                        group_by, 
                        split_by, 

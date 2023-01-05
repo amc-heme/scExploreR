@@ -7,6 +7,8 @@
 #' @param left_class,right_class CSS classes to apply to the left/right columns.
 #'
 #' @returns a shiny.tag object with the content entered in a two-column format.
+#' 
+#' @noRd
 two_column_layout <-
   function(
     left_colummn,

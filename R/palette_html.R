@@ -21,7 +21,10 @@
 #' this function in an R script with other Shiny elements (such as within a UI
 #' function such as `fluidPage()` or `tagList()`, output_html should be FALSE. 
 #'
-#' @return Either a shiny.tag, or a character vector with HTML code for the palette
+#' @return Either a shiny.tag, or a character vector with HTML code for the
+#' palette
+#' 
+#' @noRd 
 palette_html <- function(palette, 
                          type = "categorical",
                          palette_name = NULL, 
