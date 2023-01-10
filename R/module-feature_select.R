@@ -12,7 +12,7 @@
 #' If FALSE, no remove button will be displayed and the user will have to use 
 #' the backspace key to remove features.
 #' 
-#'  @noRd
+#' @noRd
 #'
 feature_select_ui <- 
   function(

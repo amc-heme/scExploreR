@@ -1,15 +1,18 @@
 #' scExploreR config app
 #'
 #' run_config() will launch a Shiny app used to configure datasets for use in 
-#' the main browser. 
+#' the main browser.
 #'
 #' @param object_path relative or absolute path to the Seurat object to be
 #' configured. The file provided must be a .rds file created from a single
 #' Seurat object.
 #' @param config_path optional: if provided, the data from this file will be 
-#' loaded when the user selects "load config file" in the config app.
+#' loaded when the user selects "load config file" in the config app. This 
+#' should be a YAML file, though .rds files from versions 0.4.0 and earlier will
+#' also be accepted.
 #'
 #' @examples
+#' run_config(./path_to_object.rds, ./path_to_config_file.yaml)
 
 run_config <- 
   function(

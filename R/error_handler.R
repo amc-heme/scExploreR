@@ -23,8 +23,8 @@ error_handler <-
     issue_href = "https://github.com/amc-heme/DataExploreShiny/issues", 
     duration = NULL
     ){
-    # Error match: conditional that is set to TRUE when an error is found, 
-    # signaling the function not to run the code for displaying a generic
+    # Error match: conditional that is set to TRUE when an error is found, 
+    # signaling the function not to run the code for displaying a generic
     # error message
     error_match <- FALSE
     # Loop through all defined error types (error_list)

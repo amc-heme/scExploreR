@@ -72,6 +72,7 @@ field_ui <-
 #' @param unique_values Unique values for the metadata category. User will 
 #' define group members based on the choices provided to this argument.
 #'
+#' @noRd
 metadata_group_fields_ui <- 
   function(
     id,

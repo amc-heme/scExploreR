@@ -11,9 +11,9 @@ metadata_type <- function(object, metadata_field){
   # Get unique values of metadata field for display of summary statistics
   values <- unique(object@meta.data[[metadata_field]])
   
-  # Determine type of metadata (class of values) for display in column
-  # Must call @meta.data first with arbitrary metadata 
-  # (object[[<metadata>]]) will return a dataframe
+  # Determine type of metadata (class of values) for display in column
+  # Must call @meta.data first with arbitrary metadata 
+  # (object[[<metadata>]]) will return a dataframe
   class <- class(values)
   
   # Simplify metadata type: "character" and "factor" classes are reported as 

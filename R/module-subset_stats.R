@@ -183,9 +183,8 @@ subset_stats_ui <- function(id,
 #' being used, the value of the threshold chosen is passed here to be displayed.
 #'
 #' @return
-#' @export
 #'
-#' @examples
+#' @noRd
 subset_stats_server <- 
   function(id,
            tab = c("dge", "corr"), #Non-reactive
@@ -495,17 +494,17 @@ subset_stats_server <-
                 # Display unique values appearing in the subset 
                 # for the category
                 unique(subset()@meta.data[[category]]) |> 
-                  # Sort unique values alphanumerically
-                  # May add support for custom order later
+                  # Sort unique values alphanumerically
+                  # May add support for custom order later
                   str_sort(numeric=TRUE) |> 
                   vector_to_text()
               }) # End renderText
           }
         )
         
-        # 5. Return Stats from Server ------------------------------------------
-        # For dge tab: return n_cells, classes, and n_classes
-        # Return a list of reactives, as opposed to a reactive list
+        # 5. Return Stats from Server ------------------------------------------
+        # For dge tab: return n_cells, classes, and n_classes
+        # Return a list of reactives, as opposed to a reactive list
         if (tab=="dge"){
           return(
             list(

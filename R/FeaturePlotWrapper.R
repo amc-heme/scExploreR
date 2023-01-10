@@ -378,6 +378,7 @@ FeaturePlotSingle<-
 #' TRUE). 
 #' @param ... A list of arguments to pass to FeaturePlot
 #' 
+#' @noRd
 MultiFeatureSimple <- 
   function(
     object, 

@@ -74,6 +74,8 @@ preview_dimplot_ui <-
 #'
 #' @param id ID to use for module server instance.
 #' @param object a Seurat object.
+#' 
+#' @noRd
 #'
 preview_dimplot_server <- 
   function(

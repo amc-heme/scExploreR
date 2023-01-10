@@ -986,7 +986,7 @@ corr_tab_server <- function(id,
                        # Take action only if a row is selected
                        if (rows_selected() == TRUE){
                          # Record gene name of row selected
-                         # Superassignment ensures value is accessible elsewhere in app
+                         # Superassignment ensures value is accessible elsewhere in app
                          corr_secondary_gene <<- reactive({
                            as.character(corr_table_content()[row_idx,1])
                            })

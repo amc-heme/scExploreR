@@ -9,3 +9,4 @@ License:
 LazyData: FALSE
 Imports:
 Suggests:
+RoxygenNote: 7.1.2

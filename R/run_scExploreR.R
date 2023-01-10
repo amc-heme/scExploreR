@@ -3,9 +3,10 @@
 #' Initializes the main scExploreR app.
 #' 
 #' @param port specify a port for launching the browser. This is required to
-#' run several instances of the browser at the same IP address. See ["how to run the config app"]() for more information.
+#' run several instances of the browser at the same IP address. See "how to run scExploreR" for more information.
 #'
 #' @examples
+#' run_scExploreR(port = 5320)
 run_scExploreR <- 
   function(
     port = NULL

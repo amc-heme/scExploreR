@@ -101,7 +101,7 @@ dge_test_selections_ui <- function(id,
       hidden(
         ## 3.A. Standard DGE Groups UI ####
         # Display menus to select two classes from the metadata 
-        # category chosen as the group_by variable. Multiple 
+        # category chosen as the group_by variable. Multiple 
         # selections are possible for each group.
         div(
           id = ns("standard_groups_ui"),
@@ -250,8 +250,8 @@ dge_test_selections_ui <- function(id,
 #' @param metadata_config the metadata section of the config file. This does not
 #' need to be specified if the config list is stored as "config" in the global
 #' environment.
-#' @param meta_choices 
-#' @param valid_features 
+#' @param meta_choices metadata variables exposed by the config user.
+#' @param valid_features a list of features that may be selected by the end user.
 #'
 #' @return A reactive list with information on the selected test.
 #'         
@@ -326,7 +326,7 @@ dge_test_selections_server <-
             input$mode
             })
         
-        # 2. Modify Group by Selection Menu Based on Selections ----------------
+        # 2. Modify Group by Selection Menu Based on Selections ----------------
         ## 2.1 Update group by selection menu ####
         observeEvent(
           dge_mode(),
@@ -402,8 +402,8 @@ dge_test_selections_server <-
         #             inputId = ns("group_by_marker"),
         #             label = 
         #               "Choose metadata to use for marker identification:",
-        #             # Remove "none" and "best_response" from selectable
-        #             # options to group by
+        #             # Remove "none" and "best_response" from selectable
+        #             # options to group by
         #             choices =
         #               meta_choices()[!meta_choices() %in% "none"],
         #             # At startup, marker selection is ran with clusters 
@@ -648,8 +648,8 @@ dge_test_selections_server <-
         #         # the condition of the checkbox
         #         tagList(
         #           # Standard DGE UI
-        #           # Display menus to select two classes from the metadata 
-        #           # category chosen as the group_by variable. Multiple 
+        #           # Display menus to select two classes from the metadata 
+        #           # category chosen as the group_by variable. Multiple 
         #           # selections are possible for each group.
         #           div(
         #             id = ns("standard_groups_ui"),
@@ -962,8 +962,8 @@ dge_test_selections_server <-
               }
             })
         
-        # 5. Return information ------------------------------------------------
-        # Return a reactive list with inputs, depending on the selected DGE mode
+        # 5. Return information ------------------------------------------------
+        # Return a reactive list with inputs, depending on the selected DGE mode
         selections <- 
           reactive(
             label = "Test Selection: Return Values",

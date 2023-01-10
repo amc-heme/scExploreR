@@ -164,7 +164,7 @@ shiny_umap <- function(object,
       # First, simultaneously test if subset is present and if the corresponding
       # original_limits reactive is truthy (i.e. both present and checked).
       if (is_subset & isTruthy(original_limits)){
-        # If so, add original limits to the list
+        # If so, add original limits to the list
         list(
           scale_x_continuous(limits = xlim_orig),
           scale_y_continuous(limits = ylim_orig)
