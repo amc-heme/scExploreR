@@ -4,9 +4,6 @@
 #' 
 #' @param port specify a port for launching the browser. This is required to
 #' run several instances of the browser at the same IP address. See ["how to run the config app"]() for more information.
-#' 
-#' @return
-#' @export
 #'
 #' @examples
 run_scExploreR <- 

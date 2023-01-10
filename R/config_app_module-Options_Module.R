@@ -2,6 +2,9 @@
 
 #' Config App: Options Card UI
 #'
+#' Module displays and processes options for individual values in each tab of
+#' the config app.
+#'
 #' @param id the module ID, used for namespacing. This will be equal to the name
 #' of the assay, metadata variable, or reduction represented by the current 
 #' options card.
@@ -12,6 +15,7 @@
 #' @param restore_inputs a list of input values, used for restoring inputs
 #' when cards are sorted by the user.
 #' 
+#' @noRd
 options_ui <- function(id,
                        object,
                        optcard_type = c("assays", "metadata", "reductions"),
@@ -215,14 +219,32 @@ options_ui <- function(id,
 # of "assays" or "metadata"
 # card_name: the name of the individual category that the instance of the
 # module applies to. This is the id by default, and can be changed.
+
+#' Config App: Options Card Server
+#' 
+#' Module displays and processes options for individual values in each tab of
+#' the config app.
+#'
+#' @param id Id to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#' @param object a Seurat object for which settings are being chosen
+#' @param categories_selected a reactive variable describing the variables 
+#' (assays, metadata, etc., selected by the user)
+#' @param options_type the type of options to create a server function for. Can
+#' be "assays", "metadata", or "reductions".  
+#' @param card_name the name of the individual category that an instance of
+#' the module applies to. This is the id by default, and can be changed.
+#'
+#' @return
+#' 
+#' @noRd
 options_server <- 
   function(
     id, 
     object,
     categories_selected,
     options_type = c("assays", "metadata", "reductions"),
-    card_name = id,
-    disable_adt_checkbox = NULL
+    card_name = id
     ){
     # Initialize module
     moduleServer(

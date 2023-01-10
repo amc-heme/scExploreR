@@ -59,6 +59,7 @@
 #' @param download_button If TRUE, display a download button that will save a
 #' .png image of the plot to disk.
 #'
+#' @noRd
 plot_module_ui <- function(id,
                            # The plot_module UI consists of the options
                            # panels and the plot output, which exist in 
@@ -731,6 +732,7 @@ plot_module_ui <- function(id,
 #' @param blend_palettes special palettes used for blended feature plots (
 #' this is the full list of palettes).
 #'
+#' @noRd
 plot_module_server <- function(id,
                                plot_type, #Non-reactive
                                plot_label, #Non-reactive

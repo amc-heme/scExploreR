@@ -1,5 +1,14 @@
-# Manual Plot Dimensions Module
-# Creates two textbox/slider pairs to specify the width and height of a plot in pixels.
+#' Manual Plot Dimensions Module
+#'
+#' Creates two textbox/slider pairs to specify the width and height of a plot 
+#' in pixels.
+#' 
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#'
+#' @return Module UI
+#' 
+#' @noRd
 manual_dimensions_ui <- function(id){
   # Namespace function: prevents conflicts with IDs defined in other modules
   ns <- NS(id)
@@ -16,6 +25,23 @@ manual_dimensions_ui <- function(id){
   )
 }
 
+#' Manual Plot Dimensions Module
+#'
+#' Creates two textbox/slider pairs to specify the width and height of a plot 
+#' in pixels.
+#' 
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#' @param initial_width initial value for width
+#' @param max_width maximum value selectable for width
+#' @param min_width minimum value
+#' @param initial_height initial value for height
+#' @param max_height maximum value for height
+#' @param min_height minimum value
+#'
+#' @return module server code
+#'
+#' @noRd
 manual_dimensions_server <- function(id,
                                      #Initial values and bounds for sliders
                                      initial_width=700,

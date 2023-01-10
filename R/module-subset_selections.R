@@ -1,5 +1,8 @@
 #' Subset Selections Module UI
 #'
+#' The subset selections module displays menus for selecting the current subset.
+#' It is currently used in all three tabs of the app.
+#'
 #' @param id id to use for the module.id to use for module namespacing. 
 #' UI-server module pairs must use the same id. 
 #' @param unique_metadata A list of the unique metadata values for each of the 
@@ -9,7 +12,9 @@
 #' need to be specified if the config list is stored as "config" in the global 
 #' environment.
 #'
-#' @return
+#' @return UI code for the subset selections module.
+#' 
+#' @noRd
 subset_selections_ui <- function(id,
                                  unique_metadata,
                                  metadata_config
@@ -202,7 +207,9 @@ subset_selections_ui <- function(id,
 #' the name(s) of metadata categories for which to hide menus in the
 #' subset selection interface.
 #' 
-#' @return
+#' @return Server code for the subset selections module.
+#' 
+#' @noRd
 #'
 subset_selections_server <- function(id,
                                      object,

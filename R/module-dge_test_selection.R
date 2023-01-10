@@ -4,6 +4,7 @@
 #' @param meta_choices a vector giving the metadata categories included in the 
 #' config file. This is computed in the main server function upon object change.
 #' 
+#' @noRd
 dge_test_selections_ui <- function(id,
                                   meta_choices
                                   ){
@@ -39,7 +40,7 @@ dge_test_selections_ui <- function(id,
       inputId = ns("group_by"),
       # Label: changes when mode is switched to DGE
       label = "Choose metadata to use for marker identification:",
-      # Remove "none" from selectable options to group by
+      # Remove "none" from selectable options to group by
       choices = initial_choices,
       # Avoids bugs in the event the user passes a list of choices that only
       # has "none" in it (which would have a length of zero after it is removed)
@@ -62,8 +63,8 @@ dge_test_selections_ui <- function(id,
     #     inputId = ns("group_by_marker"),
     #     label = 
     #       "Choose metadata to use for marker identification:",
-    #     # Remove "none" and "best_response" from selectable
-    #     # options to group by
+    #     # Remove "none" and "best_response" from selectable
+    #     # options to group by
     #     choices =
     #       meta_choices()[!meta_choices() %in% "none"],
     #     # At startup, marker selection is ran with clusters 
@@ -99,7 +100,7 @@ dge_test_selections_ui <- function(id,
     tagList(
       hidden(
         ## 3.A. Standard DGE Groups UI ####
-        # Display menus to select two classes from the metadata 
+        # Display menus to select two classes from the metadata 
         # category chosen as the group_by variable. Multiple 
         # selections are possible for each group.
         div(
@@ -252,8 +253,9 @@ dge_test_selections_ui <- function(id,
 #' @param meta_choices 
 #' @param valid_features 
 #'
-#' @return A reactive list with information on the selected test:
-#'         ``
+#' @return A reactive list with information on the selected test.
+#'         
+#' @noRd
 dge_test_selections_server <- 
   function(id,
            object,

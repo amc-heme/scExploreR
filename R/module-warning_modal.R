@@ -1,8 +1,11 @@
 #' warning_modal_ui 
 #'
-#' @param id ID to use for module elements. This is called from within the 
-#' server function, and thus will always be equal to the 
+#' Creates a warning modal. This module is currently unused.
 #'
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#'
+#' @noRd
 warning_modal_ui <- 
   function(
     id
@@ -40,6 +43,8 @@ warning_modal_ui <-
   }
 
 #' warning_server
+#' 
+#' Server code for a warning modal. This module is currently unused.
 #'
 #' @param id ID to use for module server instance.
 #' @param reactive_trigger A reactive expression giving the input value of an
@@ -50,6 +55,7 @@ warning_modal_ui <-
 #' `input$button`). If using a reactive trigger, pass the trigger name and 
 #' `$depend`, without the parenthesis. 
 #'
+#' @noRd
 warning_modal_server <- 
   function(
     id,

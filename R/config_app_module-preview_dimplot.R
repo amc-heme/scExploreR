@@ -1,7 +1,15 @@
 #' preview_dimplot_ui 
 #'
+#' Used in the "general" tab of the config app. Displays a DimPlot used for a
+#' preview image, along with some settings from the plot module of the main
+#' app for customization.
+#'
 #' @param id ID to use for module elements.
 #' @param object a Seurat object.
+#' @param non_numeric_cols non-numeric metadata variables (columns). These are
+#' excluded from the choices of variables for group.by and split.by. 
+#' 
+#' @noRd
 #'
 preview_dimplot_ui <- 
   function(
@@ -70,8 +78,7 @@ preview_dimplot_ui <-
 preview_dimplot_server <- 
   function(
     id,
-    object,
-    load_inputs
+    object
     ){
     moduleServer(
       id,

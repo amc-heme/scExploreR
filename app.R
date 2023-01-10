@@ -630,7 +630,7 @@ server <- function(input, output, session){
     label = "Open Dataset Modal",
     {
       showModal(
-        data_Modal(
+        data_modal(
           datasets = datasets,
           selected_key = selected_key
           )

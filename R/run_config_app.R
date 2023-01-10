@@ -3,7 +3,7 @@
 #' run_config() will launch a Shiny app used to configure datasets for use in 
 #' the main browser. 
 #'
-#' @param object_path the path to the Seurat object to be configured.
+#' @param object_path relative or absolute path to the Seurat object to be configured.
 #' @param config_path optional: if provided, the data from this file will be 
 #' loaded when the user selects "load config file" in the config app.
 #'
@@ -65,13 +65,6 @@ run_config <-
           full.names=TRUE, 
           ignore.case=TRUE
         )
-      )
-    
-    # Add threshold_picker module from main app modules
-    source_files <-
-      c(source_files, 
-        "./Modules/threshold_picker.R",
-        "./Modules/warning_modal.R"
       )
     
     # Use source() to import files into R

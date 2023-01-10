@@ -1,14 +1,22 @@
-# Subset stats module
- 
-# subset_stats_ui
-# Arguments
-# id: The id to use for the namespace created for this module.
-# tab: String giving the tab this module applies to. This should be 
-# either "dge" or "corr".
-# metadata_config: the metadata sub-list defined within the config list 
-# meta_categories: a vector of all metadata categories included 
-# in the config file
-# gene_selected: In the corr tab, the gene selected by the user for computation.
+#' Subset Stats Module
+#'
+#' In the DGE and correlation tabs, this module prints data on the subset 
+#' selected in the main panel, above the test results. 
+#'
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#' @param tab Character vector giving the tab this module is being used in. This
+#' should be either "dge" or "corr".
+#' @param metadata_config the metadata section of the config file, loaded in the
+#' main app. 
+#' @param meta_categories a vector of all metadata variables (categories) exposed in the 
+#' main browser by the config user.
+#' @param gene_selected In the correlation tab, the gene selected by the user 
+#' for computation.
+#'
+#' @return
+#'
+#' @noRd
 subset_stats_ui <- function(id,
                             tab = c("dge", "corr"),
                             metadata_config,
@@ -146,22 +154,38 @@ subset_stats_ui <- function(id,
   
 }
 
-# subset_stats_server
-# Arguments
-# id: The id to use for the namespace created for this module.
-# tab: String giving the tab this module applies to. This should be either 
-# "dge" or " corr".
-# subset (reactive): a subsetted Seurat object for which stats will be computed.
-# meta_categories: a vector of all metadata categories included in the config file
-# event_expr: a reactive variable used to control execution of reactive 
-# expressions. All eventReacive and observeEvent statements will respond to this 
-# variable.
-# gene_selected: In the corr tab, the gene selected by the user for computation.
-# nonzero_threshold: In the corr tab, the minimum acceptable proportion of nonzero 
-# reads. A warning notification will be displayed to the user if the proportion 
-# is below this threshold.
-# group_by_category (reactive): For the DGE tab, the group by category currently 
-# chosen for the test. 
+#' Subset Stats Module
+#'
+#' In the DGE and correlation tabs, this module prints data on the subset 
+#' selected in the main panel, above the test results. 
+#'
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#' @param tab Character vector giving the tab this module is being used in. This
+#' should be either "dge" or "corr".
+#' @param subset a subset of a Seurat object, for which stats will be displayed.
+#' @param event_expr a reactive expression; all reactive expressions in this 
+#' module will re-compute in response to changes in this expression.
+#' @param meta_categories a vector of all metadata variables (categories) exposed in the 
+#' main browser by the config user.
+#' @param gene_selected In the correlation tab, the gene selected by the user 
+#' for computation.
+#' @param nonzero_threshold The minimum acceptable proportion of cells with
+#' nonzero reads for the feature used to compute correlations. This is defined 
+#' in the main server function.
+#' @param group_by_category For the DGE tab, the group by metadata variable
+#'  (category) currently chosen for the test. 
+#' @param metaclusters_present only used in the DGE tab. If TRUE, stats displays
+#' will take metaclusters into account (number cells will be shown by metacluster
+#' instead of by individual metadata variables).
+#' @param thresholding_present only used in the DGE tab. If TRUE, the number of cells above and below the chosen expression threshold will be displayed.
+#' @param dge_simple_threshold only used in the DGE tab. If thresholding is 
+#' being used, the value of the threshold chosen is passed here to be displayed.
+#'
+#' @return
+#' @export
+#'
+#' @examples
 subset_stats_server <- 
   function(id,
            tab = c("dge", "corr"), #Non-reactive

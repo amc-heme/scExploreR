@@ -12,6 +12,7 @@
 #' @param choices A vector with all possible choices that may be sorted into 
 #' groups.
 #'
+#' @noRd
 field_ui <- 
   function(
     inputId,
@@ -107,6 +108,7 @@ metadata_group_fields_ui <-
 #' @param unique_values Unique values for the metadata category. User will 
 #' define group members based on the choices provided to this argument.
 #'
+#' @noRd
 metadata_group_fields_server <- 
   function(
     id,

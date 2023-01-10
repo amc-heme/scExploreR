@@ -1,10 +1,18 @@
-#' threshold_picker_ui 
+#' Theshold picker (UI)
+#' 
+#' Creates a widget used to choose an expression threshold for a feature. An 
+#' interactive ridge plot is displayed, and the user clicks to chose a threshold.
+#' When a threshold is chosen, statistics on the threshold will be displayed 
+#' beneath the plot.
 #'
 #' @param id ID to use for module elements.
-#' @param plot_width
-#' @param plot_height
-#' @param buttons_panel
+#' @param plot_width width of the plot, in pixels. If NULL, the width defaults 
+#' to 100% of the parent container.
+#' @param plot_height height of the plot, in pixels.
+#' @param buttons_panel if TRUE, buttions for additional options, such as 
+#' resizing the plot, will be displayed on the plot.
 #'
+#' @noRd
 threshold_picker_ui <- 
   function(
     id,
@@ -137,16 +145,24 @@ threshold_picker_ui <-
     )
 }
 
-#' threshold_picker_server
+#' Theshold picker (Server)
+#' 
+#' Creates a widget used to choose an expression threshold for a feature. An 
+#' interactive ridge plot is displayed, and the user clicks to chose a threshold.
+#' When a threshold is chosen, statistics on the threshold will be displayed 
+#' beneath the plot.
 #'
 #' @param id ID to use for module server instance.
-#' @param object
-#' @param feature
-#' @param showhide_animation
+#' @param object a Seurat object or a subset.
+#' @param feature the feature for which thresholds are being chosen.
+#' @param showhide_animation if TRUE, an animation will be used when displaying
+#' or hiding the stats panel.
 #' @param set_threshold A reactive value used to set the selected threshold to
 #' a defined value. For example, when editing the threshold value for a feature,
 #' this is set to the last value selected for the feature, giving a visual 
 #' representation of what the last selection was.
+#' 
+#' @noRd
 #'
 threshold_picker_server <- 
   function(

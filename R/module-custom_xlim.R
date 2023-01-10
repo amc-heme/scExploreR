@@ -3,6 +3,7 @@
 #' @param id ID to use for module elements.
 #' @param compact_buttons
 #'
+#' @noRd
 custom_xlim_ui <- 
   function(
     id,
@@ -68,6 +69,7 @@ custom_xlim_ui <-
 #'
 #' @param id ID to use for module server instance.
 #'
+#' @noRd
 custom_xlim_server <- 
   function(
     id,

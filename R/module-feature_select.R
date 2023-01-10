@@ -1,6 +1,18 @@
 #' feature_select_ui 
 #'
 #' @param id ID to use for module elements.
+#' @param assay_config the assays section of the config file loaded in the main app
+#' @param label label to show above the feature 
+#' @param feature_guide if TRUE, display a guide showing which types of features
+#' may be entered (default is FALSE). 
+#' @param placeholder placeholder text to display when no features are selected. 
+#' @param multiple if TRUE, allow user to select multiple features (default is 
+#' TRUE)
+#' @param remove_button if TRUE, show a remove button on each selected feature. 
+#' If FALSE, no remove button will be displayed and the user will have to use 
+#' the backspace key to remove features.
+#' 
+#'  @noRd
 #'
 feature_select_ui <- 
   function(
@@ -85,6 +97,7 @@ feature_select_ui <-
 #' @param valid_features Available features in the current object. This is 
 #' computed in the main server function and changes in response to the object.
 #'
+#' @noRd
 feature_select_server <- 
   function(
     id,

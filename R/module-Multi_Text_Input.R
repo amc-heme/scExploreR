@@ -1,3 +1,15 @@
+#' multi_text_input
+#' 
+#' Creates UI for the multi_text_input module. The module allows the user to 
+#' enter text for a variable number of fields, and is currently used in the 
+#' multiple custom title output.
+#'
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#' @param label a label to display above the container. If NULL (the default), 
+#' no label is created.
+#'
+#' @noRd
 multi_text_input_ui <- function(id,
                                 label = NULL
                                 ){
@@ -28,6 +40,18 @@ multi_text_input_ui <- function(id,
   )
 }
 
+#' multi_text_input
+#' 
+#' Creates reactive expressions for the multi_text_input module. The module 
+#' allows the user to enter text for a variable number of fields, and is 
+#' currently used in the multiple custom title output.
+#'
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#' @param default_vector a character vector giving the default values for each 
+#' text field
+#'
+#' @noRd
 multi_text_input_server <- function(id,
                                     default_vector
                                     ){

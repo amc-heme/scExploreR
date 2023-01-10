@@ -1,12 +1,17 @@
-# Subset_Summary
-# This module displays the unique values for each metadata category defined in
-# the config file.
-
-# subset_summary_ui
-# Arguments
-# id: ID to use for module elements.
-# category_labels: a named list of each metadata category in the config file, 
-# with its label. This is defined in the main app at startup.
+#' Subset_Summary
+#'
+#' This module displays the unique values for each metadata variable (category)
+#' defined in the config file. The module is used in the subset menu of the 
+#' plots tab to dynamically display the current subset to the user. 
+#'
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#' @param category_labels labels used for each metadata variable (category), as
+#' defined in the config file.
+#'
+#' @return UI code for the subset summary module.
+#' 
+#' @noRd
 subset_summary_ui <- function(id,
                               category_labels){
   # Namespace function: prevents conflicts with IDs defined in other modules
@@ -38,14 +43,23 @@ subset_summary_ui <- function(id,
   )
 }
 
-# subset_summary_server
-# Arguments
-# id: id used to connect module server to module UI
-# object: a Seurat object. This can be either the full object or a subset.
-# category_labels: a named list of each metadata category in the config file, 
-# with its label. This is defined in the main app at startup.
-# unique_metadata: a list giving the unique values for each metadata category,
-# from the full object. 
+#' Subset_Summary
+#'
+#' This module displays the unique values for each metadata variable (category)
+#' defined in the config file. The module is used in the subset menu of the 
+#' plots tab to dynamically display the current subset to the user.
+#' 
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#' @param object the Seurat object (either the full object or a subset).
+#' @param category_labels labels used for each metadata variable (category), as
+#' defined in the config file.
+#' @param unique_metadata a list giving the unique values for each metadata 
+#' variable (category), from the full object. 
+#'
+#' @return server code for the subset summary module.
+#' 
+#' @noRd
 subset_summary_server <- function(id,
                                   object,
                                   category_labels,

@@ -25,6 +25,7 @@
 #' @param continuous_palettes continuous palettes to show in the palette 
 #' selection window.
 #'
+#' @noRd
 plots_tab_ui <- function(id,
                          meta_choices,
                          unique_metadata,
@@ -678,6 +679,7 @@ plots_tab_ui <- function(id,
 #' file, and is loaded in the main server function at startup and when the 
 #' object is changed.
 #' 
+#' @noRd
 plots_tab_server <- function(id,
                              object,
                              metadata_config,

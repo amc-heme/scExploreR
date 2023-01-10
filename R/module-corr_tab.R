@@ -14,6 +14,7 @@
 #'
 #' @return A list of `shiny.tag` elements forming the UI for the correlations tab.
 #' 
+#' @noRd
 corr_tab_ui <- function(id,
                         unique_metadata,
                         metadata_config
@@ -164,12 +165,12 @@ corr_tab_ui <- function(id,
 # at startup.
 #' @param n_cells_original Number of cells in full Seurat object. Calculated in main 
 # server function.
-#' @param nonzero_threshold The minimum acceptable proportion of cells with nonzero reads
-#' for the feature used to compute correlations. This is defined in the main server
-#' function.
-#' @param meta_choices a named vector giving the metadata categories defined in the 
-# config file, with their respective labels for display in dropdown menus. This 
-# is defined in the main server function.
+#' @param nonzero_threshold The minimum acceptable proportion of cells with
+#' nonzero reads for the feature used to compute correlations. This is defined 
+#' in the main server function.
+#' @param meta_choices a named vector giving the metadata categories defined in
+#' the config file, with their respective labels for display in dropdown menus.
+#' This is defined in the main server function.
 #' @param valid_features a list giving the valid features that can be selected from each
 # assay. This is generated from the config file in the main server function
 #' @param error_list a list of error messages to print custom notifications for, 
@@ -185,6 +186,7 @@ corr_tab_ui <- function(id,
 #' @return server code for the correlations tab. Reactive expressions are contained within 
 #' the namespace set by `id`
 #'
+#' @noRd
 corr_tab_server <- function(id,
                             object,
                             metadata_config,

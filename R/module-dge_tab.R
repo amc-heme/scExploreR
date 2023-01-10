@@ -1,13 +1,20 @@
-#Differential Expression Tab Module
-
-#dge_tab_ui
-#Arguments
-#id: ID to use for module elements. Should be equal to "dge".
-#unique_metadata: a list of the unique metadata values for each of the metadata 
-#categories listed in the config file. This is generated in the main server 
-#function at startup.
-#metadata_config: the metadata section of the config file imported in the 
-#main server function
+#' Differential Expression Tab Module
+#'
+#' @param id ID to use for module. All inputs and outputs created will be
+#' namespaced using this ID.
+#' @param unique_metadata a list of the unique metadata values for each of the
+#' metadata categories listed in the config file. This is generated in the main
+#' app.
+#' @param metadata_config the metadata section of the config file imported in 
+#' the main server function.
+#' @param meta_categories the metadata variables exposed by the config user.
+#' @param meta_choices a named vector giving the metadata categories defined in
+#' the config file, with their respective labels for display in dropdown menus.
+#' This is defined in the main server function.
+#'
+#' @return Module UI code (list of shiny.tag elements)
+#'
+#' @noRd
 dge_tab_ui <- function(id,
                        unique_metadata,
                        metadata_config,
@@ -213,6 +220,7 @@ dge_tab_ui <- function(id,
 #' @return server code for the differential gene expression tab. Reactive 
 #' expressions are contained within the namespace set by `id`
 #'
+#' @noRd
 dge_tab_server <- function(id,
                            object,
                            metadata_config,

@@ -6,7 +6,7 @@
 #' @param selected_key the key of the selected dataset (from the main app).
 #'
 #' @noRd
-data_Modal <- function(datasets,
+data_modal <- function(datasets,
                        selected_key){
   # Test if `selected_key` is reactive 
   if(!is.reactive(selected_key)){
