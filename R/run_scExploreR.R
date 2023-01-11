@@ -43,7 +43,7 @@ run_scExploreR <-
     library(rlog, quietly = TRUE, warn.conflicts = FALSE)
     
     # Tidyverse packages
-    library(tidyverse, quietly = TRUE, warn.conflicts = FALSE)
+    #library(tidyverse, quietly = TRUE, warn.conflicts = FALSE)
     library(stringr, quietly = TRUE, warn.conflicts = FALSE)
     library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
     library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)

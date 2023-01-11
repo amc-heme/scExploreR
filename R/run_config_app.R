@@ -32,7 +32,7 @@ run_config <-
     library(waiter)
     library(shinycssloaders)
     library(shinyjs)
-    library(shinyFeedback)
+    # library(shinyFeedback)
     # Sortable.JS: Creates a drag-and-drop menu
     library(sortable)
     
@@ -41,7 +41,7 @@ run_config <-
     options(shiny.reactlog=TRUE)
     
     # Tidyverse Packages
-    library(tidyverse)
+    # library(tidyverse)
     library(stringr)
     library(dplyr)
     library(ggplot2)
