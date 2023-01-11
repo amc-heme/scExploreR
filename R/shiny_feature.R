@@ -8,7 +8,7 @@
 #' the user.
 #' @param assay_config the assays section of the config file, loaded at app 
 #' startup and upon changing datasets.
-#' @param split_by user-specified metadata category for splitting plots.
+#' @param split_by user-specified metadata variable for splitting plots.
 #' @param group_by the metadata column to use for showing labels on the plot, 
 #' if labels are enabled.
 #' @param blend Whether to use blended feature plots for feature co-expression. 
@@ -48,6 +48,10 @@
 #' two-column or four-column layout.
 #' @param reduction the reduction to show for feature expression.
 #'
+#' @return a ggplot2 object with a feature plot created according to user
+#' specifications.
+#' 
+#' @noRd
 shiny_feature <- function(object, 
                           features_entered, 
                           assay_config, 

@@ -1,6 +1,6 @@
 #' ReactiveVal Utilities
 #' 
-#' incrementReactiveVal takes a S hiny reactiveVal object and increases it 
+#' incrementReactiveVal takes a Shiny reactiveVal object and increases it 
 #' by one.
 #'
 #' @param val A Shiny reactiveVal object
@@ -12,6 +12,7 @@
 #' # counter will now be equal to 2
 #' counter <- incrementReactiveVal(counter)
 #' 
+#' @noRd
 incrementReactiveVal <- 
   function(val){
     # Take a reactiveVal object and increase by one

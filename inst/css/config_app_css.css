@@ -1,0 +1,109 @@
+/* CSS used only in applet */
+#config_choices {
+  margin-top: .20vh;
+}
+
+/* Defines the sidebar for the applet */
+.shinysc-sidebar-panel {
+  background-color: #E1E1E1;
+  border-radius: 8px;
+  /* Defines max height of panel and creates a scrollbar when this is exceeded */
+  overflow-y: auto;
+  min-height: 80vh;
+  max-height: 90vh;
+  margin-bottom: 0px;
+}
+
+/* Defines the main panel */
+.shinysc-main-panel {
+  overflow-y: auto;
+  overflow-x: auto;
+  min-height: 85vh;
+  max-height: 85vh;
+}
+
+.optcard {
+  background-color: #E1E1E1;
+  border-radius: 8px;
+  min-height: 150px;
+  width: 450px;
+  padding: 0.5em 1em;
+  margin-bottom: 1.0em;
+  margin-right: 1.0em;
+  display: block;
+}
+
+/* Apply to options cards that comprise the full page (currently unused) */
+/*.wide {
+  width: 900px;
+}*/
+
+/* Make multi-select fill the page */
+.multi-wrapper
+.non-selected-wrapper,
+.multi-wrapper .selected-wrapper {
+  /* Defining hieghts in terms of viewport height didn't work here; don't know why */
+  height: 685px;
+  /* Displays scrollbars only when necessary (default is to display always)*/
+  overflow-y: auto;
+}
+
+/* Assay options multi-select: make shorter  (doesn't work) */
+/*[id*="assays_selected"] > .multi-wrapper
+[id*="assays_selected"] > .non-selected-wrapper,
+[id*="assays_selected"] > .multi-wrapper
+[id*="assays_selected"] > .multi-wrapper {
+  height: 350 px;
+} */
+
+/* Class used for the buttons to remove fields when defining
+categories of metadata values */
+.x-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  padding: 0px;
+}
+
+/* Properties for "X" icon within button */
+.x-button > i {
+  /* vertical-align for Font Awesome icons has a default value of 'baseline'
+     which will make elements appear off-center. Setting this property to
+     'middle' will center the icon. */
+  vertical-align: middle;
+  /* Increase size of "X"*/
+  font-size: 19px;
+}
+
+/* Export Configuration Button */
+/* Export button has been transformed into a link */
+/*#export_selections {
+  background-color: #ED872D;
+  color: #FFFFFF;
+  border-color: #ED872D;
+  border-radius: 10px;
+  font-weight: 600;
+} */
+
+/* config_export_div: container created to hold the export configuration button */
+#config_export_div {
+    display: inline-block;
+    margin-right: 20px;
+    margin-top: 7.5px;
+    height: 35px;
+}
+
+/* Add additional margin to help button for consistency with the margin around
+   the export configuration button */
+#help_button_container{
+  margin-right: 5px;
+}
+
+#adt_threshold_sidebar, #adt_threshold_main {
+  transition: width 0.5s;
+}
+
+.zero-width {
+  width: 0em;
+  overflow: hidden;
+}

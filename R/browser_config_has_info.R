@@ -5,6 +5,7 @@
 #' @param datasets the list of datasets generated in the main app.
 #'
 #' @return a boolean describing if the general dataset info for all datasets is contained in the browser config file. 
+#' @noRd
 browser_config_has_info <- 
   function(datasets){
     # Test if all of the datasets have information in the config file for either 

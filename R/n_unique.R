@@ -7,6 +7,8 @@
 #' @param metadata_column Name of a column in the metadata table for the object.
 #'
 #' @return Number of unique classes (integer).
+#' 
+#' @noRd
 n_unique <-
   function(
     object,

@@ -10,6 +10,7 @@
 #' @param metadata_config The metadata section of the config file loaded at app startup. Must be secified when plot_type == "dimplot", and is not used when plot type == "feature".
 #' @param features_entered The features currently selected (for feature plots)
 #'
+#' @noRd
 initial_title <- function(
   plot_type,
   group_by = NULL,

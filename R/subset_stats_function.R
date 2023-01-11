@@ -1,3 +1,31 @@
+#' Subset Stats
+#'
+#' Returns a list of subset statistics for differential gene expressionn or 
+#' gene correlation analyses.
+#' 
+#' @param subset a subsetted Seurat object generated during analysis
+#' @param mode the type of analysis being performed (either "dge" or "corr").
+#' @param metadata_categories a vector giving the metadata variables 
+#' (categories) exposed to the end user in the config app.
+#' @param gene_selected for correlations analysis, the gene selected by the user. Must be defined if mode == "corr" but not if mode == "dge".
+#' @param nonzero_threshold for correlations analysis, the threshold percentage of cells for which a feature in the correlations tab has non-zero expression, below which the end user is warned. Must be defined if mode == "corr" but not if mode == "dge".
+#' @param group_by_category the metadata variable used for comparing dge groups. Must be defined if mode == "dge" but not if mode == "corr".
+#'
+#' @return a list of statistics for the current subset. 
+#' For both modes, the number of cells is given.
+#' 
+#' For DGE, the following info is returned: 
+#'   classes: the groups (classes), 
+#'   n_classes: number of groups in the subset
+#'   mode_description: the DGE mode
+#'   n_by_class: the number of cells by class 
+#'   
+#' For correlations analysis, the following info is returned;
+#'   n_nonzero: the number of cells with non-zero reads
+#'   prop_nonzero: the fraction of cells with non-zero reads
+#'   percent_nonzero: the percentage of cells with non-zero reads
+#'
+#' @noRd
 subset_stats_function <- 
   function(
     subset,

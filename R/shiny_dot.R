@@ -1,11 +1,17 @@
-# shiny_dot
-
-# object: a Seurat object. This can be either the full object or a subset. This 
-# is a reactive-agnostic parameter (can be either reactive or non-reactive).
-# features: a character vector giving the features to use in the plot.
-# group_by: user specified group_by metadata category
-# split_by: user specified split_by metadata category
-# show_legend: user choice as to whether a legend should be shown
+#' scExploreR Dot Plots
+#'
+#' @param object a Seurat object. This can be either the full object or a subset.
+#' @param features_entered a character vector giving the features to use in the
+#' plot.
+#' @param group_by user specified group_by metadata variable
+#' @param show_legend user choice as to whether a legend should be shown (default is TRUE)
+#' @param palette the color palette to use for the plot (plot uses a continuous color palette)
+#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending", "descending", or "custom". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. If custom, groups will be sorted according to how they appear in `custom_factor_levels`.
+#' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
+#'
+#' @return a ggplot2 object with a dot plot created according to user specifications.
+#' 
+#' @noRd
 shiny_dot <- 
   function(
     object, 

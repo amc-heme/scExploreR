@@ -1,6 +1,14 @@
-### Vector to Text
-# Prints the contents of a vector as a string with commas separating each element. 
-# Used to create the formal report giving the subset criteria in the gene correlations tab
+#' Vector to Text
+#' 
+#' Prints the contents of a vector as a string with commas separating each 
+#' element. Used to create the formal report giving the subset criteria in the 
+#' gene correlations tab.
+#'
+#' @param vector a character vector
+#'
+#' @return a single-element character vector with all levels of the character vector in grammatically correct format (comma-separated, with "and" before the last element)
+#'
+#' @noRd
 vector_to_text <- function(vector){
   if (is.null(vector)){
     "NULL"

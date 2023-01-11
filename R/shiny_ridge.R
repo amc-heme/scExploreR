@@ -1,3 +1,18 @@
+#' scExploreR ridge plots
+#'
+#' @param object a Seurat object or subset.
+#' @param features_entered a character vector giving the features to use in the
+#' plot.
+#' @param group_by user specified group_by metadata variable
+#' @param show_legend user choice as to whether a legend should be shown (default is TRUE)
+#' @param palette the color palette to use for the plot (plot uses a continuous color palette)
+#' @param center_x_axis_title if TRUE, the title on the x_axis is centered (default is FALSE).
+#' @param xlim a 2-element character vector giving the lower and upper bounds 
+#' of the x-axis.
+#'
+#' @return a ggplot2 object with a ridge plot created according to user specifications.
+#'
+#' @noRd
 shiny_ridge <- 
   function(
    object,

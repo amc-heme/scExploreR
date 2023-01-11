@@ -14,6 +14,8 @@
 #' Presto output
 #'
 #' @return Returns Presto values in a log-2 fold change format.
+#' 
+#' @noRd
 to_log2 <- 
   function(value){
     log2(exp(value))

@@ -6,7 +6,8 @@
 #'
 #' @param session Shiny session object
 #'
-#' @examples
+#' 
+#' @noRd
 #' 
 log_session <- function(session){
   rlog::log_info(

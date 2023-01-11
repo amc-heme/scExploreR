@@ -1,7 +1,3 @@
-library(Seurat)
-library(patchwork)
-library(stringr)
-
 #' Wrapper for FeaturePlot
 #'
 #' This function allows for additional customization of feature plots. Only one
@@ -55,6 +51,8 @@ library(stringr)
 #'      order = TRUE
 #'      )
 #'
+#' @noRd
+#' 
 FeaturePlotSingle<- 
   function(
     object, 
@@ -380,6 +378,7 @@ FeaturePlotSingle<-
 #' TRUE). 
 #' @param ... A list of arguments to pass to FeaturePlot
 #' 
+#' @noRd
 MultiFeatureSimple <- 
   function(
     object, 
