@@ -11,6 +11,9 @@
 #' @param meta_choices a named vector giving the metadata categories defined in
 #' the config file, with their respective labels for display in dropdown menus.
 #' This is defined in the main server function.
+#' @param auto_dictionary_path Path to the temporary file used for storing the
+#' auto-generated object dictionary (created in the main app)
+#' @param string_subsetting_href URL of the string subsetting vignette. 
 #'
 #' @return Module UI code (list of shiny.tag elements)
 #'
@@ -19,7 +22,9 @@ dge_tab_ui <- function(id,
                        unique_metadata,
                        metadata_config,
                        meta_categories,
-                       meta_choices
+                       meta_choices,
+                       auto_dictionary_path,
+                       string_subsetting_href
                        ){
   # Namespace function
   ns <- NS(id)
@@ -54,7 +59,9 @@ dge_tab_ui <- function(id,
               subset_selections_ui(
                 id = ns("subset_selections"),
                 unique_metadata = unique_metadata,
-                metadata_config = metadata_config
+                metadata_config = metadata_config,
+                auto_dictionary_path = auto_dictionary_path,
+                string_subsetting_href = string_subsetting_href
                 )
               }),
           

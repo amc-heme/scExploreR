@@ -1,4 +1,4 @@
-#' Plots Tab Module (UI Instance)
+#' Plots Tab Module (UI)
 #'
 #' @param id ID to use for module elements.
 #' @param meta_choices Metadata available for selection from group_by and 
@@ -24,6 +24,9 @@
 #' selection window.
 #' @param continuous_palettes continuous palettes to show in the palette 
 #' selection window.
+#' @param auto_dictionary_path Path to the temporary file used for storing the
+#' auto-generated object dictionary (created in the main app)
+#' @param string_subsetting_href URL of the string subsetting vignette. 
 #'
 #' @noRd
 plots_tab_ui <- function(id,
@@ -35,7 +38,9 @@ plots_tab_ui <- function(id,
                          patient_colname,
                          reductions,
                          categorical_palettes,
-                         continuous_palettes
+                         continuous_palettes,
+                         auto_dictionary_path,
+                         string_subsetting_href
                          ){
    # Namespace function: prevents conflicts with 
    # inputs/outputs defined in other modules 
@@ -283,7 +288,9 @@ plots_tab_ui <- function(id,
              subset_selections_ui(
                id = ns("subset_selections"),
                unique_metadata = unique_metadata,
-               metadata_config = metadata_config
+               metadata_config = metadata_config,
+               auto_dictionary_path = auto_dictionary_path,
+               string_subsetting_href = string_subsetting_href
                ),
 
              # 1.4.3. Submit button for subset

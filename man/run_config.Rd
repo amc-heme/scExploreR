@@ -22,4 +22,5 @@ the main browser.
 }
 \examples{
 run_config(./path_to_object.rds, ./path_to_config_file.yaml)
+
 }

@@ -13,6 +13,8 @@
 #'
 #' @examples
 #' run_config(./path_to_object.rds, ./path_to_config_file.yaml)
+#' 
+#' @export
 
 run_config <- 
   function(
@@ -50,30 +52,30 @@ run_config <-
     
     # Load functions in ./R directory ####
     # Get list of files
-    source_files <- 
-      list.files(
-        path = "./R", 
-        pattern="*.R$", 
-        full.names=TRUE, 
-        ignore.case=TRUE
-      )
-    
-    # Load modules from ./Config_App_Modules
-    source_files <-
-      c(source_files,
-        list.files(
-          path = "./Config_App_Modules", 
-          pattern="*.R$", 
-          full.names=TRUE, 
-          ignore.case=TRUE
-        )
-      )
+    # source_files <- 
+    #   list.files(
+    #     path = "./R", 
+    #     pattern="*.R$", 
+    #     full.names=TRUE, 
+    #     ignore.case=TRUE
+    #   )
+    # 
+    # # Load modules from ./Config_App_Modules
+    # source_files <-
+    #   c(source_files,
+    #     list.files(
+    #       path = "./Config_App_Modules", 
+    #       pattern="*.R$", 
+    #       full.names=TRUE, 
+    #       ignore.case=TRUE
+    #     )
+    #   )
     
     # Use source() to import files into R
-    sapply(
-      source_files, 
-      source
-    )
+    # sapply(
+    #   source_files, 
+    #   source
+    # )
     
     # Load CSS files for app: CSS files are defined and each file is converted 
     # to a <script> tag using includeCSS(). Each tag defined is passed to a 
@@ -81,7 +83,7 @@ run_config <-
     # Get list of .css files in www/ directory
     css_files <- 
       list.files(
-        path = "./www", 
+        path = system.file("css", package = "scExploreR"), 
         pattern = "*.css$", 
         full.names = TRUE, 
         ignore.case = TRUE
@@ -102,7 +104,7 @@ run_config <-
     # www/applet_js/ directory)
     js_files <- 
       list.files(
-        path = "./www/", 
+        path = system.file("js", package = "scExploreR"), 
         # Use regex to search for files ending in .js (double 
         # backslash used to escape '.' character)
         pattern = ".*\\.js", 
@@ -2333,21 +2335,6 @@ run_config <-
       #   })
       
       #### TEMP: Observers for Debugging ####
-      # config_file_load <- eventReactive(
-      #   input$load_config,
-      #   ignoreNULL = FALSE,
-      #   ignoreInit = TRUE,
-      #   {
-      #     print("Load config pressed")
-      #     # For now, use a pre-determined config file
-      #     # will soon be chosen with a file input
-      #     icon_notification_ui(
-      #       icon_name = NULL, 
-      #       message = 'Loading file at "./Seurat_Objects/AML_TotalVI_config.rds"'
-      #       )
-      #     readRDS("./Seurat_Objects/AML_TotalVI_config.rds")
-      #   })
-      
       # observe({
       #   print("Config file exists:")
       #   print(!is.null(session$userData$config()))

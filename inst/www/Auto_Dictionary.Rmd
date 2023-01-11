@@ -31,22 +31,6 @@ library(tools)
 # Import parameters from app
 object <- params$object
 valid_features <- params$valid_features
-
-# Temporary: load object instead of importing from app
-# object <- readRDS("./Seurat_Objects/longitudinal_samples_20211025.rds")
-# 
-# # Temp: load valid features based on config. Will be handled in app later
-# config <- readRDS("./Seurat_Objects/d0-d30-config.rds")
-# assay_config <- config$assays
-# 
-# source("./R/feature_list_all.R")
-# 
-# valid_features <-
-#   feature_list_all(
-#             object = object,
-#             assay_config = assay_config,
-#             numeric_metadata = FALSE
-#             )
 ```
 
 ```{css Document CSS, echo = FALSE}

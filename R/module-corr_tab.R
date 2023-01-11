@@ -11,13 +11,18 @@
 #' server function at startup.
 #' @param metadata_config the metadata section of the config file imported in 
 #' the main server function
+#' @param auto_dictionary_path Path to the temporary file used for storing the
+#' auto-generated object dictionary (created in the main app)
+#' @param string_subsetting_href URL of the string subsetting vignette.
 #'
 #' @return A list of `shiny.tag` elements forming the UI for the correlations tab.
 #' 
 #' @noRd
 corr_tab_ui <- function(id,
                         unique_metadata,
-                        metadata_config
+                        metadata_config,
+                        auto_dictionary_path,
+                        string_subsetting_href
                         ){
   # Namespace function: prevents conflicts with inputs/outputs defined in 
   # other modules 
@@ -51,7 +56,9 @@ corr_tab_ui <- function(id,
               # namespace collisions between datasets. Use key of dataset in id
               id = ns("subset_selections"),
               unique_metadata = unique_metadata,
-              metadata_config = metadata_config
+              metadata_config = metadata_config,
+              auto_dictionary_path = auto_dictionary_path,
+              string_subsetting_href = string_subsetting_href
               ),
             
             # Submit button

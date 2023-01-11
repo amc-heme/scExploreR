@@ -11,13 +11,18 @@
 #' @param metadata_config The metadata section of the config file. This does not 
 #' need to be specified if the config list is stored as "config" in the global 
 #' environment.
+#' @param auto_dictionary_path Path to the temporary file used for storing the
+#' auto-generated object dictionary (created in the main app)
+#' @param string_subsetting_href URL of the string subsetting vignette.
 #'
 #' @return UI code for the subset selections module.
 #' 
 #' @noRd
 subset_selections_ui <- function(id,
                                  unique_metadata,
-                                 metadata_config
+                                 metadata_config,
+                                 auto_dictionary_path,
+                                 string_subsetting_href
                                  ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
@@ -123,7 +128,7 @@ subset_selections_ui <- function(id,
               uiOutput(ns("feature_statistics")),
               tags$a(
                 "View Object Metadata",
-                href = "Auto_Dictionary.html",
+                href = auto_dictionary_path,
                 target = "_blank",
                 rel = "noopener noreferrer",
                 class = "blue_hover underline underline-hover left",
@@ -131,8 +136,8 @@ subset_selections_ui <- function(id,
                 style = "padding: 3px 6px; margin-top: 15px;"
               ),
               tags$a(
-                "String Substting Help",
-                href = "advanced_subsetting_documentation.html",
+                "String Subsetting Help",
+                href = string_subsetting_href,
                 target = "_blank",
                 rel = "noopener noreferrer",
                 class = "blue_hover underline underline-hover left",
