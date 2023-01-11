@@ -4,7 +4,7 @@
 \alias{run_config}
 \title{scExploreR config app}
 \usage{
-run_config(object_path, config_path = NULL)
+run_config(./path_to_object.rds, ./path_to_config_file.yaml)
 }
 \arguments{
 \item{object_path}{relative or absolute path to the Seurat object to be
@@ -19,8 +19,4 @@ also be accepted.}
 \description{
 run_config() will launch a Shiny app used to configure datasets for use in 
 the main browser.
-}
-\examples{
-run_config(./path_to_object.rds, ./path_to_config_file.yaml)
-
 }

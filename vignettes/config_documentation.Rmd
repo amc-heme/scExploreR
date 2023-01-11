@@ -103,7 +103,7 @@ Upon loading the config app, the "General" tab will be displayed. This tab is us
 
 Use **"Label for Dataset"** to enter a short label for the dataset. Add detailed info for the dataset using the **"Description of Dataset"** field.
 
-![](Screenshots/config_documentation/001-Label%20and%20description.png)
+![](config_documentation-001-Label%20and%20description.png)
 
 Use the **"Content for Dataset Preview"** menu to optionally add a plot as a preview image in the "Choose Dataset" window of the main app. When selecting "DimPlot" as a preview option, a window will appear below with settings for the plot, and a window showing the plot as it will appear in the main app.
 
@@ -111,7 +111,7 @@ Use the **"Content for Dataset Preview"** menu to optionally add a plot as a pre
 
 Use the **"Metadata to Group By"** to choose the variable for coloring the cells. If the "Label Groups" checkbox is enabled, each color group will also be labeled with the value it represents.The **"Metadata to Split By"** menu may optionally be used to select a variable to "split" the plot, and the number of columns in a split plot can be controlled with the **"Number of columns"** slider. The projection used for the plot is set with **"Choose Reduction"**.
 
-![](Screenshots/config_documentation/002-DimPlot%20Preview.png)
+![](config_documentation-002-DimPlot%20Preview.png)
 
 # Assays Tab
 
@@ -121,7 +121,7 @@ Settings for the assays to be included in the Seurat object are entered in the a
 
 To choose which assays to expose in the browser, use the **"Choose assays to include"** menu in the left half of the window. All assays added to the object will appear on the left hand side of the two-column menu, under **"Available Assays"**. Select an assay from this tab to add it to the browser. The assay will now appear under the **"Selected Assays"** column, and a panel of options specific to the assay will appear on the right half of the app window. To remove an assay from the browser, click the assay name in the **"Selected Assays"** tab.
 
-![](Screenshots/config_documentation/003-Add-Remove-assays.gif){width="690"}
+![](config_documentation-003-Add-Remove-assays.gif){width="690"}
 
 ### General Options
 
@@ -145,7 +145,7 @@ If you have a surface protein (ADT) assay in your object, you can specify the as
 
 Each assay-specific panel will have a text box for entering a label, and a checkbox for including the name of the assay on plots. The label appears in the feature selection menus, and it may be set to a descriptive name to improve the presentation of the main browser (i.e. displaying the genes assay as "Genes", or the ADT assay as "Surface Protein", rather than using the Seurat defaults "RNA" and "ADT"). If the checkbox is selected, the label entered will display on plots. For example, if the label is "Gene", feature plots for the gene "TP53" will have a default title of "TP53 (Gene)" instead of just "TP53".
 
-![](Screenshots/config_documentation/004-Assay-options.png)
+![](config_documentation-004-Assay-options.png)
 
 # Metadata Tab
 
@@ -159,7 +159,7 @@ Use the **"Choose Metadata to Include"** menu on the left side of the screen to 
 
 The order the variables appear in this column is recognized by the browser; metadata in the plotting and subset menus will appear in the order set here. **The first variable will be the default variable used for coloring plots**; we highly recommend setting this to "clusters", "cell type", or a similar variable. To remove a variable, drag it back to the **"Available Metadata"** column.
 
-![](Screenshots/config_documentation/005-Metadata-Include-Exclude.gif){width="690"}
+![](config_documentation-005-Metadata-Include-Exclude.gif){width="690"}
 
 ### General Options
 
@@ -177,7 +177,7 @@ Use the **"Set label for metadata variable"** text box to set a display name in 
 
 The **"Group metadata into categories?"** switch is used to create display groups using the values in the metadata variable. The groups chosen here are displayed in the main app as a guide for choosing subsets in either of the tabs of the main app. This is useful in cases where the dataset contains samples from different experimental groups. Grouping samples in the config app aids the end user in understanding which samples fall in which treatment group. Groups may also be used for clustering detailed cell annotations into more general annotations for facilitated interpretation by the end user.
 
-![](Screenshots/config_documentation/006-Metadata-Groups-Interface.png){width="371"}
+![](config_documentation-006-Metadata-Groups-Interface.png){width="371"}
 
 #### Using the Metadata Groups Interface
 
@@ -205,7 +205,7 @@ For Seurat Objects with ADT assays, the ADT Threshold Tab allows the user to cho
 
 The ADT Threshold Tab is hidden by default. To show the tab, make a selection under "Choose ADT Assay" in the assays tab.
 
-![](Screenshots/config_documentation/007-Enable-ADT-Threshold.gif){width="690"}
+![](config_documentation-007-Enable-ADT-Threshold.gif){width="690"}
 
 ### Adding ADT Thresholds
 
@@ -217,7 +217,7 @@ When a selection is made, a panel of statistics will display below the plot. The
 
 To save a threshold, click the **"Confirm"** button beneath the stats panel. To exit without saving the threshold, click **"Cancel"**. When a threshold is saved, it will appear on the table of saved thresholds on the left hand side of the screen.
 
-![](Screenshots/config_documentation/008-Add-ADT-Threshold.gif){width="690"}
+![](config_documentation-008-Add-ADT-Threshold.gif){width="690"}
 
 ### Editing and Deleting ADT Thresholds
 
@@ -225,6 +225,6 @@ To edit an existing threshold, click the `r icon("pencil")` icon next to the des
 
 To delete a threshold, press the `r icon("times-circle")` button next to the desired ADT.
 
-![](Screenshots/config_documentation/009-Edit-ADT-Threshold.gif){width="690"}
+![](config_documentation-009-Edit-ADT-Threshold.gif){width="690"}
 
-![](Screenshots/config_documentation/010-Delete-ADT-Threshold.gif){width="690"}
+![](config_documentation-010-Delete-ADT-Threshold.gif){width="690"}

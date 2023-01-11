@@ -2,7 +2,7 @@
 #'
 #' run_config() will launch a Shiny app used to configure datasets for use in 
 #' the main browser.
-#'
+#' 
 #' @param object_path relative or absolute path to the Seurat object to be
 #' configured. The file provided must be a .rds file created from a single
 #' Seurat object.
@@ -11,7 +11,7 @@
 #' should be a YAML file, though .rds files from versions 0.4.0 and earlier will
 #' also be accepted.
 #'
-#' @examples
+#' @usage 
 #' run_config(./path_to_object.rds, ./path_to_config_file.yaml)
 #' 
 #' @export

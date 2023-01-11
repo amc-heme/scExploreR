@@ -154,13 +154,13 @@ This menu is used to switch between different methods of dimensional reduction: 
 
 The title options menu is used to change or remove the title of the dimensional reduction plot. When set to "Default" the title shown is the name of the selected group by metadata variable. When set to "None", no title is shown. When set to "Custom", an interface will appear beneath the menu to enter a custom title. Press "Update" to apply changes to the title, and "Reset" to revert the title to the default.
 
-![](Screenshots/scExplorer_all_features/custom_title_menu.png){.centered-image style="display: block; margin-left: auto; margin-right: auto;" width="336"}
+![](full_documentation-custom_title_menu.png){.centered-image style="display: block; margin-left: auto; margin-right: auto;" width="336"}
 
 ### Choose Number of Columns {#choose-number-of-columns}
 
 This setting applies to split plots only, and remains hidden until a selection is made in the "Choose Metadata to Split by" menu. Drag the slider to specify the number of columns to use when displaying the panels of a split plot. Possible values may be anywhere from 1 to the number of panels created by the current split by variable.
 
-![](Screenshots/scExplorer_all_features/numer_of_columns.png){.centered-image width="460"}
+![](full_documentation-number_of_columns.png){.centered-image width="460"}
 
 ### Label Groups
 
@@ -211,7 +211,7 @@ This setting is available when one feature is selected with a split by variable,
 
 Drag the slider to specify the number of columns to distribute the panels across. Possible values may be anywhere from 1 to the number of panels. This setting is not available when feature co-expression is enabled.
 
-![](Screenshots/scExplorer_all_features/numer_of_columns.png){.centered-image width="460"}
+![](full_documentation-number_of_columns.png){.centered-image width="460"}
 
 ### Share Scale Between Features
 
@@ -263,7 +263,7 @@ This setting is available when multiple features have been entered.
 
 Drag the slider to specify the number of columns to distribute the panels across. Possible values may be anywhere from 1 to the number of panels. This setting is not available when feature co-expression is enabled.
 
-![](Screenshots/scExplorer_all_features/numer_of_columns.png){.centered-image width="460"}
+![](full_documentation-number_of_columns.png){.centered-image width="460"}
 
 ### Include Legend
 
@@ -371,7 +371,7 @@ Used to choose a categorical metadata variable used for comparing cell type prop
 
 The title options menu is used to change or remove the title of the plot. When set to "Default" the title shown is the name of the selected metadata variable for proportions. When set to "None", no title is shown. When set to "Custom", an interface will appear beneath the menu to enter a custom title. Press "Update" to apply changes to the title, and "Reset" to revert the title to the default.
 
-![](Screenshots/scExplorer_all_features/custom_title_menu.png){.centered-image style="display: block; margin-left: auto; margin-right: auto;" width="336"}
+![](full_documentation-custom_title_menu.png){.centered-image style="display: block; margin-left: auto; margin-right: auto;" width="336"}
 
 ### Order of Groups on Plot
 
@@ -397,7 +397,7 @@ Sets a categorical metadata variable to use for displaying the sample compositio
 
 The title options menu is used to change or remove the title of the pie chart. When set to "Default" the title shown is the name of the metadata variable in the "View Number of Patients by" menu. When set to "None", no title is shown. When set to "Custom", an interface will appear beneath the menu to enter a custom title. Press "Update" to apply changes to the title, and "Reset" to revert the title to the default.
 
-![](Screenshots/scExplorer_all_features/custom_title_menu.png){.centered-image style="display: block; margin-left: auto; margin-right: auto;" width="336"}
+![](full_documentation-custom_title_menu.png){.centered-image style="display: block; margin-left: auto; margin-right: auto;" width="336"}
 
 <!-- Include Legend -->
 
@@ -449,7 +449,7 @@ To define groups based on a categorical metadata variable, select a variable in 
 
 ### Groups Defined by Feature Expression
 
-![](Screenshots/DGE_expr_threshold_widget.gif){style="float: right; margin-left: 15px;" width="195"}
+![](full_documentation-DGE_expr_threshold_widget.gif){style="float: right; margin-left: 15px;" width="195"}
 
 To define groups based on feature expression, enter a feature from the search bar that appears after "use feature expression to define groups" is checked.
 

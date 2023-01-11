@@ -5,8 +5,8 @@
 #' @param browser_config path to a YAML config file giving browser specific settings. See LINK for more info on creating this file.
 #' @param port specify a port for launching the browser. This is required to run several instances of the browser at the same IP address. See "how to run scExploreR" for more information. The port can be any number between 3000:8000, except for ports blocked by Google Chrome (for more information on this, see \link[shiny]{runApp}).
 #'
-#' @examples
-#' run_scExploreR(port = 5320)
+#' @useage
+#' \dontrun{run_scExploreR(port = 5320)}
 #' 
 #' @export
 run_scExploreR <- 

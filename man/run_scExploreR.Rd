@@ -14,7 +14,3 @@ run_scExploreR(browser_config, port = NULL)
 \description{
 Initializes the main scExploreR app.
 }
-\examples{
-run_scExploreR(port = 5320)
-
-}
