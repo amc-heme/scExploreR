@@ -1,4 +1,4 @@
-# DataExploreShiny
+# scExploreR
 
 <br>
 
