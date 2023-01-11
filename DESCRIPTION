@@ -26,7 +26,7 @@ Imports:
     rintrojs (>= 0.3.0),
     rlog (>= 0.1.0),
     scales,
-    Seurat (>= 4.0.0),
+    Seurat (>= 3.0.0),
     shiny (>= 1.6.1),
     shinycssloaders (>= 1.0.0),
     shinydashboard (>= 0.7.2),

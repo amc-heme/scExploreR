@@ -1,5 +1,5 @@
 ---
-title: "scExplorer Tutorial"
+title: "scExplorer Walkthrough"
 output: 
   prettydoc::html_pretty:
     theme: cayman
@@ -12,27 +12,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # scExploreR Walkthrough
 
-This tutorial will guide you through the use of scExploreR to analyze your data. Key functionality is grouped into three tabs: plots, differential expression, and gene correlations. The interface on each tab displays the plots and analysis results on the right, and the options on the left hand panel (referred to in this document as the options panel). The plots tab is the recommended starting point for analysis. It is useful for gaining a qualitative overview of the dataset as a jumping off point for analysis in the other tabs, and it can also be used to visualize the results generated in analysis-specific tabs. This walkthrough will begin with the plots tab.
+This tutorial will guide you through the use of scExploreR to analyze your data. This is not a comprehensive exploration of each feature: for more information on any feature, see the [full documentation]().
 
-# Plots Tab {#plots-tab}
+Key functionality is grouped into three tabs: plots, differential expression, and gene correlations. The interface on each tab displays the plots and analysis results on the right, and the options on the left hand panel (referred to in this document as the options panel).
 
-At the top of the options panel you will see several switches, one for each plot type. To show/hide each plot, click the switch. The available plot types are described below. All plots may be created from either the full dataset or a subset of cells based on metadata. For more, see the subsetting section.
+# Data Visualization
 
--   **DimPlot:** shows each cell on dimensional reduction plot, either a UMAP, or a set of other visualizations enabled by the browser admin.
+When opening the app, the plots tab will display. The plots tab is the recommended starting point for analysis. It is useful for gaining a qualitative overview of the dataset as a jumping off point for analysis in the other tabs, and it can also be used to visualize the results generated in analysis-specific tabs.
 
--   **Feature Plot:** a DimPlot with cells colored by expression of a feature (gene, surface protein, or other data enabled by the browser admin).
-
--   **Violin Plot:** displays the distribution of expression of a feature across groups of cells in the sample.
-
--   **Dot Plot:** shows the average expression and extent of expression of multiple features across groups of cells in the sample.
-
--   **Scatterplot:** compares expression of two genes in a sample. All cells are plotted according to the expression value of each of the two features entered. Correlation between genes may be quantified in the [Gene Correlations Tab](#gene-correlations).
-
--   **Ridge Plot:** displays a density plot of the expression of a feature in all cells, or in groups of cells.
-
--   **Cell Proportion Plot:** used to visualize metadata. Shows the proportion of cells belonging to each value of a categorical metadata variable, and compares proportions across each value of a second categorical metadata variable.
-
--   **Metadata Pie Chart:** shows metadata at the sample/patient level. The pie chart displays the number of samples/patients in each categorical metadata value.
+At the top of the options panel you will see several switches, one for each plot type. To show/hide each plot, click the switch.
 
 ## Dimensional Reduction Plots
 

@@ -4,7 +4,7 @@
 \alias{run_scExploreR}
 \title{scExploreR app}
 \usage{
-run_scExploreR(browser_config, port = NULL)
+run_scExploreR(port = 5320)
 }
 \arguments{
 \item{browser_config}{path to a YAML config file giving browser specific settings. See LINK for more info on creating this file.}
