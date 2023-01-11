@@ -8,15 +8,37 @@
 
 <br>
 
-* a pre-processed and finalized Seurat object (or a set of finalized objects)
-* a version of this app, with your objects entered in the startup code (see ____ below for more information)
-* installation of both the object and that app to our remote server
+* A pre-processed and finalized Seurat object (or a set of finalized objects)
+* Config files for each object, and a browser config YAML. See "Installation and Use" for more information.
+* A server to host the app. This can be any computer with at least 16 GB of RAM, that can be left on and be connected to the internet continuously
 
 Some bioinformatics experience is required to install and configure the app, but once set up, the app can be used by anyone.
 
 <br>
 
-## How to Install
+## Installation and Use
+
+1. Install from Github via
+```
+remotes::install_github("amc-heme/scExploreR")
+```
+2. Configure a Seurat object for the browser by using the configuration app provided with the package. For more information on the config app, see the [config app documentation]().
+```
+scExploreR::run_config(
+  object_path = "path_to_your_seurat_object.rds",
+  # The config path will be blank the first time you use the config app for an object
+  config_path = "previously_loaded_config_file"
+  )
+```
+
+3. Set up a browser config YAML file. The file will contain a list of datasets with the path to the Seurat objects and config files for each, along with browser specific settings. See [browser config setup]() for more info.
+
+4. Run scExploreR using the path to your config file.
+```
+scExploreR::run_scExploreR(
+  browser_config = "./config.yaml"
+  )
+```
 
 <br>
 
@@ -31,7 +53,8 @@ Some bioinformatics experience is required to install and configure the app, but
 <br>
 -->
 
-A more advanced version of this app will not only accept Seurat objets, but also Scanpy. 
+* A more advanced version of this app will not only accept Seurat objets, but also Scanpy. 
+* Additional analyses such as GSEA will be added in the future
 
 <br>
 
