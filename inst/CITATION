@@ -1,0 +1,16 @@
+citHeader("To cite scExploreR in publications, please use:")
+
+citEntry(
+  entry    = "Article",
+  title    = ,
+  author   = ,
+  journal  = ,
+  year     = ,
+  volume   = ,
+  number   = ,
+  pages    = ,
+  url      = ,
+  textVersion = paste(
+
+  )
+)
