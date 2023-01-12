@@ -2051,27 +2051,26 @@ run_config <-
               # Check config file, and don't save if the user's selections 
               # will cause errors in the main app
               error <- FALSE
+              # Display message if metadata does not meet specifictions
+              # (simplifies conditional structure in notification)
+              metadata_error <- FALSE
             
               # If no assays are defined, mark an error
               if (!isTruthy(config_data_export$assays)){
                 error = TRUE
-                
-                # showNotification(
-                #   ui = 
-                #     icon_notification_ui(
-                #       icon_name = "skull-crossbones",
-                #       'Error: no assays were included. Please add an assay in the "assays" tab by selecting it in the "available assays" column.'
-                #       ),
-                #   duration = 8,
-                #   session = session
-                # )
               }
               
-              # Same for metadata
+              # Error if metadata is undefined, or less than two columns are 
+              # selected
               if (!isTruthy(config_data_export$metadata)){
                 error = TRUE
+                metadata_error = TRUE
+              } else {
+                if (length(config_data_export$metadata) < 2){
+                  error = TRUE
+                  metadata_error = TRUE
+                  }
                 }
-              
               
               # Convert R list format to YAML and download
               if (error == FALSE){
@@ -2093,9 +2092,9 @@ run_config <-
                             'No assays included. Please add at least one assay in the "assays" tab.'
                             )
                         },
-                        if (!isTruthy(config_data_export$metadata)){
+                        if (metadata_error){
                           tags$li(
-                            'No metadata variables included. Please add at least one variable in the "metadata" tab.'
+                            'Less than two metadata variables included. Please add at least two variables in the "metadata" tab.'
                             )
                         }
                       )

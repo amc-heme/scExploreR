@@ -525,9 +525,15 @@ plots_tab_ui <- function(id,
                # Modifications to group by/split by menus
                group_by_include_none = FALSE,
                split_by_include_none = FALSE,
-               # Will later be set by config file
-               group_by_default =      "clusters",
-               split_by_default =      "htb",
+               # Default selections for group by and split by
+               group_by_default =
+                 meta_choices()[[1]],
+               split_by_default =      
+                 if (isTruthy(patient_colname)){
+                   patient_colname()
+                   } else {
+                     meta_choices()[[2]]
+                   },
                group_by_label = 
                  "Choose Metadata for Proportions",
                split_by_label = 
