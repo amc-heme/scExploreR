@@ -13,7 +13,7 @@
 #' @param show_title if TRUE, the title is displayed above the plot.
 #' @param show_legend if TRUE, the legend is shown to the right side of the plot. The default is TRUE.
 #' @param palette a color palette to use for the plot. The plot uses a categorical palette.
-#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. 
+#' @param sort_groups the order with which to sort proportion comparisons on the proportion plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. 
 #' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
 #'
 #' @return  a ggplot2 object with a stacked bar plot created according to user specifications.
@@ -43,9 +43,6 @@ shiny_stacked_bar <-
         message = ""
       )
     )
-    
-    print("Cell proportion plot: value of custom factor levels")
-    print(custom_factor_levels)
     
     # Processing of palette
     # Determine number of colors needed, which is equal to the number of 

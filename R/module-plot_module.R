@@ -2196,10 +2196,11 @@ plot_module_server <- function(id,
                      })
                  
                  ## 7.4. Menu for custom refactoring of Group_by metadata ####
-                 if (plot_type %in% c("violin", "dot", "proportion")){
+                 if (plot_type %in% c("violin", "dot", "ridge", "proportion")){
                    ### 7.4.1. Define menu UI ####
-                   if (plot_type %in% c("violin", "dot")){
-                     # Violin, dot plots: refactoring affects group by variable
+                   if (plot_type %in% c("violin", "dot", "ridge")){
+                     # Violin, dot, ridge plots: refactoring affects 
+                     # group by variable
                      refactor_sortable <-
                        eventReactive(
                          c(object(), plot_selections$group_by()),
@@ -2352,7 +2353,7 @@ plot_module_server <- function(id,
                      plot_output_ui()
                      })
                  
-                 if (plot_type %in% c("violin", "dot", "proportion")){
+                 if (plot_type %in% c("violin", "dot", "proportion", "ridge")){
                    output$refactor_sortable <-
                      renderUI({
                        refactor_sortable()
@@ -2709,7 +2710,10 @@ plot_module_server <- function(id,
                                 custom_xlim()
                               } else {
                                 NULL
-                              }
+                              },
+                            sort_groups = plot_selections$sort_groups(),
+                            custom_factor_levels = 
+                              plot_selections$custom_refactoring()
                             ) 
                          }
                        )
