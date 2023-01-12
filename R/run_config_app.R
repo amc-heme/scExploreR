@@ -1985,6 +1985,21 @@ run_config <-
               # Delete the selected row from the table and save the new table
               module_data$threshold_data <-
                 module_data$threshold_data[-row_selected,]
+              
+              # Add the ADT corresponding to the row to be deleted back to the
+              # list of available ADTs, by updating the select input with all
+              # ADTs not in the new table
+              adts <- 
+                object[[ADT_assay()]] |> 
+                rownames()
+              
+              updateSelectizeInput(
+                session = session,
+                inputId = "selected_adt",
+                choices = adts[!adts %in% module_data$threshold_data$adt],
+                selected = character(0),
+                server = TRUE
+                )
             } else {
               warning("Unable to determine the index of the row selected for deletion")
             }
