@@ -2026,7 +2026,7 @@ run_config <-
           } else NULL
         })
       
-      ## 3.6. Export Config file as YAML ####
+      ## 3.6. Export Config file as YAML and check values for errors ####
       output$export_selections <- 
         downloadHandler(
           filename = "object-config.yaml",
@@ -2048,11 +2048,62 @@ run_config <-
                   }
                 ) 
               
+              # Check config file, and don't save if the user's selections 
+              # will cause errors in the main app
+              error <- FALSE
+            
+              # If no assays are defined, mark an error
+              if (!isTruthy(config_data_export$assays)){
+                error = TRUE
+                
+                # showNotification(
+                #   ui = 
+                #     icon_notification_ui(
+                #       icon_name = "skull-crossbones",
+                #       'Error: no assays were included. Please add an assay in the "assays" tab by selecting it in the "available assays" column.'
+                #       ),
+                #   duration = 8,
+                #   session = session
+                # )
+              }
+              
+              # Same for metadata
+              if (!isTruthy(config_data_export$metadata)){
+                error = TRUE
+                }
+              
+              
               # Convert R list format to YAML and download
-              write_yaml(
-                config_data_export, 
-                file = file
-              )
+              if (error == FALSE){
+                write_yaml(
+                  config_data_export, 
+                  file = file
+                )
+              } else if (error == TRUE){
+                # Message to display to user if an error was identified
+                showNotification(
+                  ui = 
+                    icon_notification_ui(
+                      icon_name = "skull-crossbones",
+                      'Error: Unable to save the config file for the following reasons:',
+                      tags$br(),
+                      tags$ul(
+                        if (!isTruthy(config_data_export$assays)){
+                          tags$li(
+                            'No assays included. Please add at least one assay in the "assays" tab.'
+                            )
+                        },
+                        if (!isTruthy(config_data_export$metadata)){
+                          tags$li(
+                            'No metadata variables included. Please add at least one variable in the "metadata" tab.'
+                            )
+                        }
+                      )
+                    ),
+                  duration = NULL,
+                  session = session
+                )
+              }
             })
       
       ## 3.7. Load Config File ####
