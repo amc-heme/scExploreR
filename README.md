@@ -8,9 +8,9 @@
 
 <br>
 
-* A pre-processed and finalized Seurat object (or a set of finalized objects)
+* A pre-processed and finalized Seurat object (or a set of finalized objects).
 * Config files for each object, and a browser config YAML. See "Installation and Use" for more information.
-* A server to host the app. This can be any computer with at least 16 GB of RAM, that can be left on and be connected to the internet continuously
+* A server to host the app. This can be any computer with at least 16 GB of RAM, that can be left on and be connected to the internet continuously.
 
 Some bioinformatics experience is required to install and configure the app, but once set up, the app can be used by anyone.
 
