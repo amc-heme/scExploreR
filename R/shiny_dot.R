@@ -54,9 +54,8 @@ shiny_dot <-
                     }
                 )
             } else if (sort_groups == "custom"){
-              # If sort_groups is custom but custom_factor_levels is not 
-              # defined, throw an informative error message (error returned
-              # by by factor() is too generic) 
+              # Error message when custom_factor_levels is not defined (error 
+              # returned by factor() is too generic) 
               if (is.null(custom_factor_levels)){
                 stop(
                   'When `sort_groups` is equal to "custom", 

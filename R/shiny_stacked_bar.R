@@ -13,7 +13,8 @@
 #' @param show_title if TRUE, the title is displayed above the plot.
 #' @param show_legend if TRUE, the legend is shown to the right side of the plot. The default is TRUE.
 #' @param palette a color palette to use for the plot. The plot uses a categorical palette.
-#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. 
+#' @param sort_groups the order with which to sort proportion comparisons on the proportion plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. 
+#' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
 #'
 #' @return  a ggplot2 object with a stacked bar plot created according to user specifications.
 #' 
@@ -29,7 +30,8 @@ shiny_stacked_bar <-
     show_title = TRUE,
     show_legend = TRUE,
     palette = NULL,
-    sort_groups = NULL
+    sort_groups = NULL,
+    custom_factor_levels = NULL
   ){
     # validate will keep plot code from running if the subset 
     # is NULL (no cells in subset)
@@ -74,20 +76,36 @@ shiny_stacked_bar <-
       factor(
         object@meta.data[[split_by]],
         levels = 
-          object@meta.data[[split_by]] |> 
-          unique() |> 
-          str_sort(
-            numeric = TRUE,
-            # Cell type proportion plots will plot groups in an order
-            # consistent with the value of the `decreasing` argument
-            # (FALSE will plot in ascending order, from left to right)
-            decreasing = 
-              if (sort_groups == "ascending"){
-                FALSE
-              } else if (sort_groups == "descending"){
-                TRUE
-              }
-            )
+          # Levels based on ascending or descending order
+          if (sort_groups %in% c("ascending", "descending")){
+            object@meta.data[[split_by]] |> 
+              unique() |> 
+              str_sort(
+                numeric = TRUE,
+                # Cell type proportion plots will plot groups in an order
+                # consistent with the value of the `decreasing` argument
+                # (FALSE will plot in ascending order, from left to right)
+                decreasing = 
+                  if (sort_groups == "ascending"){
+                    FALSE
+                  } else if (sort_groups == "descending"){
+                    TRUE
+                  }
+              )
+          } else {
+            # If sort_groups is "custom", use the user-defined levels 
+            
+            # Error message when custom_factor_levels is not defined (error 
+            # returned by factor() is too generic) 
+            if (is.null(custom_factor_levels)){
+              stop(
+                'When `sort_groups` is equal to "custom", 
+                  `custom_factor_levels` must be defined.'
+              )
+            }
+            
+            custom_factor_levels
+          }
         )
     
     # Create cell type proportion stacked bar chart

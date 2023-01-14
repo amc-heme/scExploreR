@@ -17,14 +17,14 @@ initial_title <- function(
   metadata_config = NULL, 
   features_entered = NULL
   ){
-  if (!plot_type %in% c("dimplot", "feature", "proportion")){
+  if (!plot_type %in% c("dimplot", "feature", "proportion", "pie")){
     stop(
-      'Agrument `plot_type` must be one of "dimplot", "feature", or "proportion"'
+      'Agrument `plot_type` must be one of "dimplot", "feature", "proportion", or "pie"'
       )
   }
   
-  if (plot_type %in% c("dimplot", "proportion")){
-    # For DimPlots and cell proportion plots: use name of group_by category
+  if (plot_type %in% c("dimplot", "proportion", "pie")){
+    # For DimPlots, cell proportion plots, and pie charts: use name of group_by category
     
     # Throw error if metadata_config or group_by are undefined
     if (is.null(metadata_config)){

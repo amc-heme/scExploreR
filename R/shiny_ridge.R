@@ -9,6 +9,8 @@
 #' @param center_x_axis_title if TRUE, the title on the x_axis is centered (default is FALSE).
 #' @param xlim a 2-element character vector giving the lower and upper bounds 
 #' of the x-axis.
+#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. 
+#' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
 #'
 #' @return a ggplot2 object with a ridge plot created according to user specifications.
 #'
@@ -21,7 +23,9 @@ shiny_ridge <-
    show_legend = TRUE,
    palette = NULL,
    center_x_axis_title = FALSE,
-   xlim = NULL
+   xlim = NULL,
+   sort_groups = NULL,
+   custom_factor_levels = NULL
   ){
     # validate will keep plot code from running if the subset 
     # is NULL (no cells in subset), or if the group by selection and features
@@ -50,6 +54,50 @@ shiny_ridge <-
     } else {
       # Only one group exists when group_by is equal to none
       n_colors <- 1
+    }
+    
+    # Factor/refactor group by metadata, but only if sort_groups is defined,
+    # and group by is not "none"
+    if (isTruthy(sort_groups) && group_by != "none"){
+      print("refactoring code")
+      object@meta.data[[group_by]] <-
+        # factor() creates a factor if the metadata category is not a factor
+        # already, and re-orders a factor if it already exists.
+        factor(
+          object@meta.data[[group_by]],
+          levels = 
+            # Levels based on ascending or descending order
+            if (sort_groups %in% c("ascending", "descending")){
+              object@meta.data[[group_by]] |> 
+                unique() |> 
+                str_sort(
+                  numeric = TRUE,
+                  decreasing =
+                    # Order of plotting for ridge plots is inverted from the 
+                    # expected order (decreasing == TRUE will plot in ascending 
+                    if (sort_groups == "ascending"){
+                      TRUE
+                    } else if (sort_groups == "descending"){
+                      FALSE
+                    }
+                )
+            } else if (sort_groups == "custom"){
+              # If sort_groups is "custom", use the user-defined levels 
+              
+              # Error message when custom_factor_levels is not defined (error 
+              # returned by factor() is too generic) 
+              if (is.null(custom_factor_levels)){
+                stop(
+                  'When `sort_groups` is equal to "custom", 
+                  `custom_factor_levels` must be defined.'
+                )
+              }
+              
+              # Must reverse order for ridge plots
+              custom_factor_levels |> 
+                rev()
+            }
+        )
     }
     
     # If there is at least one feature entered, create the ridge plot
