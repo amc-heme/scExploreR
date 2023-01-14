@@ -2196,60 +2196,119 @@ plot_module_server <- function(id,
                      })
                  
                  ## 7.4. Menu for custom refactoring of Group_by metadata ####
-                 if (plot_type %in% c("violin", "dot")){
+                 if (plot_type %in% c("violin", "dot", "ridge", "proportion")){
                    ### 7.4.1. Define menu UI ####
-                   refactor_sortable <-
-                     eventReactive(
-                       c(object(), plot_selections$group_by()),
-                       {
-                         # Responds to both the object and the group by 
-                         # variable, but only runs when the group by variable is
-                         # defined
-                         req(plot_selections$group_by())
-                         
-                         # Menu choices
-                         # Based on unique values or levels of current group by 
-                         # category
-                         group_by_metadata <- 
-                           object()@meta.data[[plot_selections$group_by()]]
-
-                         # Test if the current group by category is a factor
-                         if (is.factor(group_by_metadata)){
-                           # If so, extract factor levels
+                   if (plot_type %in% c("violin", "dot", "ridge")){
+                     # Violin, dot, ridge plots: refactoring affects 
+                     # group by variable
+                     refactor_sortable <-
+                       eventReactive(
+                         c(object(), plot_selections$group_by()),
+                         {
+                           # Responds to both the object and the group by 
+                           # variable, but only runs when the group by variable is
+                           # defined
+                           req(plot_selections$group_by())
+                           
+                           # Menu choices
+                           # Based on unique values or levels of current group by 
+                           # category
+                           group_by_metadata <- 
+                             object()@meta.data[[plot_selections$group_by()]]
+                           
+                           # Test if the current group by category is a factor
+                           if (is.factor(group_by_metadata)){
+                             # If so, extract factor levels
+                             menu_levels <-
+                               group_by_metadata |>
+                               levels() 
+                           } else {
+                             # Otherwise, fetch the unique values
+                             menu_levels <-
+                               group_by_metadata |> 
+                               unique()
+                           }
+                           
+                           # Sort to initialize menu in ascending 
+                           # alphanumeric order
                            menu_levels <-
-                             group_by_metadata |>
-                             levels() 
-                         } else {
-                           # Otherwise, fetch the unique values
-                           menu_levels <-
-                             group_by_metadata |> 
-                             unique()
-                         }
-                         
-                         # Sort to initialize menu in ascending 
-                         # alphanumeric order
-                         menu_levels <-
-                           menu_levels |> 
-                           str_sort(
-                             numeric = TRUE,
-                             decreasing = FALSE
+                             menu_levels |> 
+                             str_sort(
+                               numeric = TRUE,
+                               decreasing = FALSE
                                # Use descending order for dot plots (DotPlot() 
                                # inverts factor levels when plotting)
                                #if (plot_type == "dot") TRUE else FALSE
-                           )
-                         
-                         # Menu UI
-                         div(
-                           class = "compact-options-container",
-                           rank_list(
-                             text = "Drag-and drop to set order of groups:",
-                             labels = menu_levels,
-                             input_id = ns("custom_refactor"),
-                             class =
-                               c("default-sortable", "bucket-select")
+                             )
+                           
+                           # Menu UI
+                           div(
+                             class = "compact-options-container",
+                             rank_list(
+                               text = "Drag-and drop to set order of groups:",
+                               labels = menu_levels,
+                               input_id = ns("custom_refactor"),
+                               class =
+                                 c("default-sortable", "bucket-select")
                              )
                            )
                          })
+                   } else if (plot_type %in% "proportion"){
+                     # Proportion plots: refactoring affects split by variable
+                     refactor_sortable <-
+                       eventReactive(
+                         c(object(), plot_selections$split_by()),
+                         {
+                           # Responds to both the object and the group by 
+                           # variable, but only runs when the group by 
+                           # variable is defined
+                           req(plot_selections$split_by())
+                           
+                           # Menu choices
+                           # Based on unique values or levels of current group by 
+                           # category
+                           split_by_metadata <- 
+                             object()@meta.data[[plot_selections$split_by()]]
+                           
+                           # Test if the current group by category is a factor
+                           if (is.factor(split_by_metadata)){
+                             # If so, extract factor levels
+                             menu_levels <-
+                               split_by_metadata |>
+                               levels() 
+                           } else {
+                             # Otherwise, fetch the unique values
+                             menu_levels <-
+                               split_by_metadata |> 
+                               unique()
+                           }
+                           
+                           # Sort to initialize menu in ascending 
+                           # alphanumeric order
+                           menu_levels <-
+                             menu_levels |> 
+                             str_sort(
+                               numeric = TRUE,
+                               decreasing = FALSE
+                               # Use descending order for dot plots (DotPlot() 
+                               # inverts factor levels when plotting)
+                               #if (plot_type == "dot") TRUE else FALSE
+                             )
+                           
+                           # Menu UI
+                           div(
+                             class = "compact-options-container",
+                             rank_list(
+                               text = "Drag-and drop to set order of groups:",
+                               labels = menu_levels,
+                               input_id = ns("custom_refactor"),
+                               class =
+                                 c("default-sortable", "bucket-select")
+                             )
+                           )
+                         })
+                     }
+                   
 
                    ### 7.4.2. Show/hide menu ####
                    observe({
@@ -2294,7 +2353,7 @@ plot_module_server <- function(id,
                      plot_output_ui()
                      })
                  
-                 if (plot_type %in% c("violin", "dot")){
+                 if (plot_type %in% c("violin", "dot", "proportion", "ridge")){
                    output$refactor_sortable <-
                      renderUI({
                        refactor_sortable()
@@ -2651,7 +2710,10 @@ plot_module_server <- function(id,
                                 custom_xlim()
                               } else {
                                 NULL
-                              }
+                              },
+                            sort_groups = plot_selections$sort_groups(),
+                            custom_factor_levels = 
+                              plot_selections$custom_refactoring()
                             ) 
                          }
                        )
@@ -2682,7 +2744,9 @@ plot_module_server <- function(id,
                           # Plot title: from 3.7.
                           plot_title = plot_title(),
                           palette = palette(),
-                          sort_groups = plot_selections$sort_groups()
+                          sort_groups = plot_selections$sort_groups(),
+                          custom_factor_levels = 
+                            plot_selections$custom_refactoring()
                         ) 
                        })
                  } else if (plot_type == "pie"){
