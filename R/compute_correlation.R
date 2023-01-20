@@ -45,11 +45,11 @@ compute_correlation <-
       # the values). The "name" and "value" arguments passed to enframe() will 
       # determine the column names of the feature column and the correlation 
       # coefficient, respectively, in the new tibble.
-      enframe(name = feature_colname, value = coeff_colname) |> 
+      tibble::enframe(name = feature_colname, value = coeff_colname) |> 
       # Filter out selected feature
-      filter(.data[[feature_colname]] != gene_selected) |> 
+      dplyr::filter(.data[[feature_colname]] != gene_selected) |> 
       # Arrange in descending order by correlation coefficient
-      arrange(desc(.data[[coeff_colname]]))
+      dplyr::arrange(desc(.data[[coeff_colname]]))
   
     return(table)
   }
