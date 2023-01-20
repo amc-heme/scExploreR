@@ -2,14 +2,14 @@
 
 <br>
 
-*Welcome to the single cell visualization tool you didn't know you were looking for!* This app is designed to make exploration of highly complex data sets easy for anyone, regardless of informatics background. Bridging the gap between domain (disease and clinical) specific knowledge and high level sequencing data is possible with this tool, and ultimately makes the best use of these precious data sets to glean molecular and translational insights through democratizing analysis. 
+*Welcome to the single cell visualization tool you didn't know you were looking for!* This app is designed to make exploration of highly complex data sets easy for anyone, regardless of informatics background. Whether you're a researcher looking to make sense of your single cell data, or a bioinformatician looking to present your results interactively, you will find value in this app. scExplorer bridges the gap between domain (disease and clinical) specific knowledge and high level sequencing data, and ultimately makes the best use of these precious data sets to glean molecular and translational insights through democratizing analysis. 
 
 ## Requirements
 
 <br>
 
 * A pre-processed and finalized Seurat object (or a set of finalized objects).
-* Config files for each object, and a browser config YAML. See "Installation and Use" for more information.
+* Config files for each object (generated with this app), and a browser config YAML. See "Installation and Use" for more information.
 * A server to host the app. This can be any computer with at least 16 GB of RAM, that can be left on and be connected to the internet continuously.
 
 Some bioinformatics experience is required to install and configure the app, but once set up, the app can be used by anyone.
@@ -22,6 +22,7 @@ Some bioinformatics experience is required to install and configure the app, but
 ```
 remotes::install_github("amc-heme/scExploreR")
 ```
+
 2. Configure a Seurat object for the browser by using the configuration app provided with the package. For more information on the config app, see the [config app documentation]().
 ```
 scExploreR::run_config(
@@ -31,15 +32,33 @@ scExploreR::run_config(
   )
 ```
 
-3. Set up a browser config YAML file. The file will contain a list of datasets with the path to the Seurat objects and config files for each, along with browser specific settings. See [browser config setup]() for more info.
+3. To set up a browser for others to use, create a browser config YAML file (If you are using the browser locally for your own use, skip to step 4). The file will contain a list of datasets with the path to the Seurat objects and config files for each, along with browser specific settings. See [browser config setup]() for more info.
 
-4. Run scExploreR using the path to your config file.
-```
-scExploreR::run_scExploreR(
-  browser_config = "./config.yaml"
-  )
-```
+4. Run scExploreR. There are multiple ways to do this: 
 
+<ul>
+  <li>
+  A. If setting up a browser, use the path to your config file.
+  
+  ```
+  scExploreR::run_scExploreR(
+    browser_config = "./config.yaml"
+    )
+  ```
+  
+  </li>
+  <li>
+  B. If setting up locally, enter the path to your object and object-specific config file. Only one object may be viewed at once using this method. 
+  
+  ```
+  scExploreR::run_scExploreR(
+    object_path = "./object.rds"
+    config_path = "./config.yaml"
+    )
+  ```
+  
+  </li>
+</ul>
 <br>
 
 
@@ -55,6 +74,7 @@ scExploreR::run_scExploreR(
 
 * A more advanced version of this app will not only accept Seurat objets, but also Scanpy. 
 * Additional analyses such as GSEA will be added in the future
+* Explicit support for single cell data besides CITE-seq will be added.
 
 <br>
 
