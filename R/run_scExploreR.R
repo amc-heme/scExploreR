@@ -11,7 +11,9 @@
 #' @export
 run_scExploreR <- 
   function(
-    browser_config,
+    browser_config = NULL,
+    object_path = NULL,
+    config_path = NULL,
     port = NULL
   ){
     # Load Libraries and Data ------------------------------------------------------
@@ -32,9 +34,9 @@ run_scExploreR <-
     # Reactlog (for debugging)
     library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
     options(
-      shiny.reactlog = TRUE, 
+      shiny.reactlog = TRUE#, 
       # Full stack trace for errors 
-      shiny.fullstacktrace = TRUE
+      #shiny.fullstacktrace = TRUE
     )
     
     # Logging and performance monitoring
@@ -103,7 +105,29 @@ run_scExploreR <-
         "scExplorer_all_features.html"
       )
     
-    # Load CSS, JavaScript, and R scripts ------------------------------------------
+    # Determine App mode -------------------------------------------------------
+    # Three app modes, depending on parameters specified. 
+    browser_mode <- FALSE
+    local_mode <- FALSE
+    local_single_object_mode <- FALSE
+    
+    if (is.null(browser_config) & !is.null(object_path) & !is.null(config_path)){
+      # Local mode with one object: when only the object_path and the config_path are specified. 
+      local_single_object_mode <- TRUE
+    } else if (!is.null(browser_config) & is.null(object_path) & is.null(config_path)){
+      # Browser mode (original app): when only a config file is passed 
+      browser_mode <- TRUE
+    } else if (is.null(browser_config) & is.null(object_path) & is.null(config_path)){
+      # When no arguments are defined, run a local version with an interface 
+      # for picking the object and config file. 
+      local_mode <- TRUE
+    } else {
+      stop(
+        "Invalid combination of defined parameters for browser_config, object_path, and config_path. See ?run_scExploreR for more details."
+        )
+    }
+    
+    # Load CSS, JavaScript, and R scripts --------------------------------------
     # Load functions in ./R directory
     # # Get list of files
     # source_files <- 
@@ -165,9 +189,12 @@ run_scExploreR <-
     # Create list of style tags for each CSS file
     js_list <- lapply(js_files, includeScript)
     
-    # Read browser config yaml
-    browser_config <- 
-      read_yaml(browser_config)
+    # Read browser config yaml (if in browser mode)
+    if (browser_mode){
+      browser_config <- 
+        read_yaml(browser_config)
+    }
+    
     
     # Non-reactive Global Variables ------------------------------------------------
     
@@ -382,7 +409,24 @@ run_scExploreR <-
     
     # Construct list of datasets using config file provided by user
     datasets <- 
-      browser_config$datasets
+      if (browser_mode){
+        browser_config$datasets
+      } else if (local_single_object_mode) {
+        # For local mode with an object path and the config file specified, 
+        # create a one-object list with the object and a config file
+        list(
+          `object` =
+            list(
+              `object` = 
+                object_path,
+              `config` = 
+                config_path
+              )
+          )
+      } else if (local_mode) {
+        list()
+      }
+      
     
     # Objects must be loaded at startup. If they are loaded separately for each
     # user, the RAM will quickly be exhausted. 
@@ -1249,11 +1293,16 @@ run_scExploreR <-
               valid_features = valid_features()
             )
           
+          # PANDOC: path to pandoc needs to be defined in browser mode, on a 
+          # Linux server
           print("R studio pandoc check")
           # Execute Rmarkdown document
-          if (any(names(browser_config) == "RSTUDIO_PANDOC")) {
-            Sys.setenv(RSTUDIO_PANDOC = browser_config$RSTUDIO_PANDOC)
+          if (browser_mode){
+            if (any(names(browser_config) == "RSTUDIO_PANDOC")) {
+              Sys.setenv(RSTUDIO_PANDOC = browser_config$RSTUDIO_PANDOC)
+            }
           }
+          
           print("done")
           
           print("Rendering new data dictionary")
