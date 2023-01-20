@@ -32,9 +32,9 @@ run_scExploreR <-
     # Reactlog (for debugging)
     library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
     options(
-      shiny.reactlog = TRUE, 
+      shiny.reactlog = TRUE#, 
       # Full stack trace for errors 
-      shiny.fullstacktrace = TRUE
+      #shiny.fullstacktrace = TRUE
     )
     
     # Logging and performance monitoring
