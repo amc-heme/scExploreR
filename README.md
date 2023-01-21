@@ -38,7 +38,7 @@ scExploreR::run_config(
 
 <ul>
   <li>
-  A. If setting up a browser, use the path to your config file.
+  If setting up a browser, use the path to your config file.
   
   ```
   scExploreR::run_scExploreR(
@@ -48,7 +48,7 @@ scExploreR::run_config(
   
   </li>
   <li>
-  B. If setting up locally, enter the path to your object and object-specific config file. Only one object may be viewed at once using this method. 
+  If setting up locally, enter the path to your object and object-specific config file. Only one object may be viewed at once using this method. 
   
   ```
   scExploreR::run_scExploreR(
