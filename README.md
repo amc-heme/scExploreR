@@ -22,8 +22,9 @@ Some bioinformatics experience is required to install and configure the app, but
 ```
 remotes::install_github("amc-heme/scExploreR")
 ```
+2. Process or obtain a finalized Seurat object.
 
-2. Configure a Seurat object for the browser by using the configuration app provided with the package. For more information on the config app, see the [config app documentation]().
+3. Configure a Seurat object for the browser by using the configuration app provided with the package. For more information on the config app, see the [config app documentation]().
 ```
 scExploreR::run_config(
   object_path = "path_to_your_seurat_object.rds",
@@ -32,9 +33,9 @@ scExploreR::run_config(
   )
 ```
 
-3. To set up a browser for others to use, create a browser config YAML file (If you are using the browser locally for your own use, skip to step 4). The file will contain a list of datasets with the path to the Seurat objects and config files for each, along with browser specific settings. See [browser config setup]() for more info.
+4. To set up a browser for others to use, create a browser config YAML file (If you are using the browser locally for your own use, skip to step 4). The file will contain a list of datasets with the path to the Seurat objects and config files for each, along with browser specific settings. See [browser config setup]() for more info.
 
-4. Run scExploreR. There are multiple ways to do this: 
+5. Run scExploreR. There are multiple ways to do this: 
 
 <ul>
   <li>
