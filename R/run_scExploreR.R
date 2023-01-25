@@ -68,6 +68,7 @@ run_scExploreR <-
     
     # Other packages
     library(yaml, quietly = TRUE, warn.conflicts = FALSE)
+    library(rlang, quietly = TRUE, warn.conflicts = FALSE)
     
     # Add inst/www to the resource path so static html can be loaded 
     # I'm pretty sure this puts the www/ folder from inst/ in the browser 
