@@ -24,6 +24,7 @@ Imports:
     RColorBrewer,
     reactlog (>= 1.1.0),
     rintrojs (>= 0.3.0),
+    rlang,
     rlog (>= 0.1.0),
     scales,
     Seurat (>= 3.0.0),
