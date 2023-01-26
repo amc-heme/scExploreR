@@ -1,5 +1,5 @@
 ---
-title: "scExploreR Full Browser Documentation"
+title: "scExploreR Manual"
 output: 
   html_document:
     toc: true
@@ -477,7 +477,7 @@ After selecting a test and a subset, press update to run DGE on the chosen group
 
 The "test summary" section will display summary data on the test selected and the subset it was performed on. The "test selected" subsection will display either "differential expression" or "marker identification" based on the test mode chosen. It will also display the groups being compared if differential expression was chosen, or the number of marker classes if marker identification was chosen. The "subset used for test" subsection shows information on the subset of cells chosen. For each categorical metadata variable shown in the app, the categories represented by the cells in the test sample will be shown (if cells from patients A, B, and C are present, this section will list A, B, and C under "patients"). The number of cells in the subset tested is also displayed, and the number of cells in each DGE group or marker class is also shown.
 
-### DGE Table
+### DGE Table {#differential-expression-columns}
 
 The columns of the DGE table are detailed below. The table may be downloaded via the "`r icon("table")` download table" button.
 

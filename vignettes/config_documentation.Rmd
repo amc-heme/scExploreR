@@ -91,7 +91,7 @@ The config app can be ran from R Studio or the console by entering the following
       config_path = NULL 
       )
 
-The `object_path` argument is required, and it must be an .rds containing a single Seurat object. The `config_path` argument is optional and is used to load an existing config file into the app for further editing.
+The `object_path` argument is required, and it must be an .rds containing a single Seurat object. The `config_path` argument is optional and is used to load an existing config file into the app for further editing (for more on this, see [loading a config file](#load-config-file) below).
 
 <!-- Put in note container -->
 
@@ -228,3 +228,20 @@ To delete a threshold, press the `r icon("times-circle")` button next to the des
 ![](config_documentation-009-Edit-ADT-Threshold.gif){width="690"}
 
 ![](config_documentation-010-Delete-ADT-Threshold.gif){width="690"}
+
+# Saving and Loading Config Files
+
+### Saving
+
+To save a config file, press the `r icon("ellipsis-h")` button in the upper right corner and select "Save Config File". A window will appear to save the config file to your local file system. The file will save in a .yaml format.
+
+### Loading {#load-config-file}
+
+To load a config file, call `run_config()` with the path to the saved file:
+
+    run_config(
+      object_path = "./object.rds", 
+      config_path = "./config_file.yaml" 
+      )
+
+When the app loads, press the `r icon("ellipsis-h")` button in the upper right corner and select "Load Config File". All fields in the app will update based on the information read from the file. Each time this button is pressed, the information entered will be reset to what is in the file, so be careful to avoid overwriting data. If the app is launched with `config_path` equal to `NULL`, the app will not fill any fields.
