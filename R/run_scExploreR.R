@@ -1764,7 +1764,11 @@ run_scExploreR <-
       options = 
         list(
           "port" = 
-            if (!is.null(port)) port else getOption("shiny.port")
+            if (!is.null(port)) port else getOption("shiny.port"),
+           "host" = 
+            if (!is.null(host)) host else "127.0.0.1",
+           "launch.browser" = 
+            if (!is.null(launch.browser)) launch.browser else TRUE
         )
       )
   }
