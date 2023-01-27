@@ -14,7 +14,9 @@ run_scExploreR <-
     browser_config = NULL,
     object_path = NULL,
     config_path = NULL,
-    port = NULL
+    port = NULL,
+    host = NULL,
+    launch.browser = NULL
   ){
     # Load Libraries and Data ------------------------------------------------------
     ## Initialize libraries ####
