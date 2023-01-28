@@ -916,7 +916,8 @@ plots_tab_server <- function(id,
                    # Valid features, for displaying choices for x- and y- axes
                    valid_features = valid_features,
                    # Use categorical palettes for scatterplot
-                   palette = selected_categorical_palette
+                   palette = selected_categorical_palette,
+                   assay_config = assay_config
                    )
                  
                  ## 2.6. Ridge Plot ####

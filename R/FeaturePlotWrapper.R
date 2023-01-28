@@ -553,7 +553,6 @@ MultiFeatureSimple <-
     # 4. Iterative plot creation -----------------------------------------------
     for (group in groups) {
       i <- which(groups == group)
-      print(glue("Group: {group}"))
       
       # 4.1. Define legend title for group
       # plot_legend_title, as opposed to `legend_title` (parameter passed)

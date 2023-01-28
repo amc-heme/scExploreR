@@ -1932,11 +1932,6 @@ plot_module_server <- function(id,
                              plot_selections$split_by() == "none" &
                              # Do not show slider for blended plots
                              !isTruthy(plot_selections$blend())
-                           
-                           print("plot_selections$blend()")
-                           print(plot_selections$blend())
-                           print("condition_multiple")
-                           print(condition_multiple)
                           
                            if (condition_single | condition_multiple){
                              # Define min, max, and default values for slider
@@ -2681,13 +2676,14 @@ plot_module_server <- function(id,
                        label = glue("{plot_label}: Create Plot"),
                        {
                          shiny_scatter(
-                           object = object,
-                           feature_1 = plot_selections$scatter_1,
-                           feature_2 = plot_selections$scatter_2,
-                           group_by = plot_selections$group_by,
-                           show_legend = plot_selections$legend,
-                           display_coeff = plot_selections$display_coeff,
-                           palette = palette
+                           object = object(),
+                           feature_1 = plot_selections$scatter_1(),
+                           feature_2 = plot_selections$scatter_2(),
+                           group_by = plot_selections$group_by(),
+                           show_legend = plot_selections$legend(),
+                           display_coeff = plot_selections$display_coeff(),
+                           palette = palette(),
+                           assay_config = assay_config()
                            )
                        })
                  } else if (plot_type == "ridge"){

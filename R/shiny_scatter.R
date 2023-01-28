@@ -11,6 +11,8 @@
 #' argument (affecting how cells are colored on the plot).
 #' @param display_coeff (Reactive) if TRUE, show the correlation coefficient 
 #' as the title of the plot (default behavior).
+#' @param assay_config the assays section of the config file, loaded at app 
+#' startup and upon changing datasets.
 #'
 #' @return a ggplot2 object with a scatterplot created from the Seurat object according to user specifications.
 #' 
@@ -21,19 +23,14 @@ shiny_scatter <- function(object,
                           group_by,
                           show_legend,
                           display_coeff,
-                          palette
+                          palette,
+                          assay_config = NULL
                           ){
-  # Make function reactive-agnostic (will use either a non-reactive object, or
-  # a reactive object unpacked to a non-reactive variable within this function) 
-  if (is.reactive(object)){
-    object <- object()
-  } 
-  
   # Palette: must determine number of colors to create from provided palette
   # The number of colors is equal to the number of unique values in 
   # the group.by category
   n_colors <- 
-    object@meta.data[[group_by()]] |>
+    object@meta.data[[group_by]] |>
     unique() |> 
     length()
   
@@ -41,18 +38,40 @@ shiny_scatter <- function(object,
   plot <- 
     FeatureScatter(
       object, 
-      feature1 = feature_1(),
-      feature2 = feature_2(),
-      group.by = group_by(),
+      feature1 = feature_1,
+      feature2 = feature_2,
+      group.by = group_by,
       # Cols: use user defined palette, or the defaults if palette() == NULL 
       cols = 
-        if (!is.null(palette())){
+        if (!is.null(palette)){
           # colorRampPalette() extends or contracts the given palette to 
           # produce exactly the required number of colors
-          colorRampPalette(palette())(n_colors)
+          colorRampPalette(palette(n_colors))
           # Use ggplot2 defaults if palette() is unspecified
         } else NULL, 
       )
+  
+  # Use human-readable names on axes (remove assay key from features)
+  plot <- 
+    plot +
+    xlab(
+      # Remove assay key from feature name
+      hr_name(
+        machine_readable_name = feature_1,
+        assay_config = assay_config,
+        # Do not use suffix for legend title
+        use_suffix = FALSE
+      )
+    ) +
+    ylab(
+      # Remove assay key from feature name
+      hr_name(
+        machine_readable_name = feature_2,
+        assay_config = assay_config,
+        # Do not use suffix for legend title
+        use_suffix = FALSE
+      )
+    )
   
   # List of layers to be applied to plot after creation
   layers <- 
@@ -65,14 +84,14 @@ shiny_scatter <- function(object,
       list(
         theme(
           legend.position = 
-            if (show_legend()==TRUE) {
+            if (show_legend == TRUE) {
               "right"
             } else "none"
           )
       ), # End list() (element A)
       
       # Element B: Remove title if requested
-      if (display_coeff() == FALSE){
+      if (display_coeff == FALSE){
         list(
           labs(title = NULL)
           )
