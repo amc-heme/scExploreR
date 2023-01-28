@@ -406,7 +406,7 @@ plot_module_ui <- function(id,
             # Checkbox is shown when exactly two features are selected
             checkboxInput(
               inputId = ns("blend"),
-              label = "View feature co-expression",
+              label = "View Feature Co-Expression",
               value = FALSE
             ),
             # Container for blend options 
@@ -415,7 +415,7 @@ plot_module_ui <- function(id,
               # Layout of blended plot
               selectInput(
                 inputId = ns("blend_layout"),
-                label = "Choose layout for panels",
+                label = "Choose Layout for Panels",
                 choices = c("Default" = "2col", "Wide" = "4col"),
                 selected = "2col"
                 ),
@@ -423,7 +423,7 @@ plot_module_ui <- function(id,
               # Blend Palette
               pickerInput(
                 inputId = ns("blend_palette"),
-                label = "Choose palette for co-expression:",
+                label = "Choose Palette for Co-Expression:",
                 # choices are populated server-side
                 choices = NULL,
                 selected = NULL
@@ -456,7 +456,7 @@ plot_module_ui <- function(id,
               # Custom blend colors
               div(
                 id = ns("blend_palette_custom_colors"),
-                tags$b("Choose custom palette for co-expression"),
+                tags$b("Choose Custom Palette for Co-Expression"),
                 colourInput(
                   inputId = ns("blend_custom_low"),
                   label = "Low expression color",

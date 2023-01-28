@@ -38,6 +38,8 @@
 #' max y values.
 #' @param show_legend If TRUE, show the legend of the feature plot (default is 
 #' TRUE). 
+#' @param assay_config the assays section of the config file, loaded at app 
+#' startup and upon changing datasets.
 #' @param ... A list of arguments to pass to FeaturePlot
 #'
 #' @examples 
@@ -71,6 +73,7 @@ FeaturePlotSingle<-
     xlim = NULL,
     ylim = NULL,
     show_legend = TRUE,
+    assay_config = NULL,
     ...
     ){
     # Handling of NULL values
@@ -155,7 +158,15 @@ FeaturePlotSingle<-
   # Choices for name on legend title
   legend_title <- 
     if (legend_title == "feature"){
-      feature
+      ggtitle(
+        # Remove assay key from feature name
+        hr_name(
+          machine_readable_name = feature,
+          assay_config = assay_config,
+          # Do not use suffix for legend title
+          use_suffix = FALSE
+        )
+      )
     } else if (legend_title == "assay_score"){
       # Assay score: short description of what is being measured in the assay
       # (expression, enrichment, etc.). Will be set in config file
@@ -299,7 +310,12 @@ FeaturePlotSingle<-
         # Default behavior for single-group plots: use feature title
         p <-
           p +
-          ggtitle(feature)
+          ggtitle(
+            hr_name(
+              machine_readable_name = feature,
+              assay_config = assay_config
+              )
+            )
       } else {
         # custom_titles is not NULL: use custom titles
         # Custom titles should be a single-element character vector in this case
@@ -376,6 +392,8 @@ FeaturePlotSingle<-
 #' max y values.
 #' @param show_legend If TRUE, show the legend of the feature plot (default is 
 #' TRUE). 
+#' @param assay_config the assays section of the config file, loaded at app 
+#' startup and upon changing datasets.
 #' @param ... A list of arguments to pass to FeaturePlot
 #' 
 #' @noRd
@@ -395,6 +413,7 @@ MultiFeatureSimple <-
     xlim = NULL,
     ylim = NULL,
     show_legend = TRUE,
+    assay_config = NULL,
     #super_title = FALSE,
     ...
   ){
@@ -540,7 +559,13 @@ MultiFeatureSimple <-
       # plot_legend_title, as opposed to `legend_title` (parameter passed)
       plot_legend_title <- 
         if (legend_title == "feature"){
-          group
+          # Remove assay key from feature name 
+          hr_name(
+            machine_readable_name = group,
+            assay_config = assay_config,
+            # Do not use suffix for legend title
+            use_suffix = FALSE
+            )
         } else if (legend_title == "assay_score"){
           # Assay score: short description of what is being measured in the 
           # assay (expression, enrichment, etc.). Will be set in config file
@@ -597,7 +622,14 @@ MultiFeatureSimple <-
           # custom_titles is NULL: use default behavior (group names)
           p <-
             p +
-            ggtitle(group)
+            ggtitle(
+              # Remove assay key from feature name
+              hr_name(
+                # (group is the name of the individual feature)
+                machine_readable_name = group,
+                assay_config = assay_config
+                )
+              )
         } else {
           # custom_titles is not NULL: use custom titles 
           # (custom titles should be a character vector)
