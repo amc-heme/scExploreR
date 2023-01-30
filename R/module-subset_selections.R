@@ -386,7 +386,7 @@ subset_selections_server <- function(id,
                 if (is.null(input[[category_id]])){
                   filter_df |> 
                     # Fetch unique values for each category 
-                    select(.data[[category]]) |>
+                    dplyr::select(.data[[category]]) |>
                     unique() |> 
                     # Convert unique values to character vector
                     unlist() |>
