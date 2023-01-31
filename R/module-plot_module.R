@@ -843,7 +843,7 @@ plot_module_server <- function(id,
                  # Title settings and custom titles are enabled for the plot 
                  # types below
                  if (plot_type %in% 
-                     c("dimplot", "feature", "proportion", "pie")){
+                     c("dimplot", "feature", "ridge", "proportion", "pie")){
                    # Reactive trigger for updating single custom title input
                    update_title_single <- makeReactiveTrigger()
                    
@@ -865,12 +865,13 @@ plot_module_server <- function(id,
                        
                        # Conditional tree to determine if 
                        # custom titles are possible
-                       if (plot_type %in% c("dimplot", "proportion", "pie")){
+                       if (plot_type %in% c(
+                         "dimplot", "proportion", "pie")){
                          # DimPlots: custom titles are always possible
-                         # Proportion stacked bar plots use same behavior as
-                         # DimPlots
+                         # Proportion stacked bar plots use same behavior 
+                         # as DimPlots
                          enable_custom = TRUE
-                         # Plot uses a single 
+                         # Plot uses a single custom title menu
                          menu_type("single")
                        } else if (plot_type == "feature"){
                          # Feature plots: custom titles can be used when one 
@@ -895,6 +896,16 @@ plot_module_server <- function(id,
                              enable_custom = TRUE
                              menu_type("multiple")
                            }
+                         }
+                       } else if (plot_type == "ridge"){
+                         # For ridge type, custom titles depend only on the 
+                         # number of features.
+                         if (length(features_entered()) == 1){
+                           enable_custom = TRUE
+                           menu_type("single")
+                         } else if (length(features_entered()) > 1){
+                           enable_custom = TRUE
+                           menu_type("multiple")
                          }
                        }
                        
@@ -935,7 +946,7 @@ plot_module_server <- function(id,
                          showElement(
                            id = "custom_title_div", 
                            anim = TRUE
-                         )
+                          )
                        } else {
                          hideElement(
                            id = "custom_title_div", 
@@ -952,12 +963,12 @@ plot_module_server <- function(id,
                          showElement(
                            id = "custom_title_multi_div", 
                            anim = TRUE
-                         )
+                           )
                        } else {
                          hideElement(
                            id = "custom_title_multi_div", 
                            anim = TRUE
-                         )
+                           )
                        }
                      } 
                    })
@@ -972,7 +983,7 @@ plot_module_server <- function(id,
                          object(),
                          plot_selections$group_by()
                          )
-                     } else if (plot_type == "feature"){
+                     } else if (plot_type %in% c("feature", "ridge")){
                        c(input$title_settings,
                          object(),
                          features_entered()
@@ -992,9 +1003,10 @@ plot_module_server <- function(id,
                                group_by = plot_selections$group_by(),
                                metadata_config = metadata_config(),
                                features_entered = 
-                                 if (plot_type == "feature"){
+                                 if (plot_type %in% c("feature", "ridge")){
                                    features_entered()
-                                 } else NULL
+                                 } else NULL,
+                               assay_config = assay_config()
                              )
                            
                            # Update input with initial value
@@ -1042,9 +1054,10 @@ plot_module_server <- function(id,
                            group_by = plot_selections$group_by(),
                            metadata_config = metadata_config(),
                            features_entered = 
-                             if (plot_type == "feature"){
+                             if (plot_type %in% c("feature", "ridge")){
                                features_entered()
-                               } else NULL
+                               } else NULL,
+                           assay_config = assay_config()
                          )
                        
                        # Update input
@@ -1091,7 +1104,8 @@ plot_module_server <- function(id,
                               plot_type = plot_type,
                               group_by = plot_selections$group_by(),
                               metadata_config = metadata_config(),
-                              features_entered = features_entered()
+                              features_entered = features_entered(),
+                              assay_config = assay_config()
                               )
 
                          if (isTruthy(input$custom_title)){
@@ -1112,54 +1126,69 @@ plot_module_server <- function(id,
                    # })
                    
                    ## 3.6. Server for multiple custom title input ####
-                   # Currently enabled for feature plots only 
-                   if (plot_type == "feature"){
-                     # Define default values for inputs
-                     default_titles <-
-                       reactive({
-                         if (!is.null(features_entered())){
-                           if (
-                             length(features_entered()) == 1 &
-                             plot_selections$split_by() != "none"
+                   if (plot_type %in% c("ridge", "feature")){
+                     ### 3.6.1. Define default title(s) ####
+                     if (plot_type == "feature"){
+                       default_titles <-
+                         reactive({
+                           if (!is.null(features_entered())){
+                             if (
+                               length(features_entered()) == 1 &
+                               plot_selections$split_by() != "none"
                              ){
-                             # Single-feature plots with a split_by selection:
-                             # use split_by groups
-                             req(plot_selections$split_by())
-                             
-                             default_titles <-
-                               object()@meta.data[[
-                                 plot_selections$split_by()]] |> 
-                               unique() |> 
-                               str_sort(numeric = TRUE)
-                             
-                             return(default_titles)
-                           } else if (
-                             length(features_entered()) > 1 &
-                             plot_selections$split_by() == "none"
+                               # Single-feature plots with a split_by selection:
+                               # use split_by groups
+                               req(plot_selections$split_by())
+                               
+                               default_titles <-
+                                 object()@meta.data[[
+                                   plot_selections$split_by()]] |> 
+                                 unique() |> 
+                                 str_sort(numeric = TRUE)
+                               
+                               return(default_titles)
+                             } else if (
+                               length(features_entered()) > 1 &
+                               plot_selections$split_by() == "none"
                              ){
-                             # Multi-feature plots with no split_by selection:
-                             # use features entered for defaults
-                             default_titles <- features_entered()
-                             return(default_titles)
+                               # Multi-feature plots with no split_by selection:
+                               # use features entered for defaults
+                               default_titles <- features_entered()
+                               return(default_titles)
+                             }
                            }
-                         }
-                       })
+                         })
+                     } else if (plot_type == "ridge"){
+                       # Default titles: feature names with assay key removed
+                       default_titles <- 
+                         reactive({
+                           req(features_entered())
+                           
+                           feature_names <- features_entered()
+                           
+                           # Default names: each feature entered, with the assay 
+                           # key removed
+                           for (i in 1:length(feature_names)){
+                             feature_names[i] <-
+                               hr_name(
+                                 machine_readable_name = feature_names[i],
+                                 assay_config = assay_config(),
+                                 # Do use the assay label if provided in config
+                                 # app
+                                 use_suffix = TRUE
+                                 )
+                            }
+                           
+                           feature_names
+                         })
+                     }
                      
-                     # Pass default titles to multi-text input module
+                     ### 3.6.2 Pass default titles to multi-text input module ####
                      custom_vector <-
                        multi_text_input_server(
                          id = "custom_title_multi",
                          default_vector = default_titles
                          )
-                     
-                     # custom_vector <-
-                     #   custom_title_multi_server(
-                     #     id = "custom_title_multi",
-                     #     object = object,
-                     #     split_by = plot_selections$split_by,
-                     #     label_header = "Original Value",
-                     #     input_header = tagList("New Value")
-                     #     )
                    }
                    
                    ## 3.7. Custom title value #### 
@@ -1201,12 +1230,12 @@ plot_module_server <- function(id,
                        })
                    }
                    
-                   ## 3.8. Custom title value for feature plots ####
+                   ## 3.8. Custom title value for feature, ridge plots ####
                    # Must pass either single or multiple custom title output 
                    # depending on the current number of panels on the feature 
                    # plot, or NULL 
-                   if (plot_type == "feature"){
-                     feature_plot_custom_title <-
+                   if (plot_type %in% c("feature", "ridge")){
+                     variable_length_custom_title <-
                        reactive({
                          # Only continue if menu_type is not NULL (when custom
                          # titles is selected)
@@ -2751,7 +2780,7 @@ plot_module_server <- function(id,
                            show_title = 
                              if (input$title_settings == "none") FALSE else TRUE,
                            # From 3.5.
-                           custom_titles = feature_plot_custom_title()
+                           custom_titles = variable_length_custom_title()
                            )
                          })
                    
@@ -2842,7 +2871,9 @@ plot_module_server <- function(id,
                               },
                             sort_groups = plot_selections$sort_groups(),
                             custom_factor_levels = 
-                              plot_selections$custom_refactoring()
+                              plot_selections$custom_refactoring(),
+                            custom_titles = variable_length_custom_title(),
+                            assay_config = assay_config()
                             ) 
                          }
                        )

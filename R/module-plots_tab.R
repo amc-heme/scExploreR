@@ -479,6 +479,7 @@ plots_tab_ui <- function(id,
                plot_label = "Ridge",
                group_by =              TRUE,
                split_by =              FALSE,
+               title_menu =            TRUE,
                sort_groups_menu =      TRUE,
                ncol_slider =           FALSE,
                order_checkbox =        FALSE,
@@ -933,6 +934,7 @@ plots_tab_server <- function(id,
                    features_entered = reactive({input$text_features}),
                    # Instructs server on which plot function to run
                    plot_type = "ridge",
+                   assay_config = assay_config,
                    # Use categorical palettes for ridge plot
                    palette = selected_categorical_palette
                    )
