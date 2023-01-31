@@ -14,7 +14,8 @@ run_scExploreR <-
     browser_config = NULL,
     object_path = NULL,
     config_path = NULL,
-    port = NULL
+    port = NULL,
+    full_stack_trace = FALSE
   ){
     # Load Libraries and Data ------------------------------------------------------
     ## Initialize libraries ####
@@ -34,10 +35,15 @@ run_scExploreR <-
     # Reactlog (for debugging)
     library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
     options(
-      shiny.reactlog = TRUE#, 
-      # Full stack trace for errors 
-      #shiny.fullstacktrace = TRUE
+      shiny.reactlog = TRUE
     )
+    
+    # Full stack trace for errors (if enabled)
+    if (full_stack_trace == TRUE){
+      options(
+        shiny.fullstacktrace = TRUE
+      )
+    }
     
     # Logging and performance monitoring
     library(profvis, quietly = TRUE, warn.conflicts = FALSE)
