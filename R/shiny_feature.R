@@ -144,7 +144,8 @@ shiny_feature <- function(object,
       show_legend = show_legend,
       # `...` arguments passed to FeaturePlot
       label = show_label,
-      order = order
+      order = order,
+      assay_config = assay_config
       )
   } else if (
     # Multi-feature plots without blend enabled
@@ -181,7 +182,8 @@ shiny_feature <- function(object,
         show_legend = show_legend,
         # `...` arguments passed to FeaturePlot
         label = show_label,
-        order = order
+        order = order,
+        assay_config = assay_config
       )
     } else {
       # If a split_by category is defined, use Seurat FeaturePlot function

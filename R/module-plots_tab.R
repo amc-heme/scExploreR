@@ -251,7 +251,7 @@ plots_tab_ui <- function(id,
                      function(palette){
                        palette_html(
                          palette,
-                         type="continuous",
+                         type = "continuous",
                          output_html = TRUE
                          )
                      }
@@ -353,7 +353,8 @@ plots_tab_ui <- function(id,
                reductions_menu =            TRUE,
                title_menu =                 TRUE,
                legend_title_menu =          TRUE,
-               group_by =                   FALSE,
+               # Group_by used for labeling groups
+               group_by =                   TRUE,
                split_by =                   TRUE,
                ncol_slider =                TRUE,
                super_title_menu =           TRUE,
@@ -422,6 +423,7 @@ plots_tab_ui <- function(id,
                split_by =              FALSE,
                title_menu =            FALSE,
                sort_groups_menu =      TRUE,
+               dot_x_labels_menu =     TRUE,
                ncol_slider =           FALSE,
                order_checkbox =        FALSE,
                label_checkbox =        FALSE,
@@ -478,6 +480,7 @@ plots_tab_ui <- function(id,
                plot_label = "Ridge",
                group_by =              TRUE,
                split_by =              FALSE,
+               title_menu =            TRUE,
                sort_groups_menu =      TRUE,
                ncol_slider =           FALSE,
                order_checkbox =        FALSE,
@@ -898,6 +901,7 @@ plots_tab_server <- function(id,
                    plot_label = "Dot Plot", 
                    # Instructs server on which plot function to run
                    plot_type = "dot",
+                   assay_config = assay_config,
                    valid_features = valid_features,
                    separate_features_server = TRUE,
                    # Use continuous palettes for dot plot
@@ -916,7 +920,8 @@ plots_tab_server <- function(id,
                    # Valid features, for displaying choices for x- and y- axes
                    valid_features = valid_features,
                    # Use categorical palettes for scatterplot
-                   palette = selected_categorical_palette
+                   palette = selected_categorical_palette,
+                   assay_config = assay_config
                    )
                  
                  ## 2.6. Ridge Plot ####
@@ -930,6 +935,7 @@ plots_tab_server <- function(id,
                    features_entered = reactive({input$text_features}),
                    # Instructs server on which plot function to run
                    plot_type = "ridge",
+                   assay_config = assay_config,
                    # Use categorical palettes for ridge plot
                    palette = selected_categorical_palette
                    )

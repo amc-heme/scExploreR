@@ -25,7 +25,9 @@ shiny_ridge <-
    center_x_axis_title = FALSE,
    xlim = NULL,
    sort_groups = NULL,
-   custom_factor_levels = NULL
+   custom_factor_levels = NULL,
+   custom_titles = NULL,
+   assay_config = NULL
   ){
     # validate will keep plot code from running if the subset 
     # is NULL (no cells in subset), or if the group by selection and features
@@ -190,6 +192,36 @@ shiny_ridge <-
           plot &
           layers
       )
+      
+      # Apply custom titles, if provided
+      if (!is.null(custom_titles)){
+        for (i in 1:length(custom_titles)){
+          suppressMessages(
+            plot[[i]] <-
+              plot[[i]] +
+              ggtitle(custom_titles[i])
+              )
+          }
+      } else {
+          # Default behavior for titles
+        for (i in 1:length(features_entered)){
+          if (!is.null(assay_config)){
+            suppressMessages(
+              plot[[i]] <-
+                plot[[i]] +
+                ggtitle(
+                  hr_name(
+                    features_entered[i], 
+                    assay_config,
+                    use_suffix = TRUE
+                  )
+                )
+              )
+          } else {
+              warning("assay_config must be defined to create human-readable titles")
+            }
+          }
+        }
       
     } else {
       # Return nothing if no features are entered

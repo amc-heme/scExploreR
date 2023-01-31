@@ -20,7 +20,8 @@ shiny_dot <-
     show_legend = TRUE, 
     palette = NULL,
     sort_groups = NULL,
-    custom_factor_levels = NULL
+    custom_factor_levels = NULL,
+    rename_feature_labels = NULL
     ){
     # Default value of sort_groups: set to "ascending" if groups is NULL
     if (is.null(sort_groups)){
@@ -99,6 +100,20 @@ shiny_dot <-
             colors = palette
           )
       }
+      
+      # If custom feature labels are defined, apply them
+      if (isTruthy(rename_feature_labels)){
+        # Construct named vector with rename targets as values, and features
+        # entered as names
+        names(rename_feature_labels) <- features_entered
+        
+        # Rename x-axis tick labels according to named vector
+        plot <- 
+          plot +
+          scale_x_discrete(
+            labels = rename_feature_labels
+          )
+        }
       
       # Return plot
       plot

@@ -96,6 +96,22 @@ multi_text_input_server <- function(id,
                       label = "",
                       icon = icon("redo-alt")
                     )
+                  ),
+                  # Label displaying beneath the text box with the original value
+                  div(
+                    tags$p(
+                      paste0(
+                        "(Original Value: ",
+                        truncate_str(
+                          str = default_vector[i],
+                          # Truncate exceptionally long feature names
+                          max_length = 75
+                          ),
+                        ")"
+                        ),
+                      style = 
+                        "margin-top: 0px; font-size: 0.8em;"
+                      )
                   )
                 )
               },

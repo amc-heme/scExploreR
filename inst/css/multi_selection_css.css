@@ -13,7 +13,6 @@
   padding: 0px;
   width: 30px;
   height: 30px;
-  margin-bottom: 5px;
 }
 
 /* Update button; reset button for all entries */
@@ -26,7 +25,6 @@
 .custom-multi-text-container {
   display: inline-block;
   width: 78%;
-  margin-bottom: 10px;
 }
 
 /* Remove margin of input container one level down */

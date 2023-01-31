@@ -284,7 +284,7 @@ dge_test_selections_server <-
             object()@meta.data |>
               # Get unique values for the group by category
               # First category is selected at startup
-              select(.data[[initial_group_by]]) |>
+              dplyr::select(.data[[initial_group_by]]) |>
               unique() |>
               # Convert to vector
               unlist() |>
@@ -521,7 +521,7 @@ dge_test_selections_server <-
               choices <- 
                 object()@meta.data |>
                 # Get unique values for the group by category
-                select(.data[[group_by_category()]]) |>
+                dplyr::select(.data[[group_by_category()]]) |>
                 unique() |>
                 # Convert to vector
                 unlist() |>
