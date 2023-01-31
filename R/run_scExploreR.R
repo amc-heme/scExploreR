@@ -15,7 +15,7 @@ run_scExploreR <-
     object_path = NULL,
     config_path = NULL,
     port = NULL,
-    full_stack_trace = FALSE
+    full_stack_trace = FALSE,
     host = NULL,
     launch.browser = NULL
   ){
