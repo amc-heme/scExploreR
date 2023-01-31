@@ -251,7 +251,7 @@ plots_tab_ui <- function(id,
                      function(palette){
                        palette_html(
                          palette,
-                         type="continuous",
+                         type = "continuous",
                          output_html = TRUE
                          )
                      }
@@ -422,6 +422,7 @@ plots_tab_ui <- function(id,
                split_by =              FALSE,
                title_menu =            FALSE,
                sort_groups_menu =      TRUE,
+               dot_x_labels_menu =     TRUE,
                ncol_slider =           FALSE,
                order_checkbox =        FALSE,
                label_checkbox =        FALSE,
@@ -898,6 +899,7 @@ plots_tab_server <- function(id,
                    plot_label = "Dot Plot", 
                    # Instructs server on which plot function to run
                    plot_type = "dot",
+                   assay_config = assay_config,
                    valid_features = valid_features,
                    separate_features_server = TRUE,
                    # Use continuous palettes for dot plot

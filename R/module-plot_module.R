@@ -85,6 +85,7 @@ plot_module_ui <- function(id,
                            color_by_feature_checkbox =             FALSE,
                            super_title_menu =                      FALSE,
                            sort_groups_menu =                      FALSE,
+                           dot_x_labels_menu =                     FALSE,
                            blend_checkbox =                        FALSE,
                            order_checkbox =                        FALSE,
                            label_checkbox =                        FALSE,
@@ -355,6 +356,31 @@ plot_module_ui <- function(id,
             )
           )
         } else NULL,
+      
+      ## Dot plots: rename features on x-axis labels ####
+      if (dot_x_labels_menu == TRUE){
+        tagList(
+          selectInput(
+            inputId = ns("dot_x_labels"),
+            label = "Appearance of Features on x-axis:",
+            choices = 
+              c(
+                "Truncated" = "truncated",
+                "Full" = "full",
+                "Custom" = "custom"
+                )
+            ),
+          hidden(
+            div(
+              id = ns("dot_x_labels_div"),
+              multi_text_input_ui(
+                id = ns("rename_dot_x_labels"),
+                label = "Choose new Display Names for Feature Labels:"
+                )
+              )
+            )
+          )
+      } else NULL,
       
       ## Number of columns ####
       if (ncol_slider == TRUE){
@@ -1595,9 +1621,115 @@ plot_module_server <- function(id,
                          )
                        }
                      })
-                   }
+                 }
                  
-                 # 5. Record plot_selections -----------------------------------
+                 ## 4.8. Custom Feature Labels on Dot Plots ####
+                 observe({
+                   req(input$dot_x_labels)
+                   
+                   # Show custom feature label picker when enabled by user
+                   if (input$dot_x_labels == "custom"){
+                     showElement(
+                       id = "dot_x_labels_div",
+                       anim = TRUE
+                       )
+                   } else {
+                     hideElement(
+                       id = "dot_x_labels_div",
+                       anim = TRUE
+                       )
+                   }
+                 })
+                 
+                 # 5. Process x-axis labels for dot plots----
+                 if (plot_type == "dot"){
+                   ## 5.1. Define default labels to show in menu ####
+                   default_dot_x_labels <- 
+                     reactive({
+                       req(features_entered())
+                       
+                       feature_names <- features_entered()
+                       
+                       # Default names: each feature entered, with the assay 
+                       # key removed
+                       for (i in 1:length(feature_names)){
+                         feature_names[i] <-
+                           hr_name(
+                             machine_readable_name = feature_names[i],
+                             assay_config = assay_config(),
+                             use_suffix = FALSE
+                             )
+                         }
+                       
+                       feature_names
+                       })
+                   
+                   ## 5.2. Process user inputs for custom feature labels ####
+                   user_dot_x_labels <-
+                     multi_text_input_server(
+                       id = "rename_dot_x_labels",
+                       default_vector = default_dot_x_labels
+                       )
+                   
+                   ## 5.3. Use custom labels, or default ones ####
+                   dot_x_labels <-
+                     reactive({
+                       # Only process if input$dot_x_labels is defined
+                       # (otherwise return NULL, which will leave labels unchanged)
+                       if (isTruthy(input$dot_x_labels)){
+                         # Use default or custom feature labels on x-axis
+                         if (input$dot_x_labels == "custom"){
+                           # If custom, rename feature labels to the custom order
+                           user_dot_x_labels()
+                         } else if (input$dot_x_labels == "truncated"){
+                           # If default, use the default feature names, but 
+                           # condense them (if they are more than 20 characters 
+                           # long, remove any characters beyond the 20th and add 
+                           # "...")
+                           feature_names <- features_entered()
+                           truncated_feature_names <- c()
+                           
+                           for (i in 1:length(feature_names)){
+                             truncated_feature_names <-
+                               c(truncated_feature_names,
+                                 truncate_str(
+                                   # Remove assay key prefix from feature name
+                                   # before truncating
+                                   str = 
+                                     hr_name(
+                                       machine_readable_name = feature_names[i],
+                                       assay_config = assay_config(),
+                                       use_suffix = FALSE
+                                       ),
+                                   max_length = 20
+                                   )
+                                 )
+                           }
+                           
+                           # Return truncated feature names
+                           truncated_feature_names
+                         } else if (input$dot_x_labels == "full"){
+                           # For "full", remove assay keys from labels 
+                           # without truncating
+                           feature_names <- features_entered()
+                           
+                           for (i in 1:length(feature_names)){
+                             feature_names[i] <-
+                               hr_name(
+                                 machine_readable_name = feature_names[i],
+                                 assay_config = assay_config(),
+                                 use_suffix = FALSE
+                               )
+                           }
+                           
+                           # Return full feature names
+                           feature_names
+                         }
+                       }
+                     })
+                 }
+                 
+                 # 6. Record plot_selections -----------------------------------
                  # list of reactives for storing selected inputs
                  plot_selections <- 
                    list(
@@ -1836,7 +1968,7 @@ plot_module_server <- function(id,
                      })
                    )
                  
-                 # 6. Determine if a subset has been used  ---------------------
+                 # 7. Determine if a subset has been used  ---------------------
                  # This variable will be a boolean used in downstream 
                  # computations
                  is_subset <- eventReactive(
@@ -1864,8 +1996,8 @@ plot_module_server <- function(id,
                      n_cells_original() != n_cells_subset
                  })
                  
-                 # 7. Conditional UI -------------------------------------------
-                 ## 7.1. ncol slider ####
+                 # 8. Conditional UI -------------------------------------------
+                 ## 8.1. ncol slider ####
                  # Conditions under which ncol slider appear differ based on 
                  # plot type
                  if (plot_type == "dimplot"){
@@ -2011,7 +2143,7 @@ plot_module_server <- function(id,
                        })
                  }
     
-                 ## 7.2. Checkbox to Specify Original Axis Limits ####
+                 ## 8.2. Checkbox to Specify Original Axis Limits ####
                  limits_checkbox <-
                    reactive(
                      label = glue("{plot_label}: Limits UI"),
@@ -2033,7 +2165,7 @@ plot_module_server <- function(id,
 
                        })
                  
-                 ## 7.3. Dynamic UI for plot output ####
+                 ## 8.3. Dynamic UI for plot output ####
                  # UI display depends on the plot type and whether the plot 
                  # has a separate features option
                  plot_output_ui <-
@@ -2050,7 +2182,7 @@ plot_module_server <- function(id,
                        # inputs are incorrect
                        message = NULL
                       
-                       ### 7.3.1. Test for correct inputs #### 
+                       ### 8.3.1. Test for correct inputs #### 
                        # UI displayed depends on if inputs have been entered
                        # correctly. "Correct" inputs depend on plot type
                        # input_error is set to TRUE or FALSE based on input 
@@ -2152,7 +2284,7 @@ plot_module_server <- function(id,
                              }
                          }
                        
-                       ### 7.3.2. Display message or plot based on inputs ####
+                       ### 8.3.2. Display message or plot based on inputs ####
                        if (input_error == TRUE){
                          # Message: use message defined in conditonal structure
                          ui <- 
@@ -2190,9 +2322,9 @@ plot_module_server <- function(id,
                        ui
                      })
                  
-                 ## 7.4. Menu for custom refactoring of Group_by metadata ####
+                 ## 8.4. Menu for custom refactoring of Group_by metadata ####
                  if (plot_type %in% c("violin", "dot", "ridge", "proportion")){
-                   ### 7.4.1. Define menu UI ####
+                   ### 8.4.1. Define menu UI ####
                    if (plot_type %in% c("violin", "dot", "ridge")){
                      # Violin, dot, ridge plots: refactoring affects 
                      # group by variable
@@ -2305,7 +2437,7 @@ plot_module_server <- function(id,
                      }
                    
 
-                   ### 7.4.2. Show/hide menu ####
+                   ### 8.4.2. Show/hide menu ####
                    observe({
                      # The output container is shown/hidden
                      target_id <- "refactor_sortable"
@@ -2327,7 +2459,7 @@ plot_module_server <- function(id,
                    })
                  }
                  
-                 ## 7.5. Render Dynamic UI ####
+                 ## 8.5. Render Dynamic UI ####
                  output$ncol_slider <- 
                    renderUI({
                      ncol_slider()
@@ -2363,11 +2495,11 @@ plot_module_server <- function(id,
                    )
                  }
 
-                 # 8. Separate Features Entry: Dynamic Update ------------------
+                 # 9. Separate Features Entry: Dynamic Update ------------------
                  # Observers for separate features only update for server 
                  # instances where features_entered
                  if (separate_features_server ==  TRUE){
-                   ## 8.1. Update Separate Features in Background ####
+                   ## 9.1. Update Separate Features in Background ####
                    # Before the checkbox to select separate features is checked, 
                    # update the text entry in the background so it is synced
                    # when it appears after the box is checked. 
@@ -2390,7 +2522,7 @@ plot_module_server <- function(id,
                          }
                      })
                    
-                   ## 8.2. Reset Separate Features Upon Checkbox Toggle ####
+                   ## 9.2. Reset Separate Features Upon Checkbox Toggle ####
                    # If the "use separate features" checkbox is toggled and the
                    # features entered in the separate features text entry differ
                    # from the general features selected, update the separate
@@ -2423,7 +2555,7 @@ plot_module_server <- function(id,
                      })
                  }
                  
-                 # 9. Blend Palette (feature_plots) ----------------------------
+                 # 10. Blend Palette (feature_plots) ---------------------------
                  # Initialize blend palette selection menu with blend palettes
                  if (plot_type == "feature"){
                    if (isTruthy(blend_palettes)){
@@ -2446,8 +2578,8 @@ plot_module_server <- function(id,
                      }
                    }
                  
-                 # 10. Plot -----------------------------------------------------
-                 ## 10.1 Define Features to use ####
+                 # 11. Plot ----------------------------------------------------
+                 ## 11.1 Define Features to use ####
                  # For all plots except dimplot, scatterplot, and ridgeplot 
                  # Uses either the general feature entry (features_entered()),
                  # or the separate features text entry depending on whether
@@ -2480,11 +2612,11 @@ plot_module_server <- function(id,
                        })
                  }
                  
-                 ## 10.2. Construct Plot ####
+                 ## 11.2. Construct Plot ####
                  # Plot created based on the type specified when this server 
                  # function is called
                  if (plot_type == "dimplot"){
-                   ### 10.2.1. DimPlot ####
+                   ### 11.2.1. DimPlot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -2547,7 +2679,7 @@ plot_module_server <- function(id,
                      })
                    
                  } else if (plot_type == "feature") {
-                   ### 10.2.2. Feature Plot ####
+                   ### 11.2.2. Feature Plot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -2624,7 +2756,7 @@ plot_module_server <- function(id,
                          })
                    
                  } else if (plot_type == "violin") {
-                   ### 10.2.3 Violin Plot ####
+                   ### 11.2.3 Violin Plot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -2646,7 +2778,7 @@ plot_module_server <- function(id,
                        })
                    
                  } else if (plot_type == "dot") {
-                   ### 10.2.4. Dot Plot ####
+                   ### 11.2.4. Dot Plot ####
                    # Dot plot using arguments relevant to shiny_dot()
                    plot <- 
                      reactive(
@@ -2665,11 +2797,12 @@ plot_module_server <- function(id,
                            palette = palette(),
                            sort_groups = plot_selections$sort_groups(),
                            custom_factor_levels = 
-                             plot_selections$custom_refactoring()
+                             plot_selections$custom_refactoring(),
+                           rename_feature_labels = dot_x_labels()
                            )
                          })
                  } else if (plot_type == "scatter"){
-                   ### 10.2.5. Scatterplot ####
+                   ### 11.2.5. Scatterplot ####
                    # Scatterplot using relevant inputs
                    plot <- 
                      reactive(
@@ -2687,7 +2820,7 @@ plot_module_server <- function(id,
                            )
                        })
                  } else if (plot_type == "ridge"){
-                   ### 10.2.6. Ridge Plot ####
+                   ### 11.2.6. Ridge Plot ####
                      plot <-
                        reactive(
                          label = glue("{plot_label}: Create Plot"),
@@ -2714,7 +2847,7 @@ plot_module_server <- function(id,
                          }
                        )
                  } else if (plot_type == "proportion"){
-                   ### 10.2.7. Stacked bar plot ####
+                   ### 11.2.7. Stacked bar plot ####
                    # For cell type (and other metadata) proportions
                    # Compares proportions of one cell-level metadata category
                    # according to the levels of another category
@@ -2746,7 +2879,7 @@ plot_module_server <- function(id,
                         ) 
                        })
                  } else if (plot_type == "pie"){
-                   ### 10.2.8. Metadata pie chart ####
+                   ### 11.2.8. Metadata pie chart ####
                    # Currently used for patient/sample-level metadata, but could
                    # also be used for cell-level metadata
                    plot <-
@@ -2774,7 +2907,7 @@ plot_module_server <- function(id,
                        })
                    }
                  
-                 ## 10.3. Render plot ####
+                 ## 11.3. Render plot ####
                  # Height and width arguments are left undefined
                  # If undefined, they will use the values from plotOutput, which
                  # respond to the manual dimensions inputs.
@@ -2806,7 +2939,7 @@ plot_module_server <- function(id,
                    plot()
                  })
                  
-                 # 11. Custom x-axis limits server (ridge plots) ---------------
+                 # 12. Custom x-axis limits server (ridge plots) ---------------
                  # Server recieves plot in 9. and outputs the chosen limits
                  if (plot_type == "ridge"){
                    custom_xlim <-
@@ -2816,7 +2949,7 @@ plot_module_server <- function(id,
                      )
                  }
                  
-                 # 12. Download handler ----------------------------------------
+                 # 13. Download handler ----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 

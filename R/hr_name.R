@@ -19,6 +19,11 @@ hr_name <-
     assay_config,
     use_suffix = TRUE
     ){
+    # Error if a multi-element vector is passed for the machine-readable name
+    if (length(machine_readable_name) > 1){
+      stop("Error: more than one machine-readable name entered.")
+    }
+    
     for (assay in assay_config){
       # Given the machine-readable name in question, test each assay to see if 
       # the assay key is in the name
