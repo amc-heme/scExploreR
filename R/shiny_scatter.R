@@ -59,8 +59,7 @@ shiny_scatter <- function(object,
       hr_name(
         machine_readable_name = feature_1,
         assay_config = assay_config,
-        # Do not use suffix for legend title
-        use_suffix = FALSE
+        use_suffix = TRUE
       )
     ) +
     ylab(
@@ -68,8 +67,7 @@ shiny_scatter <- function(object,
       hr_name(
         machine_readable_name = feature_2,
         assay_config = assay_config,
-        # Do not use suffix for legend title
-        use_suffix = FALSE
+        use_suffix = TRUE
       )
     )
   
