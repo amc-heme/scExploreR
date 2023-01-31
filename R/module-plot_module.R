@@ -1501,11 +1501,13 @@ plot_module_server <- function(id,
                      # Show/hide based on outcome above
                      if (show == TRUE){
                        showElement(
-                         id = elem_id
+                         id = elem_id,
+                         anim = TRUE
                          )
                      } else {
                        hideElement(
-                         id = elem_id
+                         id = elem_id,
+                         anim = TRUE
                          )
                        }
                    })
