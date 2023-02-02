@@ -24,10 +24,7 @@ shiny_scatter <- function(object,
                           show_legend,
                           display_coeff,
                           palette,
-                          assay_config = NULL,
-                          legend_ncol = NULL,
-                          legend_font_size = NULL,
-                          legend_key_size = NULL
+                          assay_config = NULL
                           ){
   # Palette: must determine number of colors to create from provided palette
   # The number of colors is equal to the number of unique values in 
@@ -82,86 +79,17 @@ shiny_scatter <- function(object,
       # Element A 
       # Legend position: "right" if a legend is desired, 
       # and "none" if not
-      # list(
-      #   theme(
-      #     legend.position = 
-      #       if (show_legend()==TRUE) {
-      #         "right"
-      #       } else "none"
-      #     )
-      # ), # End list() (element A)
-      
       list(
-        do.call(
-          theme,
-          # List of arguments to call with theme
-          args = 
-            c(
-              list(
-                # Element A: Legend position
-                # "right" if a legend is desired, and "none" if not
-                legend.position = 
-                  if (show_legend()==TRUE) {
-                    "right"
-                  } else "none"
-              ),
-              
-              # Element B: Legend font size 
-              if (isTruthy(legend_font_size)){
-                list(
-                  legend.text = 
-                    element_text(
-                      size = legend_font_size
-                    )
-                )
-              },
-              
-              # Element C: Legend key size (passed here as well as in
-              # guides())
-              if (isTruthy(legend_key_size)){
-                list(
-                  legend.key.size =
-                    unit(legend_key_size, "points")
-                )
-              }
-            )
+        theme(
+          legend.position = 
+            if (show_legend == TRUE) {
+              "right"
+            } else "none"
           )
-        ),
+      ), # End list() (element A)
       
-      # Elements specified with guides()
-      list(
-        guides(
-          # Guide for scatterplot is "color"
-          color = 
-            do.call(
-              guide_legend,
-              # List of arguments to call
-              args =
-                c(
-                  # Empty list: passes no arguments if none are specified
-                  list(),
-                  # Element D: Number of columns in legend
-                  if (isTruthy(legend_ncol)){
-                    list(
-                      ncol = legend_ncol
-                    )
-                  },
-                  # Legend key size (specified here and in theme())
-                  if (isTruthy(legend_key_size)){
-                    list(
-                      override.aes =
-                        list(
-                          size = legend_key_size
-                        )
-                    )
-                  }
-                )
-            )
-        )
-      ),
-      
-      # Element E: Remove title if requested
-      if (display_coeff() == FALSE){
+      # Element B: Remove title if requested
+      if (display_coeff == FALSE){
         list(
           labs(title = NULL)
           )

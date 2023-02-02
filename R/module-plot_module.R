@@ -81,7 +81,6 @@ plot_module_ui <- function(id,
                            title_menu =                            FALSE,
                            legend_title_menu =                     FALSE,
                            ncol_slider =                           FALSE,
-                           legend_options_menu =                   FALSE,
                            share_scale_checkbox =                  FALSE,
                            color_by_feature_checkbox =             FALSE,
                            super_title_menu =                      FALSE,
@@ -112,18 +111,10 @@ plot_module_ui <- function(id,
                            split_by_default =                      NULL,
                            # Remove column for patient/sample level metadata 
                            # from group by choices
-                           remove_patient_column =                 FALSE,
-                           # If the legend options menu is enabled, whether to
-                           # include slider for legend key spacing
-                           legend_options_menu_include_spacing =   TRUE
+                           remove_patient_column =                 FALSE
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
-  
-  # Disable the "include legend" checkbox if legend_options_menu is TRUE
-  if (legend_options_menu == TRUE){
-    legend_checkbox <- FALSE
-  }
   
   if (ui_component == "options"){
     # UI for plot options ####
@@ -395,86 +386,6 @@ plot_module_ui <- function(id,
       if (ncol_slider == TRUE){
         #Dynamic UI (appears when split_by != "none")
         uiOutput(outputId = ns("ncol_slider"))
-      } else NULL,
-      
-      ## Legend options menu ####
-      if (legend_options_menu == TRUE){
-        collapsible_panel(
-          inputId = ns("legend_options_panel"),
-          label = "Legend Options",
-          active = TRUE,
-          content_background_color = "#D1D1D1",
-          checkboxInput(
-            inputId = ns("legend"),
-            label = "Include Legend",
-            value = TRUE
-            ),
-          # Number of columns in legend
-          sliderInput(
-            inputId = ns("legend_ncol"),
-            label = "Number of columns in legend",
-            ticks = FALSE,
-            value = 1,
-            min = 1,
-            max = 5
-          ),
-          # If this check box is enabled, the default is used
-          checkboxInput(
-            inputId = ns("default_legend_ncol"),
-            label = "Use default",
-            value = TRUE
-          ),
-          # Font size of legend
-          sliderInput(
-            inputId = ns("legend_font_size"),
-            label = "Font size of legend",
-            ticks = FALSE,
-            value = 9,
-            min = 1,
-            max = 15,
-            step = 0.5
-          ),
-          checkboxInput(
-            inputId = ns("default_legend_font_size"),
-            label = "Use default",
-            value = TRUE
-          ),
-          # Legend key size
-          sliderInput(
-            inputId = ns("legend_key_size"),
-            label = "Key size of legend",
-            ticks = FALSE,
-            value = 5,
-            min = 1,
-            max = 10,
-            step = 0.5
-          ),
-          checkboxInput(
-            inputId = ns("default_legend_key_size"),
-            label = "Use default",
-            value = TRUE
-          ),
-          # Include slider for legend key spacing if enabled
-          # (does not work for bar charts)
-          if (legend_options_menu_include_spacing == TRUE){
-            tagList(
-              sliderInput(
-                inputId = ns("legend_key_spacing"),
-                label = "Spacing between legend keys",
-                ticks = FALSE,
-                value = 0,
-                min = 0,
-                max = 35,
-                step = 0.25
-                ),
-              checkboxInput(
-                inputId = ns("default_legend_key_spacing"),
-                label = "Use default",
-                value = TRUE
-                )
-              )
-            } else NULL
-          )
       } else NULL,
       
       ## Display a title above multi-panel plots ####
@@ -2041,20 +1952,18 @@ plot_module_server <- function(id,
                      
                      
                      # Include legend
-                     `legend` = 
-                       reactive({
-                         if (!is.null(input$legend)){
-                           input$legend
-                           } else NULL
-                         }),
+                     `legend` = reactive({
+                       if (!is.null(input$legend)){
+                         input$legend
+                       } else NULL
+                     }),
                      
                      # Label groups
-                     `label` = 
-                       reactive({
-                         if (!is.null(input$label)){
-                           input$label
-                           } else NULL
-                         }),
+                     `label` = reactive({
+                       if (!is.null(input$label)){
+                         input$label
+                       } else NULL
+                     }),
                      
                      # Original axes limits
                      # isolate(names(input)) does not work for testing the
@@ -2062,12 +1971,11 @@ plot_module_server <- function(id,
                      # input$original_limits will be either TRUE or FALSE if
                      # the checkbox exists, or NULL if it does not. A suitable
                      # existence test is !is.null(input$original_limits)
-                     `limits` = 
-                       reactive({
-                         if (!is.null(input$original_limits)){
-                           input$original_limits
-                           } else NULL
-                         }),
+                     `limits` = reactive({
+                       if (!is.null(input$original_limits)){
+                         input$original_limits
+                       } else NULL
+                     }),
                      
                      # X-axis feature for scatterplots
                      `scatter_1` = reactive({
@@ -2077,70 +1985,18 @@ plot_module_server <- function(id,
                      }),
                      
                      # Y-axis feature for scatterplots
-                     `scatter_2` = 
-                       reactive({
-                         if (plot_type == "scatter"){
-                           input$scatter_2
-                           } else NULL
-                         }),
+                     `scatter_2` = reactive({
+                       if (plot_type == "scatter"){
+                         input$scatter_2
+                       } else NULL
+                     }),
                      
                      # Remove Title 
-                     `display_coeff` = 
-                       reactive({
-                         if (!is.null(input$display_coeff)){
-                           input$display_coeff
-                           } else NULL
-                         }),
-                     
-                     # Number of columns in legend
-                     `legend_ncol` = 
-                       reactive({
-                         # Record value of the legend_ncol slider if the 
-                         # "use default" checkbox is not checked
-                         if (isTruthy(input$legend_ncol) & 
-                             !isTruthy(input$default_legend_ncol)){
-                           input$legend_ncol
-                           } else {
-                             NULL
-                             }
-                         }),
-                     
-                     `legend_font_size` =
-                       reactive({
-                         # Record value of the legend font size slider if the 
-                         # "use default" checkbox is not checked
-                         if (isTruthy(input$legend_font_size) & 
-                             !isTruthy(input$default_legend_font_size)){
-                           input$legend_font_size
-                         } else {
-                           NULL
-                         }
-                       }),
-                     
-                     `legend_key_size` = 
-                       reactive({
-                         # Record value of the legend key size slider if the 
-                         # "use default" checkbox is not checked
-                         if (isTruthy(input$legend_key_size) & 
-                             !isTruthy(input$default_legend_key_size)){
-                           input$legend_key_size
-                         } else {
-                           NULL
-                         }
-                       }),
-                     
-                     `legend_key_spacing` =
-                       reactive({
-                         # Record value of the legend key spacing slider if the 
-                         # "use default" checkbox is not checked
-                         if (isTruthy(input$legend_key_spacing) & 
-                             !isTruthy(input$default_legend_key_spacing)){
-                           input$legend_key_spacing
-                         } else {
-                           NULL
-                         }
-                       })
-                       
+                     `display_coeff` = reactive({
+                       if (!is.null(input$display_coeff)){
+                         input$display_coeff
+                       } else NULL
+                     })
                    )
                  
                  # 7. Determine if a subset has been used  ---------------------
@@ -2849,18 +2705,7 @@ plot_module_server <- function(id,
                              #     plot_selections$group_by()]]$label
                              # },
                            reduction = plot_selections$reduction(),
-                           palette = palette(),
-                           # Number of columns in legend
-                           legend_ncol = plot_selections$legend_ncol(),
-                           # Legend font size
-                           legend_font_size = 
-                             plot_selections$legend_font_size(),
-                           # Size of legend keys 
-                           legend_key_size =
-                             plot_selections$legend_key_size(),
-                           # Vertical spacing between each key
-                           legend_key_spacing = 
-                             plot_selections$legend_key_spacing()
+                           palette = palette()
                            )
                      })
                    
@@ -2959,15 +2804,7 @@ plot_module_server <- function(id,
                            palette = palette(),
                            sort_groups = plot_selections$sort_groups(),
                            custom_factor_levels = 
-                             plot_selections$custom_refactoring(),
-                           # Number of columns in legend
-                           legend_ncol = plot_selections$legend_ncol(),
-                           # Legend font size
-                           legend_font_size = 
-                             plot_selections$legend_font_size(),
-                           # Size of legend keys 
-                           legend_key_size =
-                             plot_selections$legend_key_size()
+                             plot_selections$custom_refactoring()
                            )
                        })
                    
@@ -3010,15 +2847,7 @@ plot_module_server <- function(id,
                            show_legend = plot_selections$legend(),
                            display_coeff = plot_selections$display_coeff(),
                            palette = palette(),
-                           assay_config = assay_config(),
-                           # Number of columns in legend
-                           legend_ncol = plot_selections$legend_ncol(),
-                           # Legend font size
-                           legend_font_size = 
-                             plot_selections$legend_font_size(),
-                           # Size of legend keys 
-                           legend_key_size =
-                             plot_selections$legend_key_size()
+                           assay_config = assay_config()
                            )
                        })
                  } else if (plot_type == "ridge"){
@@ -3046,15 +2875,7 @@ plot_module_server <- function(id,
                             custom_factor_levels = 
                               plot_selections$custom_refactoring(),
                             custom_titles = variable_length_custom_title(),
-                            assay_config = assay_config(),
-                            # Number of columns in legend
-                            legend_ncol = plot_selections$legend_ncol(),
-                            # Legend font size
-                            legend_font_size = 
-                              plot_selections$legend_font_size(),
-                            # Size of legend keys 
-                            legend_key_size =
-                              plot_selections$legend_key_size()
+                            assay_config = assay_config()
                             ) 
                          }
                        )
@@ -3087,15 +2908,7 @@ plot_module_server <- function(id,
                           palette = palette(),
                           sort_groups = plot_selections$sort_groups(),
                           custom_factor_levels = 
-                            plot_selections$custom_refactoring(),
-                            # Number of columns in legend
-                          legend_ncol = plot_selections$legend_ncol(),
-                          # Legend font size
-                          legend_font_size = 
-                            plot_selections$legend_font_size(),
-                          # Size of legend keys 
-                          legend_key_size =
-                            plot_selections$legend_key_size()
+                            plot_selections$custom_refactoring()
                         ) 
                        })
                  } else if (plot_type == "pie"){
@@ -3168,21 +2981,6 @@ plot_module_server <- function(id,
                        plot = plot
                      )
                  }
-                 
-                 # TEMP: Adjust Legend Options -----------------------------------
-                 # if (plot_type %in% c("violin", "proportion")){
-                 #   # The rectangular key glyphs used by violin and cell type 
-                 #   # proportion plots respond differently to changes in the 
-                 #   # legend key size, and thus require different ranges to be
-                 #   # available for the key size entry.
-                 #   updateSliderInput(
-                 #    inputId = "legend_key_size",
-                 #    value = 7,
-                 #    min = 1,
-                 #    max = 20,
-                 #    step = 1
-                 #   )
-                 # }
                  
                  # 13. Download handler ----------------------------------------
                  output$confirm_download <- 
