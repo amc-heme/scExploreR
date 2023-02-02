@@ -36,7 +36,7 @@ env_size <- function(env,
   if (nrow(mem_df) > 0){
     bytes <- 
       mem_df |> 
-      select(size) |> 
+      dplyr::select(size) |> 
       sum()
     
     # Output size is in bytes. Divide to get size in other 
