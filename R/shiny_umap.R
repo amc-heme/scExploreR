@@ -24,6 +24,8 @@
 #' @param reduction The reduction (UMAP, t-SNE, etc.) to use for plotting
 #' @param palette The palette to use for coloring groups. If the palette passed
 #' to this function is NULL, the default (hue_pal()) is used.
+#' #' @param legend_ncol The number of columns to use for legend labels. This is 
+#' one by default (currently).
 #' 
 #' @return a ggplot2 object with a DimPlot created according to user specifications.
 #' 
@@ -41,7 +43,11 @@ shiny_umap <- function(object,
                        show_title = TRUE, 
                        plot_title = NULL, 
                        reduction = NULL, 
-                       palette = NULL 
+                       palette = NULL,
+                       legend_ncol = NULL,
+                       legend_font_size = NULL,
+                       legend_key_size = NULL,
+                       legend_key_spacing = NULL
                        ){
   # print("-----------------------------")
   # print("shiny_umap arguments")
@@ -159,7 +165,7 @@ shiny_umap <- function(object,
               "right"
             } else "none")
         ),
-      # B-C. Axis limits: use limits from full dataset if 
+      # Elements B-C. Axis limits: use limits from full dataset if 
       # specified
       # First, simultaneously test if subset is present and if the corresponding
       # original_limits reactive is truthy (i.e. both present and checked).
@@ -170,18 +176,83 @@ shiny_umap <- function(object,
           scale_y_continuous(limits = ylim_orig)
           )
       },
-      # D: Title: Use label from config file if it is defined
+      # Element D: Title
+      # Use label from config file if it is defined
       # If label is undefined, plot_title will be NULL
       # this would remove the title if not properly handled
       # Must control whether to remove the title, or use the default based on
       # the circumstances in which NULL is specified
       
       # Conditional below passes NULL to labs() only when show_title == FALSE 
+      # Otherwise, labs() is not run and the Seurat default is used
       if (!is.null(plot_title) | show_title == FALSE ){
         list(
           labs(title = plot_title)
         )
-      } # Otherwise, labs() is not run and the Seurat default is used
+      }, 
+      # Element E-F: Number of columns in legend, size of legend keys
+      list(
+        guides(
+          # Guide for dimplot (scatterplot) is color
+          color = 
+            do.call(
+              guide_legend,
+              # List of arguments to call
+              args =
+                c(
+                  # Empty list: passes no arguments if below values are NULL
+                  list(),
+                  # Element E: Number of columns in legend
+                  if (isTruthy(legend_ncol)){
+                    list(
+                      ncol = legend_ncol
+                    )
+                  },
+                  # Element F: Legend key size
+                  if (isTruthy(legend_key_size)){
+                    list(
+                      override.aes =
+                        list(
+                          size = legend_key_size
+                        )
+                    )
+                  }
+                )
+            )
+          )
+      ),
+      
+      list(
+        do.call(
+          theme,
+          # List of arguments to call with theme
+          args = 
+            # Arguments are included in list conditionally. If no elements 
+            # are included, the list() call will return an empty list instead
+            # of NULL (NULL will cause errors with do.call)
+            c(
+              list(),
+              # Element G: Legend font size
+              if (isTruthy(legend_font_size)){
+                list(
+                  legend.text = 
+                    element_text(
+                      size = legend_font_size
+                    )
+                )
+              },
+              # Element H: spacing between the points (keys) in legend and the text
+              # This is really the size of the boxes displaying each legend key,
+              # which are invisible when using the theme set by DimPlot()
+              if (isTruthy(legend_key_spacing)){
+                list(
+                  legend.key.size =
+                    unit(legend_key_spacing, "points")
+                )
+              }
+            )
+        )
+      )
     )
 
   # Modify the plot using the layers defined above

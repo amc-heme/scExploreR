@@ -31,7 +31,10 @@ shiny_stacked_bar <-
     show_legend = TRUE,
     palette = NULL,
     sort_groups = NULL,
-    custom_factor_levels = NULL
+    custom_factor_levels = NULL,
+    legend_ncol = NULL,
+    legend_font_size = NULL,
+    legend_key_size = NULL
   ){
     # validate will keep plot code from running if the subset 
     # is NULL (no cells in subset)
@@ -119,7 +122,8 @@ shiny_stacked_bar <-
         # specified in `fill` argument
         mapping = aes(fill = .data[[group_by]]), 
         # "fill" creates a proportion bar chart
-        position = "fill"
+        position = "fill",
+        key_glyph = "rect"
       ) +
       theme_cowplot() +
       theme(
@@ -194,26 +198,86 @@ shiny_stacked_bar <-
             ) 
         ),
         
-        # E. Show/hide plot title
-        # Plot title is shown by default
-        if (show_title == FALSE){
-          list(
-            theme(
-              plot.title = element_blank()
+        # E-H. Arguments passed to theme
+        list(
+          do.call(
+            theme,
+            # List of arguments to call with theme
+            args = 
+              # Arguments are included in list conditionally. If no elements 
+              # are included, the list() call will return an empty list instead
+              # of NULL (NULL will cause errors with do.call)
+              c(
+                list(),
+                # E. Show/hide plot title
+                if (show_title == FALSE){
+                  list(
+                    plot.title = element_blank()
+                    )
+                },
+                # F. Show/hide legend title (shown by default)
+                list(
+                  legend.position = 
+                    if (show_legend == TRUE) {
+                      "right"
+                    } else "none"
+                ),
+                # G. Legend font size 
+                if (isTruthy(legend_font_size)){
+                  list(
+                    legend.text = 
+                      element_text(
+                        size = legend_font_size
+                      )
+                  )
+                },
+                
+                #I_ALT. Legend key size
+                if (isTruthy(legend_key_size)){
+                  list(
+                    legend.key.size =
+                      unit(legend_key_size, "points")
+                  )
+                }
+              )
+          )
+        ),
+        
+        # H-I. Number of columns in legend, size of legend keys
+        list(
+          guides(
+            # Stacked bar plots use "fill" aesthetic (umaps, 
+            # feature plots use "color" instead)
+            fill =
+              do.call(
+                guide_legend,
+                # List of arguments to call
+                args =
+                  c(
+                    # Empty list: passes no arguments if none are specified
+                    list(),
+                    # list(
+                    #   byrow = TRUE
+                    # ),
+                    # H. Number of columns in legend
+                    if (isTruthy(legend_ncol)){
+                      list(
+                        ncol = legend_ncol
+                      )
+                    },
+                    # I. Size of keys
+                    if (isTruthy(legend_key_size)){
+                      list(
+                        override.aes =
+                          list(
+                            size = legend_key_size
+                            )
+                        )
+                    }
+                  )
               )
             )
-          },
-        
-        # F. Show/hide legend title (shown by default)
-        list(
-          theme(
-            legend.position = 
-              if (show_legend==TRUE) {
-                "right"
-              } else "none"
-            )
           )
-        
         )
         
     plot <-
