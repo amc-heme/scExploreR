@@ -1,0 +1,155 @@
+:root {
+	--border-rad: 7px;
+	--content-pad: 0.5em;
+	--header-pad: 0.5em;
+	--spacing: 0.5em;
+	/* Font size for panel header (uses size of h3 tag by default) */
+	--header-font-size: 1.17em;
+}
+
+
+@media (max-width: 768px) {
+	/* For smaller windows, decrease the font size of the header */
+	/* 1100px is the threshold below which the current headers in the plots tab
+		 wrap onto multiple lines */
+	:root{
+		--header-font-size: 1em;
+	}
+}
+
+/* Style for header of closed collapsible panel */
+.collapsible {
+  background-color: #888888;
+  /*height: 2.8em;*/
+  color: white; /* Color of text within panel */
+  cursor: pointer;
+  padding: var(--header-pad);
+  width: 100%; /* Potentially problematic, may have to change this */
+  border: none; /* Buttons have a border by default */
+  border-radius: var(--border-rad); /* Round edges of header */
+  text-align: left;
+  outline: none;
+  font-size: var(--header-font-size);
+  font-weight: bolder; /* Default font weight for h3 tag */
+  margin-top: var(--spacing);
+  margin-bottom: var(--spacing);
+	/* Indenting word wrap of collapsible panel header: a padding-left tag will
+		 cause the text to be indented within the panel button. This complements
+		 a negative margin in the ::before element */
+	padding-left: 2em;
+}
+
+/* CSS specific to open collapsible panel
+	 (.collapsible *and* .active classes) */
+.collapsible.active {
+  /* Don't round region of header that contacts the content within */
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
+  /* Remove margin from header when content is shown */
+  margin-bottom: 0px;
+}
+
+/* Tansparent panel: header is transparent, with black text */
+.collapsible.transparent {
+	background-color: transparent !important;
+	color: #000000;
+}
+
+/* collapsible-small class: shrinks font size */
+.collapsible-small {
+	padding-top: 0;
+	padding-bottom: 0;
+	margin-top: 0;
+	margin-bottom: 0 !important;
+}
+
+/* Shrink font size of header */
+.collapsible-small.collapsible{
+	font-size: 0.9em;
+}
+
+/* Changes color of panel to the specified color when the user
+	 opens the tab or places the pointer over it */
+active:hover,.collapsible:hover {
+  background-color: #555588;
+}
+
+/* If transparent: hover color applies to text and not to background */
+.active.transparent:hover {
+	background-color: transparent !important;
+	color: #555588;
+}
+
+/*.active:hover{
+  background-color: #8888AA;
+}*/
+
+/* Symbol which apppears at left hand side of panel
+   header when the tab is closed */
+button.collapsible:before {
+content: '\25B6'; /* Right-pointing arrow */
+color: white;
+float: left;
+font-weight: bold;
+/* Inherits box sizing from the panel header to ensure symbol is centered within
+	the header and is never larger than the header itself*/
+box-sizing: inherit;
+/* Indentation: negative margin causes arrow to hang to the left of text,
+ 	leaving just the text indented with padding (second row and onward will appear
+  as indented)*/
+margin-left: -1.3em;
+}
+
+/* Use different text color for transparent class */
+button.transparent::before {
+	color: #000000 !important;
+}
+
+/* Symbol which apppears at left hand side of panel header when
+	 the tab is opened */
+button.active:before {
+content: '\25BC'; /* Down arrow*/
+color: white;
+float: left;
+font-weight: bold;
+box-sizing: inherit;
+/* Negative margin for indentation */
+margin-left: -1.3em;
+}
+
+/* Use different text color for transparent class */
+button.transparent.active::before {
+	color: #000000 !important;
+}
+
+.content {
+  padding: 0 18px;
+  display: none;
+	/* This keeps dropdown menus from being clipped at the
+		 bottom of the content space */
+  overflow: visible;
+  padding: var(--content-pad);
+  /* TODO: Change background color to match shiny (may want to do a
+		 transparent background or a border instead) */
+  background-color: #e1e1e1;
+  margin-bottom: var(--spacing);
+  /* Round bottom of content for consistency with header */
+  border-bottom-left-radius: var(--border-rad);
+  border-bottom-right-radius: var(--border-rad);
+}
+
+.content.transparent {
+	background-color: transparent !important;
+}
+
+/* Shrink padding above content when panel is collapsible-small */
+.content.collapsible-small {
+	font-size: 0.95em;
+	padding-top: 2px;
+}
+
+.content.collapsible-small > ul {
+	margin-bottom: 0px;
+	/* Standard value for ul is 40px; shrink for collapsible-small class*/
+	padding-inline-start: 25px;
+}

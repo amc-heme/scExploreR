@@ -1,7 +1,3 @@
-library(Seurat)
-library(patchwork)
-library(stringr)
-
 #' Wrapper for FeaturePlot
 #'
 #' This function allows for additional customization of feature plots. Only one
@@ -42,6 +38,8 @@ library(stringr)
 #' max y values.
 #' @param show_legend If TRUE, show the legend of the feature plot (default is 
 #' TRUE). 
+#' @param assay_config the assays section of the config file, loaded at app 
+#' startup and upon changing datasets.
 #' @param ... A list of arguments to pass to FeaturePlot
 #'
 #' @examples 
@@ -55,6 +53,8 @@ library(stringr)
 #'      order = TRUE
 #'      )
 #'
+#' @noRd
+#' 
 FeaturePlotSingle<- 
   function(
     object, 
@@ -73,6 +73,7 @@ FeaturePlotSingle<-
     xlim = NULL,
     ylim = NULL,
     show_legend = TRUE,
+    assay_config = NULL,
     ...
     ){
     # Handling of NULL values
@@ -157,7 +158,15 @@ FeaturePlotSingle<-
   # Choices for name on legend title
   legend_title <- 
     if (legend_title == "feature"){
-      feature
+      ggtitle(
+        # Remove assay key from feature name
+        hr_name(
+          machine_readable_name = feature,
+          assay_config = assay_config,
+          # Do not use suffix for legend title
+          use_suffix = FALSE
+        )
+      )
     } else if (legend_title == "assay_score"){
       # Assay score: short description of what is being measured in the assay
       # (expression, enrichment, etc.). Will be set in config file
@@ -301,7 +310,12 @@ FeaturePlotSingle<-
         # Default behavior for single-group plots: use feature title
         p <-
           p +
-          ggtitle(feature)
+          ggtitle(
+            hr_name(
+              machine_readable_name = feature,
+              assay_config = assay_config
+              )
+            )
       } else {
         # custom_titles is not NULL: use custom titles
         # Custom titles should be a single-element character vector in this case
@@ -378,8 +392,11 @@ FeaturePlotSingle<-
 #' max y values.
 #' @param show_legend If TRUE, show the legend of the feature plot (default is 
 #' TRUE). 
+#' @param assay_config the assays section of the config file, loaded at app 
+#' startup and upon changing datasets.
 #' @param ... A list of arguments to pass to FeaturePlot
 #' 
+#' @noRd
 MultiFeatureSimple <- 
   function(
     object, 
@@ -396,6 +413,7 @@ MultiFeatureSimple <-
     xlim = NULL,
     ylim = NULL,
     show_legend = TRUE,
+    assay_config = NULL,
     #super_title = FALSE,
     ...
   ){
@@ -447,7 +465,7 @@ MultiFeatureSimple <-
     
     all_cells <- colnames(object)
     
-    # 1. Build groups ------------------------------------------------------------
+    # 1. Build groups ----------------------------------------------------------
     # Groups are features in this case
     groups <- features  
     
@@ -465,7 +483,7 @@ MultiFeatureSimple <-
       features_palette <- colorRampPalette(colors)(length(groups))
     }
     
-    # 2. Define axes limits ------------------------------------------------------
+    # 2. Define axes limits ----------------------------------------------------
     # The minimal and maximal of the values to make the x and y scales the same.
     # If limits are not defined (default behavior), use the min and max of cell
     # coordinates in the current object
@@ -488,7 +506,7 @@ MultiFeatureSimple <-
     # Create one plot for each group (feature)
     ps <- list()
     
-    # 3. Determine legend limits -------------------------------------------------
+    # 3. Determine legend limits -----------------------------------------------
     # If scales are the same across plots, gather unified legend limits
     if (share_scale == TRUE){
       # Min vector: minimum data values for each feature selected
@@ -532,19 +550,24 @@ MultiFeatureSimple <-
       legend_max <- max(max_vector)
     }
     
-    # 4. Iterative plot creation -------------------------------------------------
+    # 4. Iterative plot creation -----------------------------------------------
     for (group in groups) {
       i <- which(groups == group)
-      print(glue("Group: {group}"))
       
       # 4.1. Define legend title for group
       # plot_legend_title, as opposed to `legend_title` (parameter passed)
       plot_legend_title <- 
         if (legend_title == "feature"){
-          group
+          # Remove assay key from feature name 
+          hr_name(
+            machine_readable_name = group,
+            assay_config = assay_config,
+            # Do not use suffix for legend title
+            use_suffix = FALSE
+            )
         } else if (legend_title == "assay_score"){
-          # Assay score: short description of what is being measured in the assay
-          # (expression, enrichment, etc.). Will be set in config file
+          # Assay score: short description of what is being measured in the 
+          # assay (expression, enrichment, etc.). Will be set in config file
           "Expression"
         } else if (legend_title == "none"){
           NULL
@@ -598,7 +621,14 @@ MultiFeatureSimple <-
           # custom_titles is NULL: use default behavior (group names)
           p <-
             p +
-            ggtitle(group)
+            ggtitle(
+              # Remove assay key from feature name
+              hr_name(
+                # (group is the name of the individual feature)
+                machine_readable_name = group,
+                assay_config = assay_config
+                )
+              )
         } else {
           # custom_titles is not NULL: use custom titles 
           # (custom titles should be a character vector)

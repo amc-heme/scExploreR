@@ -39,6 +39,8 @@
 #'
 #' @return The x-coordinate on the plot corresponding to the hover/click
 #' event coordinates.
+#' 
+#' @noRd
 interactive_transform <- 
   function(
     x_coord,

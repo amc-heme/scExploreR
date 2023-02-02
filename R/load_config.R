@@ -7,6 +7,7 @@ library(yaml)
 #'
 #' @param path A path to a YAML file storing object-specific config info. 
 #'
+#' @noRd
 load_config <- 
   function(path){
     # Load config YAML using defined path

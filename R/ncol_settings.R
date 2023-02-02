@@ -16,6 +16,7 @@
 #' 2. Maximum ncol selection
 #' 3. Default ncol value
 #' 
+#' @noRd
 ncol_settings <- function(object,
                         rule = "split_by",
                         split_by = NULL,

@@ -11,6 +11,8 @@ Seurat_Objects*
 Downloaded_Plots*
 www/Shiny_Vignette.Rmd
 www/Auto_Dictionary.html
+www/images/*
+inst/www/Auto_Dictionary.html
 *.pptx
 *.docx
 Help_Drafts*
@@ -22,3 +24,7 @@ corr_table_full_sparse.csv
 big_corr_table.rds
 Test_Document*
 Auto_Dictionary.knit.md
+docs
+resources/Auto_Dictionary.html
+background_script.R
+resources/Auto_Dictionary.html

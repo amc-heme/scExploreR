@@ -2,18 +2,20 @@
 #'
 #' Generates a list of Shiny tags to print the output of base R's `summary()`.
 #'
-#' Output format
-#' Min: <minimum value>
-#' Q1: <first quartile>
-#' Median: <median>
-#' Mean: <mean>
-#' Q3: <third quartile>
-#' Max: <max>
 #'
 #' @param summary_results The output of base R `summary()`, as a factor.
 #' @param header_class Optional, CSS class to apply to headers ("Min:", "Q1:", 
 #' "Median", "etc.)  
 #' @param text_class Optional, CSS class to apply to the results. 
+#' 
+#' @return Output format:
+#'           Min: <minimum value>
+#'           Q1: <first quartile>
+#'           Median: <median>
+#'           Mean: <mean>
+#'           Q3: <third quartile>
+#'           Max: <max>
+#' @noRd
 summary_tags <- 
   function(summary_results,
            header_class = NULL,
@@ -44,7 +46,7 @@ summary_tags <-
               if (!is.null(text_class)){
                 text_class
               },
-            summary_results[i]
+            round(summary_results[i], digits = 6)
           )
         }
       )

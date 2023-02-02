@@ -11,8 +11,12 @@
 #' argument (affecting how cells are colored on the plot).
 #' @param display_coeff (Reactive) if TRUE, show the correlation coefficient 
 #' as the title of the plot (default behavior).
+#' @param assay_config the assays section of the config file, loaded at app 
+#' startup and upon changing datasets.
 #'
-#' @examples
+#' @return a ggplot2 object with a scatterplot created from the Seurat object according to user specifications.
+#' 
+#' @noRd
 shiny_scatter <- function(object,
                           feature_1,
                           feature_2,
@@ -20,21 +24,13 @@ shiny_scatter <- function(object,
                           show_legend,
                           display_coeff,
                           palette,
-                          legend_ncol = NULL,
-                          legend_font_size = NULL,
-                          legend_key_size = NULL
+                          assay_config = NULL
                           ){
-  # Make function reactive-agnostic (will use either a non-reactive object, or
-  # a reactive object unpacked to a non-reactive variable within this function) 
-  if (is.reactive(object)){
-    object <- object()
-  } 
-  
   # Palette: must determine number of colors to create from provided palette
   # The number of colors is equal to the number of unique values in 
   # the group.by category
   n_colors <- 
-    object@meta.data[[group_by()]] |>
+    object@meta.data[[group_by]] |>
     unique() |> 
     length()
   
@@ -42,18 +38,38 @@ shiny_scatter <- function(object,
   plot <- 
     FeatureScatter(
       object, 
-      feature1 = feature_1(),
-      feature2 = feature_2(),
-      group.by = group_by(),
+      feature1 = feature_1,
+      feature2 = feature_2,
+      group.by = group_by,
       # Cols: use user defined palette, or the defaults if palette() == NULL 
       cols = 
-        if (!is.null(palette())){
+        if (!is.null(palette)){
           # colorRampPalette() extends or contracts the given palette to 
           # produce exactly the required number of colors
-          colorRampPalette(palette())(n_colors)
+          colorRampPalette(palette(n_colors))
           # Use ggplot2 defaults if palette() is unspecified
         } else NULL, 
       )
+  
+  # Use human-readable names on axes (remove assay key from features)
+  plot <- 
+    plot +
+    xlab(
+      # Remove assay key from feature name
+      hr_name(
+        machine_readable_name = feature_1,
+        assay_config = assay_config,
+        use_suffix = TRUE
+      )
+    ) +
+    ylab(
+      # Remove assay key from feature name
+      hr_name(
+        machine_readable_name = feature_2,
+        assay_config = assay_config,
+        use_suffix = TRUE
+      )
+    )
   
   # List of layers to be applied to plot after creation
   layers <- 
@@ -63,86 +79,17 @@ shiny_scatter <- function(object,
       # Element A 
       # Legend position: "right" if a legend is desired, 
       # and "none" if not
-      # list(
-      #   theme(
-      #     legend.position = 
-      #       if (show_legend()==TRUE) {
-      #         "right"
-      #       } else "none"
-      #     )
-      # ), # End list() (element A)
-      
       list(
-        do.call(
-          theme,
-          # List of arguments to call with theme
-          args = 
-            c(
-              list(
-                # Element A: Legend position
-                # "right" if a legend is desired, and "none" if not
-                legend.position = 
-                  if (show_legend()==TRUE) {
-                    "right"
-                  } else "none"
-              ),
-              
-              # Element B: Legend font size 
-              if (isTruthy(legend_font_size)){
-                list(
-                  legend.text = 
-                    element_text(
-                      size = legend_font_size
-                    )
-                )
-              },
-              
-              # Element C: Legend key size (passed here as well as in
-              # guides())
-              if (isTruthy(legend_key_size)){
-                list(
-                  legend.key.size =
-                    unit(legend_key_size, "points")
-                )
-              }
-            )
+        theme(
+          legend.position = 
+            if (show_legend == TRUE) {
+              "right"
+            } else "none"
           )
-        ),
+      ), # End list() (element A)
       
-      # Elements specified with guides()
-      list(
-        guides(
-          # Guide for scatterplot is "color"
-          color = 
-            do.call(
-              guide_legend,
-              # List of arguments to call
-              args =
-                c(
-                  # Empty list: passes no arguments if none are specified
-                  list(),
-                  # Element D: Number of columns in legend
-                  if (isTruthy(legend_ncol)){
-                    list(
-                      ncol = legend_ncol
-                    )
-                  },
-                  # Legend key size (specified here and in theme())
-                  if (isTruthy(legend_key_size)){
-                    list(
-                      override.aes =
-                        list(
-                          size = legend_key_size
-                        )
-                    )
-                  }
-                )
-            )
-        )
-      ),
-      
-      # Element E: Remove title if requested
-      if (display_coeff() == FALSE){
+      # Element B: Remove title if requested
+      if (display_coeff == FALSE){
         list(
           labs(title = NULL)
           )

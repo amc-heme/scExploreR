@@ -13,6 +13,8 @@
 #' operator separating the string.
 #'
 #' @return A Seurat object subsetted for the criteria entered.
+#' 
+#' @noRd
 make_subset <- function(object, 
                         criteria_list,
                         user_string = NULL

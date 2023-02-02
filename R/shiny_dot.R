@@ -1,11 +1,17 @@
-# shiny_dot
-
-# object: a Seurat object. This can be either the full object or a subset. This 
-# is a reactive-agnostic parameter (can be either reactive or non-reactive).
-# features: a character vector giving the features to use in the plot.
-# group_by: user specified group_by metadata category
-# split_by: user specified split_by metadata category
-# show_legend: user choice as to whether a legend should be shown
+#' scExploreR Dot Plots
+#'
+#' @param object a Seurat object. This can be either the full object or a subset.
+#' @param features_entered a character vector giving the features to use in the
+#' plot.
+#' @param group_by user specified group_by metadata variable
+#' @param show_legend user choice as to whether a legend should be shown (default is TRUE)
+#' @param palette the color palette to use for the plot (plot uses a continuous color palette)
+#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending", "descending", or "custom". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. If custom, groups will be sorted according to how they appear in `custom_factor_levels`.
+#' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
+#'
+#' @return a ggplot2 object with a dot plot created according to user specifications.
+#' 
+#' @noRd
 shiny_dot <- 
   function(
     object, 
@@ -14,7 +20,8 @@ shiny_dot <-
     show_legend = TRUE, 
     palette = NULL,
     sort_groups = NULL,
-    custom_factor_levels = NULL
+    custom_factor_levels = NULL,
+    rename_feature_labels = NULL
     ){
     # Default value of sort_groups: set to "ascending" if groups is NULL
     if (is.null(sort_groups)){
@@ -48,9 +55,8 @@ shiny_dot <-
                     }
                 )
             } else if (sort_groups == "custom"){
-              # If sort_groups is custom but custom_factor_levels is not 
-              # defined, throw an informative error message (error returned
-              # by by factor() is too generic) 
+              # Error message when custom_factor_levels is not defined (error 
+              # returned by factor() is too generic) 
               if (is.null(custom_factor_levels)){
                 stop(
                   'When `sort_groups` is equal to "custom", 
@@ -94,6 +100,20 @@ shiny_dot <-
             colors = palette
           )
       }
+      
+      # If custom feature labels are defined, apply them
+      if (isTruthy(rename_feature_labels)){
+        # Construct named vector with rename targets as values, and features
+        # entered as names
+        names(rename_feature_labels) <- features_entered
+        
+        # Rename x-axis tick labels according to named vector
+        plot <- 
+          plot +
+          scale_x_discrete(
+            labels = rename_feature_labels
+          )
+        }
       
       # Return plot
       plot

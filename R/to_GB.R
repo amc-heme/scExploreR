@@ -4,7 +4,7 @@
 #'
 #' @return A string. Gives the input value in GB (SI Units)
 #'
-#' @examples
+#' @noRd
 to_GB <- function(bytes){
   # Divide by 10^9 and round to two digits
   gb <- 

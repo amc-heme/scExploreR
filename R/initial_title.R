@@ -10,20 +10,22 @@
 #' @param metadata_config The metadata section of the config file loaded at app startup. Must be secified when plot_type == "dimplot", and is not used when plot type == "feature".
 #' @param features_entered The features currently selected (for feature plots)
 #'
+#' @noRd
 initial_title <- function(
   plot_type,
   group_by = NULL,
   metadata_config = NULL, 
+  assay_config = NULL,
   features_entered = NULL
   ){
-  if (!plot_type %in% c("dimplot", "feature", "proportion")){
+  if (!plot_type %in% c("dimplot", "feature", "ridge", "proportion", "pie")){
     stop(
-      'Agrument `plot_type` must be one of "dimplot", "feature", or "proportion"'
+      'Agrument `plot_type` must be one of "dimplot", "feature", "proportion", or "pie"'
       )
   }
   
-  if (plot_type %in% c("dimplot", "proportion")){
-    # For DimPlots and cell proportion plots: use name of group_by category
+  if (plot_type %in% c("dimplot", "proportion", "pie")){
+    # For DimPlots, cell proportion plots, and pie charts: use name of group_by category
     
     # Throw error if metadata_config or group_by are undefined
     if (is.null(metadata_config)){
@@ -50,11 +52,23 @@ initial_title <- function(
     } else {
       initial_value <- ""
     }
-  } else if (plot_type == "feature"){
+  } else if (plot_type %in% c("feature", "ridge")){
+    # For feature and ridge plots, require assay_config to be defined
+    # (to print human-readable names as initial custom titles)
+    if (is.null(assay_config)){
+      stop("assay_config must be defined for feature and ridge plots.")
+    }
+    
     # For feature plots: name of feature
     if (!is.null(features_entered)){
       if (length(features_entered) == 1){
-        initial_value <- features_entered
+        initial_value <- 
+          # Remove assay key from feature, and add assay label if defined
+          hr_name(
+            machine_readable_name = features_entered, 
+            assay_config = assay_config,
+            use_suffix = TRUE
+            )
       } else {
         # For multi-feature plots, there currently is 
         # no framework for a single-title entry.

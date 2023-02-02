@@ -15,6 +15,7 @@
 #' @param adt_threshold_title the title to give threshold ADT features in the 
 #' dropdown menu for feature text entry
 #'
+#' @noRd
 feature_list_all <- function(object,
                              assay_config,
                              numeric_metadata = 

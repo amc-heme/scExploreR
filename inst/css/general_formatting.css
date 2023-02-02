@@ -1,0 +1,283 @@
+/* -------------------------------------------------------------------------- */
+/* Formatting for text and other elements */
+
+/* Body: padding on top responds to media width. When the window is smaller than
+   a 'medium' bootstrap window (width <768px), the navbar becomes vertical, causing
+   the navbar tabs and icons to appear on top of content. For now, this will be
+   fixed by increasing the margin of the page body, but a solution that responds
+   to the new height of the navbar would be ideal. */
+@media (max-width: 768px){
+  body{
+    padding-top: 220px;
+  }
+}
+@media (min-width: 769px){
+  body{
+    padding-top: 60px;
+  }
+}
+
+/* Adjust margins of headers */
+h2, h3 {
+  margin-top: 10px !important;
+  margin-bottom: 5px !important;
+}
+
+/* Text CSS Classes */
+/* Center Header Tags */
+.center{
+  text-align: center;
+  /* Display must be set to block for centering to work */
+  display: block;
+}
+
+.left {
+  text-align: left;
+  display: block;
+}
+
+/* Small font */
+.small {
+  font-size: 0.85em;
+}
+
+/* Large font*/
+.large {
+  font-size: 1.17em;
+}
+
+/* Extra-large font */
+.x-large{
+  font-size: 1.3em;
+}
+
+/* underline */
+.underline {
+  text-decoration: underline;
+}
+
+/* Underline upon hover */
+.underline-hover:hover {
+  text-decoration: underline;
+}
+
+
+/* Spacing before element */
+.space-top{
+  margin-top: 0.5em;
+}
+
+/* Spacing after element */
+.half-space-bottom{
+  margin-bottom: 0.5em;
+}
+
+.single-space-bottom{
+  margin-bottom: 1.0em;
+}
+
+.inline-block{
+  display: inline-block;
+}
+
+.block {
+  display: block;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Add to two-column classes to automatically align left and right*/
+.float_left, .float-left {
+	/* Use this class for the left column */
+  float: left;
+}
+
+.float_right, .float-right {
+	/* Use this class for the right column */
+  float: right;
+}
+
+.bold-blue {
+  /* Uses text format from auto_dictionary.Rmd */
+  color: var(--markdown-blue, #000088);
+  font-weight: bold;
+}
+
+/* CSS used for label of inputs that are disabled */
+/* Input label text is contained in a span element immediately following
+   the input in the DOM. The span element is selected using the adjacent sibling
+   combinator ("+"). */
+.disabled-label + span {
+  /* Grey text, with alpha of 0.5 */
+  color: #88888888;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Two column classes */
+/* For showing elements side-by-side in a two-column format */
+
+/* two-column-container: used for the parent container of the two columns */
+.two-column-container {
+  /* Use flex to get the continer to resize according to the viewport window,
+     so the dimensions of the container are always exactly sufficient to show
+     content, even when the heights of the two columns are not equal */
+  display: flex;
+}
+
+/* Two-column panel */
+.two_column {
+	width: 50%;
+	display: inline-block;
+	/* Add padding to sides of columns */
+	padding: 5px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+.two-column-left {
+  float: left;
+  padding: 10px;
+}
+
+.two-column-right {
+  float: right;
+  padding: 10px;
+}
+
+/* Single column layout */
+/* Class below creates a single column */
+/* */
+
+@media (max-width: 768px){
+  .single-column-page {
+    margin-left: auto;
+    margin-right: auto;
+    width: 85%
+  }
+}
+
+@media(min-width: 769px){
+  .single-column-page {
+    margin-left: auto;
+    margin-right: auto;
+    width: 66%
+  }
+}
+
+@media(min-width: 993px){
+  .single-column-page {
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Input container classes */
+
+/* Shiny input containers within a container with this class will have no margin */
+.input-no-margin > .shiny-input-container {
+  margin: 0px;
+}
+
+/* Selector to remove margins from elements within selectize forms */
+.input-no-margin > .shiny-input-container > div > .selectize-control{
+    margin: 0px;
+}
+
+/* Reduces bottom margin of shiny input elements within container to 5px */
+.input-margin-5 > .shiny-input-container > div > .selectize-control{
+    margin-bottom: 5px;
+}
+
+/* inline-containers: sets all containers inside element to inline display */
+.inline-containers > .shiny-input-container {
+  display: inline-block;
+}
+
+.align-containers-top > .shiny-input-container {
+  vertical-align: top;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Other Containers */
+
+/* Set height of group name text box for consistency with the group metadata
+   to the right */
+#options_group_name {
+  height: 34px;
+}
+
+/* Compact options container: for sub-groups in options panel */
+.compact-options-container{
+  background-color: #CCCCCC;
+  margin: 0px -2px;
+  padding: 10px 7px;
+  border-radius: 10px;
+}
+
+/* Special style for headers at the top of a compact options container */
+.compact-options-container > .container-header {
+  background-color: #555588;
+  margin-top: -10px !important;
+  margin-left: -7px;
+  margin-right: -7px;
+  border-radius: 10px 10px 0px 0px;
+  padding: 10px 7px;
+  color: white;
+  font-weight: bolder;
+  text-align: center;
+}
+
+.feature_statistics_container {
+  min-height: 150px;
+  max-height: 400px;
+  /* width: 150px; */
+  overflow-y: scroll;
+}
+
+/* spinner_text class: for text that appears beneath spinner*/
+.spinner_text {
+  margin-top: 10px;
+  color: #444455;
+  font-weight: bold;
+}
+
+/* Color Inputs */
+/* two-color-input: applied to division elements that contain two colourPicker
+   inputs. This causes the inputs to appear condensed and on one line. */
+.two-color-input-left,
+.two-color-input-right {
+  display: inline-block;
+}
+
+.two-color-input-left > div.shiny-input-container,
+.two-color-input-right > div.shiny-input-container {
+  width: 80px;
+  display: inline-block;
+}
+
+.two-color-input-left >
+  .shiny-input-container >
+  .colourpicker >
+  .colourpicker-input-container >
+  input,
+.two-color-input-right >
+  .shiny-input-container >
+  .colourpicker >
+  .colourpicker-input-container >
+  input {
+  font-size: 0.95em;
+  padding: 3px 6px;
+}
+
+.two-color-input-right >
+  .shiny-input-container >
+  .colourpicker >
+  .colourpicker-input-container >
+  .colourpicker-panel {
+  left: -80px;
+}

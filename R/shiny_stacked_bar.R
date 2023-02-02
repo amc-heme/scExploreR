@@ -1,3 +1,24 @@
+#' scExploreR stacked bar plot
+#'
+#' Accepts inputs from plots_selections module and outputs a stacked bar plot
+#' giving cell proportions by metadata groups from the Seurat object passed to 
+#' it. 
+#'
+#' @param object A Seurat object. This can be either the full object or a subset.
+#' @param group_by metadata variable used for cell type proportions. The number of cells in each level of this variable will be plotted.
+#' @param split_by metadata variable used for comparing cell type proportions. The number of cells in each level of this variable will be plotted.
+#' @param x_axis_title the title to use for the x-axis.
+#' @param y_axis_title the title to use for the y-axis.
+#' @param plot_title the title of the plot. Defaults to NULL; in this case, the group_by variable name will be displayed.
+#' @param show_title if TRUE, the title is displayed above the plot.
+#' @param show_legend if TRUE, the legend is shown to the right side of the plot. The default is TRUE.
+#' @param palette a color palette to use for the plot. The plot uses a categorical palette.
+#' @param sort_groups the order with which to sort proportion comparisons on the proportion plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. 
+#' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
+#'
+#' @return  a ggplot2 object with a stacked bar plot created according to user specifications.
+#' 
+#' @noRd
 shiny_stacked_bar <-
   function(
     object,
@@ -10,9 +31,7 @@ shiny_stacked_bar <-
     show_legend = TRUE,
     palette = NULL,
     sort_groups = NULL,
-    legend_ncol = NULL,
-    legend_font_size = NULL,
-    legend_key_size = NULL
+    custom_factor_levels = NULL
   ){
     # validate will keep plot code from running if the subset 
     # is NULL (no cells in subset)
@@ -57,20 +76,36 @@ shiny_stacked_bar <-
       factor(
         object@meta.data[[split_by]],
         levels = 
-          object@meta.data[[split_by]] |> 
-          unique() |> 
-          str_sort(
-            numeric = TRUE,
-            # Cell type proportion plots will plot groups in an order
-            # consistent with the value of the `decreasing` argument
-            # (FALSE will plot in ascending order, from left to right)
-            decreasing = 
-              if (sort_groups == "ascending"){
-                FALSE
-              } else if (sort_groups == "descending"){
-                TRUE
-              }
-            )
+          # Levels based on ascending or descending order
+          if (sort_groups %in% c("ascending", "descending")){
+            object@meta.data[[split_by]] |> 
+              unique() |> 
+              str_sort(
+                numeric = TRUE,
+                # Cell type proportion plots will plot groups in an order
+                # consistent with the value of the `decreasing` argument
+                # (FALSE will plot in ascending order, from left to right)
+                decreasing = 
+                  if (sort_groups == "ascending"){
+                    FALSE
+                  } else if (sort_groups == "descending"){
+                    TRUE
+                  }
+              )
+          } else {
+            # If sort_groups is "custom", use the user-defined levels 
+            
+            # Error message when custom_factor_levels is not defined (error 
+            # returned by factor() is too generic) 
+            if (is.null(custom_factor_levels)){
+              stop(
+                'When `sort_groups` is equal to "custom", 
+                  `custom_factor_levels` must be defined.'
+              )
+            }
+            
+            custom_factor_levels
+          }
         )
     
     # Create cell type proportion stacked bar chart
@@ -84,8 +119,7 @@ shiny_stacked_bar <-
         # specified in `fill` argument
         mapping = aes(fill = .data[[group_by]]), 
         # "fill" creates a proportion bar chart
-        position = "fill",
-        key_glyph = "rect"
+        position = "fill"
       ) +
       theme_cowplot() +
       theme(
@@ -160,86 +194,26 @@ shiny_stacked_bar <-
             ) 
         ),
         
-        # E-H. Arguments passed to theme
-        list(
-          do.call(
-            theme,
-            # List of arguments to call with theme
-            args = 
-              # Arguments are included in list conditionally. If no elements 
-              # are included, the list() call will return an empty list instead
-              # of NULL (NULL will cause errors with do.call)
-              c(
-                list(),
-                # E. Show/hide plot title
-                if (show_title == FALSE){
-                  list(
-                    plot.title = element_blank()
-                    )
-                },
-                # F. Show/hide legend title (shown by default)
-                list(
-                  legend.position = 
-                    if (show_legend == TRUE) {
-                      "right"
-                    } else "none"
-                ),
-                # G. Legend font size 
-                if (isTruthy(legend_font_size)){
-                  list(
-                    legend.text = 
-                      element_text(
-                        size = legend_font_size
-                      )
-                  )
-                },
-                
-                #I_ALT. Legend key size
-                if (isTruthy(legend_key_size)){
-                  list(
-                    legend.key.size =
-                      unit(legend_key_size, "points")
-                  )
-                }
-              )
-          )
-        ),
-        
-        # H-I. Number of columns in legend, size of legend keys
-        list(
-          guides(
-            # Stacked bar plots use "fill" aesthetic (umaps, 
-            # feature plots use "color" instead)
-            fill =
-              do.call(
-                guide_legend,
-                # List of arguments to call
-                args =
-                  c(
-                    # Empty list: passes no arguments if none are specified
-                    list(),
-                    # list(
-                    #   byrow = TRUE
-                    # ),
-                    # H. Number of columns in legend
-                    if (isTruthy(legend_ncol)){
-                      list(
-                        ncol = legend_ncol
-                      )
-                    },
-                    # I. Size of keys
-                    if (isTruthy(legend_key_size)){
-                      list(
-                        override.aes =
-                          list(
-                            size = legend_key_size
-                            )
-                        )
-                    }
-                  )
+        # E. Show/hide plot title
+        # Plot title is shown by default
+        if (show_title == FALSE){
+          list(
+            theme(
+              plot.title = element_blank()
               )
             )
+          },
+        
+        # F. Show/hide legend title (shown by default)
+        list(
+          theme(
+            legend.position = 
+              if (show_legend==TRUE) {
+                "right"
+              } else "none"
+            )
           )
+        
         )
         
     plot <-
