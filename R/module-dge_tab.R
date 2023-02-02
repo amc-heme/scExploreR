@@ -769,7 +769,7 @@ dge_tab_server <- function(id,
                     # Explicitly coerce to tibble
                     as_tibble() %>%
                     # remove stat and auc from the output table
-                    select(-c(statistic, pval)) %>%
+                    dplyr::select(-c(statistic, pval)) %>%
                     # Using magrittr pipes here because the following
                     # statement doesn't work with base R pipes
                     # remove negative logFCs if box is checked
