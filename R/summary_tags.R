@@ -46,7 +46,7 @@ summary_tags <-
               if (!is.null(text_class)){
                 text_class
               },
-            summary_results[i]
+            round(summary_results[i], digits = 6)
           )
         }
       )

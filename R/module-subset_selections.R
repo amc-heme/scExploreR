@@ -616,6 +616,7 @@ subset_selections_server <- function(id,
               object(),
               vars = input$search_feature
             )[,1] |> 
+            # (summary is a base function)
             summary()
           
           # Print UI below

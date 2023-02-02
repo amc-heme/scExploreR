@@ -37,15 +37,9 @@ run_scExploreR <-
     # Reactlog (for debugging)
     library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
     options(
-      shiny.reactlog = TRUE
+      shiny.reactlog = TRUE,
+      shiny.fullstacktrace = full_stack_trace
     )
-    
-    # Full stack trace for errors (if enabled)
-    if (full_stack_trace == TRUE){
-      options(
-        shiny.fullstacktrace = TRUE
-      )
-    }
     
     # Logging and performance monitoring
     library(profvis, quietly = TRUE, warn.conflicts = FALSE)
@@ -1773,10 +1767,14 @@ run_scExploreR <-
         list(
           "port" = 
             if (!is.null(port)) port else getOption("shiny.port"),
-           "host" = 
+          "host" = 
             if (!is.null(host)) host else "127.0.0.1",
-           "launch.browser" = 
-            if (!is.null(launch.browser)) launch.browser else TRUE
-        )
+          "launch.browser" = 
+            if (!is.null(launch.browser)){
+              launch.browser
+            } else {
+                getOption("shiny.launch.browser", interactive())
+              }
+          )
       )
-  }
+    }
