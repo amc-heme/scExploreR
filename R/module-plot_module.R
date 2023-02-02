@@ -412,7 +412,7 @@ plot_module_ui <- function(id,
           # Number of columns in legend
           sliderInput(
             inputId = ns("legend_ncol"),
-            label = "Number of columns in legend",
+            label = "Number of Columns in Legend",
             ticks = FALSE,
             value = 1,
             min = 1,
@@ -424,56 +424,66 @@ plot_module_ui <- function(id,
             label = "Use default",
             value = TRUE
           ),
-          # Font size of legend
           sliderInput(
-            inputId = ns("legend_font_size"),
-            label = "Font size of legend",
+            inputId = ns("legend_size"),
+            label = "Adjust Size of Legend:",
             ticks = FALSE,
-            value = 9,
+            value = 6,
             min = 1,
-            max = 15,
-            step = 0.5
-          ),
-          checkboxInput(
-            inputId = ns("default_legend_font_size"),
-            label = "Use default",
-            value = TRUE
-          ),
-          # Legend key size
-          sliderInput(
-            inputId = ns("legend_key_size"),
-            label = "Key size of legend",
-            ticks = FALSE,
-            value = 5,
-            min = 1,
-            max = 10,
-            step = 0.5
-          ),
-          checkboxInput(
-            inputId = ns("default_legend_key_size"),
-            label = "Use default",
-            value = TRUE
-          ),
-          # Include slider for legend key spacing if enabled
-          # (does not work for bar charts)
-          if (legend_options_menu_include_spacing == TRUE){
-            tagList(
-              sliderInput(
-                inputId = ns("legend_key_spacing"),
-                label = "Spacing between legend keys",
-                ticks = FALSE,
-                value = 0,
-                min = 0,
-                max = 35,
-                step = 0.25
-                ),
-              checkboxInput(
-                inputId = ns("default_legend_key_spacing"),
-                label = "Use default",
-                value = TRUE
-                )
-              )
-            } else NULL
+            max = 9,
+            step = 1
+            )#,
+          
+          # # Font size of legend
+          # sliderInput(
+          #   inputId = ns("legend_font_size"),
+          #   label = "Font size of legend",
+          #   ticks = FALSE,
+          #   value = 9,
+          #   min = 1,
+          #   max = 15,
+          #   step = 0.5
+          # ),
+          # checkboxInput(
+          #   inputId = ns("default_legend_font_size"),
+          #   label = "Use default",
+          #   value = TRUE
+          # ),
+          # # Legend key size
+          # sliderInput(
+          #   inputId = ns("legend_key_size"),
+          #   label = "Key size of legend",
+          #   ticks = FALSE,
+          #   value = 5,
+          #   min = 1,
+          #   max = 10,
+          #   step = 0.5
+          # ),
+          # checkboxInput(
+          #   inputId = ns("default_legend_key_size"),
+          #   label = "Use default",
+          #   value = TRUE
+          # ),
+          # # Include slider for legend key spacing if enabled
+          # # (does not work for bar charts)
+          # if (legend_options_menu_include_spacing == TRUE){
+          #   tagList(
+          #     sliderInput(
+          #       inputId = ns("legend_key_spacing"),
+          #       label = "Spacing between legend keys",
+          #       ticks = FALSE,
+          #       value = 0,
+          #       min = 0,
+          #       max = 35,
+          #       step = 0.25
+          #       ),
+          #     checkboxInput(
+          #       inputId = ns("default_legend_key_spacing"),
+          #       label = "Use default",
+          #       value = TRUE
+          #       )
+          #     )
+          #   } else NULL
           )
       } else NULL,
       
@@ -2107,38 +2117,65 @@ plot_module_server <- function(id,
                      
                      `legend_font_size` =
                        reactive({
-                         # Record value of the legend font size slider if the 
-                         # "use default" checkbox is not checked
-                         if (isTruthy(input$legend_font_size) & 
-                             !isTruthy(input$default_legend_font_size)){
-                           input$legend_font_size
-                         } else {
-                           NULL
-                         }
+                         # Value depends on qualitative value of legend size
+                         # slider (limits from 1 to 7)
+                         v <- input$legend_size
+                         
+                         # 1 = smallest, 7 = largest. Default is "4"
+                         dplyr::case_when(
+                           v == 1 ~ 7,
+                           v == 2 ~ 8,
+                           v == 3 ~ 8.5,
+                           v == 4 ~ 10,
+                           v == 5 ~ 11,
+                           # Default
+                           v == 6 ~ 12,
+                           v == 7 ~ 14,
+                           v == 8 ~ 16,
+                           v == 9 ~ 18
+                         )
                        }),
                      
                      `legend_key_size` = 
                        reactive({
-                         # Record value of the legend key size slider if the 
-                         # "use default" checkbox is not checked
-                         if (isTruthy(input$legend_key_size) & 
-                             !isTruthy(input$default_legend_key_size)){
-                           input$legend_key_size
-                         } else {
-                           NULL
-                         }
+                         # Value depends on qualitative value of legend size
+                         # slider (limits from 1 to 7)
+                         v <- input$legend_size
+                         
+                         # 1 = smallest, 7 = largest. Default is "4"
+                         dplyr::case_when(
+                           v == 1 ~ 1.5,
+                           v == 2 ~ 2,
+                           v == 3 ~ 2,
+                           v == 4 ~ 2.5,
+                           v == 5 ~ 2.5,
+                           # Default
+                           v == 6 ~ 3,
+                           v == 7 ~ 4,
+                           v == 8 ~ 6,
+                           v == 9 ~ 8
+                         )
                        }),
                      
                      `legend_key_spacing` =
                        reactive({
-                         # Record value of the legend key spacing slider if the 
-                         # "use default" checkbox is not checked
-                         if (isTruthy(input$legend_key_spacing) & 
-                             !isTruthy(input$default_legend_key_spacing)){
-                           input$legend_key_spacing
-                         } else {
-                           NULL
-                         }
+                         # Value depends on qualitative value of legend size
+                         # slider (limits from 1 to 7)
+                         v <- input$legend_size
+                         
+                         # 1 = smallest, 7 = largest. Default is "4"
+                         dplyr::case_when(
+                           v == 1 ~ 0,
+                           v == 2 ~ 0.5,
+                           v == 3 ~ 3,
+                           v == 4 ~ 8,
+                           v == 5 ~ 12,
+                           # Default
+                           v == 6 ~ 14,
+                           v == 7 ~ 17,
+                           v == 8 ~ 21,
+                           v == 9 ~ 26
+                           )
                        })
                        
                    )
@@ -3168,21 +3205,6 @@ plot_module_server <- function(id,
                        plot = plot
                      )
                  }
-                 
-                 # TEMP: Adjust Legend Options -----------------------------------
-                 # if (plot_type %in% c("violin", "proportion")){
-                 #   # The rectangular key glyphs used by violin and cell type 
-                 #   # proportion plots respond differently to changes in the 
-                 #   # legend key size, and thus require different ranges to be
-                 #   # available for the key size entry.
-                 #   updateSliderInput(
-                 #    inputId = "legend_key_size",
-                 #    value = 7,
-                 #    min = 1,
-                 #    max = 20,
-                 #    step = 1
-                 #   )
-                 # }
                  
                  # 13. Download handler ----------------------------------------
                  output$confirm_download <- 

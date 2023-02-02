@@ -101,7 +101,7 @@ shiny_scatter <- function(object,
                 # Element A: Legend position
                 # "right" if a legend is desired, and "none" if not
                 legend.position = 
-                  if (show_legend()==TRUE) {
+                  if (show_legend == TRUE) {
                     "right"
                   } else "none"
               ),
@@ -161,7 +161,7 @@ shiny_scatter <- function(object,
       ),
       
       # Element E: Remove title if requested
-      if (display_coeff() == FALSE){
+      if (display_coeff == FALSE){
         list(
           labs(title = NULL)
           )
