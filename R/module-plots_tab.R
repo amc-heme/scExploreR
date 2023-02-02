@@ -260,7 +260,23 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.4. Subsets for Plots ####
+         ## 1.4. Feature summary statistics ####
+         # Panel is hidden until at least one feature has been entered
+         hidden(
+           div(
+             id = ns("feature_stats_showhide"),
+             collapsible_panel(
+               inputId = ns("feature_stats_collapsible"),
+               label = "Feature Statistics",
+               active = FALSE,
+               feature_stats_ui(
+                 id = ns("plots_feature_statistics")
+                 )
+               )
+             )
+           ), # End 1.4
+         
+         ## 1.5. Subsets for Plots ####
          collapsible_panel(
            inputId = ns("subset_collapsible"),
            label = "Subset Options",
@@ -268,7 +284,7 @@ plots_tab_ui <- function(id,
            # div for spinner that displays over the full subset options panel
            div(
              id = ns("subset_panel"),
-             # 1.4.1 div for spinner that displays over the subset summary only
+             # 1.5.1 div for spinner that displays over the subset summary only
              div(
                id = ns("subset_stats"),
                # Header for subset summary
@@ -284,7 +300,7 @@ plots_tab_ui <- function(id,
                  )
                ), # End subset_stats div
 
-             # 1.4.2. Subset selection menus
+             # 1.5.2. Subset selection menus
              subset_selections_ui(
                id = ns("subset_selections"),
                unique_metadata = unique_metadata,
@@ -293,16 +309,16 @@ plots_tab_ui <- function(id,
                string_subsetting_href = string_subsetting_href
                ),
 
-             # 1.4.3. Submit button for subset
+             # 1.5.3. Submit button for subset
              actionButton(
                inputId = ns("subset_submit"),
                label="Apply Subset"
                )
              ) # End subset_panel div
-         ), # End 1.4
+         ), # End 1.5
          
          #----- Plot-specific options -----#####
-         ## 1.5. DimPlot options ####
+         ## 1.6. DimPlot options ####
          # Panel will display if "Make DimPlot" switch is on
          conditionalPanel(
            # Javascript expression for condition in which to show panel
@@ -336,7 +352,7 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.6. Feature plot options ####
+         ## 1.7. Feature plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_feature')}'] == true"),
            collapsible_panel(
@@ -379,7 +395,7 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.7. Violin plot options ####
+         ## 1.8. Violin plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_vln')}'] == true"),
            collapsible_panel(
@@ -407,7 +423,7 @@ plots_tab_ui <- function(id,
            )
          ),
          
-         ## 1.8. Dot plot options ####
+         ## 1.9. Dot plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_dot')}'] == true"),
            collapsible_panel(
@@ -435,9 +451,9 @@ plots_tab_ui <- function(id,
                download_button =       TRUE
                )
              )
-           ), #End 1.8
+           ), #End 1.9
          
-         ## 1.9. Scatterplot options ####
+         ## 1.10. Scatterplot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_scatter')}'] == true"),
            collapsible_panel(
@@ -464,9 +480,9 @@ plots_tab_ui <- function(id,
                download_button =       TRUE            
                )
            )
-         ), # End 1.9.
+         ), # End 1.10.
          
-         ## 1.10. Ridge plot options ####
+         ## 1.11. Ridge plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_ridge')}'] == true"),
            collapsible_panel(
@@ -497,9 +513,9 @@ plots_tab_ui <- function(id,
                group_by_include_none =     TRUE
              )
            )
-         ), # End 1.10
+         ), # End 1.11
          
-         ## 1.11. Proportion stacked bar plot options ####
+         ## 1.12. Proportion stacked bar plot options ####
          conditionalPanel(
            condition = glue("input['{ns('make_proportion')}'] == true"),
            collapsible_panel(
@@ -543,9 +559,9 @@ plots_tab_ui <- function(id,
                  "Choose Metadata for Proportion Comparison"
                )
              )
-           ), # End 1.11.
+           ), # End 1.12.
          
-         ## 1.12. Pie chart options ####
+         ## 1.13. Pie chart options ####
          # UI and module are only created if the metadata column used for 
          # patient/sample level metadata is defined.
          if (!is.null(patient_colname())){
@@ -587,7 +603,7 @@ plots_tab_ui <- function(id,
                  remove_patient_column = TRUE
                  )
                )
-             ) # End 1.12.
+             ) # End 1.13.
            }
          ), # End 1.
        
@@ -975,8 +991,37 @@ plots_tab_server <- function(id,
                      )
                    }
                  
-                 # 3. Process Subset -------------------------------------------
-                 # 3.1 Module server to process user selections and report ####
+                 # 3. Feature Summary Statistics -----
+                 ## 3.1. Module server Instance ####
+                 # Module server instance
+                 feature_stats_server(
+                   id = "plots_feature_statistics",
+                   object = subset,
+                   features_entered = reactive({input$text_features}),
+                   assay_config = assay_config
+                   )
+                 
+                 ## 3.2. Show and hide statistics window ####
+                 # The feature statistics panel is shown only when features 
+                 # have been entered.
+                 observe({
+                   target_id <- "feature_stats_showhide"
+                 
+                   if (isTruthy(input$text_features)){
+                     showElement(
+                       id = target_id,
+                       anim = TRUE
+                       )
+                   } else {
+                     hideElement(
+                       id = target_id,
+                       anim = TRUE
+                       )
+                   }
+                 })
+                 
+                 # 4. Process Subset -------------------------------------------
+                 ## 4.1 Module server to process user selections and report ####
                  # to other modules
                  # With reactive objects, a new module must be created for each 
                  # object to avoid collisions between subset menu ID's. 
@@ -990,7 +1035,7 @@ plots_tab_server <- function(id,
                      valid_features = valid_features
                      )
                  
-                 ## 3.2. Make Subset ####
+                 ## 4.2. Make Subset ####
                  # object_init: a reactive value set to TRUE when a new object 
                  # is loaded. When object_init is TRUE it signals the 
                  # plots_subset eventReactive to return the full object
@@ -1095,7 +1140,7 @@ plots_tab_server <- function(id,
                        plots_s_sub
                        })
                  
-                 ## 3.3 Check Subset ####
+                 ## 4.3 Check Subset ####
                  # Return notifications if conditions are not met.
                  observeEvent(
                    subset(),
@@ -1122,7 +1167,7 @@ plots_tab_server <- function(id,
                      }
                    })
                  
-                 ## 3.4 Subset Summary Module ####
+                 ## 4.4 Subset Summary Module ####
                  # Computes and exports the unique metadata values in the 
                  # current subset/object
                  subset_summary_server(
