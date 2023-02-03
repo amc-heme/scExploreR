@@ -133,6 +133,12 @@ shiny_stacked_bar <-
             vjust = 1,
             hjust = 1
             ),
+        # Creates spacing between legend keys
+        legend.key = 
+          element_rect(
+            color = "#FFFFFF", 
+            linewidth = unit(1, "points")
+            ),
         # Hide legend title (group_by category that would appear above legend
         # is used for plot title instead, as is done for Seurat::DimPlot)
         legend.title = element_blank(),
@@ -263,7 +269,7 @@ shiny_stacked_bar <-
                     if (isTruthy(legend_ncol)){
                       list(
                         ncol = legend_ncol
-                      )
+                        )
                     },
                     # I. Size of keys
                     if (isTruthy(legend_key_size)){
