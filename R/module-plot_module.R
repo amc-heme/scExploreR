@@ -2118,10 +2118,10 @@ plot_module_server <- function(id,
                      `legend_font_size` =
                        reactive({
                          # Value depends on qualitative value of legend size
-                         # slider (limits from 1 to 7)
+                         # slider (limits from 1 to 9)
                          v <- input$legend_size
                          
-                         # 1 = smallest, 7 = largest. Default is "4"
+                         # 1 = smallest, 9 = largest.
                          dplyr::case_when(
                            v == 1 ~ 7,
                            v == 2 ~ 8,
@@ -2139,31 +2139,53 @@ plot_module_server <- function(id,
                      `legend_key_size` = 
                        reactive({
                          # Value depends on qualitative value of legend size
-                         # slider (limits from 1 to 7)
+                         # slider (limits from 1 to 9)
                          v <- input$legend_size
                          
-                         # 1 = smallest, 7 = largest. Default is "4"
-                         dplyr::case_when(
-                           v == 1 ~ 1.5,
-                           v == 2 ~ 2,
-                           v == 3 ~ 2,
-                           v == 4 ~ 2.5,
-                           v == 5 ~ 2.5,
-                           # Default
-                           v == 6 ~ 3,
-                           v == 7 ~ 4,
-                           v == 8 ~ 6,
-                           v == 9 ~ 8
-                         )
+                         # Different values from the same slider are used for 
+                         # violin, proportion, and ridge plots
+                         if (!plot_type %in% c("violin", "proportion", "ridge")){
+                           # Standard values
+                           # 1 = smallest, 9 = largest. 
+                           dplyr::case_when(
+                             v == 1 ~ 1.5,
+                             v == 2 ~ 2,
+                             v == 3 ~ 2,
+                             v == 4 ~ 2.5,
+                             v == 5 ~ 2.5,
+                             # Default
+                             v == 6 ~ 3,
+                             v == 7 ~ 4,
+                             v == 8 ~ 6,
+                             v == 9 ~ 8
+                           )
+                         } else {
+                           # 1 = smallest, 9 = largest. 
+                           dplyr::case_when(
+                             v == 1 ~ 2,
+                             v == 2 ~ 2.5,
+                             v == 3 ~ 3,
+                             v == 4 ~ 3.5,
+                             v == 5 ~ 4,
+                             # Default
+                             v == 6 ~ 4.5,
+                             v == 7 ~ 6,
+                             v == 8 ~ 8,
+                             v == 9 ~ 10
+                           )
+                         }
                        }),
                      
                      `legend_key_spacing` =
                        reactive({
+                         # Value only applies to plots with scatter geoms
+                         # (DimPlots, Scatterplots)
+                         
                          # Value depends on qualitative value of legend size
-                         # slider (limits from 1 to 7)
+                         # slider (limits from 1 to 9)
                          v <- input$legend_size
                          
-                         # 1 = smallest, 7 = largest. Default is "4"
+                         # 1 = smallest, 9 = largest. 
                          dplyr::case_when(
                            v == 1 ~ 0,
                            v == 2 ~ 0.5,
@@ -2175,9 +2197,8 @@ plot_module_server <- function(id,
                            v == 7 ~ 17,
                            v == 8 ~ 21,
                            v == 9 ~ 26
-                           )
+                         )
                        })
-                       
                    )
                  
                  # 7. Determine if a subset has been used  ---------------------
