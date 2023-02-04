@@ -118,8 +118,9 @@ corr_tab_ui <- function(id,
               
               # Table: rendered inline 
               div(
-                class = "two-column",
-                style = "width: 40%; float: left;",
+                id = ns("corr_table_container"),
+                class = "center",
+                #style = "width: 40%; float: left;",
                 tags$strong(
                   "Correlation Table", 
                   class = "center single-space-bottom"
@@ -133,8 +134,8 @@ corr_tab_ui <- function(id,
               # Scatterplot
               # Appears after the user makes a selection on the table
               div(
-                class = "two-column",
-                style = "width: 60%; float: right;",
+                #class = "two-column",
+                #style = "width: 60%; float: right;",
                 # UI for scatterplot rendered in 
                 # separate eventReactive function
                 uiOutput(
@@ -688,7 +689,8 @@ corr_tab_server <- function(id,
                      ignoreNULL = FALSE,
                      {
                        # print("4.8. DT Table")
-                       # Define header for datatable using HTML
+                       
+                       ### Table HTML Header ####
                        if (is_subset() == TRUE){
                          # If a subset is selected, the header will have three 
                          # columns for the feature, the global correlation 
@@ -716,7 +718,11 @@ corr_tab_server <- function(id,
                                      tags$br(),
                                      "(Subset)"
                                      )
-                                   ) # End th
+                                   ), # End th
+                                 # Header for GeneCards Links
+                                 tags$th(
+                                   "Additional Info"
+                                  )
                                  ) # End tr
                                ) # End thead
                              ) # End table
@@ -739,19 +745,42 @@ corr_tab_server <- function(id,
                                        tags$br(),
                                        "(Global)"
                                        )
-                                     ) # End th
+                                     ), # End th
+                                   # Header for GeneCards Links
+                                   tags$th(
+                                     "Additional Info"
+                                     )
                                    ) # End tr
                                  ) # End thead
                              ) # End table tag
                            }
                        
+                       ### Genecards link ####
+                       corr_table <- corr_table_content()
+                       
+                       # Vector of all genes in the table, used for creating links
+                       features <- corr_table$Feature 
+                       
+                       corr_table["Additional Info"] <- 
+                         glue(
+                           # Link to gene cards search, for each feature in the table
+                           '<a href=
+                            https://www.genecards.org/Search/Keyword?queryString={features} 
+                            target="_blank",
+                            rel="noopener noreferrer">GeneCards</a>'
+                          )
+                       
+                       ### Construct DT datatable ####
                        DT <-
                          datatable(
-                           corr_table_content(),
+                           corr_table,
                            class = "compact stripe cell-border hover",
                            selection = "single",
                            filter = "top",
                            rownames = FALSE,
+                           # Set escape to FALSE to render the HTML for \
+                           # GeneCards links 
+                           escape = FALSE,
                            container = header
                            ) %>%
                          # Use 5 sig figs for pearson coefficientcolumn(s). If a 
@@ -817,35 +846,48 @@ corr_tab_server <- function(id,
                            # If a subset is selected, display two plots: 
                            # one for the subset and one for the full data.
                            tagList(
-                             tags$strong(
-                               "Scatterplot for Subset",
-                               class = "center single-space-bottom"),
-                             plotOutput(
-                               outputId = ns("subset_scatterplot"), 
-                               height = "400px", 
-                               width = "400px"
+                             div(
+                               id = ns("subset_scatterplot_container"),
+                               class = "two-column",
+                               style = "float: left; width: 50%;",
+                               tags$strong(
+                                 "Scatterplot for Subset",
+                                 class = "center single-space-bottom"
+                                 ),
+                               plotOutput(
+                                 outputId = ns("subset_scatterplot"), 
+                                 height = "400px"#, 
+                                 #width = "400px"
+                                 )
                                ),
-                             tags$strong(
-                               "Scatterplot for Full Data",
-                               class="center single-space-bottom"
-                               ),
-                             plotOutput(
-                               outputId = ns("full_data_scatterplot"), 
-                               height = "400px", 
-                               width = "400px"
+                             div(
+                               id = ns("global_scatterplot_container"),
+                               class = "two-column",
+                               style = "float: right; width: 50%",
+                               tags$strong(
+                                 "Scatterplot for Full Data",
+                                 class = "center single-space-bottom"
+                                 ),
+                               plotOutput(
+                                 outputId = ns("full_data_scatterplot"), 
+                                 height = "400px"#, 
+                                 #width = "400px"
+                                 )
                                )
                              )
                            
                            } else {
                              # Otherwise, display only one scatterplot.
-                             tagList(
+                             div(
+                               id = ns("global_scatterplot_container"),
+                               class = "center",
                                tags$strong(
                                  "Scatterplot",
                                  class = "center single-space-bottom"),
                                plotOutput(
                                  outputId = ns("full_data_scatterplot"),
-                                 height = "400px", 
-                                 width="400px"
+                                 height = "400px"#, 
+                                 #width = "600px"
                                  )
                              )
                            }
