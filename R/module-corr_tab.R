@@ -69,12 +69,20 @@ corr_tab_ui <- function(id,
               class = "inline-block"
               ),
             
-            # Download buttons: render after the correlations table 
-            # and scatterplots are computed
-            uiOutput(
-              outputId = ns("downloads_ui"), 
-              inline = TRUE
+            # Download buttons: display after the correlations table is computed
+            hidden(
+              downloadButton(
+                outputId = ns("download_table"),
+                label = "Download Table",
+                # Add space before button
+                class = "inline-block",
+                icon = icon("table")
+                )
               ),
+            # uiOutput(
+            #   outputId = ns("downloads_ui"), 
+            #   inline = TRUE
+            #   ),
             
             # Options for scatterplot: a collapsible panel of options
             # appears after a scatterplot is displayed
@@ -969,30 +977,27 @@ corr_tab_server <- function(id,
                          } # End if statement
                        })
                  
-                 ## 5.5. Download Button for Table ####
-                 downloads_ui <- 
-                   eventReactive(
-                     c(submit_button(),
-                       input$corr_table_rows_selected),
-                     label = "Corr: Table Download Button UI",
-                     ignoreNULL = FALSE,
-                     {
-                       # Condition !hasName(): 
-                       # TRUE before table is created, FALSE after
-                       if (!hasName(input, "corr_table_rows_selected")){
-                         # Display nothing before table is created
-                         NULL 
-                         } else {
-                           # Display download button after table is created
-                           downloadButton(
-                             outputId = ns("download_table"),
-                             label = "Download Table",
-                             # Add space before button
-                             class = "inline-block",
-                             icon = icon("table")
-                             )
-                           } # End else
-                       })
+                 ## 5.5. Show/hide download button for table ####
+                 observe(
+                   # c(submit_button(),
+                   #   input$corr_table_rows_selected),
+                   label = "Corr: Show/Hide Table Download Button UI",
+                   # ignoreNULL = FALSE,
+                   {
+                     # Display download button only when rows have been selected 
+                     # on the table
+                     if (isTruthy(corr_table_content())){
+                       showElement(
+                         id = "download_table",
+                         anim = TRUE
+                         )
+                     } else {
+                       hideElement(
+                         id = "download_table",
+                         anim = TRUE
+                         )
+                       }
+                     })
                  
                  # 6. Server Value for Gene Selected from Table ----------------
                  # Value is used for creating scatterplots
@@ -1087,10 +1092,10 @@ corr_tab_server <- function(id,
                      })
                  
                  # Download button for Table
-                 output$downloads_ui <- 
-                   renderUI({
-                     downloads_ui()
-                     })
+                 # output$downloads_ui <- 
+                 #   renderUI({
+                 #     downloads_ui()
+                 #     })
                  
                  # Table
                  output$corr_table <- 
