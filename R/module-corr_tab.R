@@ -845,8 +845,6 @@ corr_tab_server <- function(id,
                      label = "Corr: Scatterplot UI",
                      ignoreNULL = TRUE,
                      {
-                               class = "corr-layout-right",
-                               tags$strong(
                        if (is_subset() == TRUE){
                          # If a subset is selected, display two plots: 
                          # one for the subset and one for the full data.
