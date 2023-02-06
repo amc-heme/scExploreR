@@ -681,7 +681,7 @@ corr_tab_server <- function(id,
                            compute_correlation(
                              gene_selected = corr_main_gene(),
                              object = subset(),
-                             colnames = c("Feature","Correlation_Subset"),
+                             colnames = c("Feature", "Correlation_Global"),
                              seurat_assay = assay_used()
                            )
                        }
