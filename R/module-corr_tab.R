@@ -857,8 +857,7 @@ corr_tab_server <- function(id,
                              ),
                              plotOutput(
                                outputId = ns("subset_scatterplot"), 
-                               height = "400px"#, 
-                               #width = "400px"
+                               height = "400px"
                              )
                            ),
                            div(
@@ -995,106 +994,53 @@ corr_tab_server <- function(id,
                            } # End else
                        })
                  
-                 # 6. Server Value for Rows Selected from Table ----------------
-                 # Creates a reactive boolean that is TRUE when the user has 
-                 # selected  a gene in the correlations table, and FALSE if not. 
-                 # This was created to avoid an error in the display of 
-                 # correlation table  plots where an error message flickers in 
-                 # the plots before displaying them, which may confuse users.
-                 rows_selected <- 
-                   eventReactive(
-                     input$corr_table_rows_selected,
-                     label = "Rows Selected: Server Value",
-                     {
-                       # Set rows_selected() to TRUE when 
-                       # input$corr_table_rows_selected is not NULL, and not 
-                       # equal to `character(0)` (value assigned by Shiny when
-                       # no rows are selected)
-                       if (
-                         (!identical(input$corr_table_rows_selected,character(0)))&
-                         (!is.null(input$corr_table_rows_selected))
-                         ){
-                         rows_selected = TRUE
-                         } else {
-                           # If a row is deselected or the table is re-computed, 
-                           # this must be set back to 
-                           #FALSE to keep the scatterplot from running 
-                           #when a feature is not selected, which will 
-                           #cause an error
-                           rows_selected = FALSE
-                           }
-                                   
-                       return(rows_selected)
-                       })
+                 # 6. Server Value for Gene Selected from Table ----------------
+                 # Value is used for creating scatterplots
+                 secondary_gene <-
+                   reactive({
+                     req(input$corr_table_rows_selected)
+                     
+                     # Index of row selected
+                     row_idx <- input$corr_table_rows_selected
+                     
+                     # Return gene based on that row index
+                     as.character(corr_table_content()[row_idx,1])
+                   })
                  
                  
                  # 7. Plot of feature selected from table ----------------------
                  ## 7.1. Correlation scatterplot for subset
-                 # Computes a scatterplot for a secondary gene selected by the 
-                 # user from the correlations table.
-                 # Row index of user selection from table is stored in 
-                 # input$corr_table_rows_selected. eventReactive responds to
-                 # input$corr_table_rows_selected and rows_selected()
-                 # rows_selected()  prevents the code from running when the 
-                 # user has de-selected values 
                  subset_scatterplot <- 
-                   eventReactive(
-                     c(input$corr_table_rows_selected,
-                       rows_selected(),
-                       input$scatter_group_by),
+                   reactive(
                      label = "Correlation Scatterplot Content (Subset)",
                      {
-                       row_idx <- input$corr_table_rows_selected
-                       # Take action only if a row is selected
-                       if (rows_selected() == TRUE){
-                         # Record gene name of row selected
-                         # Superassignment ensures value is accessible elsewhere in app
-                         corr_secondary_gene <<- reactive({
-                           as.character(corr_table_content()[row_idx,1])
-                           })
-                         
-                         # Make and store scatterplot
-                         FeatureScatter(
-                           subset(), 
-                           feature1 = corr_main_gene(),
-                           feature2 = corr_secondary_gene(),
-                           # group.by and split.by 
-                           # according to user input
-                           group.by = input$scatter_group_by
-                           )
-                         }
-                       })
+                       # Make a scatterplot if a row is selected
+                       req(input$corr_table_rows_selected)
+                       
+                       FeatureScatter(
+                         subset(), 
+                         feature1 = corr_main_gene(),
+                         feature2 = secondary_gene(),
+                         group.by = input$scatter_group_by
+                       )
+                     })
                  
                  ## 7.2. Correlation plot for full data
                  full_data_scatterplot <- 
-                   eventReactive(
-                     c(input$corr_table_rows_selected, 
-                       rows_selected(),
-                       input$scatter_group_by),
+                   reactive(
                      label = "Correlation Scatterplot Content (Global)",
                      {
-                       row_idx <- input$corr_table_rows_selected
-                       # Take action only if a row is selected 
-                       if (rows_selected() == TRUE){
-                         # TODO: REMOVE NESTED REACTIVE
-                         # Record gene name of row selected
-                         # Superassignment ensures value is 
-                         # Accessible elsewhere in app
-                         corr_secondary_gene <<- reactive({
-                           as.character(corr_table_content()[row_idx,1])
-                           })
-                         
-                         # Make and store scatterplot 
-                         # Use full object
-                         FeatureScatter(
-                           object(), 
-                           feature1 = corr_main_gene(),
-                           feature2 = corr_secondary_gene(),
-                           #group.by and split.by according to user input
-                           group.by = input$scatter_group_by
-                           )
-                         }
-                       })
+                       # Make a scatterplot from the full object if a row
+                       # is selected
+                       req(input$corr_table_rows_selected)
+                       
+                       FeatureScatter(
+                         object(), 
+                         feature1 = corr_main_gene(),
+                         feature2 = secondary_gene(),
+                         group.by = input$scatter_group_by
+                         )
+                     })
                  
                  # 8. Render Correlation UI, table, scatterplot, and statistics ----
                  # Main panel UI
@@ -1177,7 +1123,7 @@ corr_tab_server <- function(id,
                      filename = 
                        function(){
                          glue(
-                           "Corr_scatter_{corr_main_gene()}-vs-{corr_secondary_gene()}_subset.png"
+                           "Corr_scatter_{corr_main_gene()}-vs-{secondary_gene()}_subset.png"
                            )
                          },
                      content = function(file){
@@ -1197,7 +1143,7 @@ corr_tab_server <- function(id,
                      filename = 
                        function(){
                          glue(
-                           "Corr_scatter_{corr_main_gene()}-vs-{corr_secondary_gene()}_global.png"
+                           "Corr_scatter_{corr_main_gene()}-vs-{secondary_gene()}_global.png"
                            )
                          },
                      content =
