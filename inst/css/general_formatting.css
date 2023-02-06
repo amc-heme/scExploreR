@@ -25,7 +25,7 @@ h2, h3 {
 
 /* Text CSS Classes */
 /* Center Header Tags */
-.center{
+.center {
   text-align: center;
   /* Display must be set to block for centering to work */
   display: block;

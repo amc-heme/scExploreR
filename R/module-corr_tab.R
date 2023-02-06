@@ -847,9 +847,7 @@ corr_tab_server <- function(id,
                            # one for the subset and one for the full data.
                            tagList(
                              div(
-                               id = ns("subset_scatterplot_container"),
-                               class = "two-column",
-                               style = "float: left; width: 50%;",
+                               class = "corr-layout-left",
                                tags$strong(
                                  "Scatterplot for Subset",
                                  class = "center single-space-bottom"
@@ -861,17 +859,14 @@ corr_tab_server <- function(id,
                                  )
                                ),
                              div(
-                               id = ns("global_scatterplot_container"),
-                               class = "two-column",
-                               style = "float: right; width: 50%",
+                               class = "corr-layout-right",
                                tags$strong(
                                  "Scatterplot for Full Data",
                                  class = "center single-space-bottom"
                                  ),
                                plotOutput(
                                  outputId = ns("full_data_scatterplot"), 
-                                 height = "400px"#, 
-                                 #width = "400px"
+                                 height = "400px"
                                  )
                                )
                              )
@@ -879,15 +874,13 @@ corr_tab_server <- function(id,
                            } else {
                              # Otherwise, display only one scatterplot.
                              div(
-                               id = ns("global_scatterplot_container"),
                                class = "center",
                                tags$strong(
                                  "Scatterplot",
                                  class = "center single-space-bottom"),
                                plotOutput(
                                  outputId = ns("full_data_scatterplot"),
-                                 height = "400px"#, 
-                                 #width = "600px"
+                                 height = "400px"
                                  )
                              )
                            }
@@ -967,7 +960,7 @@ corr_tab_server <- function(id,
                      {
                        # Condition !hasName(): 
                        # TRUE before table is created, FALSE after
-                       if (!hasName(input,"corr_table_rows_selected")){
+                       if (!hasName(input, "corr_table_rows_selected")){
                          # Display nothing before table is created
                          NULL 
                          } else {

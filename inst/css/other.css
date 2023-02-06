@@ -35,3 +35,34 @@ group by dropdown menu */
 #corr_scatter_group_by{
   margin-bottom: 0em;
 }
+
+/* Two-column layout for correlations tab scatterplots */
+.corr-layout-left {
+	width: 50%;
+  float: left;
+	display: inline-block;
+	/* Add padding to sides of columns */
+	padding: 5px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+.corr-layout-right {
+	width: 50%;
+  float: right;
+	display: inline-block;
+	/* Add padding to sides of columns */
+	padding: 5px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+/* For windows 992 px and smaller in width, display elements vertically 
+  in a single-column format */
+@media(max-width: 992px){
+  .corr-layout-left, .corr-layout-right{
+    display: block;
+    width: 100%;
+    float: none;
+  }
+}
