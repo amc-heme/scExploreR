@@ -125,6 +125,11 @@ corr_tab_ui <- function(id,
                   "Correlation Table", 
                   class = "center single-space-bottom"
                   ),
+                tags$p(
+                  "(click on a gene and scroll down to view 
+                  correlation scatterplots)",
+                  class = "center single-space-bottom"
+                ),
                 # Use a DT data table
                 DTOutput(
                   outputId = ns("corr_table")
@@ -133,13 +138,14 @@ corr_tab_ui <- function(id,
               
               # Scatterplot
               # Appears after the user makes a selection on the table
-              div(
-                #class = "two-column",
-                #style = "width: 60%; float: right;",
-                # UI for scatterplot rendered in 
-                # separate eventReactive function
-                uiOutput(
-                  outputId = ns("scatterplot_ui")
+              hidden(
+                div(
+                  id = ns("scatterplot_container"),
+                  # UI for scatterplot rendered in 
+                  # separate eventReactive function
+                  uiOutput(
+                    outputId = ns("scatterplot_ui")
+                    )
                   )
                 )
               )
@@ -831,63 +837,79 @@ corr_tab_server <- function(id,
                        })
                  
                  ## 5.2. Correlations scatterplot UI ####
-                 # Computed separately from main UI since it responds to a 
-                 # different user input (clicking table)
+                 # The UI for showing scatterplot depends on whether a subset 
+                 # is selected, and is re-computed each time an analysis is ran.
                  scatterplot_ui <- 
                    eventReactive(
-                     c(input$corr_table_rows_selected,
-                       is_subset()),
+                     is_subset(),
                      label = "Corr: Scatterplot UI",
-                     ignoreNULL = FALSE,
+                     ignoreNULL = TRUE,
                      {
-                       if (length(input$corr_table_rows_selected) > 0){
-                         # Display the graph if rows are selected
-                         if (is_subset() == TRUE){
-                           # If a subset is selected, display two plots: 
-                           # one for the subset and one for the full data.
-                           tagList(
-                             div(
-                               class = "corr-layout-left",
-                               tags$strong(
-                                 "Scatterplot for Subset",
-                                 class = "center single-space-bottom"
-                                 ),
-                               plotOutput(
-                                 outputId = ns("subset_scatterplot"), 
-                                 height = "400px"#, 
-                                 #width = "400px"
-                                 )
-                               ),
-                             div(
                                class = "corr-layout-right",
                                tags$strong(
-                                 "Scatterplot for Full Data",
-                                 class = "center single-space-bottom"
-                                 ),
-                               plotOutput(
-                                 outputId = ns("full_data_scatterplot"), 
-                                 height = "400px"
-                                 )
-                               )
+                       if (is_subset() == TRUE){
+                         # If a subset is selected, display two plots: 
+                         # one for the subset and one for the full data.
+                         tagList(
+                           div(
+                             class = "corr-layout-left",
+                             tags$strong(
+                               "Scatterplot for Subset",
+                               class = "center single-space-bottom"
+                             ),
+                             plotOutput(
+                               outputId = ns("subset_scatterplot"), 
+                               height = "400px"#, 
+                               #width = "400px"
                              )
-                           
-                           } else {
-                             # Otherwise, display only one scatterplot.
-                             div(
-                               class = "center",
-                               tags$strong(
-                                 "Scatterplot",
-                                 class = "center single-space-bottom"),
-                               plotOutput(
-                                 outputId = ns("full_data_scatterplot"),
-                                 height = "400px"
-                                 )
+                           ),
+                           div(
+                             class = "corr-layout-right",
+                             tags$strong(
+                               "Scatterplot for Full Data",
+                               class = "center single-space-bottom"
+                             ),
+                             plotOutput(
+                               outputId = ns("full_data_scatterplot"), 
+                               height = "400px"
                              )
-                           }
+                           )
+                         )
+                         
+                       } else {
+                         # Otherwise, display only one scatterplot.
+                         div(
+                           class = "center",
+                           tags$strong(
+                             "Scatterplot",
+                             class = "center single-space-bottom"),
+                           plotOutput(
+                             outputId = ns("full_data_scatterplot"),
+                             height = "400px"
+                             )
+                           )
                          }
                        })
                  
-                 ## 5.3. UI for customizing the scatterplot ####
+                 ## 5.3. Show/hide scatterplot UI ####
+                 # UI for scatterplots is computed when an analysis is ran.
+                 # The UI should only display when a row is selected from the 
+                 # table.
+                 observe({
+                   if (isTruthy(input$corr_table_rows_selected)){
+                     showElement(
+                       id = "scatterplot_container",
+                       anim = TRUE
+                     )
+                   } else {
+                     hideElement(
+                       id = "scatterplot_container",
+                       anim = TRUE
+                     )
+                   }
+                 })
+                 
+                 ## 5.4. UI for customizing the scatterplot ####
                  # This appears in the sidebar and displays a list of options 
                  # used for customizing the scatterplot
                  scatter_options <- 
@@ -950,7 +972,7 @@ corr_tab_server <- function(id,
                          } # End if statement
                        })
                  
-                 ## 5.4. Download Button for Table ####
+                 ## 5.5. Download Button for Table ####
                  downloads_ui <- 
                    eventReactive(
                      c(submit_button(),
@@ -1094,6 +1116,13 @@ corr_tab_server <- function(id,
                    renderUI({
                      scatterplot_ui()
                      })
+                 
+                 # Scatterplot UI should render when hidden
+                 outputOptions(
+                   output, 
+                   "scatterplot_ui", 
+                   suspendWhenHidden = FALSE
+                 )
                  
                  # Scatterplot (main panel, in UI container)
                  output$subset_scatterplot <- 
