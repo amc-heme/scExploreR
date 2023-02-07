@@ -36,6 +36,7 @@ Imports:
     shinyWidgets (>= 0.6.2),
     sortable (>= 0.4.5),
     stringr,
+    svglite,
     tibble,
     viridisLite,
     waiter (>= 0.2.5),
