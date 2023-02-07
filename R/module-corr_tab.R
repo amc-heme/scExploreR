@@ -65,8 +65,8 @@ corr_tab_ui <- function(id,
             actionButton(
               inputId = ns("submit"),
               label = "Submit",
-              # Display inline with download button when it appears
-              class = "inline-block"
+              style = "display: block; width: 100%;",
+              class = "button-primary"
               ),
             
             # Download buttons: display after the correlations table is computed
@@ -74,19 +74,56 @@ corr_tab_ui <- function(id,
               downloadButton(
                 outputId = ns("download_table"),
                 label = "Download Table",
-                # Add space before button
-                class = "inline-block",
-                icon = icon("table")
+                icon = icon("table"),
+                # Add space before button, and display in block format
+                class = "space-top button-ghost",
+                style = "display: block;"
                 )
               ),
-            # uiOutput(
-            #   outputId = ns("downloads_ui"), 
-            #   inline = TRUE
-            #   ),
             
             # Options for scatterplot: a collapsible panel of options
             # appears after a scatterplot is displayed
-            uiOutput(outputId = ns("scatter_options_ui"))
+            #uiOutput(outputId = ns("scatter_options_ui"))
+            hidden(
+              div(
+                id = ns("scatterplot_options_showhide"),
+                collapsible_panel(
+                  inputId = ns("scatter_options"),
+                  label = "Scatterplot Options",
+                  active = TRUE,
+                  # group.by selection
+                  selectInput(
+                    inputId = ns("scatter_group_by"),
+                    label = "Metadata to Group by:",
+                    # Available options are set in the server
+                    choices = NULL
+                  ),
+                  
+                  # Download button for scatterplot (subset)
+                  # Displays only if a subset is selected
+                  hidden(
+                    downloadButton(
+                      outputId = ns("download_scatter_subset"),
+                      label = "Download Scatterplot (Subset)",
+                      icon = icon("poll"),
+                      style = "display: block;",
+                      class = "button-ghost"
+                    )
+                  ),
+                  # Download button for scatterplot (full data)
+                  downloadButton(
+                    outputId = ns("download_scatter_global"),
+                    # Label will change based on whether a subset is selected
+                    label = "Download Scatterplot",
+                    icon = icon("poll"),
+                    # Adds space before button (this class is removed if a 
+                    # subset is not selected) 
+                    class = "space-top button-ghost",
+                    style = "display: block;"
+                  ) # End downloadButton
+                ) # End collapsible_panel  
+              )
+            )
         ) # End corr-sidebar div
       ), # End sidebarPanel (1.3.1)
       
@@ -270,7 +307,7 @@ corr_tab_server <- function(id,
                      label = ns("subset_error")
                      )
                  
-                 # 1. Define assay to use for correlation computation
+                 # 1. Define assay to use for correlation computation ----------
                  assay_used <- 
                    reactive({
                      # If a designated gene assay is defined, use that assay.
@@ -282,8 +319,8 @@ corr_tab_server <- function(id,
                      }
                    })
                  
-                 # 2. Render Choices for Feature selection ---------------------
-                 # 2.1. Render Choices ####
+                 # 2. Update input menu choices ---------------------
+                 ## 2.1. Feature Selection ####
                  # Reactive - updates in response to change in dataset 
                  observeEvent(
                    # Responds to loading of update and creation of UI (to ensure
@@ -306,6 +343,30 @@ corr_tab_server <- function(id,
                        server = TRUE
                        )
                    })
+                 
+                 ## 2.2. Group by metadata for scatterplots ####
+                 observe(
+                   label = "Corr: Update Scatterplot Options Menus",
+                   {
+                     req(meta_choices())
+                     
+                     # Responds to update_features reactive trigger, ensuring
+                     # that the select input menu is not updated before the 
+                     # correlations UI is created
+                     update_features$depend()
+                     
+                     # Available options: all available metadata, 
+                     # excluding "none"
+                     valid_choices <- 
+                       meta_choices()[!meta_choices() %in% "none"]
+                     
+                     updateSelectInput(
+                       session = session,
+                       inputId = "scatter_group_by",
+                       choices = valid_choices, 
+                       selected = valid_choices[1]
+                       )
+                     })
                  
                  # 3. Process Inputs -------------------------------------------
                  # Inputs are packaged into reactive values for proper 
@@ -370,7 +431,19 @@ corr_tab_server <- function(id,
                        
                        # Hide the main panel UI while calculations are performed
                        # print(glue("hiding {ns('main_panel_ui')}"))
-                       hideElement(id = "main_panel_ui")
+                       hideElement(
+                         id = "main_panel_ui"
+                         )
+                       
+                       # Also hide the scatterplot options panel in the sidebar
+                       hideElement(
+                         id = "scatterplot_options_showhide"
+                       )
+                       
+                       # And the download table button
+                       hideElement(
+                         id = "download_table"
+                       )
                        
                        # Show spinners (if the feature is entered properly)
                        if (isTruthy(input$feature_selection)){
@@ -917,6 +990,123 @@ corr_tab_server <- function(id,
                  ## 5.4. UI for customizing the scatterplot ####
                  # This appears in the sidebar and displays a list of options 
                  # used for customizing the scatterplot
+                 ### 5.4.1. Show/hide options panel ####
+                 observe(
+                   label = "Corr: show/hide scatterplot options UI",
+                   {
+                     # Show panel when a gene is selected from the table
+                     if (isTruthy(input$corr_table_rows_selected)){
+                       showElement(
+                         id = "scatterplot_options_showhide",
+                         anim = TRUE
+                         )
+                     } else {
+                       hideElement(
+                         id = "scatterplot_options_showhide",
+                         anim = TRUE
+                       )
+                     }
+                   })
+                 
+                 ### 5.4.2. Show/hide download buttons for subset scatterplot
+                 # The download button for the full object scatterplot is always
+                 # shown
+                 observe(
+                   label = "Corr: show/hide subset download button",
+                   {
+                     # If the analysis ran includes a subset, show the download
+                     # button for the subset scatterplot
+                     if (isTruthy(is_subset())){
+                       showElement(
+                         id = "download_scatter_subset",
+                         anim = TRUE
+                         )
+                     } else {
+                       hideElement(
+                         id = "download_scatter_subset",
+                         anim = TRUE
+                         )
+                       }
+                   })
+                 
+                 ### 5.4.3. Change label on global scatterplot download button ####
+                 observe(
+                   label = "Corr: show/hide scatterplot options UI",
+                   {
+                     # Label depends on whether a subset is selected
+                     if (isTruthy(is_subset())){
+                       print("Subset text")
+                       shinyjs::html(
+                         id = "download_scatter_global",
+                         html = 
+                           # shiny.tag format must be converted to text to be
+                           # understood by shinyjs::html()
+                           as.character(
+                             tagList(
+                               icon("poll"),
+                               "Download Scatterplot (Full Data)"
+                             )
+                           )
+                         )
+                     } else {
+                       print("Full text")
+                       shinyjs::html(
+                         id = "download_scatter_global",
+                         html = 
+                           as.character(
+                             tagList(
+                               icon("poll"),
+                               "Download Scatterplot"
+                               )
+                             )
+                         )
+                       }
+                   })
+                 
+                 ### 5.4.4. Add/remove CSS classes from buttons ####
+                 observe(
+                   label = "Corr: add/remove CSS class from scatterplot download button",
+                   {
+                   if (is_subset() == TRUE){
+                     # "space-top": adds space before the global 
+                     # scatterplot download button
+                     shinyjs::addClass(
+                       id = "download_scatter_global",
+                       class = "space-top"
+                       )
+                     
+                     # Responsive button label: changes size of button label
+                     # in response to the window size
+                     # (button labels are very long when a subset is selected)
+                     shinyjs::addClass(
+                       id = "download_scatter_global",
+                       class = "responsive-button-label"
+                     )
+                     
+                     shinyjs::addClass(
+                       id = "download_scatter_subset",
+                       class = "responsive-button-label"
+                     )
+                   } else {
+                     # If a subset is not present, remove the
+                     # labels described above
+                     shinyjs::removeClass(
+                       id = "download_scatter_global",
+                       class = "space-top"
+                       )
+                     
+                     shinyjs::removeClass(
+                       id = "download_scatter_global",
+                       class = "responsive-button-label"
+                     )
+                     
+                     shinyjs::removeClass(
+                       id = "download_scatter_subset",
+                       class = "responsive-button-label"
+                     )
+                   }
+                 })
+                 
                  scatter_options <- 
                    eventReactive(
                      c(input$corr_table_rows_selected, 
@@ -924,57 +1114,57 @@ corr_tab_server <- function(id,
                      label="Corr: Scatterplot Options UI",
                      ignoreNULL = FALSE,
                      {
-                       # If a selection in the table is made, display a 
-                       # collapsible_panel with a list of options for 
-                       # customization
-                       if (length(input$corr_table_rows_selected) > 0){
-                         collapsible_panel(
-                           inputId = ns("scatter_options"),
-                           label = "Scatterplot Options",
-                           active = TRUE,
-                           # group.by selection
-                           selectInput(
-                             inputId = ns("scatter_group_by"),
-                             label = "Metadata to Group by:",
-                             # Remove "none" from selectable options to group by
-                             choices = 
-                               meta_choices()[!meta_choices() %in% "none"], 
-                             selected = "clusters"
-                             ),
-                           
-                           # Download button for scatterplot (subset)
-                           # Displays only if a subset is selected
-                           if (is_subset() == TRUE){
-                             downloadButton(
-                               outputId = ns("download_scatter_subset"),
-                               label = "Download Scatterplot (Subset)",
-                               # Adds space before button
-                               class = "space-top",
-                               icon = icon("poll")
-                               )
-                             } else NULL, # End downloadButton tag
-                           
-                           # Download button for scatterplot (full data)
-                           downloadButton(
-                             outputId = ns("download_scatter_global"),
-                             # Label changes based on whether 
-                             # a subset is selected
-                             label = if (is_subset() == TRUE){
-                               "Download Scatterplot (Full Data)"
-                               } else {
-                                 "Download Scatterplot"
-                                 },
-                             
-                             # space-top class: adds space before button 
-                             # this is only needed when a subset is 
-                             # selected and there are two buttons
-                             class = if (is_subset() == TRUE){
-                               "space-top"
-                               } else NULL,
-                             icon = icon("poll")
-                             ) # End downloadButton
-                           ) # End collapsible_panel  
-                         } # End if statement
+                       # # If a selection in the table is made, display a 
+                       # # collapsible_panel with a list of options for 
+                       # # customization
+                       # if (length(input$corr_table_rows_selected) > 0){
+                       #   collapsible_panel(
+                       #     inputId = ns("scatter_options"),
+                       #     label = "Scatterplot Options",
+                       #     active = TRUE,
+                       #     # group.by selection
+                       #     selectInput(
+                       #       inputId = ns("scatter_group_by"),
+                       #       label = "Metadata to Group by:",
+                       #       # Remove "none" from selectable options to group by
+                       #       choices =
+                       #         meta_choices()[!meta_choices() %in% "none"], 
+                       #       selected = "clusters"
+                       #       ),
+                       #     
+                       #     # Download button for scatterplot (subset)
+                       #     # Displays only if a subset is selected
+                       #     if (is_subset() == TRUE){
+                       #       downloadButton(
+                       #         outputId = ns("download_scatter_subset"),
+                       #         label = "Download Scatterplot (Subset)",
+                       #         # Adds space before button
+                       #         class = "space-top",
+                       #         icon = icon("poll")
+                       #         )
+                       #       } else NULL, # End downloadButton tag
+                       #     
+                       #     # Download button for scatterplot (full data)
+                       #     downloadButton(
+                       #       outputId = ns("download_scatter_global"),
+                       #       # Label changes based on whether 
+                       #       # a subset is selected
+                       #       label = if (is_subset() == TRUE){
+                       #         "Download Scatterplot (Full Data)"
+                       #         } else {
+                       #           "Download Scatterplot"
+                       #           },
+                       #       
+                       #       # space-top class: adds space before button 
+                       #       # this is only needed when a subset is 
+                       #       # selected and there are two buttons
+                       #       class = if (is_subset() == TRUE){
+                       #         "space-top"
+                       #         } else NULL,
+                       #       icon = icon("poll")
+                       #       ) # End downloadButton
+                       #     ) # End collapsible_panel  
+                       #   } # End if statement
                        })
                  
                  ## 5.5. Show/hide download button for table ####
@@ -1084,18 +1274,6 @@ corr_tab_server <- function(id,
                    renderPlot({
                      full_data_scatterplot()
                    })
-                 
-                 # Options for scatterplot (sidebar panel)
-                 output$scatter_options_ui <- 
-                   renderUI({
-                     scatter_options()
-                     })
-                 
-                 # Download button for Table
-                 # output$downloads_ui <- 
-                 #   renderUI({
-                 #     downloads_ui()
-                 #     })
                  
                  # Table
                  output$corr_table <- 
