@@ -10,6 +10,7 @@
 #' loaded when the user selects "load config file" in the config app. This 
 #' should be a YAML file, though .rds files from versions 0.4.0 and earlier will
 #' also be accepted.
+#' @param dev_mode Used only for development. If TRUE, the server values for each option chosen by the user will be printed at the bottom of the "general" tab.
 #'
 #' @usage 
 #' run_config(./path_to_object.rds, ./path_to_config_file.yaml)
@@ -19,7 +20,8 @@
 run_config <- 
   function(
     object_path,
-    config_path = NULL
+    config_path = NULL,
+    dev_mode = FALSE
   ){
     # Initialize libraries ####
     library(shiny)
@@ -295,13 +297,21 @@ run_config <-
               )
             )#,
           )
-        )#,
-        # div(
-        #   class = "optcard",
-        #   verbatimTextOutput(
-        #     outputId = "print_data"
-        #   )
-        # )
+        ),
+        # Window to show all options selected in app, if app is launched in 
+        # dev mode
+        if (dev_mode == TRUE){
+          div(
+            class = "optcard",
+            tags$h4(
+              "Current User Input", 
+              class = "center"
+              ),
+            verbatimTextOutput(
+              outputId = "print_data"
+            )
+          )
+        }
       )
     }
     
@@ -1027,26 +1037,39 @@ run_config <-
             input$assays_selected
           })
       
-      ### 3.2.2. Create module server instances for each possible assay ####
-      # Observe is used to reactively update outputs when inputs in the module and
-      # its sub-modules are changed
-      observe({
-        # <<- is required for all_assay_options to be accessible to other server
-        # code (not sure why)
-        all_assay_options <<- list()
-        
-        # Create an assay options module for each assay in the object 
-        for (id in names(object@assays)){
-          # Must also use <<- here
-          all_assay_options[[id]] <<- 
-            options_server(
-              id = id,
-              object = object,
-              categories_selected = assays_selected,
-              options_type = "assays"
+      ### 3.2.2. Options modules for assays ####
+      all_assay_options <- list()
+      
+      # Create an assay options module for each assay in the object 
+      for (id in names(object@assays)){
+        server_output <- 
+          options_server(
+            id = id,
+            object = object,
+            categories_selected = assays_selected,
+            options_type = "assays"
             )
-        }
-      })
+        
+        all_assay_options[[id]] <- server_output
+      }
+      
+      # observe({
+      #   # <<- is required for all_assay_options to be accessible to other server
+      #   # code (not sure why)
+      #   all_assay_options <<- list()
+      #   
+      #   # Create an assay options module for each assay in the object 
+      #   for (id in names(object@assays)){
+      #     # Must also use <<- here
+      #     all_assay_options[[id]] <<- 
+      #       options_server(
+      #         id = id,
+      #         object = object,
+      #         categories_selected = assays_selected,
+      #         options_type = "assays"
+      #       )
+      #   }
+      # })
       
       ### 3.2.3. Record list of assay module outputs in config data #### 
       # Filter list of options module outputs and combine into a single 
@@ -1236,7 +1259,8 @@ run_config <-
             # Extracts each reactive module output and stores them in a list
             options_list <- lapply(all_metadata_options, function(x) x())
             # Filter list for metadata columns that have been selected by the user
-            options_list <- options_list[names(options_list) %in% input$metadata_selected]
+            options_list <- 
+              options_list[names(options_list) %in% input$metadata_selected]
             # Sort list according to the order specified by the user in the drag
             # and drop menu
             options_list <- options_list[input$metadata_selected]
@@ -2447,25 +2471,29 @@ run_config <-
         reactive_trigger = reactive({input$warning_modal})
       )
       
-      # Print all Data (debugging)
-      # output$print_data <-
-      #   renderPrint({
-      #     output_list <-
-      #       lapply(
-      #         names(config_data),
-      #         function(element){
-      #           if (is.reactive(config_data[[element]])){
-      #             config_data[[element]]()
-      #           } else {
-      #             config_data[[element]]
-      #           }
-      #         }
-      #         )
-      #     
-      #     names(output_list) <- names(config_data)
-      #     
-      #     output_list
-      #   })
+      ## 3.8. Show config file in app (dev mode) ####
+      if (dev_mode == TRUE){
+        # Show all selected options when app is started in dev mode
+        output$print_data <-
+          renderPrint({
+            output_list <-
+              lapply(
+                names(config_data),
+                function(element){
+                  if (is.reactive(config_data[[element]])){
+                    config_data[[element]]()
+                  } else {
+                    config_data[[element]]
+                  }
+                }
+              )
+            
+            names(output_list) <- names(config_data)
+            
+            output_list
+          })
+      }
+      
       
       #### TEMP: Observers for Debugging ####
       # observe({
