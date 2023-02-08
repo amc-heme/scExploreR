@@ -2106,15 +2106,83 @@ run_config <-
             })
       
       ## 3.7. Load Config File ####
-      ### 3.7.1 Load File ####
+      ### 3.7.1. Warn user if they have already entered fields in the app #### 
+      
+      # Reactive trigger for loading: used to proceed with loading without 
+      # showing a modal if the user has not entered any information in the app
+      load_trigger <- makeReactiveTrigger()
+      
+      observeEvent(
+        input$load_config,
+        label = "Display warning before loading config file",
+        ignoreNULL = FALSE,
+        ignoreInit = TRUE,
+        {
+          # Tests for user input: below values are TRUE when the user has not
+          # changed any settings in the app (as they are based off 
+          # default values)
+          if (
+            any(
+            isTruthy(input$dataset_label),
+            isTruthy(input$dataset_description),
+            input$preview_type != "none",
+            isTruthy(input$assays_selected),
+            input$include_numeric_metadata == FALSE,
+            input$genes_assay != "none",
+            input$adt_assay != "none",
+            isTruthy(module_data$metadata_sortable_selected),
+            input$patient_colname != "none",
+            isTruthy(module_data$reductions_sortable_not_selected),
+            isTruthy(module_data$threshold_data$adt)
+            )
+          ){            
+            showModal(
+              warning_modal(
+                confirmId = "load_confirm",
+                cancelId = "load_cancel",
+                text = 
+                  "Loading a config file will erase any changes made. Continue?"
+              )
+            )
+          } else {
+            # Trigger to proceed with loading without showing a modal
+            load_trigger$trigger()
+          }
+        })
+      
+      #### 3.7.1.1. User presses cancel ####
+      # If the user presses cancel, close the modal and do nothing.
+      observeEvent(
+        input$load_cancel,
+        label = "Load config file: display modal",
+        ignoreInit = TRUE,
+        {
+          removeModal()
+        })
+      
+      #### 3.7.1.2. User presses confirm ####
+      # Close the modal and trigger loading of config file
+      observeEvent(
+        input$load_confirm,
+        label = "Load config file: display modal",
+        ignoreInit = TRUE,
+        {
+          removeModal()
+          
+          load_trigger$trigger()
+        })
+      
+      ### 3.7.2 Load File ####
       # Loads a previously created config file and imports contents into app
-      # storing in session$userdata makes file visible to all modules
+      # storage in session$userdata makes file visible to all modules
       session$userData$config <-
         eventReactive(
-          input$load_config,
+          load_trigger$depend(),
           ignoreNULL = FALSE,
           ignoreInit = TRUE,
           {
+            removeModal()
+            
             # config_filename: for now, use a path from config_init.yaml
             # May soon be chosen with a select input
             if (isTruthy(config_filename)){
