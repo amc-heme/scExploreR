@@ -1187,6 +1187,9 @@ plots_tab_server <- function(id,
                      log_info(
                        glue("Memory used after creating subset in plots tab: {to_GB(mem_used())}")
                        )
+                     
+                     print("Subset summary")
+                     print(subset())
                    })
                  
                })

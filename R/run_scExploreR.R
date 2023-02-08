@@ -1692,6 +1692,9 @@ run_scExploreR <-
           log_info(
             glue("Memory used after loading current object: {to_GB(mem_used())}")
           )
+          
+          print("Object summary")
+          print(object())
         })
       
       # 5. Callbacks ---------------------------------------------------------------
