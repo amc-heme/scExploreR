@@ -16,7 +16,7 @@ warning_modal <-
     cancelId,
     text
     ){
-    modalDialog(
+    shiny::modalDialog(
       title = "Warning",
       footer = 
         tagList(
