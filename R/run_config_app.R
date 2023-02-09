@@ -423,7 +423,14 @@ run_config <-
               uiOutput(
                 outputId = "metadata_sortable_bucket"
               )
-            )
+            ),
+            # Print server values of metadata selected if app is 
+            # launched in dev_mode
+            if (dev_mode){
+              verbatimTextOutput(
+                outputId = "metadata_sortable_debug"
+              )
+            }
           ),
           applet_main_panel(
             tagList(
@@ -796,11 +803,16 @@ run_config <-
       module_data$metadata_sortable_selected <- character(0)
       # Choices not selected: equal to all non-numeric metadata.
       module_data$metadata_sortable_not_selected <- non_numeric_cols
+      # Reactive trigger for updating sortable menus (menus will not update
+      # the second time a config file is loaded because the above variables 
+      # do not change)
+      update_metadata_sortable <- makeReactiveTrigger()
       
       # Sortable Data: Reductions ####
       # All reductions are choices, and all are selected by default
       module_data$reductions_sortable_selected <- reductions
       module_data$reductions_sortable_not_selected <- character(0)
+      update_reductions_sortable <- makeReactiveTrigger()
       
       # Store assays for which ADT thresholding modules have been created 
       # (to avoid duplicates
@@ -1053,24 +1065,6 @@ run_config <-
         all_assay_options[[id]] <- server_output
       }
       
-      # observe({
-      #   # <<- is required for all_assay_options to be accessible to other server
-      #   # code (not sure why)
-      #   all_assay_options <<- list()
-      #   
-      #   # Create an assay options module for each assay in the object 
-      #   for (id in names(object@assays)){
-      #     # Must also use <<- here
-      #     all_assay_options[[id]] <<- 
-      #       options_server(
-      #         id = id,
-      #         object = object,
-      #         categories_selected = assays_selected,
-      #         options_type = "assays"
-      #       )
-      #   }
-      # })
-      
       ### 3.2.3. Record list of assay module outputs in config data #### 
       # Filter list of options module outputs and combine into a single 
       # reactive object, which is added to the config_data list. 
@@ -1226,39 +1220,22 @@ run_config <-
             object = object,
             categories_selected = metadata_selected,
             options_type = "metadata"
-          )
+            )
         
         all_metadata_options[[id]] <- server_output
       }
-      
-      # observe({
-      #   # <<- is required for all_metadata_options to be accessible to other server
-      #   # code (variables defined within observers are defined in the local 
-      #   # environment of the observer by default, unless superassignment (<<-) 
-      #   # is used
-      #   all_metadata_options <<- list()
-      #   
-      #   for (id in names(object@meta.data)){
-      #     all_metadata_options[[id]] <<- 
-      #       options_server(
-      #         id = id,
-      #         object = object,
-      #         categories_selected = metadata_selected,
-      #         options_type = "metadata"
-      #       )
-      #     }
-      # 
-      # })
       
       ### 3.3.4. RECORD: metadata options in config data ####
       #### 3.3.4.1. Category-specific options ####
       config_data$metadata <- 
         reactive({
-          # Options list is only processed when metadata columns have been selected
+          # Options list is only processed when metadata columns 
+          # have been selected
           if (isTruthy(input$metadata_selected)){
             # Extracts each reactive module output and stores them in a list
             options_list <- lapply(all_metadata_options, function(x) x())
-            # Filter list for metadata columns that have been selected by the user
+            # Filter list for metadata columns that have been selected 
+            # by the user
             options_list <- 
               options_list[names(options_list) %in% input$metadata_selected]
             # Sort list according to the order specified by the user in the drag
@@ -1290,34 +1267,37 @@ run_config <-
       metadata_bucket_ui <-
         eventReactive(
           c(module_data$metadata_sortable_not_selected,
-            module_data$metadata_sortable_selected),
+            module_data$metadata_sortable_selected,
+            update_metadata_sortable$depend()),
           label = "Metadata: define sortable",
           {
+            print("Update metadata menus based on selected metadata")
+            
             tagList(
               tags$b("Choose Metadata to Include:"),
               bucket_list(
                 header = 
                   "Drag metadata variables to \"Included Metadata\" to include.
-                  Metadata will appear in app menus in the order they appear in 
-                  the right-hand column.",
-              orientation = "horizontal",
-              group_name = "metadata_bucket",
-              # Use the default class, and a class specific to this app
-              # Many sub-classes are tied to the default class, and styling will
-              # not be applied to those classes if the default class is not also 
-              # passed to this argument.
-              class = 
-                c("default-sortable", "bucket-select"),
-              add_rank_list(
-                input_id = "metadata_not_selected",
-                text = "Available Metadata",
-                labels = module_data$metadata_sortable_not_selected
-              ),
-              add_rank_list(
-                input_id = "metadata_selected",
-                text = "Included Metadata",
-                labels = module_data$metadata_sortable_selected
-              )
+                    Metadata will appear in app menus in the order they appear in 
+                    the right-hand column.",
+                orientation = "horizontal",
+                group_name = "metadata_bucket",
+                # Use the default class, and a class specific to this app
+                # Many sub-classes are tied to the default class, and styling will
+                # not be applied to those classes if the default class is not also 
+                # passed to this argument.
+                class = 
+                  c("default-sortable", "bucket-select"),
+                add_rank_list(
+                  input_id = "metadata_not_selected",
+                  text = "Available Metadata",
+                  labels = module_data$metadata_sortable_not_selected
+                ),
+                add_rank_list(
+                  input_id = "metadata_selected",
+                  text = "Included Metadata",
+                  labels = module_data$metadata_sortable_selected
+                )
               )
             )
           })
@@ -1422,7 +1402,8 @@ run_config <-
       reductions_bucket_ui <-
         eventReactive(
           c(module_data$reductions_sortable_not_selected,
-            module_data$reductions_sortable_selected),
+            module_data$reductions_sortable_selected,
+            update_reductions_sortable$depend()),
           label = "Reductions: define sortable",
           {
             tagList(
@@ -2154,9 +2135,9 @@ run_config <-
             input$include_numeric_metadata == FALSE,
             input$genes_assay != "none",
             input$adt_assay != "none",
-            isTruthy(module_data$metadata_sortable_selected),
+            isTruthy(input$metadata_selected),
             input$patient_colname != "none",
-            isTruthy(module_data$reductions_sortable_not_selected),
+            isTruthy(input$reductions_not_selected),
             isTruthy(module_data$threshold_data$adt)
             )
           ){            
@@ -2205,8 +2186,6 @@ run_config <-
           ignoreNULL = FALSE,
           ignoreInit = TRUE,
           {
-            removeModal()
-            
             # config_filename: for now, use a path from config_init.yaml
             # May soon be chosen with a select input
             if (isTruthy(config_filename)){
@@ -2418,6 +2397,13 @@ run_config <-
             non_numeric_cols[
               !non_numeric_cols %in% module_data$metadata_sortable_selected
             ]
+          
+          # Explicitly trigger update of menus (menus ordinarially do not 
+          # respond the second time a config file is loaded because
+          # module_data$metadata_sortable_selected and
+          # module_data$metadata_sortable_not_selected do not change
+          # in this case).
+          update_metadata_sortable$trigger()
         })
       
       ##### 3.7.2.3.2 Patient level meteadata variable ####
@@ -2454,6 +2440,13 @@ run_config <-
             reductions[
               !reductions %in% module_data$reductions_sortable_selected
             ]
+          
+          # Explicitly trigger update of menus (menus ordinarially do not 
+          # respond to loading the config file a second time because
+          # module_data$reductions_sortable_selected and  
+          # module_data$reductions_sortable_not_selected do not change
+          # in this case).
+          update_reductions_sortable$trigger()
           })
       
       #### 3.7.2.5 ADT threshold table ####
@@ -2471,7 +2464,8 @@ run_config <-
         reactive_trigger = reactive({input$warning_modal})
       )
       
-      ## 3.8. Show config file in app (dev mode) ####
+      ## 3.8. Dev mode: Show server values ####
+      ### 3.8.1. Full config file ####
       if (dev_mode == TRUE){
         # Show all selected options when app is started in dev mode
         output$print_data <-
@@ -2494,6 +2488,15 @@ run_config <-
           })
       }
       
+      ## 3.8.2. Server value of metadata_selected ####
+      output$metadata_sortable_debug <-
+        renderPrint({
+          print("module_data$metadata_sortable_selected")
+          print(module_data$metadata_sortable_selected)
+          
+          print("module_data$metadata_sortable_not_selected")
+          print(module_data$metadata_sortable_not_selected)
+        })
       
       #### TEMP: Observers for Debugging ####
       # observe({
