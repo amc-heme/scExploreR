@@ -2005,6 +2005,11 @@ run_config <-
                 selected = character(0),
                 server = TRUE
                 )
+              
+              # Set menu state back to idle to dismiss the editing menu if it 
+              # is open (it is possible to delete an ADT while editing the 
+              # threshold)
+              module_data$threshold_menu_state <- "idle"
             } else {
               warning("Unable to determine the index of the row selected for deletion")
             }
