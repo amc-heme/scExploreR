@@ -2207,33 +2207,44 @@ run_config <-
               }
             } else {
               # Show error if no config file path is defined
-              icon_notification_ui(
-                icon_name = "skull-crossbones",
-                "variable `config_path` is undefined in config_init.yaml. Please 
-            specify a path to load a config file."
-              )
+              showNotification(
+                ui =
+                  icon_notification_ui(
+                    icon_name = "skull-crossbones",
+                    "Argument `config_path` to run_config_app() is undefined. 
+                    Please specify a path to load a config file."
+                    ),
+                duration = NULL,
+                id = "load_config_error",
+                session = session
+                )
             }
           })
       
-      ### Notify user which fields exist and which do not ####
-      # observeEvent(
-      #   session$userData$config(),
-      #   {
-      #     showNotification(
-      #       ui =
-      #         div(
-      #           style = "width: 350px;",
-      #           glue('Loading file at {config_filename}')
-      #         ),
-      #       duration = NULL,
-      #       id = "load_config",
-      #       session = session
-      #     )
-      #   })
+      ### 3.7.3. Notify the user when the file is loaded ####
+      observeEvent(
+        session$userData$config(),
+        {
+          # In the future, may notify user which fields exist and which do not
+          showNotification(
+            ui =
+              icon_notification_ui(
+                icon_name = "check-circle",
+                icon_class = "fas",
+                # Get path to wrap to next line instead of being cut off at the 
+                # right side of the notification
+                notification_style = "word-break: break-all;",
+                glue('Successfully loaded the config file at {config_filename}.')
+              ),
+            duration = NULL,
+            id = "load_config",
+            session = session
+          )
+        })
       
-      ### 3.7.2. Update inputs in main server function with file contents ####
-      #### 3.7.2.1. General dataset info tab ####
-      ##### 3.7.2.1.1. Label for dataset ####
+      ### 3.7.4. Update inputs in main server function with file contents ####
+      #### 3.7.4.1. General dataset info tab ####
+      ##### 3.7.4.1.1. Label for dataset ####
       observeEvent(
         session$userData$config(),
         {
@@ -2246,7 +2257,7 @@ run_config <-
           }
         })
       
-      ##### 3.7.2.1.2. Dataset description ####
+      ##### 3.7.4.1.2. Dataset description ####
       observeEvent(
         session$userData$config(),
         {
@@ -2259,7 +2270,7 @@ run_config <-
           }
         })
       
-      ##### 3.7.2.1.3. Preview type and settings ####
+      ##### 3.7.4.1.3. Preview type and settings ####
       observeEvent(
         session$userData$config(),
         {
@@ -2277,7 +2288,7 @@ run_config <-
           }
         })
       
-      ##### 3.7.2.1.4. Plot settings for dimplot preview ####
+      ##### 3.7.4.1.4. Plot settings for dimplot preview ####
       # load_inputs <-
       #   reactive({
       #     if (isTruthy(session$userData$config())){
@@ -2295,8 +2306,8 @@ run_config <-
       #       }
       #     })
       
-      #### 3.7.2.2. Assay tab ####
-      ##### 3.7.2.2.1. Assays selected ####
+      #### 3.7.4.2. Assay tab ####
+      ##### 3.7.4.2.1. Assays selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -2312,7 +2323,7 @@ run_config <-
           )
         })
       
-      ##### 3.7.2.2.2. Include numeric metadata ####
+      ##### 3.7.4.2.2. Include numeric metadata ####
       observeEvent(
         session$userData$config(),
         {
@@ -2323,7 +2334,7 @@ run_config <-
             )
         })
       
-      ##### 3.7.2.2.3. Designated Genes assay ####
+      ##### 3.7.4.2.3. Designated Genes assay ####
       # Load from config$other_assay_options
       observeEvent(
         session$userData$config(),
@@ -2340,7 +2351,7 @@ run_config <-
           }
         })
       
-      ##### 3.7.2.2.4. Designated ADT assay ####
+      ##### 3.7.4.2.4. Designated ADT assay ####
       observeEvent(
         session$userData$config(),
         {
@@ -2381,8 +2392,8 @@ run_config <-
           }
         })
       
-      #### 3.7.2.3. Metadata Tab ####
-      ##### 3.7.2.3.1 Metadata selected ####
+      #### 3.7.4.3. Metadata Tab ####
+      ##### 3.7.4.3.1 Metadata selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -2411,7 +2422,7 @@ run_config <-
           update_metadata_sortable$trigger()
         })
       
-      ##### 3.7.2.3.2 Patient level meteadata variable ####
+      ##### 3.7.4.3.2 Patient level meteadata variable ####
       observeEvent(
         session$userData$config(),
         {
@@ -2430,7 +2441,7 @@ run_config <-
           }
         })
       
-      #### 3.7.2.4 Reductions selected ####
+      #### 3.7.4.4 Reductions selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -2454,7 +2465,7 @@ run_config <-
           update_reductions_sortable$trigger()
           })
       
-      #### 3.7.2.5 ADT threshold table ####
+      #### 3.7.4.5 ADT threshold table ####
       observeEvent(
         session$userData$config(),
         {

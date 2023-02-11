@@ -8,3 +8,8 @@
 .fa-skull-crossbones{
 	color: #000000;
 }
+
+/* Success checkmark */
+.fa-circle-check {
+	color: #124715 !important;
+}
