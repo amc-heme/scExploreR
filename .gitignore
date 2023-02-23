@@ -20,7 +20,6 @@ Help_Drafts*
 *.DS_Store
 corr_table_full.csv
 corr_table_full_sparse.csv
-*.rds
 big_corr_table.rds
 Test_Document*
 Auto_Dictionary.knit.md
