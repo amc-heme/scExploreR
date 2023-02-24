@@ -9,6 +9,8 @@
 #' observers/reactive expressions that execute in response to the button. This 
 #' mmust be unique within the app or module to avoid namespace collisions.
 #' @param text Text to display for the warning message.
+#' 
+#' @noRd
 #'
 warning_modal <-
   function(

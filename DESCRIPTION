@@ -33,6 +33,7 @@ Imports:
     shinycssloaders (>= 1.0.0),
     shinydashboard (>= 0.7.2),
     shinyjs (>= 2.0.0),
+    shinytest,
     shinyWidgets (>= 0.6.2),
     sortable (>= 0.4.5),
     stringr,
@@ -42,4 +43,9 @@ Imports:
     waiter (>= 0.2.5),
     yaml
 Encoding: UTF-8
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.3
+Depends: 
+    R (>= 2.10)
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
