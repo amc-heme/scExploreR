@@ -17,7 +17,8 @@ run_scExploreR <-
     port = NULL,
     full_stack_trace = FALSE,
     host = NULL,
-    launch.browser = NULL
+    launch_browser = NULL,
+    dev_mode = FALSE
   ){
     # Load Libraries and Data ------------------------------------------------------
     ## Initialize libraries ####
@@ -654,6 +655,10 @@ run_scExploreR <-
     
     # Main Server function ---------------------------------------------------------
     server <- function(input, output, session){
+      # Record whether app is in dev mode (signals modules to display more 
+      # information for testing and development)
+      session$userData$dev_mode = dev_mode
+      
       # Define spinner to display over main screen when the object and config files
       # are loading
       app_spinner <-
@@ -1772,8 +1777,8 @@ run_scExploreR <-
           "host" = 
             if (!is.null(host)) host else "127.0.0.1",
           "launch.browser" = 
-            if (!is.null(launch.browser)){
-              launch.browser
+            if (!is.null(launch_browser)){
+              launch_browser
             } else {
                 getOption("shiny.launch.browser", interactive())
               }

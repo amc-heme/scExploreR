@@ -93,3 +93,65 @@ test_that("DGE: Differential Expression Mode Works", {
   )
 })
 
+test_that("Marker Identification With a Subset Works", {
+  # Set mode back to marker identification
+  app$setValue(
+    name = "object_dge-test_selections-mode", 
+    value = "mode_marker"
+  )
+  
+  app$waitForShiny()
+  
+  # Options for group_by and marker_class_selection should not have changed,
+  expect_equal(
+    app$getValue("object_dge-test_selections-group_by"), 
+    "condensed_cell_type"
+    )
+  expect_equal(
+    app$getValue(
+      "object_dge-test_selections-marker_class_selection",
+      ),
+    list(
+      "B Cells", 
+      "BM Monocytes", 
+      "CD4+ T Cells", 
+      "CD8+ T Cells", 
+      "Dendritic cells", 
+      "NK Cells", 
+      "PBMC Monocytes", 
+      "Plasma cells", 
+      "Plasmacytoid dendritic cells", 
+      "Primitive"
+      )
+    )
+  
+  # Select a subset of cells
+  app$setValue("object_dge-subset_selections-Batch_selection", "BM_200AB")
+  app$waitForShiny()
+  
+  # Run DGE
+  app$click("object_dge-submit")
+  app$waitForShiny()
+  
+  # Fetch DGE table and verify it exists
+  dge_table <- app$getAllValues()$export$`object_dge-dge_table`
+  expect_true(!is.null(dge_table))
+  
+  # Check values on table 
+  expect_equal(
+    object = colSums(dge_table[, 3:8]),
+    expected =
+      c(2528.8364, 
+        1397.2407, 
+        866.0678, 
+        419.5748, 
+        76499.3792, 
+        48360.2609),
+    tolerance = 1e-6,
+    ignore_attr = TRUE
+  )
+  
+  # Reset subset
+  app$click("object_dge-subset_selections-reset_filter")
+  app$waitForShiny()
+})
