@@ -1100,6 +1100,12 @@ dge_tab_server <- function(id,
             },
           contentType = "text/csv"
           ) # End downloadHandler
+      
+      # 6. Testing: export raw DGE table ---------------------------------------
+      exportTestValues(
+        dge_table = dge_table_content()
+      )
+      
       }
     )
   }

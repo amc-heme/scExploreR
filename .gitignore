@@ -13,6 +13,7 @@ www/Shiny_Vignette.Rmd
 www/Auto_Dictionary.html
 www/images/*
 inst/www/Auto_Dictionary.html
+*Auto_Dictionary.html
 *.pptx
 *.docx
 Help_Drafts*

@@ -528,6 +528,8 @@ run_scExploreR <-
       navbarPage("Shiny scExplorer",
                  windowTitle = "Shiny scExplorer",
                  position = "fixed-top",
+                 id = "navigator",
+                 lang = "en",
                  tabPanel(
                    "Plots",
                    uiOutput(

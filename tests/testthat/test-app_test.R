@@ -1,9 +1,14 @@
 library(shinytest)
 library(shiny)
 
+# Path for running tests
 app <- ShinyDriver$new("./apps/scExploreR", seed = 325)
 
-test_that("No errors for Marker ID", {
+# Use this path when editing tests
+# app <- ShinyDriver$new("tests/testthat/apps/scExploreR", seed = 325)
+
+
+test_that("DGE: Marker ID Mode Works", {
   # Swtich to DGE tab: find button in navbar panel, and click the button 
   dge_tab_btn <- app$findElement(linkText = "Differential Expression")
   dge_tab_btn$click()
@@ -16,13 +21,75 @@ test_that("No errors for Marker ID", {
   # Wait for table to compute after pressing submit
   app$waitForShiny()
   
-  # The output below will appear only if the DGE test ran without errors
-  expect_true(isTruthy(app$getValue("object_dge-subset_stats-n_by_class")))
-  # The app should also be able to screenshot the table without issue
-  expect_no_error(
-    app$takeScreenshot(
-      id = "object_dge-table", 
-      file = NULL
-      )
-    )
+  # Fetch DGE table and verify it exists
+  dge_table <- app$getAllValues()$export$`object_dge-dge_table`
+  expect_true(!is.null(dge_table))
+  
+  # Verify that numeric values for the table match previously-computed values 
+  # for the object and test
+  expect_equal(
+    object = colSums(dge_table[, 3:8]),
+    expected = 
+      c(2763.29852416002, 
+        1505.23168019154, 
+        975.060444444444, 
+        426.766090186197, 
+        83508, 
+        53266.6666666667),
+    tolerance = 1e-6,
+    ignore_attr = TRUE
+  )
 })
+
+test_that("DGE: Differential Expression Mode Works", {
+  app$setValue(
+    name = "object_dge-test_selections-mode", 
+    value = "mode_dge"
+    )
+  
+  app$setValue(
+    name = "object_dge-test_selections-group_by",
+    value = "condensed_cell_type"
+  )
+  
+  app$setValue(
+    name = "object_dge-test_selections-group_1",
+    value = "Primitive"
+  )
+  
+  # Must wait for selections for group 1 to register before setting group 2
+  # (table will not appear if this is not added)
+  app$waitForShiny()
+  
+  app$setValue(
+    name = "object_dge-test_selections-group_2",
+    value = c("BM Monocytes", "PBMC Monocytes")
+  )
+  
+  app$waitForShiny()
+  
+  # Press submit and wait for table to compute
+  app$click("object_dge-submit")
+  app$waitForShiny()
+  
+  
+  # Fetch DGE table and verify it exists
+  dge_table <- app$getAllValues()$export$`object_dge-dge_table`
+  expect_true(!is.null(dge_table))
+  
+  # Check that the numeric values of the table match previously-computed values 
+  # for this object and test
+  expect_equal(
+    object = colSums(dge_table[, 3:8]),
+    expected = 
+      c(668.001327940329, 
+        502.33400527721, 
+        295.2868, 
+        53.6666287556446, 
+        21982, 
+        11692),
+    tolerance = 1e-6,
+    ignore_attr = TRUE
+  )
+})
+
