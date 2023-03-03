@@ -1,0 +1,92 @@
+---
+title: "Threshold DGE Validation"
+output: html_document
+date: "2023-03-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This R Markdown document is intended to validate the expression threshold-based DGE performed in the app via analysis. The dataset used is the test dataset in `/data`.
+
+```{r}
+library(scExploreR)
+library(Seurat)
+library(dplyr)
+library(presto)
+library(glue)
+
+# Load test dataset
+object <- triana_et_al_condensed
+
+# Define feature and threshold
+feature <- "ab_CD34-AB"
+threshold <- 1.33
+# Positive markers only
+positive_only <- TRUE
+
+# Pull expression data for feature
+expr_data <- 
+  FetchData(
+    object = object,
+    vars = feature
+    )[,1]
+
+# Create new metadata column based on expression threshold
+object@meta.data$simple_expr_threshold <-
+  case_when(
+    # "High" when expression value is greater than or equal to 
+    # threshold, otherwise "Low".
+    expr_data >= threshold ~ glue("{feature} High"),
+    expr_data < threshold ~ glue("{feature} Low"),
+    TRUE ~ "error"
+  )
+
+dge_table <-
+  # Run presto on the subset, using the group by category
+  wilcoxauc(
+    object, 
+    # Assay: fixed to the designated gene assay for now
+    seurat_assay = "RNA",
+    group_by = "simple_expr_threshold"
+  ) %>%
+  # Explicitly coerce to tibble
+  as_tibble() %>%
+  # remove stat and auc from the output table
+  dplyr::select(-c(statistic, pval)) %>%
+  # Using magrittr pipes here because the following
+  # statement doesn't work with base R pipes
+  # remove negative logFCs if box is checked
+  {if (positive_only) dplyr::filter(., logFC > 0) else .} %>%
+  # Arrange in ascending order for padj, pval (lower
+  # values are more "significant"). Ascending order is
+  # used for the log fold-change
+  arrange(padj, desc(abs(logFC)))
+
+# Change "logFC" column to log-2 fold change 
+# (default output uses a natural log)
+dge_table$logFC <- 
+  scExploreR:::to_log2(dge_table$logFC)
+
+# Rename column to explicitly specify log-2 fold change
+dge_table <-
+  dge_table |>
+  dplyr::rename(Log2FC = logFC)
+
+# Colsums vector (to compare with table in app)
+print("Colsums vector")
+colsums_vector <- colSums(dge_table[3:8])
+# Print vector to screen as code to be copied to the test
+# scripts
+cat(
+  paste0(
+    "c(", 
+    paste0(colsums_vector, collapse = ", "),
+    ")"
+    ),
+  "\n"
+  )
+```
+
+c(567.844302196566, 306.324905353556, 271.87710950387, 83.4038492852937, 18836.0233472909, 11857.6195914224) 
