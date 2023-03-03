@@ -612,7 +612,7 @@ dge_tab_server <- function(id,
                         FetchData(
                           object = subset,
                           vars = feature
-                          ) 
+                          )[,1]
                       
                       # Remove assay tag from feature name
                       # (Must be done after FetchData, which requires 
@@ -622,7 +622,17 @@ dge_tab_server <- function(id,
                           feature,
                           assay_config = assay_config(),
                           use_suffix = FALSE
-                        )
+                          )
+                      
+                      if (session$userData$dev_mode == TRUE){
+                        print("DGE simple expression threshold")
+                        print("threshold")
+                        print(threshold)
+                        print("feature expression data")
+                        print(head(expr_data))
+                        print("Test of expr_data >= threshold")
+                        print(head(expr_data >= threshold))
+                        }
                       
                       # Create metadata column based on simple threshold
                       subset@meta.data$simple_expr_threshold <-
@@ -773,7 +783,7 @@ dge_tab_server <- function(id,
                     # Using magrittr pipes here because the following
                     # statement doesn't work with base R pipes
                     # remove negative logFCs if box is checked
-                    {if (input$pos) filter(., logFC > 0) else .} %>%
+                    {if (input$pos) dplyr::filter(., logFC > 0) else .} %>%
                     # Arrange in ascending order for padj, pval (lower
                     # values are more "significant"). Ascending order is
                     # used for the log fold-change
