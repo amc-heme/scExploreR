@@ -14,4 +14,4 @@
 #' }
 #'
 #' @source <https://figshare.com/articles/dataset/Expression_of_197_surface_markers_and_462_mRNAs_in_15281_cells_from_blood_and_bone_marrow_from_a_young_healthy_donor/13398065>
-"test_dataset"
+"triana_et_al_condensed"
