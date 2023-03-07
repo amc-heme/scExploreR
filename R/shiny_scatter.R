@@ -46,7 +46,7 @@ shiny_scatter <- function(object,
         if (!is.null(palette)){
           # colorRampPalette() extends or contracts the given palette to 
           # produce exactly the required number of colors
-          colorRampPalette(palette(n_colors))
+          colorRampPalette(palette)(n_colors)
           # Use ggplot2 defaults if palette() is unspecified
         } else NULL, 
       )
