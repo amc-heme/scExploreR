@@ -64,7 +64,6 @@ shiny_ridge <-
     # Factor/refactor group by metadata, but only if sort_groups is defined,
     # and group by is not "none"
     if (isTruthy(sort_groups) && group_by != "none"){
-      print("refactoring code")
       object@meta.data[[group_by]] <-
         # factor() creates a factor if the metadata category is not a factor
         # already, and re-orders a factor if it already exists.

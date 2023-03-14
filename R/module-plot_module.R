@@ -410,19 +410,23 @@ plot_module_ui <- function(id,
             value = TRUE
             ),
           # Number of columns in legend
-          sliderInput(
-            inputId = ns("legend_ncol"),
-            label = "Number of Columns in Legend",
-            ticks = FALSE,
-            value = 1,
-            min = 1,
-            max = 5
-          ),
+          tags$b("Number of Columns in Legend"),
           # If this check box is enabled, the default is used
           checkboxInput(
             inputId = ns("default_legend_ncol"),
             label = "Use default",
             value = TRUE
+          ),
+          # Slider shows when *not* using the default
+          hidden(
+            sliderInput(
+              inputId = ns("legend_ncol"),
+              label = NULL,
+              ticks = FALSE,
+              value = 1,
+              min = 1,
+              max = 5
+            )
           ),
           sliderInput(
             inputId = ns("legend_size"),
@@ -1771,6 +1775,21 @@ plot_module_server <- function(id,
                    }
                  })
                  
+                 ## 4.9. Legend ncol slider ####
+                 observe({
+                   target_id <- "legend_ncol"
+                 
+                   if (!isTruthy(input$default_legend_ncol)){
+                     showElement(
+                       id = target_id
+                       )
+                     } else {
+                       hideElement(
+                         id = target_id
+                         )
+                       }
+                   })
+                 
                  # 5. Process x-axis labels for dot plots----
                  if (plot_type == "dot"){
                    ## 5.1. Define default labels to show in menu ####
@@ -2123,10 +2142,10 @@ plot_module_server <- function(id,
                          
                          # 1 = smallest, 9 = largest.
                          dplyr::case_when(
-                           v == 1 ~ 7,
-                           v == 2 ~ 8,
-                           v == 3 ~ 8.5,
-                           v == 4 ~ 10,
+                           v == 1 ~ 8,
+                           v == 2 ~ 9.5,
+                           v == 3 ~ 10,
+                           v == 4 ~ 11,
                            v == 5 ~ 11,
                            # Default
                            v == 6 ~ 12,
