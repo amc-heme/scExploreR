@@ -131,7 +131,7 @@ button.transparent.active::before {
   padding: var(--content-pad);
   /* TODO: Change background color to match shiny (may want to do a
 		 transparent background or a border instead) */
-  /* background-color: #e1e1e1; */
+  background-color: #e1e1e1;
   margin-bottom: var(--spacing);
   /* Round bottom of content for consistency with header */
   border-bottom-left-radius: var(--border-rad);

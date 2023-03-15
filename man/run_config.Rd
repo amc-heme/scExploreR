@@ -15,6 +15,8 @@ Seurat object.}
 loaded when the user selects "load config file" in the config app. This 
 should be a YAML file, though .rds files from versions 0.4.0 and earlier will
 also be accepted.}
+
+\item{dev_mode}{Used only for development. If TRUE, the server values for each option chosen by the user will be printed at the bottom of the "general" tab.}
 }
 \description{
 run_config() will launch a Shiny app used to configure datasets for use in 

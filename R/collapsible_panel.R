@@ -25,8 +25,7 @@ collapsible_panel <-
     label = NULL,
     active = FALSE,
     transparent = FALSE,
-    size = "l",
-    content_background_color = "#E1E1E1"
+    size = "l"
     ){
     if (!size %in% c("s", "l")){
       stop("Invalid entry for `size`. Please enter `s` or `l`.")
@@ -90,11 +89,7 @@ collapsible_panel <-
           div(
             ...,
             class = content_class,
-            style = 
-              glue(
-                "background-color: {content_background_color}; 
-                 display: block;"
-                )
+            style = "display: block;"
             )
         } else {
           # Otherwise, the default value of none will be used to 
@@ -102,9 +97,7 @@ collapsible_panel <-
           content_html <- 
             div(
               ...,
-              class = content_class,
-              # Pass content_background_color argument
-              style = glue("background-color: {content_background_color};")
+              class = content_class
               )
           }
       )#End taglist

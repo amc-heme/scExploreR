@@ -32,7 +32,7 @@
 }
 
 .button-ghost:active{
-  border-color: #4444444;
+  border-color: #444444;
   background-color: #E1E1E1
 }
 
@@ -75,6 +75,25 @@
 /* Compact button: decreases margins for better fit */
 .compact-button{
   padding: 5px 7px;
+}
+
+/* Adds extra space to sides of buttons */
+button.extra-space {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* Vertical buttons: applied to division element containing buttons. Makes the
+   buttons display vertically and centered, instead of displaying inline */
+.vertical-button-group button {
+  /* Uses block display instead of inline for vertical arrangement */
+  display: block;
+  /* centers the buttons */
+  margin-left: auto;
+  margin-right: auto;
+  /* Adds space between buttons */
+  margin-bottom: 10px;
+  margin-top: 10px;
 }
 
 /******************************************************************************/

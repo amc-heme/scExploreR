@@ -31,10 +31,7 @@ shiny_stacked_bar <-
     show_legend = TRUE,
     palette = NULL,
     sort_groups = NULL,
-    custom_factor_levels = NULL,
-    legend_ncol = NULL,
-    legend_font_size = NULL,
-    legend_key_size = NULL
+    custom_factor_levels = NULL
   ){
     # validate will keep plot code from running if the subset 
     # is NULL (no cells in subset)
@@ -122,8 +119,7 @@ shiny_stacked_bar <-
         # specified in `fill` argument
         mapping = aes(fill = .data[[group_by]]), 
         # "fill" creates a proportion bar chart
-        position = "fill",
-        key_glyph = "rect"
+        position = "fill"
       ) +
       theme_cowplot() +
       theme(
@@ -283,7 +279,18 @@ shiny_stacked_bar <-
                   )
               )
             )
+        ),
+        
+        # F. Show/hide legend title (shown by default)
+        list(
+          theme(
+            legend.position = 
+              if (show_legend==TRUE) {
+                "right"
+              } else "none"
+            )
           )
+        
         )
         
     plot <-

@@ -769,7 +769,7 @@ dge_tab_server <- function(id,
                     # Explicitly coerce to tibble
                     as_tibble() %>%
                     # remove stat and auc from the output table
-                    select(-c(statistic, pval)) %>%
+                    dplyr::select(-c(statistic, pval)) %>%
                     # Using magrittr pipes here because the following
                     # statement doesn't work with base R pipes
                     # remove negative logFCs if box is checked
@@ -792,9 +792,25 @@ dge_tab_server <- function(id,
                   log_session(session)
                   log_info("DGE Tab: Completed Presto")
                   
+                  # Compute on values of table (for use with automated tests)
+                  if (session$userData$dev_mode == TRUE){
+                    print("Colsums vector")
+                    colsums_vector <- colSums(dge_table[3:8])
+                    # Print vector to screen as code to be copied to the test
+                    # scripts
+                    cat(
+                      paste0(
+                        "c(", 
+                        paste0(colsums_vector, collapse = ", "),
+                        ")"
+                        ),
+                      "\n"
+                      )
+                  }
+                 
                   return(dge_table)
                 })
-            
+
             dge_table
           })
       
@@ -1100,6 +1116,12 @@ dge_tab_server <- function(id,
             },
           contentType = "text/csv"
           ) # End downloadHandler
+      
+      # 6. Testing: export raw DGE table ---------------------------------------
+      exportTestValues(
+        dge_table = dge_table_content()
+      )
+      
       }
     )
   }

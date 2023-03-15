@@ -359,7 +359,7 @@ options_server <-
                   asis = TRUE
                   )
                 
-                addClass(
+                shinyjs::addClass(
                   selector = other_checkboxes_selector,
                   class = "disabled-label",
                   asis = TRUE
@@ -374,7 +374,7 @@ options_server <-
                   asis = TRUE
                   )
                 
-                removeClass(
+                shinyjs::removeClass(
                   class = "disabled-label",
                   selector = all_checkboxes_selector,
                   asis = TRUE

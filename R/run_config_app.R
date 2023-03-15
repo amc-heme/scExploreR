@@ -10,6 +10,7 @@
 #' loaded when the user selects "load config file" in the config app. This 
 #' should be a YAML file, though .rds files from versions 0.4.0 and earlier will
 #' also be accepted.
+#' @param dev_mode Used only for development. If TRUE, the server values for each option chosen by the user will be printed at the bottom of the "general" tab.
 #'
 #' @usage 
 #' run_config(./path_to_object.rds, ./path_to_config_file.yaml)
@@ -19,7 +20,8 @@
 run_config <- 
   function(
     object_path,
-    config_path = NULL
+    config_path = NULL,
+    dev_mode = FALSE
   ){
     # Initialize libraries ####
     library(shiny)
@@ -295,13 +297,21 @@ run_config <-
               )
             )#,
           )
-        )#,
-        # div(
-        #   class = "optcard",
-        #   verbatimTextOutput(
-        #     outputId = "print_data"
-        #   )
-        # )
+        ),
+        # Window to show all options selected in app, if app is launched in 
+        # dev mode
+        if (dev_mode == TRUE){
+          div(
+            class = "optcard",
+            tags$h4(
+              "Current User Input", 
+              class = "center"
+              ),
+            verbatimTextOutput(
+              outputId = "print_data"
+            )
+          )
+        }
       )
     }
     
@@ -413,7 +423,14 @@ run_config <-
               uiOutput(
                 outputId = "metadata_sortable_bucket"
               )
-            )
+            ),
+            # Print server values of metadata selected if app is 
+            # launched in dev_mode
+            if (dev_mode){
+              verbatimTextOutput(
+                outputId = "metadata_sortable_debug"
+              )
+            }
           ),
           applet_main_panel(
             tagList(
@@ -786,11 +803,16 @@ run_config <-
       module_data$metadata_sortable_selected <- character(0)
       # Choices not selected: equal to all non-numeric metadata.
       module_data$metadata_sortable_not_selected <- non_numeric_cols
+      # Reactive trigger for updating sortable menus (menus will not update
+      # the second time a config file is loaded because the above variables 
+      # do not change)
+      update_metadata_sortable <- makeReactiveTrigger()
       
       # Sortable Data: Reductions ####
       # All reductions are choices, and all are selected by default
       module_data$reductions_sortable_selected <- reductions
       module_data$reductions_sortable_not_selected <- character(0)
+      update_reductions_sortable <- makeReactiveTrigger()
       
       # Store assays for which ADT thresholding modules have been created 
       # (to avoid duplicates
@@ -1027,26 +1049,21 @@ run_config <-
             input$assays_selected
           })
       
-      ### 3.2.2. Create module server instances for each possible assay ####
-      # Observe is used to reactively update outputs when inputs in the module and
-      # its sub-modules are changed
-      observe({
-        # <<- is required for all_assay_options to be accessible to other server
-        # code (not sure why)
-        all_assay_options <<- list()
-        
-        # Create an assay options module for each assay in the object 
-        for (id in names(object@assays)){
-          # Must also use <<- here
-          all_assay_options[[id]] <<- 
-            options_server(
-              id = id,
-              object = object,
-              categories_selected = assays_selected,
-              options_type = "assays"
+      ### 3.2.2. Options modules for assays ####
+      all_assay_options <- list()
+      
+      # Create an assay options module for each assay in the object 
+      for (id in names(object@assays)){
+        server_output <- 
+          options_server(
+            id = id,
+            object = object,
+            categories_selected = assays_selected,
+            options_type = "assays"
             )
-        }
-      })
+        
+        all_assay_options[[id]] <- server_output
+      }
       
       ### 3.2.3. Record list of assay module outputs in config data #### 
       # Filter list of options module outputs and combine into a single 
@@ -1203,40 +1220,24 @@ run_config <-
             object = object,
             categories_selected = metadata_selected,
             options_type = "metadata"
-          )
+            )
         
         all_metadata_options[[id]] <- server_output
       }
-      
-      # observe({
-      #   # <<- is required for all_metadata_options to be accessible to other server
-      #   # code (variables defined within observers are defined in the local 
-      #   # environment of the observer by default, unless superassignment (<<-) 
-      #   # is used
-      #   all_metadata_options <<- list()
-      #   
-      #   for (id in names(object@meta.data)){
-      #     all_metadata_options[[id]] <<- 
-      #       options_server(
-      #         id = id,
-      #         object = object,
-      #         categories_selected = metadata_selected,
-      #         options_type = "metadata"
-      #       )
-      #     }
-      # 
-      # })
       
       ### 3.3.4. RECORD: metadata options in config data ####
       #### 3.3.4.1. Category-specific options ####
       config_data$metadata <- 
         reactive({
-          # Options list is only processed when metadata columns have been selected
+          # Options list is only processed when metadata columns 
+          # have been selected
           if (isTruthy(input$metadata_selected)){
             # Extracts each reactive module output and stores them in a list
             options_list <- lapply(all_metadata_options, function(x) x())
-            # Filter list for metadata columns that have been selected by the user
-            options_list <- options_list[names(options_list) %in% input$metadata_selected]
+            # Filter list for metadata columns that have been selected 
+            # by the user
+            options_list <- 
+              options_list[names(options_list) %in% input$metadata_selected]
             # Sort list according to the order specified by the user in the drag
             # and drop menu
             options_list <- options_list[input$metadata_selected]
@@ -1266,34 +1267,37 @@ run_config <-
       metadata_bucket_ui <-
         eventReactive(
           c(module_data$metadata_sortable_not_selected,
-            module_data$metadata_sortable_selected),
+            module_data$metadata_sortable_selected,
+            update_metadata_sortable$depend()),
           label = "Metadata: define sortable",
           {
+            print("Update metadata menus based on selected metadata")
+            
             tagList(
               tags$b("Choose Metadata to Include:"),
               bucket_list(
                 header = 
                   "Drag metadata variables to \"Included Metadata\" to include.
-                  Metadata will appear in app menus in the order they appear in 
-                  the right-hand column.",
-              orientation = "horizontal",
-              group_name = "metadata_bucket",
-              # Use the default class, and a class specific to this app
-              # Many sub-classes are tied to the default class, and styling will
-              # not be applied to those classes if the default class is not also 
-              # passed to this argument.
-              class = 
-                c("default-sortable", "bucket-select"),
-              add_rank_list(
-                input_id = "metadata_not_selected",
-                text = "Available Metadata",
-                labels = module_data$metadata_sortable_not_selected
-              ),
-              add_rank_list(
-                input_id = "metadata_selected",
-                text = "Included Metadata",
-                labels = module_data$metadata_sortable_selected
-              )
+                    Metadata will appear in app menus in the order they appear in 
+                    the right-hand column.",
+                orientation = "horizontal",
+                group_name = "metadata_bucket",
+                # Use the default class, and a class specific to this app
+                # Many sub-classes are tied to the default class, and styling will
+                # not be applied to those classes if the default class is not also 
+                # passed to this argument.
+                class = 
+                  c("default-sortable", "bucket-select"),
+                add_rank_list(
+                  input_id = "metadata_not_selected",
+                  text = "Available Metadata",
+                  labels = module_data$metadata_sortable_not_selected
+                ),
+                add_rank_list(
+                  input_id = "metadata_selected",
+                  text = "Included Metadata",
+                  labels = module_data$metadata_sortable_selected
+                )
               )
             )
           })
@@ -1398,7 +1402,8 @@ run_config <-
       reductions_bucket_ui <-
         eventReactive(
           c(module_data$reductions_sortable_not_selected,
-            module_data$reductions_sortable_selected),
+            module_data$reductions_sortable_selected,
+            update_reductions_sortable$depend()),
           label = "Reductions: define sortable",
           {
             tagList(
@@ -2000,6 +2005,11 @@ run_config <-
                 selected = character(0),
                 server = TRUE
                 )
+              
+              # Set menu state back to idle to dismiss the editing menu if it 
+              # is open (it is possible to delete an ADT while editing the 
+              # threshold)
+              module_data$threshold_menu_state <- "idle"
             } else {
               warning("Unable to determine the index of the row selected for deletion")
             }
@@ -2106,12 +2116,78 @@ run_config <-
             })
       
       ## 3.7. Load Config File ####
-      ### 3.7.1 Load File ####
+      ### 3.7.1. Warn user if they have already entered fields in the app #### 
+      
+      # Reactive trigger for loading: used to proceed with loading without 
+      # showing a modal if the user has not entered any information in the app
+      load_trigger <- makeReactiveTrigger()
+      
+      observeEvent(
+        input$load_config,
+        label = "Display warning before loading config file",
+        ignoreNULL = FALSE,
+        ignoreInit = TRUE,
+        {
+          # Tests for user input: below values are TRUE when the user has not
+          # changed any settings in the app (as they are based off 
+          # default values)
+          if (
+            any(
+            isTruthy(input$dataset_label),
+            isTruthy(input$dataset_description),
+            input$preview_type != "none",
+            isTruthy(input$assays_selected),
+            input$include_numeric_metadata == FALSE,
+            input$genes_assay != "none",
+            input$adt_assay != "none",
+            isTruthy(input$metadata_selected),
+            input$patient_colname != "none",
+            isTruthy(input$reductions_not_selected),
+            isTruthy(module_data$threshold_data$adt)
+            )
+          ){            
+            showModal(
+              warning_modal(
+                confirmId = "load_confirm",
+                cancelId = "load_cancel",
+                text = 
+                  "Loading a config file will erase any changes made. Continue?"
+              )
+            )
+          } else {
+            # Trigger to proceed with loading without showing a modal
+            load_trigger$trigger()
+          }
+        })
+      
+      #### 3.7.1.1. User presses cancel ####
+      # If the user presses cancel, close the modal and do nothing.
+      observeEvent(
+        input$load_cancel,
+        label = "Load config file: display modal",
+        ignoreInit = TRUE,
+        {
+          removeModal()
+        })
+      
+      #### 3.7.1.2. User presses confirm ####
+      # Close the modal and trigger loading of config file
+      observeEvent(
+        input$load_confirm,
+        label = "Load config file: display modal",
+        ignoreInit = TRUE,
+        {
+          removeModal()
+          
+          load_trigger$trigger()
+        })
+      
+      ### 3.7.2 Load File ####
       # Loads a previously created config file and imports contents into app
-      # storing in session$userdata makes file visible to all modules
+      # storage in session$userdata makes file visible to all modules
       session$userData$config <-
         eventReactive(
-          input$load_config,
+          load_trigger$depend(),
           ignoreNULL = FALSE,
           ignoreInit = TRUE,
           {
@@ -2131,33 +2207,44 @@ run_config <-
               }
             } else {
               # Show error if no config file path is defined
-              icon_notification_ui(
-                icon_name = "skull-crossbones",
-                "variable `config_path` is undefined in config_init.yaml. Please 
-            specify a path to load a config file."
-              )
+              showNotification(
+                ui =
+                  icon_notification_ui(
+                    icon_name = "skull-crossbones",
+                    "Argument `config_path` to run_config_app() is undefined. 
+                    Please specify a path to load a config file."
+                    ),
+                duration = NULL,
+                id = "load_config_error",
+                session = session
+                )
             }
           })
       
-      ### Notify user which fields exist and which do not ####
-      # observeEvent(
-      #   session$userData$config(),
-      #   {
-      #     showNotification(
-      #       ui =
-      #         div(
-      #           style = "width: 350px;",
-      #           glue('Loading file at {config_filename}')
-      #         ),
-      #       duration = NULL,
-      #       id = "load_config",
-      #       session = session
-      #     )
-      #   })
+      ### 3.7.3. Notify the user when the file is loaded ####
+      observeEvent(
+        session$userData$config(),
+        {
+          # In the future, may notify user which fields exist and which do not
+          showNotification(
+            ui =
+              icon_notification_ui(
+                icon_name = "check-circle",
+                icon_class = "fas",
+                # Get path to wrap to next line instead of being cut off at the 
+                # right side of the notification
+                notification_style = "word-break: break-all;",
+                glue('Successfully loaded the config file at {config_filename}.')
+              ),
+            duration = NULL,
+            id = "load_config",
+            session = session
+          )
+        })
       
-      ### 3.7.2. Update inputs in main server function with file contents ####
-      #### 3.7.2.1. General dataset info tab ####
-      ##### 3.7.2.1.1. Label for dataset ####
+      ### 3.7.4. Update inputs in main server function with file contents ####
+      #### 3.7.4.1. General dataset info tab ####
+      ##### 3.7.4.1.1. Label for dataset ####
       observeEvent(
         session$userData$config(),
         {
@@ -2170,7 +2257,7 @@ run_config <-
           }
         })
       
-      ##### 3.7.2.1.2. Dataset description ####
+      ##### 3.7.4.1.2. Dataset description ####
       observeEvent(
         session$userData$config(),
         {
@@ -2183,7 +2270,7 @@ run_config <-
           }
         })
       
-      ##### 3.7.2.1.3. Preview type and settings ####
+      ##### 3.7.4.1.3. Preview type and settings ####
       observeEvent(
         session$userData$config(),
         {
@@ -2201,7 +2288,7 @@ run_config <-
           }
         })
       
-      ##### 3.7.2.1.4. Plot settings for dimplot preview ####
+      ##### 3.7.4.1.4. Plot settings for dimplot preview ####
       # load_inputs <-
       #   reactive({
       #     if (isTruthy(session$userData$config())){
@@ -2219,8 +2306,8 @@ run_config <-
       #       }
       #     })
       
-      #### 3.7.2.2. Assay tab ####
-      ##### 3.7.2.2.1. Assays selected ####
+      #### 3.7.4.2. Assay tab ####
+      ##### 3.7.4.2.1. Assays selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -2236,7 +2323,7 @@ run_config <-
           )
         })
       
-      ##### 3.7.2.2.2. Include numeric metadata ####
+      ##### 3.7.4.2.2. Include numeric metadata ####
       observeEvent(
         session$userData$config(),
         {
@@ -2247,7 +2334,7 @@ run_config <-
             )
         })
       
-      ##### 3.7.2.2.3. Designated Genes assay ####
+      ##### 3.7.4.2.3. Designated Genes assay ####
       # Load from config$other_assay_options
       observeEvent(
         session$userData$config(),
@@ -2264,7 +2351,7 @@ run_config <-
           }
         })
       
-      ##### 3.7.2.2.4. Designated ADT assay ####
+      ##### 3.7.4.2.4. Designated ADT assay ####
       observeEvent(
         session$userData$config(),
         {
@@ -2305,8 +2392,8 @@ run_config <-
           }
         })
       
-      #### 3.7.2.3. Metadata Tab ####
-      ##### 3.7.2.3.1 Metadata selected ####
+      #### 3.7.4.3. Metadata Tab ####
+      ##### 3.7.4.3.1 Metadata selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -2326,9 +2413,16 @@ run_config <-
             non_numeric_cols[
               !non_numeric_cols %in% module_data$metadata_sortable_selected
             ]
+          
+          # Explicitly trigger update of menus (menus ordinarially do not 
+          # respond the second time a config file is loaded because
+          # module_data$metadata_sortable_selected and
+          # module_data$metadata_sortable_not_selected do not change
+          # in this case).
+          update_metadata_sortable$trigger()
         })
       
-      ##### 3.7.2.3.2 Patient level meteadata variable ####
+      ##### 3.7.4.3.2 Patient level meteadata variable ####
       observeEvent(
         session$userData$config(),
         {
@@ -2347,7 +2441,7 @@ run_config <-
           }
         })
       
-      #### 3.7.2.4 Reductions selected ####
+      #### 3.7.4.4 Reductions selected ####
       observeEvent(
         session$userData$config(),
         {
@@ -2362,9 +2456,16 @@ run_config <-
             reductions[
               !reductions %in% module_data$reductions_sortable_selected
             ]
+          
+          # Explicitly trigger update of menus (menus ordinarially do not 
+          # respond to loading the config file a second time because
+          # module_data$reductions_sortable_selected and  
+          # module_data$reductions_sortable_not_selected do not change
+          # in this case).
+          update_reductions_sortable$trigger()
           })
       
-      #### 3.7.2.5 ADT threshold table ####
+      #### 3.7.4.5 ADT threshold table ####
       observeEvent(
         session$userData$config(),
         {
@@ -2379,25 +2480,39 @@ run_config <-
         reactive_trigger = reactive({input$warning_modal})
       )
       
-      # Print all Data (debugging)
-      # output$print_data <-
-      #   renderPrint({
-      #     output_list <-
-      #       lapply(
-      #         names(config_data),
-      #         function(element){
-      #           if (is.reactive(config_data[[element]])){
-      #             config_data[[element]]()
-      #           } else {
-      #             config_data[[element]]
-      #           }
-      #         }
-      #         )
-      #     
-      #     names(output_list) <- names(config_data)
-      #     
-      #     output_list
-      #   })
+      ## 3.8. Dev mode: Show server values ####
+      ### 3.8.1. Full config file ####
+      if (dev_mode == TRUE){
+        # Show all selected options when app is started in dev mode
+        output$print_data <-
+          renderPrint({
+            output_list <-
+              lapply(
+                names(config_data),
+                function(element){
+                  if (is.reactive(config_data[[element]])){
+                    config_data[[element]]()
+                  } else {
+                    config_data[[element]]
+                  }
+                }
+              )
+            
+            names(output_list) <- names(config_data)
+            
+            output_list
+          })
+      }
+      
+      ## 3.8.2. Server value of metadata_selected ####
+      output$metadata_sortable_debug <-
+        renderPrint({
+          print("module_data$metadata_sortable_selected")
+          print(module_data$metadata_sortable_selected)
+          
+          print("module_data$metadata_sortable_not_selected")
+          print(module_data$metadata_sortable_not_selected)
+        })
       
       #### TEMP: Observers for Debugging ####
       # observe({

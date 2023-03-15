@@ -24,10 +24,7 @@ shiny_scatter <- function(object,
                           show_legend,
                           display_coeff,
                           palette,
-                          assay_config = NULL,
-                          legend_ncol = NULL,
-                          legend_font_size = NULL,
-                          legend_key_size = NULL
+                          assay_config = NULL
                           ){
   # Palette: must determine number of colors to create from provided palette
   # The number of colors is equal to the number of unique values in 
@@ -49,7 +46,7 @@ shiny_scatter <- function(object,
         if (!is.null(palette)){
           # colorRampPalette() extends or contracts the given palette to 
           # produce exactly the required number of colors
-          colorRampPalette(palette(n_colors))
+          colorRampPalette(palette)(n_colors)
           # Use ggplot2 defaults if palette() is unspecified
         } else NULL, 
       )
@@ -82,15 +79,6 @@ shiny_scatter <- function(object,
       # Element A 
       # Legend position: "right" if a legend is desired, 
       # and "none" if not
-      # list(
-      #   theme(
-      #     legend.position = 
-      #       if (show_legend()==TRUE) {
-      #         "right"
-      #       } else "none"
-      #     )
-      # ), # End list() (element A)
-      
       list(
         do.call(
           theme,
@@ -126,7 +114,7 @@ shiny_scatter <- function(object,
               }
             )
           )
-        ),
+      ), # End list()
       
       # Elements specified with guides()
       list(

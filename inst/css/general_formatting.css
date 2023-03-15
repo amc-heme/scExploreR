@@ -25,7 +25,7 @@ h2, h3 {
 
 /* Text CSS Classes */
 /* Center Header Tags */
-.center{
+.center {
   text-align: center;
   /* Display must be set to block for centering to work */
   display: block;
@@ -60,7 +60,6 @@ h2, h3 {
 .underline-hover:hover {
   text-decoration: underline;
 }
-
 
 /* Spacing before element */
 .space-top{
@@ -103,6 +102,31 @@ h2, h3 {
   /* Uses text format from auto_dictionary.Rmd */
   color: var(--markdown-blue, #000088);
   font-weight: bold;
+}
+
+/* Responsively change the size of long button labels based on window size */
+@media(min-width: 1200px){
+  .responsive-button-label{
+    font-size: 1em;
+  }
+}
+
+@media(min-width: 993px){
+  .responsive-button-label{
+    font-size: 0.9em;
+  }
+}
+
+@media(max-width: 992px){
+  .responsive-button-label{
+    font-size: 0.8em;
+  }
+}
+
+@media(max-width: 860px){
+  .responsive-button-label{
+    font-size: 0.7em;
+  }
 }
 
 /* CSS used for label of inputs that are disabled */
