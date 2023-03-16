@@ -34,14 +34,14 @@ compute_correlation <-
     
     # Poor form, just for testing; move when adequately tested
     library(Matrix)
-    library(future.apply)
-    plan(multicore, workers = 4)
+    #library(future.apply)
+    #plan(multicore, workers = 4)
     
     # Matrix: fetch expression matrix from the specified assay
     mat <- object@assays[[seurat_assay]]@data
     
     # Compute correlation between selected feature and others
-    table <- future_apply(mat, 1, function(x){cor(mat[gene_selected,], x)}) |>  
+    table <- apply(mat, 1, function(x){cor(mat[gene_selected,], x)}) |>  
       # Convert matrix to tibble using enframe()
       # Enframe takes the piped result, which is a single-column matrix with 
       # name/value pairs (genes are the names and the computed coefficients are 
