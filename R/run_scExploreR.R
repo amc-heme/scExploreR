@@ -542,13 +542,13 @@ run_scExploreR <-
                    uiOutput(
                      outputId = "dge_dynamic_ui"
                    )
-                 ),
-                 tabPanel(
-                   "Gene Correlations",
-                   uiOutput(
-                     outputId = "corr_dynamic_ui"
-                   )
-                 )
+                 )#,
+                 # tabPanel(
+                 #   "Gene Correlations",
+                 #   uiOutput(
+                 #     outputId = "corr_dynamic_ui"
+                 #   )
+                 #)
       ), # End navbarPage()
       
       ## Buttons on upper-right hand corner of app ---------------------------------
