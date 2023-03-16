@@ -6,17 +6,17 @@
 #' elements. 
 #' 
 #' @param icon_name The name of the icon to use (based on the fontawesome library)
+#' @param ... Text or shiny.tag elements to be placed as message content.
 #' @param icon_class Optional classes to apply to the icon. These may be user-defined, or they may be based on the fontawesome library (for example,"fas", "fal", and "far" will display alternate styles of supported icons.)
 #' @param notification_style Style to apply to the notification body. 
-#' @param ... Text or shiny.tag elements to be placed as message content.
 #'
 #' @noRd
 icon_notification_ui <- 
   function(
     icon_name,
+    ...,
     icon_class = NULL,
-    notification_style = NULL,
-    ...
+    notification_style = NULL
   ){
     div(
       style = notification_style,
