@@ -32,23 +32,19 @@ compute_correlation <-
     feature_colname <- colnames[1]
     coeff_colname <- colnames[2]
     
-    # Poor form, just for testing; move when adequately tested
-    library(Matrix)
-    #library(future.apply)
-    #plan(multicore, workers = 4)
-    
     # Matrix: fetch expression matrix from the specified assay
     mat <- object@assays[[seurat_assay]]@data
     
     # Compute correlation between selected feature and others
-    table <- apply(mat, 1, function(x){cor(mat[gene_selected,], x)}) |>  
-      # Convert matrix to tibble using enframe()
-      # Enframe takes the piped result, which is a single-column matrix with 
-      # name/value pairs (genes are the names and the computed coefficients are 
-      # the values). The "name" and "value" arguments passed to enframe() will 
-      # determine the column names of the feature column and the correlation 
-      # coefficient, respectively, in the new tibble.
-      tibble::enframe(name = feature_colname, value = coeff_colname) |> 
+    table <- 
+      map2(
+        1:nrow(mat),
+       rownames(mat),
+       ~ cor(mat[gene_selected, ], mat[.x, ]) %>%
+         tibble::tibble(Feature = .y, cor = .) |>
+         dplyr::rename(!!feature_colname := "Feature" ,!!coeff_colname := "cor")
+      ) |>
+      bind_rows() |>
       # Filter out selected feature
       dplyr::filter(.data[[feature_colname]] != gene_selected) |> 
       # Arrange in descending order by correlation coefficient
