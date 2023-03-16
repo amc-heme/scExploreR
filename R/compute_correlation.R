@@ -34,7 +34,7 @@ compute_correlation <-
     
     # Poor form, just for testing; move when adequately tested
     library(future.apply)
-    plan(multisession)
+    plan(multicore, workers = 4)
     
     # Matrix: fetch expression matrix from the specified assay
     mat <- object@assays[[seurat_assay]]@data
