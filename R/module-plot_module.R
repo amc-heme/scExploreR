@@ -1677,9 +1677,11 @@ plot_module_server <- function(id,
                    ## 5.1. Define default labels to show in menu ####
                    default_dot_x_labels <- 
                      reactive({
-                       req(features_entered())
+                       req(features())
                        
-                       feature_names <- features_entered()
+                       # Use features, not features_entered (dot plot may have
+                       # separate features)
+                       feature_names <- features()
                        
                        # Default names: each feature entered, with the assay 
                        # key removed
@@ -1717,7 +1719,8 @@ plot_module_server <- function(id,
                            # condense them (if they are more than 20 characters 
                            # long, remove any characters beyond the 20th and add 
                            # "...")
-                           feature_names <- features_entered()
+                           # use features() (dot plot may have separate features)
+                           feature_names <- features()
                            truncated_feature_names <- c()
                            
                            for (i in 1:length(feature_names)){
@@ -1742,7 +1745,7 @@ plot_module_server <- function(id,
                          } else if (input$dot_x_labels == "full"){
                            # For "full", remove assay keys from labels 
                            # without truncating
-                           feature_names <- features_entered()
+                           feature_names <- features()
                            
                            for (i in 1:length(feature_names)){
                              feature_names[i] <-
@@ -2611,16 +2614,17 @@ plot_module_server <- function(id,
                  
                  # 11. Plot ----------------------------------------------------
                  ## 11.1 Define Features to use ####
-                 # For all plots except dimplot, scatterplot, and ridgeplot 
+                 # For all plots that use feature expression data
                  # Uses either the general feature entry (features_entered()),
                  # or the separate features text entry depending on whether
                  # separate features are used in the module and whether the 
                  # checkbox to use them is selected.
-                 if (!plot_type %in% c("dimplot", "scatter", "ridge")){
+                 if (plot_type %in% c("feature", "violin", "dot")){
                    features <-
                      reactive(
-                       label = glue("{plot_label}: Features for Plot"),            
+                       label = glue("{plot_label}: Features for Plot"),
                        {
+                         req(features_entered())
                          # Test for separate_features_server first
                          # input$use_separate_features does not exist if 
                          # separate_features_server == FALSE
@@ -2628,10 +2632,10 @@ plot_module_server <- function(id,
                            # If separate features are used in this module,
                            # input them if the user checks the box to use
                            # them 
-                           if (input$use_separate_features == TRUE){
+                           if (isTruthy(input$use_separate_features)){
                              #Use separate features
                              input$separate_features
-                           } else if (input$use_separate_features == FALSE){
+                           } else {
                              #Use general features
                              features_entered()
                            }
@@ -2641,6 +2645,15 @@ plot_module_server <- function(id,
                            features_entered()
                          }
                        })
+                   
+                   if (session$userData$dev_mode == TRUE){
+                     observe({
+                       req(features())
+
+                       print(glue("Value of features ({plot_type})"))
+                       print(features())
+                     })
+                   }
                  }
                  
                  ## 11.2. Construct Plot ####

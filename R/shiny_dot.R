@@ -8,6 +8,9 @@
 #' @param palette the color palette to use for the plot (plot uses a continuous color palette)
 #' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending", "descending", or "custom". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. If custom, groups will be sorted according to how they appear in `custom_factor_levels`.
 #' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
+#' @param rename_feature_labels a character vector giving alternate names to use 
+#' for the features plotted on the x-axis. The length of this vector must match
+#'  the length of features_entered.
 #'
 #' @return a ggplot2 object with a dot plot created according to user specifications.
 #' 
