@@ -32,13 +32,22 @@ compute_correlation <-
     feature_colname <- colnames[1]
     coeff_colname <- colnames[2]
     
-    # Matrix: fetch expression matrix from the specified assay
-    mat <- t(as.matrix(object@assays[[seurat_assay]]@data))
+    # Define correlation function for sparseMatrices adapted from:
+    # https://stackoverflow.com/questions/5888287/running-cor-or-any-variant-over-a-sparse-matrix-in-r
+    # This should be likely be moved, but it is only used here.
+    sparse.cor <- function(x){
+      n <- nrow(x)
+      cMeans <- Matrix::colMeans(x)
+      covmat <- (as.matrix(crossprod(x)) - n*Matrix::tcrossprod(cMeans))/(n-1)
+      sdvec <- sqrt(diag(covmat)) 
+      covmat/tcrossprod(sdvec)
+    }
+    
+    # Matrix: fetch expression matrix from the specified assay and transpose
+    mat <- Matrix::t(object@assays[[seurat_assay]]@data)
     
     # Compute correlation between selected feature and others
-    table <- cor(mat[ ,gene_selected], mat) |> 
-      # Code returns coefficients for each feature in rows (want columns) 
-      t() |> 
+    table <- sparse.cor(mat)[gene_selected, ] |>  
       # Convert matrix to tibble using enframe()
       # Enframe takes the piped result, which is a single-column matrix with 
       # name/value pairs (genes are the names and the computed coefficients are 
