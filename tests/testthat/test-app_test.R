@@ -7,7 +7,6 @@ app <- ShinyDriver$new("./apps/scExploreR", seed = 325)
 # Use this path when editing tests
 # app <- ShinyDriver$new("tests/testthat/apps/scExploreR", seed = 325)
 
-
 test_that("DGE: Marker ID Mode Works", {
   # Swtich to DGE tab: find button in navbar panel, and click the button 
   dge_tab_btn <- app$findElement(linkText = "Differential Expression")
@@ -92,6 +91,33 @@ test_that("DGE: Differential Expression Mode Works", {
     ignore_attr = TRUE
   )
 })
+
+test_that("Threshold-Based DGE Works", {
+  # Because the simple threshold DGE is a point-and-click widget without an 
+  # input binding, it can't be set programmatically. To design a test, one of 
+  # the options below must be completed:
+  # 1. Create a text input for manually entering a threshold (useful to the user
+  # anyway)
+  # 2. Turn the widget into a custom input binding, which would probably require
+  # re-creating the plot using JavaScript libraries (this is more difficult but
+  # would get around the clunkiness of ggridges)
+  
+  
+  # app$setValue(
+  #   name = "object_dge-test_selections-use_feature_expression",
+  #   value = TRUE
+  #   )
+  # 
+  # app$waitForShiny()
+  # 
+  # app$setValue(
+  #   name = "object_dge-test_selections-simple_threshold_feature",
+  #   value = "ab_CD34-AB"
+  #   )
+  
+  
+  
+  })
 
 test_that("Marker Identification With a Subset Works", {
   # Set mode back to marker identification
