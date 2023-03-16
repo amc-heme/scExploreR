@@ -37,12 +37,12 @@ compute_correlation <-
     
     # Compute correlation between selected feature and others
     table <- 
-      map2(
+      purrr::map2(
        1:nrow(mat),
        rownames(mat),
        ~ tibble::tibble(!!feature_colname := .y, !!coeff_colname := cor(mat[gene_selected, ], mat[.x, ]))
       ) |>
-      bind_rows() |>
+      dplyr::bind_rows() |>
       # Filter out selected feature
       dplyr::filter(.data[[feature_colname]] != gene_selected) |> 
       # Arrange in descending order by correlation coefficient
