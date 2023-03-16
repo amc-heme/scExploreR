@@ -33,6 +33,7 @@ compute_correlation <-
     coeff_colname <- colnames[2]
     
     # Poor form, just for testing; move when adequately tested
+    library(Matrix)
     library(future.apply)
     plan(multicore, workers = 4)
     
