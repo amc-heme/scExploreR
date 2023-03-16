@@ -38,11 +38,9 @@ compute_correlation <-
     # Compute correlation between selected feature and others
     table <- 
       map2(
-        1:nrow(mat),
+       1:nrow(mat),
        rownames(mat),
-       ~ cor(mat[gene_selected, ], mat[.x, ]) %>%
-         tibble::tibble(Feature = .y, cor = .) |>
-         dplyr::rename(!!feature_colname := "Feature" ,!!coeff_colname := "cor")
+       ~ tibble::tibble(!!feature_colname := .y, !!coeff_colname := cor(mat[gene_selected, ], mat[.x, ]))
       ) |>
       bind_rows() |>
       # Filter out selected feature
