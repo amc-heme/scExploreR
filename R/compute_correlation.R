@@ -38,7 +38,7 @@ compute_correlation <-
     sparse.cor <- function(x){
       n <- nrow(x)
       cMeans <- Matrix::colMeans(x)
-      covmat <- (as.matrix(Matrix::crossprod(x)) - n*Matrix::tcrossprod(cMeans))/(n-1)
+      covmat <- (as.matrix(Matrix::crossprod(x)) - n*tcrossprod(cMeans))/(n-1)
       sdvec <- sqrt(diag(covmat)) 
       covmat/tcrossprod(sdvec)
     }
