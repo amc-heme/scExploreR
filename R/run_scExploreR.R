@@ -595,7 +595,7 @@ run_scExploreR <-
           href = 
             file.path(
               "resources",
-              "Shiny_Vignette.html"
+              "scExplorer_Tutorial.html"
             ),
           class = "blue_hover",
           # Opens link in new tab
