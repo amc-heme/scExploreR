@@ -74,23 +74,18 @@ run_scExploreR <-
     library(rlang, quietly = TRUE, warn.conflicts = FALSE)
     
     # Add inst/www to the resource path so static html can be loaded 
-    # I'm pretty sure this puts the www/ folder from inst/ in the browser 
-    # instance so it is accessible 
     addResourcePath("resources", system.file("www", package = "scExploreR"))
     
-    # Note: the auto-generated object dictionary will appear in the www folder 
-    # of the browser instance, not the user's file system (if you define a 
-    # path relative to the file system in the app, it will not work).
-    auto_dictionary_path <- 
-      file.path(
-        "resources",
-        "Auto_Dictionary.html"
-        )
+    # For html files generated in-app (such as auto-generated object dictionary)
+    # The auto-gemerated dictionary was previously created in "./resources",
+    # in the local file structure, and was therefore not accessible in the app
+    # (. is whatever directory the app was launched from in this case)
+    addResourcePath("session_files", tempdir())
     
     # Path to Rmd file used to generate data dictionary
-    auto_dictionary_markdown_path <- 
+    auto_dictionary_markdown_path <-
       system.file(
-        "www/Auto_Dictionary.Rmd", 
+        "www/Auto_Dictionary.Rmd",
         package = "scExploreR"
         )
     
@@ -569,9 +564,9 @@ run_scExploreR <-
             "Help and Background",
             style=
               "color: #888888; 
-        margin-bottom: 0px;
-        font-size: 1.17em;"
-          ),
+              margin-bottom: 0px;
+              font-size: 1.17em;"
+            ),
         
         # Interpreting scRNA-seq plots
         tags$a(
@@ -623,6 +618,13 @@ run_scExploreR <-
           rel = "noopener noreferrer"
         ),
         
+        # Link to auto-generated object dictionary
+        # dictionary is created at a temp file, so href must reactively point 
+        # to the file
+        uiOutput(
+          outputId = "auto_dictionary_link"
+          ),
+        
         # Link to Genecards
         tags$a(
           "GeneCards",
@@ -658,6 +660,21 @@ run_scExploreR <-
       # Record whether app is in dev mode (signals modules to display more 
       # information for testing and development)
       session$userData$dev_mode = dev_mode
+      
+      # *Filename* for storing the object dictionary (goes in tempdir())
+      auto_dictionary_filename <- 
+        paste0(
+          "auto_dictionary_", 
+          session$token, 
+          ".html"
+          )
+      
+      # *Path* used to access object dictionary
+      auto_dictionary_path <- 
+        paste0(
+          "session_files/", 
+          auto_dictionary_filename
+        )
       
       # Define spinner to display over main screen when the object and config files
       # are loading
@@ -1305,7 +1322,6 @@ run_scExploreR <-
           
           # PANDOC: path to pandoc needs to be defined in browser mode, on a 
           # Linux server
-          print("R studio pandoc check")
           # Execute Rmarkdown document
           if (browser_mode){
             if (any(names(browser_config) == "RSTUDIO_PANDOC")) {
@@ -1313,26 +1329,25 @@ run_scExploreR <-
             }
           }
           
-          print("done")
-          
-          print("Rendering new data dictionary")
-          
           rmarkdown::render(
             # Rmd document to render
             input = auto_dictionary_markdown_path,
             # Export path
-            output_dir = "resources/",
-            #output_file = auto_dictionary_path,
+            #output_dir = "resources/",
+            output_file = 
+              paste0(
+                tempdir(), 
+                "/", 
+                auto_dictionary_filename
+                ),
             # pass parameters to report
             params = params,
-            # Set up a new environment that is the child of the global envrionment
+            # Set up a new environment that is the child of the global environment
             # (isolates document environment from app)
             envir = new.env(parent = globalenv()),
             # Do not print rendering messages to console
             quiet = TRUE
           )
-          
-          print("Complete")
         })
       
       ## 2.12. Patient/sample level metadata category ####
@@ -1343,7 +1358,7 @@ run_scExploreR <-
           config()$other_metadata_options$patient_colname
         })
       
-      # 3. Initialize Modules ------------------------------------------------------
+      # 3. Initialize Modules --------------------------------------------------
       ## 3.1. Dynamic UI ####
       # All UI for modules is dynamic as it depends on the currently 
       # selected object.
@@ -1538,8 +1553,8 @@ run_scExploreR <-
       
       # 4. Dataset preview in modal UI -----------------------------------------
       ## 4.1. Description ####
-      # Render text for the dataset modal that displays a description of the dataset
-      # currently selected
+      # Render text for the dataset modal that displays a description of the 
+      # dataset currently selected
       output$dataset_description <-
         renderText({
           req(input$data_key)
@@ -1701,8 +1716,21 @@ run_scExploreR <-
           )
         })
       
-      # 5. Callbacks ---------------------------------------------------------------
-      ## 5.1. Code to run when the user disconnects ####
+      # 5. Link to auto-generated object dictionary ----------------------------
+      output$auto_dictionary_link <-
+        renderUI({
+          tags$a(
+            "View All Object Metadata",
+            # Temporary file created at start of session
+            href = auto_dictionary_path,
+            class = "blue_hover",
+            target = "_blank",
+            rel = "noopener noreferrer"
+          )
+        })
+      
+      # 6. Callbacks -----------------------------------------------------------
+      ## 6.1. Code to run when the user disconnects ####
       onSessionEnded(
         function(){
           log_info(glue("Session {session$token} disconnected."))
