@@ -75,7 +75,7 @@ valid_features <- params$valid_features
 }
 ```
 
-Below is a summary of each metadata category in the current object. The ID of the category is shown in bold, and the data class (according to R) is shown beneath the ID.
+Below is a summary of each metadata category in the current object. This document is most useful as a guide for the advanced subsetting feature. The ID of the category is shown in bold, and the data class (according to R) is shown beneath the ID.
 
 Beneath the class, a summary of the metadata category is given. For categorical data types, unique values are displayed, and for numeric data types, summary statistics are shown. This summary is intended to give an overview of the range of values in each category, to aid in subsetting.
 
