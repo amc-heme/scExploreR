@@ -11,6 +11,9 @@
 #' of the x-axis.
 #' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. 
 #' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
+#' @param legend_ncol The number of columns for keys in the legend (uses ggplot2 defaults if NULL).
+#' @param legend_font_size The font size to use for legend keys (uses ggplot2 defaults if NULL).
+#' @param legend_key_size The size of the key glpyhs in the legend (uses ggplot2 defaults if NULL).
 #'
 #' @return a ggplot2 object with a ridge plot created according to user specifications.
 #'
@@ -27,7 +30,10 @@ shiny_ridge <-
    sort_groups = NULL,
    custom_factor_levels = NULL,
    custom_titles = NULL,
-   assay_config = NULL
+   assay_config = NULL,
+   legend_ncol = NULL,
+   legend_font_size = NULL,
+   legend_key_size = NULL
   ){
     # validate will keep plot code from running if the subset 
     # is NULL (no cells in subset), or if the group by selection and features
@@ -140,42 +146,130 @@ shiny_ridge <-
       # Additional layers
       layers <-
         c(
-          # Element A: Toggle legend
+          # # Element A: Toggle legend
+          # list(
+          #   theme(
+          #     legend.position =
+          #       if (show_legend == TRUE) {
+          #         "right"
+          #       } else "none"
+          #     ) 
+          #   ),
+          # # Element B: Disables "identity" label on Y-axis
+          # list(
+          #   theme(
+          #     axis.title.y = element_blank()
+          #     )
+          #   ),
+          # # Element C: Centers title on plot
+          # list(
+          #   theme(
+          #     plot.title = 
+          #       element_text(
+          #         hjust = 0.5
+          #         )
+          #     )
+          #   ),
+          # # Element D: Center X-axis label
+          # if (center_x_axis_title == TRUE){
+          #   list(
+          #     theme(
+          #       axis.title.x = 
+          #         element_text(
+          #           hjust = 0.5
+          #         )
+          #     )
+          #   )
+          # },
+          
+          # Elements A-F: arguments called via theme()
           list(
-            theme(
-              legend.position =
-                if (show_legend == TRUE) {
-                  "right"
-                } else "none"
-              ) 
-            ),
-          # Element B: Disables "identity" label on Y-axis
-          list(
-            theme(
-              axis.title.y = element_blank()
-              )
-            ),
-          # Element C: Centers title on plot
-          list(
-            theme(
-              plot.title = 
-                element_text(
-                  hjust = 0.5
-                  )
-              )
-            ),
-          # Element D: Center X-axis label
-          if (center_x_axis_title == TRUE){
-            list(
-              theme(
-                axis.title.x = 
-                  element_text(
-                    hjust = 0.5
-                  )
-              )
+            do.call(
+              theme,
+              # List of arguments to call with theme
+              args = 
+                c(
+                  # Element A: Toggle legend
+                  list(
+                    legend.position = 
+                      if (show_legend == TRUE) {
+                        "right"
+                      } else "none",
+                    # Element B: Disables "identity" label on Y-axis
+                    axis.title.y = element_blank(),
+                    # Element C: Centers title on plot
+                    plot.title = 
+                      element_text(
+                        hjust = 0.5
+                      )
+                  ),
+                  # Element D: Center X-axis label
+                  if (center_x_axis_title == TRUE){
+                    list(
+                      axis.title.x = 
+                        element_text(
+                          hjust = 0.5
+                        )
+                    )
+                  },
+                  
+                  # Element E: Legend font size 
+                  if (isTruthy(legend_font_size)){
+                    list(
+                      legend.text = 
+                        element_text(
+                          size = legend_font_size
+                        )
+                    )
+                  },
+                  
+                  # Element F: Legend key size (passed here as well as in
+                  # guides())
+                  if (isTruthy(legend_key_size)){
+                    list(
+                      legend.key.size =
+                        unit(legend_key_size, "points")
+                    )
+                  }
+                )
             )
-          },
-          # Element E: Manually defined x-axis limits
+          ),
+          
+          # Element G: Number of columns in legend 
+          # Called via guides()
+          list(
+            guides(
+              # Guide for ridgeplot is fill
+              fill = 
+                do.call(
+                  guide_legend,
+                  # List of arguments to call
+                  args =
+                    c(
+                      # Empty list: passes no arguments if 
+                      # below values are NULL
+                      list(),
+                      # Number of columns in legend
+                      if (isTruthy(legend_ncol)){
+                        list(
+                          ncol = legend_ncol
+                        )
+                      },
+                      # Legend key size (set here as well as with theme())
+                      if (isTruthy(legend_key_size)){
+                        list(
+                          override.aes =
+                            list(
+                              size = legend_key_size
+                            )
+                        )
+                      }
+                    )
+                )
+            )
+          ),
+          
+          # Element I: Manually defined x-axis limits
           if (!is.null(xlim)){
             # scale_x_continuous(
             #   limits = xlim
