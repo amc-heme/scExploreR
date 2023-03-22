@@ -81,6 +81,7 @@ plot_module_ui <- function(id,
                            title_menu =                            FALSE,
                            legend_title_menu =                     FALSE,
                            ncol_slider =                           FALSE,
+                           legend_options_menu =                   FALSE,
                            share_scale_checkbox =                  FALSE,
                            color_by_feature_checkbox =             FALSE,
                            super_title_menu =                      FALSE,
@@ -115,6 +116,11 @@ plot_module_ui <- function(id,
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
+  
+  # Disable the "include legend" checkbox if legend_options_menu is TRUE
+  if (legend_options_menu == TRUE){
+    legend_checkbox <- FALSE
+  }
   
   if (ui_component == "options"){
     # UI for plot options ####
@@ -386,6 +392,49 @@ plot_module_ui <- function(id,
       if (ncol_slider == TRUE){
         #Dynamic UI (appears when split_by != "none")
         uiOutput(outputId = ns("ncol_slider"))
+      } else NULL,
+      
+      ## Legend options menu ####
+      if (legend_options_menu == TRUE){
+        collapsible_panel(
+          inputId = ns("legend_options_panel"),
+          label = "Legend Options",
+          active = TRUE,
+          content_background_color = "#D1D1D1",
+          checkboxInput(
+            inputId = ns("legend"),
+            label = "Include Legend",
+            value = TRUE
+          ),
+          # Number of columns in legend
+          tags$b("Number of Columns in Legend"),
+          # If this check box is enabled, the default is used
+          checkboxInput(
+            inputId = ns("default_legend_ncol"),
+            label = "Use default",
+            value = TRUE
+          ),
+          # Slider shows when *not* using the default
+          hidden(
+            sliderInput(
+              inputId = ns("legend_ncol"),
+              label = NULL,
+              ticks = FALSE,
+              value = 1,
+              min = 1,
+              max = 5
+            )
+          ),
+          sliderInput(
+            inputId = ns("legend_size"),
+            label = "Adjust Size of Legend:",
+            ticks = FALSE,
+            value = 6,
+            min = 1,
+            max = 9,
+            step = 1
+          )
+        )
       } else NULL,
       
       ## Display a title above multi-panel plots ####
@@ -800,10 +849,9 @@ plot_module_server <- function(id,
                          icon = "skull-crossbones",
                          # Change to feature when other 
                          # features are supported
-                         glue("Plot module {id} has an unrecognized 
-                              value for argument `plot_type`. This is a 
-                              development error, please contact us and we will 
-                              resolve the issue.")
+                         glue("Development error: plot module {id} has an 
+                              unrecognized value for argument `plot_type`. 
+                              Please contact us about this issue.")
                        ),
                      #Show notification for 5 seconds
                      session = session
@@ -1672,6 +1720,21 @@ plot_module_server <- function(id,
                    }
                  })
                  
+                 ## 4.9. Legend ncol slider ####
+                 observe({
+                   target_id <- "legend_ncol"
+                   
+                   if (!isTruthy(input$default_legend_ncol)){
+                     showElement(
+                       id = target_id
+                     )
+                   } else {
+                     hideElement(
+                       id = target_id
+                     )
+                   }
+                 })
+                 
                  # 5. Process x-axis labels for dot plots----
                  if (plot_type == "dot"){
                    ## 5.1. Define default labels to show in menu ####
@@ -1999,7 +2062,105 @@ plot_module_server <- function(id,
                        if (!is.null(input$display_coeff)){
                          input$display_coeff
                        } else NULL
-                     })
+                     }),
+                     
+                     # Number of columns in legend
+                     `legend_ncol` = 
+                       reactive({
+                         # Record value of the legend_ncol slider if the 
+                         # "use default" checkbox is not checked
+                         if (isTruthy(input$legend_ncol) & 
+                             !isTruthy(input$default_legend_ncol)){
+                           input$legend_ncol
+                         } else {
+                           NULL
+                         }
+                       }),
+                     
+                     `legend_font_size` =
+                       reactive({
+                         # Value depends on qualitative value of legend size
+                         # slider (limits from 1 to 9)
+                         v <- input$legend_size
+                         
+                         # 1 = smallest, 9 = largest.
+                         dplyr::case_when(
+                           v == 1 ~ 8,
+                           v == 2 ~ 9.5,
+                           v == 3 ~ 10,
+                           v == 4 ~ 11,
+                           v == 5 ~ 11,
+                           # Default
+                           v == 6 ~ 12,
+                           v == 7 ~ 14,
+                           v == 8 ~ 16,
+                           v == 9 ~ 18
+                         )
+                       }),
+                     
+                     `legend_key_size` = 
+                       reactive({
+                         # Value depends on qualitative value of legend size
+                         # slider (limits from 1 to 9)
+                         v <- input$legend_size
+                         
+                         # Different values from the same slider are used for 
+                         # violin, proportion, and ridge plots
+                         if (!plot_type %in% c("violin", "proportion", "ridge")){
+                           # Standard values
+                           # 1 = smallest, 9 = largest. 
+                           dplyr::case_when(
+                             v == 1 ~ 1.5,
+                             v == 2 ~ 2,
+                             v == 3 ~ 2,
+                             v == 4 ~ 2.5,
+                             v == 5 ~ 2.5,
+                             # Default
+                             v == 6 ~ 3,
+                             v == 7 ~ 4,
+                             v == 8 ~ 6,
+                             v == 9 ~ 8
+                           )
+                         } else {
+                           # 1 = smallest, 9 = largest. 
+                           dplyr::case_when(
+                             v == 1 ~ 2,
+                             v == 2 ~ 2.5,
+                             v == 3 ~ 3,
+                             v == 4 ~ 3.5,
+                             v == 5 ~ 4,
+                             # Default
+                             v == 6 ~ 4.5,
+                             v == 7 ~ 6,
+                             v == 8 ~ 8,
+                             v == 9 ~ 10
+                           )
+                         }
+                       }),
+                     
+                     `legend_key_spacing` =
+                       reactive({
+                         # Value only applies to plots with scatter geoms
+                         # (DimPlots, Scatterplots)
+                         
+                         # Value depends on qualitative value of legend size
+                         # slider (limits from 1 to 9)
+                         v <- input$legend_size
+                         
+                         # 1 = smallest, 9 = largest. 
+                         dplyr::case_when(
+                           v == 1 ~ 0,
+                           v == 2 ~ 0.5,
+                           v == 3 ~ 3,
+                           v == 4 ~ 8,
+                           v == 5 ~ 12,
+                           # Default
+                           v == 6 ~ 14,
+                           v == 7 ~ 17,
+                           v == 8 ~ 21,
+                           v == 9 ~ 26
+                         )
+                       })
                    )
                  
                  # 7. Determine if a subset has been used  ---------------------
@@ -2718,7 +2879,18 @@ plot_module_server <- function(id,
                              #     plot_selections$group_by()]]$label
                              # },
                            reduction = plot_selections$reduction(),
-                           palette = palette()
+                           palette = palette(),
+                           # Number of columns in legend
+                           legend_ncol = plot_selections$legend_ncol(),
+                           # Legend font size
+                           legend_font_size = 
+                             plot_selections$legend_font_size(),
+                           # Size of legend keys 
+                           legend_key_size =
+                             plot_selections$legend_key_size(),
+                           # Vertical spacing between each key
+                           legend_key_spacing = 
+                             plot_selections$legend_key_spacing()
                            )
                      })
                    
@@ -2817,7 +2989,15 @@ plot_module_server <- function(id,
                            palette = palette(),
                            sort_groups = plot_selections$sort_groups(),
                            custom_factor_levels = 
-                             plot_selections$custom_refactoring()
+                             plot_selections$custom_refactoring(),
+                           # Number of columns in legend
+                           legend_ncol = plot_selections$legend_ncol(),
+                           # Legend font size
+                           legend_font_size = 
+                             plot_selections$legend_font_size(),
+                           # Size of legend keys 
+                           legend_key_size =
+                             plot_selections$legend_key_size()
                            )
                        })
                    
@@ -2860,7 +3040,15 @@ plot_module_server <- function(id,
                            show_legend = plot_selections$legend(),
                            display_coeff = plot_selections$display_coeff(),
                            palette = palette(),
-                           assay_config = assay_config()
+                           assay_config = assay_config(),
+                           # Number of columns in legend
+                           legend_ncol = plot_selections$legend_ncol(),
+                           # Legend font size
+                           legend_font_size = 
+                             plot_selections$legend_font_size(),
+                           # Size of legend keys 
+                           legend_key_size =
+                             plot_selections$legend_key_size()
                            )
                        })
                  } else if (plot_type == "ridge"){
@@ -2888,7 +3076,15 @@ plot_module_server <- function(id,
                             custom_factor_levels = 
                               plot_selections$custom_refactoring(),
                             custom_titles = variable_length_custom_title(),
-                            assay_config = assay_config()
+                            assay_config = assay_config(),
+                            # Number of columns in legend
+                            legend_ncol = plot_selections$legend_ncol(),
+                            # Legend font size
+                            legend_font_size = 
+                              plot_selections$legend_font_size(),
+                            # Size of legend keys 
+                            legend_key_size =
+                              plot_selections$legend_key_size()
                             ) 
                          }
                        )
@@ -2921,7 +3117,15 @@ plot_module_server <- function(id,
                           palette = palette(),
                           sort_groups = plot_selections$sort_groups(),
                           custom_factor_levels = 
-                            plot_selections$custom_refactoring()
+                            plot_selections$custom_refactoring(),
+                          # Number of columns in legend
+                          legend_ncol = plot_selections$legend_ncol(),
+                          # Legend font size
+                          legend_font_size = 
+                            plot_selections$legend_font_size(),
+                          # Size of legend keys 
+                          legend_key_size =
+                            plot_selections$legend_key_size()
                         ) 
                        })
                  } else if (plot_type == "pie"){

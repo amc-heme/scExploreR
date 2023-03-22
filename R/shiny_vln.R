@@ -14,6 +14,9 @@
 #' to this function is NULL, the default (hue_pal()) is used.
 #' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending", "descending", or "custom". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. If custom, groups will be sorted according to how they appear in `custom_factor_levels`.
 #' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
+#' @param legend_ncol The number of columns for keys in the legend (uses ggplot2 defaults if NULL).
+#' @param legend_font_size The font size to use for legend keys (uses ggplot2 defaults if NULL).
+#' @param legend_key_size The size of the key glpyhs in the legend (uses ggplot2 defaults if NULL).
 #'
 #' @return  a ggplot2 object with a violin plot created according to user specifications.
 #'
@@ -29,7 +32,10 @@ shiny_vln <-
     assay_config, 
     palette, 
     sort_groups = NULL,
-    custom_factor_levels = NULL
+    custom_factor_levels = NULL,
+    legend_ncol = NULL,
+    legend_font_size = NULL,
+    legend_key_size = NULL
   ){
     # Default value of sort_groups: set to "ascending" if groups is NULL
     if (is.null(sort_groups)){
@@ -119,16 +125,96 @@ shiny_vln <-
           # ncol: use value of ncol defined in plot_module when more than
           # one feature is entered
           ncol = if (length(features_entered)==1) NULL else ncol
-          ) +
+          ) #+
         # Legend position: "right" if a legend is desired, and "none" if not
-        theme(legend.position = if (show_legend==TRUE) "right" else "none")
+        #theme(legend.position = if (show_legend==TRUE) "right" else "none")
       
+      # Additional layers
+      # legend font size, key size, and number of columns
+      layers <-
+        c(
+          list(
+            guides(
+              # Guide for violin plot is fill
+              fill = 
+                do.call(
+                  guide_legend,
+                  # List of arguments to call
+                  args =
+                    c(
+                      # Empty list: passes no arguments if none are specified
+                      list(),
+                      # Element A: Number of columns in legend
+                      if (isTruthy(legend_ncol)){
+                        list(
+                          ncol = legend_ncol
+                        )
+                      },
+                      # Element B: Legend key size
+                      if (isTruthy(legend_key_size)){
+                        list(
+                          override.aes =
+                            list(
+                              size = legend_key_size
+                            )
+                        )
+                      }
+                    )
+                )
+            )
+          ),
+          
+          list(
+            do.call(
+              theme,
+              # List of arguments to call with theme
+              args = 
+                # Arguments are included in list conditionally. If no elements 
+                # are included, the list() call will return an empty list 
+                # instead of NULL (NULL will cause errors with do.call)
+                c(
+                  list(),
+                  # Element C: Show/hide legend
+                  # Legend position: "right" if a legend is desired, 
+                  # and "none" if not
+                  list(
+                    legend.position = 
+                      if (show_legend == TRUE) {
+                        "right"
+                      } else "none"
+                  ),
+                  # Element D: Legend font size 
+                  if (isTruthy(legend_font_size)){
+                    list(
+                      legend.text = 
+                        element_text(
+                          size = legend_font_size
+                        )
+                    )
+                  },
+                  
+                  # Element E: Legend key size (passed here as well as guides())
+                  if (isTruthy(legend_key_size)){
+                    list(
+                      legend.key.size =
+                        unit(legend_key_size, "points")
+                    )
+                  }
+                )
+            )
+          )
+        )
       
       # Correct titles: change machine-readable name to human-readable name
       # Determine number of plots created
       n_patches <- n_patches(vln_plot)
       # Iterate through each plot, correcting the title
       vln_plot <- hr_title(vln_plot, n_patches, assay_config)
+      
+      # Add layers to plot
+      vln_plot <- 
+        vln_plot +
+        layers
       
       # Return the plot
       vln_plot
