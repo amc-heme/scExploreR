@@ -1200,9 +1200,21 @@ plot_module_server <- function(id,
                                plot_selections$split_by() == "none"
                              ){
                                # Multi-feature plots with no split_by selection:
-                               # use features entered for defaults
-                               default_titles <- features_entered()
-                               return(default_titles)
+                               # return features entered for defaults, with 
+                               # assay key removed
+                               sapply(
+                                 1:length(features_entered()),
+                                 function(i){
+                                   hr_name(
+                                     machine_readable_name = 
+                                       features_entered()[i],
+                                     assay_config = assay_config(),
+                                     # Do use the assay label if provided in
+                                     # config app
+                                     use_suffix = TRUE
+                                   )
+                                 }
+                               )
                              }
                            }
                          })
@@ -1212,23 +1224,20 @@ plot_module_server <- function(id,
                          reactive({
                            req(features_entered())
                            
-                           feature_names <- features_entered()
-                           
-                           # Default names: each feature entered, with the assay 
-                           # key removed
-                           for (i in 1:length(feature_names)){
-                             feature_names[i] <-
+                           sapply(
+                             1:length(features_entered()),
+                             function(i){
                                hr_name(
-                                 machine_readable_name = feature_names[i],
+                                 machine_readable_name = 
+                                   features_entered()[i],
                                  assay_config = assay_config(),
-                                 # Do use the assay label if provided in config
-                                 # app
+                                 # Do use the assay label if provided in
+                                 # config app
                                  use_suffix = TRUE
                                  )
-                            }
-                           
-                           feature_names
-                         })
+                               }
+                             )
+                           })
                      }
                      
                      ### 3.6.2 Pass default titles to multi-text input module ####
