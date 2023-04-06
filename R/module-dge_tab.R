@@ -754,9 +754,28 @@ dge_tab_server <- function(id,
                   return(NULL)
                   },
                 {
-                  dge_table <-
-                    # Run presto on the subset, using the group by category
-                    wilcoxauc(
+                  dge_table_pre <-
+                    # Run BPCells marker_features on the subset, using the group by category
+                    if(is(subset()[["RNA"]]$data, "IterableMatrix")) {
+                      marker_features(subset()[["RNA"]]$data,
+                                      subset()[[if (metaclusters_present()){
+                                                  "metacluster"
+                                                } else if (thresholding_present()){
+                                                  "simple_expr_threshold"
+                                                } else {
+                                                  group_by_category()
+                                                }
+                                               ]]) %>%
+                      mutate(padj = p.adjust(p_val_raw, method = "BH"),
+                             logFC = (foreground_mean - background_mean),
+                             avgExpr = foreground_mean/log(2),
+                             auc = NA_character_,
+                             pct_in = NA_character_,
+                             pct_out = NA_character_) %>%
+                      select(feature, group = foreground, avgExpr, logFC, auc, padj, pct_in, pct_out)
+                      } else {
+                     # Run presto on the subset, using the group by category
+                     wilcoxauc(
                       subset(), 
                       # Assay: fixed to the designated gene assay for now
                       seurat_assay =
@@ -779,7 +798,9 @@ dge_tab_server <- function(id,
                     # Explicitly coerce to tibble
                     as_tibble() %>%
                     # remove stat and auc from the output table
-                    dplyr::select(-c(statistic, pval)) %>%
+                    dplyr::select(-c(statistic, pval))}
+                  
+                  dge_table <- dge_table_pre %>%
                     # Using magrittr pipes here because the following
                     # statement doesn't work with base R pipes
                     # remove negative logFCs if box is checked
