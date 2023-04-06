@@ -757,15 +757,16 @@ dge_tab_server <- function(id,
                   dge_table_pre <-
                     # Run BPCells marker_features on the subset, using the group by category
                     if(is(subset()[["RNA"]]$data, "IterableMatrix")) {
-                      marker_features(subset()[["RNA"]]$data,
-                                      subset()[[if (metaclusters_present()){
-                                                  "metacluster"
-                                                } else if (thresholding_present()){
-                                                  "simple_expr_threshold"
-                                                } else {
-                                                  group_by_category()
-                                                }
-                                               ]]) %>%
+                      so_bp <- subset()
+                      clusters_bp <- if (metaclusters_present()){
+                                        "metacluster"
+                                     } else if (thresholding_present()){
+                                        "simple_expr_threshold"
+                                     } else {
+                                         group_by_category()
+                                     }
+                      BPCells::marker_features(so_bp[["RNA"]]$data,
+                                      so_bp[[clusters_bp]]) %>%
                       mutate(padj = p.adjust(p_val_raw, method = "BH"),
                              logFC = (foreground_mean - background_mean),
                              avgExpr = foreground_mean/log(2),
