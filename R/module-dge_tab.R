@@ -765,6 +765,8 @@ dge_tab_server <- function(id,
                                      } else {
                                          group_by_category()
                                      }
+                      log_info(paste("matrix dims:",dim(so_bp[["RNA"]]$data)))
+                      log_info(paste("cluster length:",length(so_bp[[clusters_bp]])))
                       BPCells::marker_features(so_bp[["RNA"]]$data,
                                       so_bp[[clusters_bp]]) %>%
                       mutate(padj = p.adjust(p_val_raw, method = "BH"),
