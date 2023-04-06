@@ -754,21 +754,29 @@ dge_tab_server <- function(id,
                   return(NULL)
                   },
                 {
+                  # Define clustering column independent of matrix class
+                  dge_clustering <- if (metaclusters_present()){
+                                       "metacluster"
+                                    } else if (thresholding_present()){
+                                       "simple_expr_threshold"
+                                    } else {
+                                       group_by_category()
+                                    }
+                  
+                  # Define assay to use independent of matrix class
+                  dge_assay <- if (isTruthy(designated_genes_assay())){
+                                 designated_genes_assay()
+                                 # If designated assay is undefined, use the first
+                                 # assay included in the config file.
+                               } else names(assay_config())[[1]]
+                                               
                   dge_table_pre <-
-                    # Run BPCells marker_features on the subset, using the group by category
-                    if(is(subset()[["RNA"]]$data, "IterableMatrix")) {
-                      so_bp <- subset()
-                      clusters_bp <- if (metaclusters_present()){
-                                        "metacluster"
-                                     } else if (thresholding_present()){
-                                        "simple_expr_threshold"
-                                     } else {
-                                         group_by_category()
-                                     }
-                      log_info(paste("matrix dims:",dim(so_bp[["RNA"]]$data)))
-                      log_info(paste("cluster length:",length(so_bp[[clusters_bp]])))
-                      BPCells::marker_features(so_bp[["RNA"]]$data,
-                                      so_bp[[clusters_bp]]) %>%
+                    # Check if relevant matrix is an IterableMatrix
+                    if(is(subset()[[dge_assay]]$data, "IterableMatrix")) {
+                      # Run BPCells marker_features on the subset, using the group by category
+                      marker_features(subset()[[dge_assay]]$data,
+                                      subset()[[dge_clustering]][,1]) %>%
+                      # Adjust output to match presto output (for now)
                       mutate(padj = p.adjust(p_val_raw, method = "BH"),
                              logFC = (foreground_mean - background_mean),
                              avgExpr = foreground_mean/log(2),
@@ -776,27 +784,15 @@ dge_tab_server <- function(id,
                              pct_in = NA_character_,
                              pct_out = NA_character_) %>%
                       select(feature, group = foreground, avgExpr, logFC, auc, padj, pct_in, pct_out)
-                      } else {
+                     } else {
                      # Run presto on the subset, using the group by category
                      wilcoxauc(
                       subset(), 
                       # Assay: fixed to the designated gene assay for now
-                      seurat_assay =
-                        if (isTruthy(designated_genes_assay())){
-                          designated_genes_assay()
-                          # If designated assay is undefined, use the first
-                          # assay included in the config file.
-                        } else names(assay_config())[[1]],
+                      seurat_assay = dge_assay,
                       # If metaclusters are requested, use 
                       # "metaclusters" for dge groups
-                      group_by = 
-                        if (metaclusters_present()){
-                          "metacluster"
-                        } else if (thresholding_present()){
-                          "simple_expr_threshold"
-                        } else {
-                          group_by_category()
-                        }
+                      group_by = dge_clustering
                     ) %>%
                     # Explicitly coerce to tibble
                     as_tibble() %>%
