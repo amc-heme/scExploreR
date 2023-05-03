@@ -13,6 +13,9 @@
 #' as the title of the plot (default behavior).
 #' @param assay_config the assays section of the config file, loaded at app 
 #' startup and upon changing datasets.
+#' @param legend_ncol The number of columns for keys in the legend (uses ggplot2 defaults if NULL).
+#' @param legend_font_size The font size to use for legend keys (uses ggplot2 defaults if NULL).
+#' @param legend_key_size The size of the key glpyhs in the legend (uses ggplot2 defaults if NULL).
 #'
 #' @return a ggplot2 object with a scatterplot created from the Seurat object according to user specifications.
 #' 
@@ -24,7 +27,10 @@ shiny_scatter <- function(object,
                           show_legend,
                           display_coeff,
                           palette,
-                          assay_config = NULL
+                          assay_config = NULL,
+                          legend_ncol = NULL,
+                          legend_font_size = NULL,
+                          legend_key_size = NULL
                           ){
   # Palette: must determine number of colors to create from provided palette
   # The number of colors is equal to the number of unique values in 
@@ -76,23 +82,91 @@ shiny_scatter <- function(object,
     # c() will combine lists of elements into a single list
     # (use of individual lists works best with conditional framework)
     c(
-      # Element A 
       # Legend position: "right" if a legend is desired, 
       # and "none" if not
-      list(
-        theme(
-          legend.position = 
-            if (show_legend == TRUE) {
-              "right"
-            } else "none"
-          )
-      ), # End list() (element A)
+      # list(
+      #   theme(
+      #     legend.position = 
+      #       if (show_legend == TRUE) {
+      #         "right"
+      #       } else "none"
+      #     )
+      # ), # End list()
       
-      # Element B: Remove title if requested
+      list(
+        do.call(
+          theme,
+          # List of arguments to call with theme
+          args = 
+            c(
+              list(
+                # Element A: Legend position
+                # "right" if a legend is desired, and "none" if not
+                legend.position = 
+                  if (show_legend == TRUE) {
+                    "right"
+                  } else "none"
+              ),
+              
+              # Element B: Legend font size 
+              if (isTruthy(legend_font_size)){
+                list(
+                  legend.text = 
+                    element_text(
+                      size = legend_font_size
+                    )
+                )
+              },
+              
+              # Element C: Legend key size (passed here as well as in
+              # guides())
+              if (isTruthy(legend_key_size)){
+                list(
+                  legend.key.size =
+                    unit(legend_key_size, "points")
+                )
+              }
+            )
+        )
+      ),
+      
+      # Elements specified with guides()
+      list(
+        guides(
+          # Guide for scatterplot is "color"
+          color = 
+            do.call(
+              guide_legend,
+              # List of arguments to call
+              args =
+                c(
+                  # Empty list: passes no arguments if none are specified
+                  list(),
+                  # Element D: Number of columns in legend
+                  if (isTruthy(legend_ncol)){
+                    list(
+                      ncol = legend_ncol
+                    )
+                  },
+                  # Element E: Legend key size (specified here and in theme())
+                  if (isTruthy(legend_key_size)){
+                    list(
+                      override.aes =
+                        list(
+                          size = legend_key_size
+                        )
+                    )
+                  }
+                )
+            )
+        )
+      ),
+      
+      # Element F: Remove title if requested
       if (display_coeff == FALSE){
         list(
           labs(title = NULL)
-          )
+        )
       }
     )
   
