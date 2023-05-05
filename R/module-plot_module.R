@@ -904,6 +904,8 @@ plot_module_server <- function(id,
                    menu_type = reactiveVal(NULL)
                    
                    observe({
+                     req(plot_switch())
+                     
                      # Adds reactive dependency on input$title_settings
                      if (isTruthy(input$title_settings)){
                        # Variable below is set to TRUE when custom titles 
@@ -988,6 +990,8 @@ plot_module_server <- function(id,
                    # Depends on state of input$title_settings and the current
                    # group_by category (for DimPlots)
                    observe({
+                     req(plot_switch())
+                     
                      if (isTruthy(input$title_settings)){
                        if (input$title_settings == "custom" & 
                            menu_type() == "single"){
@@ -1005,6 +1009,8 @@ plot_module_server <- function(id,
                    })
                    
                    observe({
+                     req(plot_switch())
+                     
                      if (isTruthy(input$title_settings)){
                        if (input$title_settings == "custom" & 
                            menu_type() == "multiple"){
@@ -1029,16 +1035,21 @@ plot_module_server <- function(id,
                      if (plot_type %in% c("dimplot", "proportion", "pie")){
                        c(input$title_settings,
                          object(),
-                         plot_selections$group_by()
+                         plot_selections$group_by(),
+                         plot_switch()
                          )
                      } else if (plot_type %in% c("feature", "ridge")){
                        c(input$title_settings,
                          object(),
-                         features_entered()
+                         features_entered(),
+                         plot_switch()
                        )
                      },
                      label = glue("{id}: 3.3 Set custom title menu"),
                      {
+                       # Only runs when the plot is enabled
+                       req(plot_switch())
+                       
                        if (isTruthy(input$title_settings)){
                          if (input$title_settings == "custom"){
                            # Compute initial value for custom title input
@@ -1140,6 +1151,8 @@ plot_module_server <- function(id,
                          # or the object)
                          #object(),
                          #plot_selections$group_by()),
+                       label = 
+                         glue("{plot_label}: process input of single custom title"),
                        ignoreNULL = FALSE,
                        ignoreInit = TRUE,
                        {
@@ -1178,7 +1191,12 @@ plot_module_server <- function(id,
                      ### 3.6.1. Define default title(s) ####
                      if (plot_type == "feature"){
                        default_titles <-
-                         reactive({
+                         reactive(
+                           label = glue("{plot_label}: define default title for custom title input"),
+                           {
+                           # Only runs when the plot is enabled
+                           req(plot_switch())
+                           
                            if (!is.null(features_entered())){
                              if (
                                length(features_entered()) == 1 &
@@ -1221,7 +1239,12 @@ plot_module_server <- function(id,
                      } else if (plot_type == "ridge"){
                        # Default titles: feature names with assay key removed
                        default_titles <- 
-                         reactive({
+                         reactive(
+                           label = glue("{plot_label}: define default title for custom title input"),
+                           {
+                           # Only runs when the plot is enabled, and if features
+                           # have been entered
+                           req(plot_switch())
                            req(features_entered())
                            
                            sapply(
@@ -1252,7 +1275,12 @@ plot_module_server <- function(id,
                    # Used for dimplots, stacked bar plots, pie charts 
                    if (plot_type %in% c("dimplot", "proportion", "pie")){
                      plot_title <-
-                       reactive({
+                       reactive(
+                         label = glue("{plot_label}: custom title value"),
+                         {
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
                          # Define default title to use if a custom title is not
                          # requested. Default is the label of the group by 
                          # category, or the name itself if the label is not 
@@ -1293,7 +1321,12 @@ plot_module_server <- function(id,
                    # plot, or NULL 
                    if (plot_type %in% c("feature", "ridge")){
                      variable_length_custom_title <-
-                       reactive({
+                       reactive(
+                         label = glue("{plot_label}: custom title value"),
+                         {
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
                          # Only continue if menu_type is not NULL (when custom
                          # titles is selected)
                          req(menu_type())
@@ -1321,20 +1354,20 @@ plot_module_server <- function(id,
                    # Stopgap solution; custom titles may be supported in the 
                    # future.
                    if (plot_type == "feature"){
-                     observe({
-                       observe({
-                         target_id <- "title_settings"
+                     observe(
+                       label = glue("{plot_label}: hide title settings menu for blended plots"),
+                       {
+                       target_id <- "title_settings"
                        
-                         if (isTruthy(plot_selections$blend())){
-                           hideElement(
-                             id = target_id
-                           )
-                         } else {
-                           showElement(
-                             id = target_id
-                           )
-                         }
-                       })
+                       if (isTruthy(plot_selections$blend())){
+                         hideElement(
+                           id = target_id
+                         )
+                       } else {
+                         showElement(
+                           id = target_id
+                         )
+                       }
                      })
                    }
                    
@@ -1342,7 +1375,12 @@ plot_module_server <- function(id,
                    # Aim is to eventually add a custom title input
                    if (plot_type == "proportion"){
                      proportion_x_axis_title <- 
-                       reactive({
+                       reactive(
+                         label = glue("{plot_label}: compute x-axis title"),
+                         {
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
                          split_by_label <-
                            isolate({metadata_config()})[[
                              plot_selections$split_by()]]$label
@@ -1360,7 +1398,12 @@ plot_module_server <- function(id,
                  # 4. Show/hide...  --------------------------------------------
                  ## 4.1. Super Title Menu ####
                  if (plot_type == "feature"){
-                   observe({
+                   observe(
+                     label = glue("{plot_label}: super title menu"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      # Show is set to TRUE when conditionals below are satisfied
                      show <- FALSE
                      
@@ -1388,7 +1431,12 @@ plot_module_server <- function(id,
                  
                  ## 4.2. Legend Title Options ####
                  if (plot_type == "feature"){
-                   observe({
+                   observe(
+                     label = glue("{plot_label}: legend title options"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      # show is set to TRUE when conditions are met
                      show <- FALSE
                      # ID of legend title container
@@ -1434,7 +1482,12 @@ plot_module_server <- function(id,
                  # Errors will result unless plot_type is restricted to feature 
                  # (DimPlots don't process features_entered())
                  if (plot_type == "feature"){
-                   observe({
+                   observe(
+                     label = glue("{plot_label}: share scale between features"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      # show is set to TRUE when conditions below are met
                      show <- FALSE
                      elem_id <- "share_scale"
@@ -1467,7 +1520,12 @@ plot_module_server <- function(id,
                  # If share_scale == TRUE, "feature" cannot be used for
                  # share_scale. This option must be removed in this case.
                  if (plot_type == "feature"){
-                   observe({
+                   observe(
+                     label = glue("{plot_label}: update legend_title based on share_scale"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      if (!is.null(plot_selections$share_scale())){
                        updateSelectInput(
                          session,
@@ -1504,7 +1562,12 @@ plot_module_server <- function(id,
                  # Available for feature plots when multiple 
                  # features are entered and split_by is "none"
                  if (plot_type == "feature"){
-                   observe({
+                   observe(
+                     label = glue("{plot_label}: color by feature menu"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      # show is set to TRUE when conditions below are met
                      show <- FALSE
                      elem_id <- "color_by_feature"
@@ -1546,7 +1609,12 @@ plot_module_server <- function(id,
                  
                  ## 4.5. Group by menu for labels ####
                  if (plot_type == "feature"){
-                   observe({
+                   observe(
+                     label = glue("{plot_label}: group_by menu for labels"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      # Show menu when "label groups" is selected
                      show <- FALSE
                      elem_id <- "group_by"
@@ -1573,7 +1641,12 @@ plot_module_server <- function(id,
                  ## 4.6. Custom x-axis limits on ridge plots ####
                  ### 4.6.1. Checkbox to enable custom limits ####
                  if (plot_type == "ridge"){
-                   observe({
+                   observe(
+                     label = glue("{plot_label}: enable/disable custom limits"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      # Show checkbox when the plot is defined
                      show <- FALSE
                      elem_id <- "custom_xlim_checkbox"
@@ -1601,7 +1674,12 @@ plot_module_server <- function(id,
                  
                  ### 4.6.2. Interface for setting custom limits ####
                  if (plot_type == "ridge"){
-                   observe({
+                   observe(
+                     label = glue("{plot_label}: custom limits interface"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      # Show interface when the checkbox in 4.6.1. is selected
                      show <- FALSE
                      elem_id <- "custom_xlim_interface"
@@ -1627,7 +1705,12 @@ plot_module_server <- function(id,
                  ## 4.7. Show/hide settings for blended feature plot ####
                  if (plot_type == "feature"){
                    ### 4.7.1. Blend checkbox ####
-                   observe({
+                   observe(
+                     label = glue("Blended feature plots: blend checkbox"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      elem_id = "blend"
                      
                      # The blend checkbox should only be visible when 
@@ -1652,7 +1735,12 @@ plot_module_server <- function(id,
                      })
                    
                    ### 4.7.2. Blend options window ####
-                   observe({
+                   observe(
+                     label = glue("Blended feature plots: show/hide ncol slider"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      elem_id <- "blend_options_container"
                      
                      if (isTruthy(input$blend)){
@@ -1669,7 +1757,12 @@ plot_module_server <- function(id,
                    })
                    
                    ### 4.7.3. Custom palette for blend ####
-                   observe({
+                   observe(
+                     label = glue("Blended feature plots: custom blend palette"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      # When a custom palette is selected, show color inputs to
                      # choose the palette.
                      elem_id <- "blend_palette_custom_colors"
@@ -1696,7 +1789,12 @@ plot_module_server <- function(id,
                    ### 4.7.4. Hide ncol slider for blended featureplots ####
                    # Blended feature plots are unlikely to support a custom
                    # number of columns in the future.
-                   observe({
+                   observe(
+                     label = glue("Blended feature plots: show/hide ncol slider"),
+                     {
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
                      target_id <- "ncol_slider"
                    
                      if (isTruthy(plot_selections$blend())){
@@ -1712,7 +1810,12 @@ plot_module_server <- function(id,
                  }
                  
                  ## 4.8. Custom Feature Labels on Dot Plots ####
-                 observe({
+                 observe(
+                   label = glue("{plot_label}: Custom feature labels"),
+                   {
+                   # Only runs when the plot is enabled
+                   req(plot_switch())
+                   
                    req(input$dot_x_labels)
                    
                    # Show custom feature label picker when enabled by user
@@ -1730,7 +1833,12 @@ plot_module_server <- function(id,
                  })
                  
                  ## 4.9. Legend ncol slider ####
-                 observe({
+                 observe(
+                   label = glue("{plot_label}: Legend ncol slider"),
+                   {
+                   # Only runs when the plot is enabled
+                   req(plot_switch())
+                   
                    target_id <- "legend_ncol"
                    
                    if (!isTruthy(input$default_legend_ncol)){
@@ -1748,7 +1856,12 @@ plot_module_server <- function(id,
                  if (plot_type == "dot"){
                    ## 5.1. Define default labels to show in menu ####
                    default_dot_x_labels <- 
-                     reactive({
+                     reactive(
+                       label = glue("{plot_label}: Define default x-axis labels for menu"),
+                       {
+                       # Only runs when the plot is enabled
+                       req(plot_switch())
+                       # Require features to be defined
                        req(features())
                        
                        # Use features, not features_entered (dot plot may have
@@ -1778,7 +1891,12 @@ plot_module_server <- function(id,
                    
                    ## 5.3. Use custom labels, or default ones ####
                    dot_x_labels <-
-                     reactive({
+                     reactive(
+                       label = glue("{plot_label}: Custom X-axis labels"),
+                       {
+                       # Only runs when the plot is enabled
+                       req(plot_switch())
+                       
                        # Only process if input$dot_x_labels is defined
                        # (otherwise return NULL, which will leave labels unchanged)
                        if (isTruthy(input$dot_x_labels)){
@@ -1841,7 +1959,9 @@ plot_module_server <- function(id,
                    list(
                      # Group_by
                      `group_by` = 
-                       reactive({
+                       reactive(
+                         label = glue("{plot_label}: process group_by slection"),
+                         {
                          if (!is.null(input$group_by)){
                            input$group_by
                            } else NULL
@@ -1849,7 +1969,9 @@ plot_module_server <- function(id,
                      
                      # Split_by
                      `split_by` = 
-                       reactive({
+                       reactive(
+                         label = glue("{plot_label}: process split_by slection"),
+                         {
                          if (!is.null(input$split_by)){
                            input$split_by
                            } else NULL
@@ -1857,7 +1979,9 @@ plot_module_server <- function(id,
                      
                      # Reduction
                      `reduction` =
-                       reactive({
+                       reactive(
+                         label = glue("{plot_label}: process reduction slection"),
+                         {
                          if (!is.null(input$reduction)){
                            input$reduction
                            } else NULL
@@ -1872,7 +1996,9 @@ plot_module_server <- function(id,
                        # based on plot type. Separate reactive expressions are
                        # created based on the plot type used for the module.
                        if (plot_type == "dimplot"){
-                         reactive({
+                         reactive(
+                           label = glue("{plot_label}: process ncol slection"),
+                           {
                            if (!is.null(input$split_by)){
                              if (input$split_by != "none"){
                                input$ncol
@@ -1882,7 +2008,9 @@ plot_module_server <- function(id,
                          } else if (plot_type == "feature"){
                            # ncol applies when multiple panels are created on 
                            # feature plot
-                           reactive({
+                           reactive(
+                             label = glue("{plot_label}: process ncol slection"),
+                             {
                              req(features_entered())
 
                              # Process ncol for single feature plots when
@@ -1900,7 +2028,9 @@ plot_module_server <- function(id,
                          } else if (plot_type == "violin"){
                            # Condition to record ncol for violin plot
                            # Equal to conditions where there are multiple panels
-                           reactive({
+                           reactive(
+                             label = glue("{plot_label}: process ncol slection"),
+                             {
                              if (length(features_entered()) > 1){
                                input$ncol
                                } else NULL
@@ -1909,7 +2039,10 @@ plot_module_server <- function(id,
                      
                      # Title above all panels (feature plots)
                      `super_title` = 
-                       reactive({
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process super_title slection"),
+                         {
                          if (!is.null(input$super_title)){
                            input$super_title
                          } else NULL
@@ -1917,7 +2050,10 @@ plot_module_server <- function(id,
                      
                      # Share scale between features
                      `share_scale` = 
-                       reactive({
+                       reactive(
+                         label =
+                           glue("{plot_label}: process share_scale slection"),
+                         {
                          if (!is.null(input$share_scale)){
                            input$share_scale
                          } else NULL
@@ -1925,39 +2061,56 @@ plot_module_server <- function(id,
                      
                      # Use Different Colors for Features
                      `color_by_feature` = 
-                       reactive({
-                         if (!is.null(input$color_by_feature)){
-                           input$color_by_feature
-                         } else NULL
-                       }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process color_by_feature slection"),
+                         {
+                           if (!is.null(input$color_by_feature)){
+                             input$color_by_feature
+                             } else NULL
+                           }),
                      
                      # Blend features
                      `blend` =
-                       reactive({
-                         if (isTruthy(input$blend)){
-                           input$blend
-                           } else NULL
-                         }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process blend slection"),
+                         {
+                           if (isTruthy(input$blend)){
+                             input$blend
+                             } else NULL
+                           }),
                      
                      # Layout of blended plot
                      `blend_layout` =
-                       reactive({
-                         if (isTruthy(input$blend_layout)){
-                           input$blend_layout
-                         } else NULL
-                       }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process blend_layout slection"),
+                         {
+                           if (isTruthy(input$blend_layout)){
+                             input$blend_layout
+                           } else NULL
+                         }),
                      
                      # Palette to use for blending
                      `blend_palette` =
-                       reactive({
-                         if (isTruthy(input$blend_palette)){
-                           input$blend_palette
-                         } else NULL
-                       }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process blend_palette slection"),
+                         {
+                           if (isTruthy(input$blend_palette)){
+                             input$blend_palette
+                           } else NULL
+                         }),
                      
                      # Process custom blend palette input
                      `custom_blend_palette` =
-                       reactive({
+                       reactive(
+                         label = 
+                           glue(
+                             "{plot_label}: process custom_blend_palette slection"
+                             ),
+                         {
                          # Record value when all inputs are present
                          if (isTruthy(input$blend_custom_low) & 
                              isTruthy(input$blend_custom_1) & 
@@ -1971,31 +2124,45 @@ plot_module_server <- function(id,
                      
                      # Order cells by expression
                      `order` = 
-                       reactive({
-                         if (!is.null(input$order)){
-                           input$order
-                           } else NULL
-                         }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process order slection"),
+                         {
+                           if (!is.null(input$order)){
+                             input$order
+                             } else NULL
+                           }),
                      
                      # Options for legend title
                      `legend_title` = 
-                       reactive({
-                         if (isTruthy(input$legend_title)){
-                           input$legend_title
-                         } else NULL
-                       }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process legend_title slection"),
+                         {
+                           if (isTruthy(input$legend_title)){
+                             input$legend_title
+                           } else NULL
+                         }),
                      
                      # Re-order groups (dot plots)
                      `sort_groups` = 
-                       reactive({
-                         if (isTruthy(input$sort_groups)){
-                           input$sort_groups
-                         } else NULL
-                       }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process sort_groups slection"),
+                         {
+                           if (isTruthy(input$sort_groups)){
+                             input$sort_groups
+                           } else NULL
+                         }),
                      
                      # Custom refactoring of group order on plots
                      `custom_refactoring` = 
-                       reactive({
+                       reactive(
+                         label = 
+                           glue(
+                             "{plot_label}: process custom_refactoring slection"
+                             ),
+                         {
                          # Value of custom factoring input is interpereted when
                          # the user selects "custom" for the group order menu
                          if (isTruthy(input$sort_groups)){
@@ -2008,37 +2175,52 @@ plot_module_server <- function(id,
                        }),
                      
                      # Colors for min and max values
-                     `min_color` = reactive({
-                       # Pass color values if the custom colors checkbox 
-                       # exists and is selected
-                       if (isTruthy(input$custom_colors)){
-                         input$min_color
-                       } else NULL
-                     }),
+                     `min_color` = 
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process min_color slection"),
+                         {
+                         # Pass color values if the custom colors checkbox 
+                         # exists and is selected
+                         if (isTruthy(input$custom_colors)){
+                           input$min_color
+                         } else NULL
+                       }),
                      
-                     `max_color` = reactive({
-                       if (isTruthy(input$custom_colors)){
-                         input$max_color
-                       } else NULL
-                     }),
+                     `max_color` = 
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process max_color slection"),
+                         {
+                         if (isTruthy(input$custom_colors)){
+                           input$max_color
+                           } else NULL
+                         }),
                      
                      # Super title checkbox (feature plots with more than one
                      # split_by category)
                      
-                     
                      # Include legend
-                     `legend` = reactive({
-                       if (!is.null(input$legend)){
-                         input$legend
-                       } else NULL
-                     }),
+                     `legend` = 
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process legend slection"),
+                         {
+                           if (!is.null(input$legend)){
+                             input$legend
+                             } else NULL
+                           }),
                      
                      # Label groups
-                     `label` = reactive({
-                       if (!is.null(input$label)){
-                         input$label
-                       } else NULL
-                     }),
+                     `label` = 
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process label slection"),
+                         {
+                           if (!is.null(input$label)){
+                             input$label
+                             } else NULL
+                           }),
                      
                      # Original axes limits
                      # isolate(names(input)) does not work for testing the
@@ -2046,159 +2228,190 @@ plot_module_server <- function(id,
                      # input$original_limits will be either TRUE or FALSE if
                      # the checkbox exists, or NULL if it does not. A suitable
                      # existence test is !is.null(input$original_limits)
-                     `limits` = reactive({
-                       if (!is.null(input$original_limits)){
-                         input$original_limits
-                       } else NULL
-                     }),
+                     `limits` = 
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process limits slection"),
+                         {
+                           if (!is.null(input$original_limits)){
+                             input$original_limits
+                             } else NULL
+                           }),
                      
                      # X-axis feature for scatterplots
-                     `scatter_1` = reactive({
-                       if (plot_type == "scatter"){
-                         input$scatter_1
-                       } else NULL
-                     }),
+                     `scatter_1` = 
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process scatter_1 slection"),
+                         {
+                           if (plot_type == "scatter"){
+                             input$scatter_1
+                             } else NULL
+                           }),
                      
                      # Y-axis feature for scatterplots
-                     `scatter_2` = reactive({
-                       if (plot_type == "scatter"){
-                         input$scatter_2
-                       } else NULL
-                     }),
+                     `scatter_2` = 
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process scatter_2 slection"),
+                         {
+                         if (plot_type == "scatter"){
+                           input$scatter_2
+                           } else NULL
+                         }),
                      
                      # Remove Title 
-                     `display_coeff` = reactive({
-                       if (!is.null(input$display_coeff)){
-                         input$display_coeff
-                       } else NULL
-                     }),
+                     `display_coeff` = 
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process display_coeff slection"),
+                         {
+                           if (!is.null(input$display_coeff)){
+                             input$display_coeff
+                             } else NULL
+                           }),
                      
                      # Number of columns in legend
                      `legend_ncol` = 
-                       reactive({
-                         # Record value of the legend_ncol slider if the 
-                         # "use default" checkbox is not checked
-                         if (isTruthy(input$legend_ncol) & 
-                             !isTruthy(input$default_legend_ncol)){
-                           input$legend_ncol
-                         } else {
-                           NULL
-                         }
-                       }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process legend_ncol slection"),
+                         {
+                           # Record value of the legend_ncol slider if the 
+                           # "use default" checkbox is not checked
+                           if (isTruthy(input$legend_ncol) & 
+                               !isTruthy(input$default_legend_ncol)){
+                             input$legend_ncol
+                           } else {
+                             NULL
+                           }
+                         }),
                      
                      `legend_font_size` =
-                       reactive({
-                         # Value depends on qualitative value of legend size
-                         # slider (limits from 1 to 9)
-                         v <- input$legend_size
-                         
-                         # 1 = smallest, 9 = largest.
-                         dplyr::case_when(
-                           v == 1 ~ 8,
-                           v == 2 ~ 9.5,
-                           v == 3 ~ 10,
-                           v == 4 ~ 11,
-                           v == 5 ~ 11,
-                           # Default
-                           v == 6 ~ 12,
-                           v == 7 ~ 14,
-                           v == 8 ~ 16,
-                           v == 9 ~ 18
-                         )
-                       }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process legend_font_size slection"),
+                         {
+                           # Value depends on qualitative value of legend size
+                           # slider (limits from 1 to 9)
+                           v <- input$legend_size
+                           
+                           # 1 = smallest, 9 = largest.
+                           dplyr::case_when(
+                             v == 1 ~ 8,
+                             v == 2 ~ 9.5,
+                             v == 3 ~ 10,
+                             v == 4 ~ 11,
+                             v == 5 ~ 11,
+                             # Default
+                             v == 6 ~ 12,
+                             v == 7 ~ 14,
+                             v == 8 ~ 16,
+                             v == 9 ~ 18
+                           )
+                         }),
                      
                      `legend_key_size` = 
-                       reactive({
-                         # Value depends on qualitative value of legend size
-                         # slider (limits from 1 to 9)
-                         v <- input$legend_size
-                         
-                         # Different values from the same slider are used for 
-                         # violin, proportion, and ridge plots
-                         if (!plot_type %in% c("violin", "proportion", "ridge")){
-                           # Standard values
-                           # 1 = smallest, 9 = largest. 
-                           dplyr::case_when(
-                             v == 1 ~ 1.5,
-                             v == 2 ~ 2,
-                             v == 3 ~ 2,
-                             v == 4 ~ 2.5,
-                             v == 5 ~ 2.5,
-                             # Default
-                             v == 6 ~ 3,
-                             v == 7 ~ 4,
-                             v == 8 ~ 6,
-                             v == 9 ~ 8
-                           )
-                         } else {
-                           # 1 = smallest, 9 = largest. 
-                           dplyr::case_when(
-                             v == 1 ~ 2,
-                             v == 2 ~ 2.5,
-                             v == 3 ~ 3,
-                             v == 4 ~ 3.5,
-                             v == 5 ~ 4,
-                             # Default
-                             v == 6 ~ 4.5,
-                             v == 7 ~ 6,
-                             v == 8 ~ 8,
-                             v == 9 ~ 10
-                           )
-                         }
-                       }),
+                       reactive(
+                         label = 
+                           glue("{plot_label}: process legend_key_size slection"),
+                         {
+                           # Value depends on qualitative value of legend size
+                           # slider (limits from 1 to 9)
+                           v <- input$legend_size
+                           
+                           # Different values from the same slider are used for 
+                           # violin, proportion, and ridge plots
+                           if (!plot_type %in% c("violin", "proportion", "ridge")){
+                             # Standard values
+                             # 1 = smallest, 9 = largest. 
+                             dplyr::case_when(
+                               v == 1 ~ 1.5,
+                               v == 2 ~ 2,
+                               v == 3 ~ 2,
+                               v == 4 ~ 2.5,
+                               v == 5 ~ 2.5,
+                               # Default
+                               v == 6 ~ 3,
+                               v == 7 ~ 4,
+                               v == 8 ~ 6,
+                               v == 9 ~ 8
+                             )
+                           } else {
+                             # 1 = smallest, 9 = largest. 
+                             dplyr::case_when(
+                               v == 1 ~ 2,
+                               v == 2 ~ 2.5,
+                               v == 3 ~ 3,
+                               v == 4 ~ 3.5,
+                               v == 5 ~ 4,
+                               # Default
+                               v == 6 ~ 4.5,
+                               v == 7 ~ 6,
+                               v == 8 ~ 8,
+                               v == 9 ~ 10
+                             )
+                           }
+                         }),
                      
                      `legend_key_spacing` =
-                       reactive({
-                         # Value only applies to plots with scatter geoms
-                         # (DimPlots, Scatterplots)
-                         
-                         # Value depends on qualitative value of legend size
-                         # slider (limits from 1 to 9)
-                         v <- input$legend_size
-                         
-                         # 1 = smallest, 9 = largest. 
-                         dplyr::case_when(
-                           v == 1 ~ 0,
-                           v == 2 ~ 0.5,
-                           v == 3 ~ 3,
-                           v == 4 ~ 8,
-                           v == 5 ~ 12,
-                           # Default
-                           v == 6 ~ 14,
-                           v == 7 ~ 17,
-                           v == 8 ~ 21,
-                           v == 9 ~ 26
-                         )
-                       })
-                   )
+                       reactive(
+                         label = 
+                           glue(
+                             "{plot_label}: process legend_key_spacing slection"
+                             ),
+                         {
+                           # Value only applies to plots with scatter geoms
+                           # (DimPlots, Scatterplots)
+                           
+                           # Value depends on qualitative value of legend size
+                           # slider (limits from 1 to 9)
+                           v <- input$legend_size
+                           
+                           # 1 = smallest, 9 = largest. 
+                           dplyr::case_when(
+                             v == 1 ~ 0,
+                             v == 2 ~ 0.5,
+                             v == 3 ~ 3,
+                             v == 4 ~ 8,
+                             v == 5 ~ 12,
+                             # Default
+                             v == 6 ~ 14,
+                             v == 7 ~ 17,
+                             v == 8 ~ 21,
+                             v == 9 ~ 26
+                           )
+                         })
+                     )
                  
                  # 7. Determine if a subset has been used  ---------------------
                  # This variable will be a boolean used in downstream 
                  # computations
-                 is_subset <- eventReactive(
-                   label = glue("{plot_label}: Test if Object is a Subset"),
-                   object(),
-                   ignoreNULL = FALSE,
-                   {
-                     # Throw an error if the subset does not exist or is NULL
-                     validate(
-                       need(
-                         object(),
-                         message = "error: subset is NULL"
+                 is_subset <- 
+                   eventReactive(
+                     label = glue("{plot_label}: Test if Object is a Subset"),
+                     object(),
+                     ignoreNULL = FALSE,
+                     {
+                       # Throw an error if the subset does not exist or is NULL
+                       validate(
+                         need(
+                           object(),
+                           message = "error: subset is NULL"
+                           )
                          )
-                       )
 
-                     # Compute number of cells in subset
-                     n_cells_subset <-
-                       object() |>
-                       Cells() |>
-                       length()
-
-                     # Test if the number of cells in the subset differs from
-                     # the number of cells in the original object. If this
-                     # conditional is TRUE, then the object read is a subset
-                     n_cells_original() != n_cells_subset
-                 })
+                       # Compute number of cells in subset
+                       n_cells_subset <-
+                         object() |>
+                         Cells() |>
+                         length()
+  
+                       # Test if the number of cells in the subset differs from
+                       # the number of cells in the original object. If this
+                       # conditional is TRUE, then the object read is a subset
+                       n_cells_original() != n_cells_subset
+                   })
                  
                  # 8. Conditional UI -------------------------------------------
                  ## 8.1. ncol slider ####
@@ -2209,7 +2422,9 @@ plot_module_server <- function(id,
                    ncol_slider <-
                      eventReactive(
                        c(plot_selections$split_by(),
-                         object()),
+                         object(),
+                         plot_switch()
+                         ),
                        label = glue("{plot_label}: Make ncol Slider"),
                        ignoreNULL = TRUE,
                        {
@@ -2250,7 +2465,9 @@ plot_module_server <- function(id,
                        c(plot_selections$split_by(),
                          plot_selections$blend(),
                          features_entered(),
-                         object()),
+                         object(),
+                         plot_switch()
+                         ),
                        label = glue("{plot_label}: Make ncol slider"),
                        ignoreNULL = TRUE,
                        {
@@ -2312,7 +2529,9 @@ plot_module_server <- function(id,
                    # Violin plots: appears when multiple features are entered
                    ncol_slider <-
                      eventReactive(
-                       features_entered(),
+                       c(features_entered(),
+                         plot_switch()
+                         ),
                        label = glue("{plot_label}: Make ncol Slider"),
                        ignoreNULL = TRUE,
                        {
@@ -2352,21 +2571,24 @@ plot_module_server <- function(id,
                    reactive(
                      label = glue("{plot_label}: Limits UI"),
                      {
-                     # Checkbox will only appear when a subset is selected.
-                     # The presence of a subset will be tested by observing
-                     # the number of cells in the subset
-                     if (is_subset()) {
-                       checkboxInput(
-                         inputId = ns("original_limits"),
-                         label = "Use Original Axes Limits",
-                         value = FALSE
-                         )
-                     } else {
-                       # Display nothing when the number of cells are equal
-                       # between the subset and the full dataset
-                       NULL
-                       }
-
+                       # Only runs when the plot is enabled
+                       req(plot_switch())
+                       
+                       # Checkbox will only appear when a subset is selected.
+                       # The presence of a subset will be tested by observing
+                       # the number of cells in the subset
+                       if (is_subset()) {
+                         checkboxInput(
+                           inputId = ns("original_limits"),
+                           label = "Use Original Axes Limits",
+                           value = FALSE
+                           )
+                       } else {
+                         # Display nothing when the number of cells are equal
+                         # between the subset and the full dataset
+                         NULL
+                         }
+                       
                        })
                  
                  ## 8.3. Dynamic UI for plot output ####
@@ -2534,12 +2756,17 @@ plot_module_server <- function(id,
                      # group by variable
                      refactor_sortable <-
                        eventReactive(
-                         c(object(), plot_selections$group_by()),
+                         c(object(), 
+                           plot_selections$group_by(),
+                           plot_switch()
+                           ),
                          {
                            # Responds to both the object and the group by 
                            # variable, but only runs when the group by variable is
                            # defined
                            req(plot_selections$group_by())
+                           # Also only runs when the plot is enabled
+                           req(plot_switch())
                            
                            # Menu choices
                            # Based on unique values or levels of current group by 
@@ -2588,12 +2815,17 @@ plot_module_server <- function(id,
                      # Proportion plots: refactoring affects split by variable
                      refactor_sortable <-
                        eventReactive(
-                         c(object(), plot_selections$split_by()),
+                         c(object(), 
+                           plot_selections$split_by(),
+                           plot_switch()
+                           ),
                          {
                            # Responds to both the object and the group by 
                            # variable, but only runs when the group by 
                            # variable is defined
                            req(plot_selections$split_by())
+                           # Also only runs when the plot is enabled
+                           req(plot_switch())
                            
                            # Menu choices
                            # Based on unique values or levels of current group by 
@@ -2794,7 +3026,10 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Features for Plot"),
                        {
+                         # Runs when plot is enabled and features are entered
+                         req(plot_switch())
                          req(features_entered())
+                         
                          # Test for separate_features_server first
                          # input$use_separate_features does not exist if 
                          # separate_features_server == FALSE
@@ -2817,7 +3052,9 @@ plot_module_server <- function(id,
                        })
                    
                    if (session$userData$dev_mode == TRUE){
-                     observe({
+                     observe(
+                       label = "{plot_label}: features entered (Dev mode)",
+                       {
                        req(features())
 
                        print(glue("Value of features ({plot_type})"))
@@ -2835,6 +3072,9 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
                          # Create a UMAP plot using shiny_umap()
                          shiny_umap(
                            object = object(),
@@ -2909,6 +3149,9 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
                          # Feature plot using arguments relevant to 
                          # shiny_feature()
                          shiny_feature(
@@ -2986,6 +3229,9 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
                          # Violin plot using arguments relevant to shiny_vln()
                          shiny_vln(
                            object = object(),
@@ -3017,6 +3263,9 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
                          shiny_dot(
                            object = object(),
                            # Features argument: uses value returned by reactive
@@ -3041,6 +3290,9 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
                          shiny_scatter(
                            object = object(),
                            feature_1 = plot_selections$scatter_1(),
@@ -3066,37 +3318,40 @@ plot_module_server <- function(id,
                        reactive(
                          label = glue("{plot_label}: Create Plot"),
                          {
-                          shiny_ridge(
-                            object = object(),
-                            features_entered = features_entered(),
-                            group_by = plot_selections$group_by(),
-                            show_legend = plot_selections$legend(),
-                            palette = palette(),
-                            xlim = 
-                              # Use custom limits if the user requests them,
-                              # and if they are provided
-                              if (!is.null(custom_xlim) & 
-                                  isTruthy(input$use_custom_xlim)){
-                                custom_xlim()
-                              } else {
-                                NULL
-                              },
-                            sort_groups = plot_selections$sort_groups(),
-                            custom_factor_levels = 
-                              plot_selections$custom_refactoring(),
-                            custom_titles = variable_length_custom_title(),
-                            assay_config = assay_config(),
-                            # Number of columns in legend
-                            legend_ncol = plot_selections$legend_ncol(),
-                            # Legend font size
-                            legend_font_size = 
-                              plot_selections$legend_font_size(),
-                            # Size of legend keys 
-                            legend_key_size =
-                              plot_selections$legend_key_size()
-                            ) 
-                         }
-                       )
+                           # Only runs when the plot is enabled
+                           req(plot_switch())
+                           
+                           shiny_ridge(
+                             object = object(),
+                             features_entered = features_entered(),
+                             group_by = plot_selections$group_by(),
+                             show_legend = plot_selections$legend(),
+                             palette = palette(),
+                             xlim = 
+                               # Use custom limits if the user requests them,
+                               # and if they are provided
+                               if (!is.null(custom_xlim) & 
+                                   isTruthy(input$use_custom_xlim)){
+                                 custom_xlim()
+                               } else {
+                                 NULL
+                               },
+                             sort_groups = plot_selections$sort_groups(),
+                             custom_factor_levels = 
+                               plot_selections$custom_refactoring(),
+                             custom_titles = variable_length_custom_title(),
+                             assay_config = assay_config(),
+                             # Number of columns in legend
+                             legend_ncol = plot_selections$legend_ncol(),
+                             # Legend font size
+                             legend_font_size = 
+                               plot_selections$legend_font_size(),
+                             # Size of legend keys 
+                             legend_key_size =
+                               plot_selections$legend_key_size()
+                             ) 
+                           }
+                         )
                  } else if (plot_type == "proportion"){
                    ### 11.2.7. Stacked bar plot ####
                    # For cell type (and other metadata) proportions
@@ -3106,36 +3361,39 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
-                        shiny_stacked_bar(
-                          object = object(),
-                          group_by = plot_selections$group_by(),
-                          split_by = plot_selections$split_by(),
-                          x_axis_title = proportion_x_axis_title(),
-                          show_legend = plot_selections$legend(),
-                          show_title =
-                            # show_title controls how NULL values for 
-                            # plot_title are interpreted (NULL will remove the 
-                            # label by default, but plot_title will be NULL if 
-                            # a label is not set in the config file (want the 
-                            # default title to be used in this case))
-                            if (input$title_settings == "none"){
-                              FALSE
-                            } else TRUE,
-                          # Plot title: from 3.7.
-                          plot_title = plot_title(),
-                          palette = palette(),
-                          sort_groups = plot_selections$sort_groups(),
-                          custom_factor_levels = 
-                            plot_selections$custom_refactoring(),
-                          # Number of columns in legend
-                          legend_ncol = plot_selections$legend_ncol(),
-                          # Legend font size
-                          legend_font_size = 
-                            plot_selections$legend_font_size(),
-                          # Size of legend keys 
-                          legend_key_size =
-                            plot_selections$legend_key_size()
-                        ) 
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
+                         shiny_stacked_bar(
+                           object = object(),
+                           group_by = plot_selections$group_by(),
+                           split_by = plot_selections$split_by(),
+                           x_axis_title = proportion_x_axis_title(),
+                           show_legend = plot_selections$legend(),
+                           show_title =
+                             # show_title controls how NULL values for 
+                             # plot_title are interpreted (NULL will remove the 
+                             # label by default, but plot_title will be NULL if 
+                             # a label is not set in the config file (want the 
+                             # default title to be used in this case))
+                             if (input$title_settings == "none"){
+                               FALSE
+                             } else TRUE,
+                           # Plot title: from 3.7.
+                           plot_title = plot_title(),
+                           palette = palette(),
+                           sort_groups = plot_selections$sort_groups(),
+                           custom_factor_levels = 
+                             plot_selections$custom_refactoring(),
+                           # Number of columns in legend
+                           legend_ncol = plot_selections$legend_ncol(),
+                           # Legend font size
+                           legend_font_size = 
+                             plot_selections$legend_font_size(),
+                           # Size of legend keys 
+                           legend_key_size =
+                             plot_selections$legend_key_size()
+                           ) 
                        })
                  } else if (plot_type == "pie"){
                    ### 11.2.8. Metadata pie chart ####
@@ -3145,6 +3403,9 @@ plot_module_server <- function(id,
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
                        {
+                         # Only runs when the plot is enabled
+                         req(plot_switch())
+                         
                          shiny_pie(
                            object = object(),
                            patient_colname = patient_colname(),
@@ -3170,33 +3431,37 @@ plot_module_server <- function(id,
                  # Height and width arguments are left undefined
                  # If undefined, they will use the values from plotOutput, which
                  # respond to the manual dimensions inputs.
-                 output$plot <- renderPlot({
-                   if (plot_type %in% c("dimplot", "violin", "proportion")){
-                     validate(
-                       need(
-                         input$group_by != input$split_by, 
-                         message = 
-                           if (plot_type %in% c("dimplot", "violin")){
-                             glue(
-                               'Invalid selections for {plot_label}: 
-                               "Group By" and "Split By" must be different.'
-                               )
-                           } else if (plot_type == "proportion") {
-                             # For cell type proportion plots, group by and 
-                             # split by are renamed "proportions" and 
-                             # "proportion comparison", respectively.
+                 output$plot <- 
+                   renderPlot({
+                     # Only runs when the plot is enabled
+                     req(plot_switch())
+                     
+                     if (plot_type %in% c("dimplot", "violin", "proportion")){
+                       validate(
+                         need(
+                           input$group_by != input$split_by, 
+                           message = 
+                             if (plot_type %in% c("dimplot", "violin")){
                                glue(
                                  'Invalid selections for {plot_label}: 
-                                 "Proportions" and "Proportion Comparison" 
-                                 must be different.'
-                               )
-                             }
+                                 "Group By" and "Split By" must be different.'
+                                 )
+                             } else if (plot_type == "proportion") {
+                               # For cell type proportion plots, group by and 
+                               # split by are renamed "proportions" and 
+                               # "proportion comparison", respectively.
+                                 glue(
+                                   'Invalid selections for {plot_label}: 
+                                   "Proportions" and "Proportion Comparison" 
+                                   must be different.'
+                                   )
+                               }
+                           )
                          )
-                     )
-                   }
-                   
-                   plot()
-                 })
+                       }
+                     
+                     plot()
+                   })
                  
                  # 12. Custom x-axis limits server (ridge plots) ---------------
                  # Server recieves plot in 9. and outputs the chosen limits
