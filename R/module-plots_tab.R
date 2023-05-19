@@ -766,10 +766,17 @@ plots_tab_server <- function(id,
                  main_spinner <-
                    Waiter$new(
                      id = ns("main_panel"),
-                     html = spin_loaders(id = 2, color = "#555588"),
+                     html =
+                       tagList(
+                         spin_loaders(id = 2, color = "#555588"),
+                         div(
+                           class = "spinner_text",
+                           "Preparing plots, please wait..."
+                           )
+                         ),
                      color = "#FFFFFF",
                      # Gives manual control of showing/hiding spinner
-                     hide_on_render = FALSE 
+                     hide_on_render = FALSE
                    )
                  
                  # Feature choices for text entry 
