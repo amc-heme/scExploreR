@@ -27,15 +27,10 @@ function showPlotsTabSpinner(event){
     // Whenever "plot" or "plot_output_ui" in any module is 
     // invalidated, show a spinner over the main window of the plots tab.
 
-    
-
     // Conditional event id matches, AND spinner does not already exist
     if ((event.target.id.endsWith("plot_output_ui") || 
         event.target.id.endsWith("plot")) &&
         plotsTabSpinnerShown == false){
-        console.log("show spinner code")
-        console.log(event.target.id)
-
         waiter.show({
             id: "object_plots-main_panel",
             html: '<div class="loaderz-02" style="color:#555588;"></div> \
@@ -59,12 +54,10 @@ function showPlotsTabSpinner(event){
         let plots = $('[id$="plot_output_ui"]');
         plots.css('display', 'none');
 
-        // If the spinner is still shown after 10 seconds, add text saying
+        // If the spinner is still shown after 5 seconds, add text saying
         // the process might take a while on large datasets
-        messageDuration = 10;
+        messageDuration = 5;
         // Display the message immediately if a previous spinner with the message was just hidden
-        console.log("State of restoreMessage");
-        console.log(restoreMessage);
         if (restoreMessage == true){
             showSpinnerMessage();
         } else {
@@ -87,21 +80,29 @@ function showPlotsTabSpinner(event){
 $(document).on(
     'shiny:outputinvalidated', 
     function(event){
-        showPlotsTabSpinner(event)
+        showPlotsTabSpinner(event);
     });
 
 $(document).on(
     'shiny:recalculating', 
     function(event){
-        showPlotsTabSpinner(event)
+        showPlotsTabSpinner(event);
     });
 
 $(document).on('shiny:idle', function(){
-    console.log("shiny idle")
     // When all computation is complete, hide spinner and show plots
     let plots = $('[id$="plot_output_ui"]');
     waiter.hide("object_plots-main_panel");
     plots.css('display', 'block');
+
+    // Set an indicator restore the message on a spinner within 200 milliseconds of
+    // hiding a spinner with the addon message.
+    if (plotsTabSpinnerMessage == true){
+        restoreMessage = true;
+        setTimeout(() => {
+            restoreMessage = false;
+        }, 200);
+    }    
 
     // Set status variables back to false
     plotsTabSpinnerShown = false;
@@ -109,14 +110,6 @@ $(document).on('shiny:idle', function(){
 
     // If the timer for adding the message to the plot spinner has not yet gone off, cancel it
     clearTimeout(timerId);
-
-    // If a new spinnner is drawn within 200 miliseconds, restore the message
-    console.log("restoreMessage set to true");
-    restoreMessage = true;
-    setTimeout(() => {
-        console.log("restoreMessage set to false");
-        restoreMessage = false;
-    }, 2000);
 
     // Delete the addon message from above function if it was created
     $('#plots_preparing_plots_spinner_addon').remove();
