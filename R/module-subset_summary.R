@@ -93,10 +93,10 @@ subset_summary_server <- function(id,
                     )
                   )
                   
-                  # Store unique values for category in full object and subset
-                  # Uses unique_values() in-house function 
+                  # Store unique values for category (variable) in full object 
+                  # and subset
                   subset_values <- 
-                    SCEPlots::unique_metadata(object, category)
+                    SCEPlots::unique_values(object, category)
                   original_values <- 
                     isolate(unique_metadata())[[category]]
                   
