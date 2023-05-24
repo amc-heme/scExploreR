@@ -27,7 +27,10 @@ metadata_type <- function(object, metadata_field){
     type <- "Logical"
   } else {
     # Other metadata classes may exist: warn user for unexpected classes
-    warning(glue("Unexpected class for metadata column {metadata_field}: {class}."))
+    warning(
+      glue("Unexpected class for metadata column {metadata_field}: {class}.")
+      )
+    
     type <- class
   }
   

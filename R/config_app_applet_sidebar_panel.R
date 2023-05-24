@@ -21,7 +21,7 @@ config_app_sidebar_panel <-
       # The use of width=0 allows the width to be specified for different window 
       # sizes using the class argument (using the width argument will apply the 
       # style for all screens with at least a "medium" size viewport)
-      width=0,
+      width = 0,
       # Column width specifications vary based on viewport size and are given using 
       # Bootstrap classes (R Studio creates a "small" window by default on a MacBook
       # pro) https://getbootstrap.com/docs/3.3/css/#responsive-utilities
