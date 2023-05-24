@@ -920,7 +920,7 @@ dge_tab_server <- function(id,
             n_panel <-
               n_unique(
                 object = subset(),
-                metadata_column = metadata_column
+                meta_var = metadata_column
                 )
 
             #Set ncol to number of panels if less than four

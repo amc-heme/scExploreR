@@ -4,7 +4,7 @@
 #' metadata column.
 #'
 #' @param object A Seurat object.
-#' @param metadata_column Name of a column in the metadata table for the object.
+#' @param meta_var Name of a metadata variable.
 #'
 #' @return Number of unique classes (integer).
 #' 
@@ -12,9 +12,11 @@
 n_unique <-
   function(
     object,
-    metadata_column
+    meta_var
   ){
-    object@meta.data[[metadata_column]] |> 
-      unique() |> 
+    SCEPlots::unique_values(
+      object = object, 
+      var = meta_var
+      ) |> 
       length()
   }
