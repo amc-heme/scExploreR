@@ -1342,8 +1342,8 @@ run_scExploreR <-
                 ),
             # pass parameters to report
             params = params,
-            # Set up a new environment that is the child of the global environment
-            # (isolates document environment from app)
+            # Set up a new environment that is the child of the global
+            # environment (isolates document environment from app)
             envir = new.env(parent = globalenv()),
             # Do not print rendering messages to console
             quiet = TRUE

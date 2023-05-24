@@ -505,7 +505,7 @@ dge_test_selections_server <-
               #   } else NULL
               })
         
-        ## 3.3. Determine unique values for the group by category ####
+        ## 3.3. Determine unique values for the group by variable ####
         # Will be options for marker classes or groups in DGE). This process 
         # will be the same regardless of whether marker selection or 
         # differential gene expression is the chosen test

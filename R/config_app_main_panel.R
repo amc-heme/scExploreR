@@ -6,7 +6,7 @@
 #' @param class CSS classes to apply to the main panel.
 #'
 #' @noRd
-applet_main_panel <- 
+config_app_main_panel <- 
   function(
     ...,
     class=NULL

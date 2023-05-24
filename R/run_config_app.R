@@ -319,7 +319,7 @@ run_config <-
     # (not the assay options module)
     assay_tab <- function(){
       sidebarLayout(
-        applet_sidebar_panel(
+        config_app_sidebar_panel(
           # input-no-margin class: removes margin of input containers within div
           tagList(
             div(
@@ -351,7 +351,7 @@ run_config <-
           
         ),
         
-        applet_main_panel(
+        config_app_main_panel(
           # A "card" with assay-specific options is displayed for each 
           # selected assay
           tagList(
@@ -417,7 +417,7 @@ run_config <-
     metadata_tab <- 
       function(){
         sidebarLayout(
-          applet_sidebar_panel(
+          config_app_sidebar_panel(
             div(
               class = "input-no-margin",
               uiOutput(
@@ -432,7 +432,7 @@ run_config <-
               )
             }
           ),
-          applet_main_panel(
+          config_app_main_panel(
             tagList(
               # Card for generic metadata options 
               div(
@@ -488,7 +488,7 @@ run_config <-
     reductions_tab <- 
       function(){
         sidebarLayout(
-          applet_sidebar_panel(
+          config_app_sidebar_panel(
             div(
               class = "input-no-margin",
               uiOutput(
@@ -496,7 +496,7 @@ run_config <-
               )
             )
           ),
-          applet_main_panel(
+          config_app_main_panel(
             tagList(
               # Card for generic options (taken from metadata tab; unused) 
               # div(

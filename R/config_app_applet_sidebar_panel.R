@@ -7,7 +7,7 @@
 #' @param class CSS classes to apply to the sidebar panel.
 #'
 #' @noRd
-applet_sidebar_panel <- 
+config_app_sidebar_panel <- 
   function(
     ...,
     class = NULL
