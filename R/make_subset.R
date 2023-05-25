@@ -90,10 +90,14 @@ make_subset <-
     
     # Subset using the subset string 
     subset <- 
-      eval(parse(text=paste0("subset(object, subset = ", subset_str, ")")))
+      eval(
+        parse(text=paste0("subset(object, subset = ", subset_str, ")"))
+        )
     
-    # Re-level factors in subset: test every metadata variable to see if it 
-    # is a factor
+    # Re-level factors in subset: test every metadata variable 
+    # to see if it is a factor
+    meta_vars <- SCEPlots::meta_varnames(subset)
+    
     for (meta_var in colnames(subset@meta.data)){
       if (class(subset@meta.data[[meta_var]]) == "factor"){
         # If the metadata variable is a factor, drop unused levels
