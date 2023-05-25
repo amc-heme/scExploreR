@@ -3,7 +3,8 @@
 #' Determines the min and max settings for the ncol slider for DimPlots, feature
 #' plots, and violin plots based on selections made by the user in scExploreR.
 #'
-#' @param object A Seurat object.
+#' @param object A single cell object (any object class supported by SCEPlots
+#' may be entered).
 #' @param rule The means of calculating ncol limits, depending on the plot type.
 #' This can be either "split_by" (for DimPlots and feature plots), or "features"
 #' (for violin plots).
@@ -43,10 +44,12 @@ ncol_settings <-
     # Upper limit
     # Number of panels is used to calculate upper limit 
     if (rule == "split_by"){
-      # n_panels is based on split by groups when rule == "split_by".
-      n_panels <- object@meta.data[[split_by]] |>
-        unique() |>
-        length() 
+      # split_by rule: n_panels based on number of split by groups
+      n_panels <- 
+        scExploreR:::n_unique(
+          object = object, 
+          meta_var = split_by
+          )
       
       # Max == n_panels
       max <- n_panels
