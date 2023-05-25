@@ -2,8 +2,8 @@
 #'
 #' @param object a Seurat object.
 #' @param criteria_list a list of name-value pairs with the name of each 
-#' category used as a criterion, and the unique values within that category to 
-#' include in the subset. The name of the category must be entered exactly as it
+#' metadata variable used as a criterion, and the unique values within that variable to 
+#' include in the subset. The name of the variable must be entered exactly as it
 #' appears in the metadata slot of the Seurat object, and the list object itself
 #' must be reactive, as opposed to each individual item being reactive. The app
 #'  code should generate the list in the correct format automatically.  
@@ -54,24 +54,24 @@ make_subset <-
     
     # Construct string for subsetting
     # Begin with empty string
-    subset_str <-""
+    subset_str <- ""
     
     # Construct a string representation for each criterion, and append to string
     for (i in 1:length(criteria_list)){
-      # Get the metadata category associated with the current index (name of
+      # Get the metadata variable associated with the current index (name of
       # criteria_list[[i]])
-      category <- names(criteria_list)[i]
+      meta_var <- names(criteria_list)[i]
       
-      # Construct criterion for the current category 
+      # Construct criterion for the current variable 
       if (i < length(criteria_list)){
         # For all entries except for the last: add AND (`&`) after the criterion
         # (Specified criteria are mutually exclusive, so they use the 
         # AND operator)
         criterion <- 
-          glue("({category} %in% {vector_code(criteria_list[[i]])}) & ")
+          glue("({meta_var} %in% {vector_code(criteria_list[[i]])}) & ")
         # Do not use "&" for last criterion, or if there is only one criterion
       } else if (i == length(criteria_list)){
-        criterion <- glue("({category} %in% {vector_code(criteria_list[[i]])})")
+        criterion <- glue("({meta_var} %in% {vector_code(criteria_list[[i]])})")
       }
       
       # Add the criterion to the subset string
@@ -92,13 +92,13 @@ make_subset <-
     subset <- 
       eval(parse(text=paste0("subset(object, subset = ", subset_str, ")")))
     
-    # Re-level factors in subset: test every metadata category to see if it 
+    # Re-level factors in subset: test every metadata variable to see if it 
     # is a factor
-    for (category in colnames(subset@meta.data)){
-      if (class(subset@meta.data[[category]]) == "factor"){
-        # If the metadata category is a factor, drop unused levels
-        subset@meta.data[[category]] <- 
-          droplevels(subset@meta.data[[category]])
+    for (meta_var in colnames(subset@meta.data)){
+      if (class(subset@meta.data[[meta_var]]) == "factor"){
+        # If the metadata variable is a factor, drop unused levels
+        subset@meta.data[[meta_var]] <- 
+          droplevels(subset@meta.data[[meta_var]])
       }
     }
     
