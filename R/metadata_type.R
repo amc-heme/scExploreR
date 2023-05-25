@@ -1,19 +1,18 @@
 #' Metadata Type
 #'
-#' Takes a Seurat object and a metadata field, and returns the class of the 
-#' metadata field
+#' Takes a Seurat object and a metadata variable, and returns the class of the 
+#' metadata variable.
 #'
-#' @param object a Seurat object.
-#' @param metadata_field a column name of the object's `@meta.data` table
+#' @param object a single cell object (currently, Seurat and SingleCellExperiment
+#' are supported).
+#' @param meta_var the name of a metadata variable to assess for data type.
 #'
 #' @noRd
-metadata_type <- function(object, metadata_field){
+metadata_type <- function(object, meta_var){
   # Get unique values of metadata field for display of summary statistics
-  values <- unique(object@meta.data[[metadata_field]])
+  values <- SCEPlots::unique_values(object, var = meta_var)
   
-  # Determine type of metadata (class of values) for display in column
-  # Must call @meta.data first with arbitrary metadata 
-  # (object[[<metadata>]]) will return a dataframe
+  # Determine type of metadata (class of values)
   class <- class(values)
   
   # Simplify metadata type: "character" and "factor" classes are reported as 
@@ -28,11 +27,11 @@ metadata_type <- function(object, metadata_field){
   } else {
     # Other metadata classes may exist: warn user for unexpected classes
     warning(
-      glue("Unexpected class for metadata column {metadata_field}: {class}.")
+      glue("Unexpected class for metadata column {meta_var}: {class}.")
       )
     
     type <- class
   }
   
-  return(type)
+  type
 }
