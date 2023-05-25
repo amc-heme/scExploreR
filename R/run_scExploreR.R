@@ -1170,29 +1170,33 @@ run_scExploreR <-
             meta_choices
           })
       
-      ## 2.7. Unique values for each metadata category ####
+      ## 2.7. Unique values for each metadata variable ####
       unique_metadata <- 
         eventReactive(
           metadata_config(),
           label = "unique_metadata",
           ignoreNULL = FALSE,
           {
-            # The unique values for each metadata category listed in the config 
+            # The unique values for each metadata variable listed in the config 
             # file will be stored as vectors in a list 
             unique_metadata <- list()
             
-            # Store unique values for each metadata category entered
-            for (category in names(metadata_config())){
+            # Store unique values for each metadata variable entered
+            for (meta_var in names(metadata_config())){
               # Use sobj@meta.data[[category]] instead of object()[[category]] 
               # to return a vector (sobj[[category]] returns a dataframe)
-              unique_metadata[[category]] <- 
-                unique(object()@meta.data[[category]])
-              # If the metadata category is a factor, convert to a vector with 
+              unique_metadata[[meta_var]] <- 
+                SCEPlots::unique_values(
+                  object = object, 
+                  var = category
+                  )
+              
+              # If the metadata variable is a factor, convert to a vector with 
               # levels to avoid integers appearing in place of the 
               # unique values themselves
-              if (class(unique_metadata[[category]]) == "factor"){
-                unique_metadata[[category]] <- 
-                  levels(unique_metadata[[category]])
+              if (class(unique_metadata[[meta_var]]) == "factor"){
+                unique_metadata[[meta_var]] <- 
+                  levels(unique_metadata[[meta_var]])
               }
             }
             
@@ -1268,12 +1272,18 @@ run_scExploreR <-
                 reductions(),
                 function(reduction, object){
                   # limits calculation: uses cell embeddings
-                  # Same as default method in FeaturePlotWrapper.R
-                  # `object` does not require parentheses if called with them below
-                  xmin <- min(object@reductions[[reduction]]@cell.embeddings[,1])
-                  xmax <- max(object@reductions[[reduction]]@cell.embeddings[,1])
-                  ymin <- min(object@reductions[[reduction]]@cell.embeddings[,2])
-                  ymax <- max(object@reductions[[reduction]]@cell.embeddings[,2]) 
+                  # Fetch coordinates, then determine min/max values
+                  reduction_coords <- 
+                    SCEPlots::fetch_reduction(
+                      object = object, 
+                      reduction = reduction, 
+                      dims = c(1, 2)
+                      )
+                  
+                  xmin <- min(reduction_coords[,1])
+                  xmax <- max(reduction_coords[,1])
+                  ymin <- min(reduction_coords[,2])
+                  ymax <- max(reduction_coords[,2]) 
                   
                   return(
                     list(
