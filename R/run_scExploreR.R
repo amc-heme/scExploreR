@@ -1187,8 +1187,8 @@ run_scExploreR <-
               # to return a vector (sobj[[category]] returns a dataframe)
               unique_metadata[[meta_var]] <- 
                 SCEPlots::unique_values(
-                  object = object, 
-                  var = category
+                  object = object(), 
+                  var = meta_var
                   )
               
               # If the metadata variable is a factor, convert to a vector with 
@@ -1275,7 +1275,7 @@ run_scExploreR <-
                   # Fetch coordinates, then determine min/max values
                   reduction_coords <- 
                     SCEPlots::fetch_reduction(
-                      object = object, 
+                      object = object(), 
                       reduction = reduction, 
                       dims = c(1, 2)
                       )
