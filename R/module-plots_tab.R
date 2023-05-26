@@ -1161,7 +1161,7 @@ plots_tab_server <- function(id,
                    {
                      if (!is.null(subset())){
                        # Error A: Subset Only Contains one Cell
-                       if (length(Cells(subset())) == 1){
+                       if (n_cells(subset()) == 1){
                          showNotification(
                            ui = 
                              icon_notification_ui(
