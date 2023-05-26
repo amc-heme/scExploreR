@@ -4,7 +4,7 @@
 #' metadata variable. Any object type supported by 
 #' \code{\link[SCEPlots::unique_values]{SCEPlots::unique_values}} may be used.
 #'
-#' @param object A Seurat object.
+#' @param object A single cell object.
 #' @param meta_var Name of a metadata variable.
 #'
 #' @return Number of unique classes (integer).
