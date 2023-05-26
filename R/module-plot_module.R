@@ -1207,9 +1207,10 @@ plot_module_server <- function(id,
                                req(plot_selections$split_by())
                                
                                default_titles <-
-                                 object()@meta.data[[
-                                   plot_selections$split_by()]] |> 
-                                 unique() |> 
+                                 SCEPlots::unique_values(
+                                   object = object(),
+                                   var = plot_selections$split_by()
+                                   ) |> 
                                  str_sort(numeric = TRUE)
                                
                                return(default_titles)
@@ -2402,15 +2403,13 @@ plot_module_server <- function(id,
                          )
 
                        # Compute number of cells in subset
-                       n_cells_subset <-
-                         object() |>
-                         Cells() |>
-                         length()
+                       n_cells_test <- 
+                         scExploreR:::n_cells(object())
   
                        # Test if the number of cells in the subset differs from
                        # the number of cells in the original object. If this
                        # conditional is TRUE, then the object read is a subset
-                       n_cells_original() != n_cells_subset
+                       n_cells_original() != n_cells_test
                    })
                  
                  # 8. Conditional UI -------------------------------------------
@@ -2772,7 +2771,11 @@ plot_module_server <- function(id,
                            # Based on unique values or levels of current group by 
                            # category
                            group_by_metadata <- 
-                             object()@meta.data[[plot_selections$group_by()]]
+                             SCEPlots::fetch_metadata(
+                               object = object(),
+                               vars = plot_selections$group_by(), 
+                               return_class = "vector"
+                               )
                            
                            # Test if the current group by category is a factor
                            if (is.factor(group_by_metadata)){
