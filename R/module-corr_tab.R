@@ -207,9 +207,9 @@ corr_tab_ui <- function(id,
 #' created for each object to avoid input collisions between objects with 
 #' similarly named metadata columns.
 #'
-#' @param id Used to match server function to ui function. "corr" is the recommended 
-# value to use.
-#' @param object The Seurat Object defined in the main server function.
+#' @param id Used to match server function to ui function. "corr" is the 
+#' recommended value to use.
+#' @param object A single cell object defined in the main server function.
 #' @param metadata_config the metadata section of the config file imported in 
 #' the main server function.
 #' @param assay_config the assays section of the config file imported in the
@@ -219,9 +219,9 @@ corr_tab_ui <- function(id,
 #' genes assay.
 #' @param meta_categories a named vector of metadata categories retrieved from the 
 #' config file.
-#' @param unique_metadata A list of the unique metadata values for each of the metadata 
-# categories listed in the config file. This is generated in the main server function 
-# at startup.
+#' @param unique_metadata A list of the unique metadata values for each of the
+#' metadata categories listed in the config file. This is generated in the main
+#' server function at startup.
 #' @param n_cells_original Number of cells in full Seurat object. Calculated in main 
 # server function.
 #' @param nonzero_threshold The minimum acceptable proportion of cells with
@@ -230,17 +230,18 @@ corr_tab_ui <- function(id,
 #' @param meta_choices a named vector giving the metadata categories defined in
 #' the config file, with their respective labels for display in dropdown menus.
 #' This is defined in the main server function.
-#' @param valid_features a list giving the valid features that can be selected from each
-# assay. This is generated from the config file in the main server function
+#' @param valid_features a list giving the valid features that can be selected 
+#' from each assay. This is generated from the config file in the main server
+#' function.
 #' @param error_list a list of error messages to print custom notifications for, 
-# if they are encountered while the correlations table is being calculated. This 
-# is defined in the main server function.
-#' @param update_features a reactive trigger created by the local makeReactiveTrigger() 
-# function. The trigger is created in the main server function and ensures that
-# the feature selection input is updated after the input is created (input will
-# have no choices otherwise.)
-#' @param object_trigger a reactive trigger that invalidates downstream reactives when 
-# the object is changed.
+#' if they are encountered while the correlations table is being calculated. 
+#' This is defined in the main server function.
+#' @param update_features a reactive trigger created by the local 
+#' \code{makeReactiveTrigger()} function. The trigger is created in the main 
+#' server function and ensures that the feature selection input is updated after 
+#' the input is created (input will have no choices otherwise.)
+#' @param object_trigger a reactive trigger that invalidates downstream 
+#' reactive expressions when the object is changed.
 #'
 #' @return server code for the correlations tab. Reactive expressions are contained within 
 #' the namespace set by `id`
@@ -251,9 +252,9 @@ corr_tab_server <- function(id,
                             metadata_config,
                             assay_config,
                             designated_genes_assay,
-                            # meta_categories will replace metadata_config at some point
-                            # (It is derived from the config file and is the 
-                            # only information used)
+                            # meta_categories will replace metadata_config at 
+                            # some point (It is derived from the config file and 
+                            # is the only information used)
                             meta_categories,
                             unique_metadata,
                             n_cells_original,
@@ -671,16 +672,10 @@ corr_tab_server <- function(id,
                          )
                        )
                        
-                       # Compute number of cells in subset
-                       n_cells_subset <-
-                         subset() |>
-                         Cells() |>
-                         length()
-                       
                        # Test if the number of cells in the subset differs from
                        # the number of cells in the original object. If this
                        # conditional is TRUE, then the object read is a subset
-                       n_cells_original() != n_cells_subset
+                       n_cells_original() != n_cells(subset())
                        })
                  
                  ## 4.6. Subset Stats Module ####
