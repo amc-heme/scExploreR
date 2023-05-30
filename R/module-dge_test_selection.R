@@ -281,17 +281,25 @@ dge_test_selections_server <-
         # the config file
         initial_marker_choices <-
           if (!is.na(initial_group_by) & !is.null(initial_group_by)){
-            object()@meta.data |>
-              # Get unique values for the group by category
-              # First category is selected at startup
-              dplyr::select(.data[[initial_group_by]]) |>
-              unique() |>
-              # Convert to vector
-              unlist() |>
-              # Remove names from vector
-              unname() |>
-              # Convert factor of choices to character vector
-              as.character() |>
+            # object()@meta.data |>
+            #   # Get unique values for the group by category
+            #   # First category is selected at startup
+            #   dplyr::select(.data[[initial_group_by]]) |>
+            #   unique() |>
+            #   # Convert to vector
+            #   unlist() |>
+            #   # Remove names from vector
+            #   unname() |>
+            #   # Convert factor of choices to character vector
+            #   as.character() |>
+            #   # Sort choices
+            #   str_sort(numeric = TRUE)
+            
+            # Get unique values for the group by variable
+            SCEPlots::unique_values(
+              object(),
+              var = initial_group_by
+              ) |> 
               # Sort choices
               str_sort(numeric = TRUE)
           } else {
@@ -518,21 +526,30 @@ dge_test_selections_server <-
             # group_by_category is NULL
             ignoreNULL = TRUE,
             {
-              choices <- 
-                object()@meta.data |>
-                # Get unique values for the group by category
-                dplyr::select(.data[[group_by_category()]]) |>
-                unique() |>
-                # Convert to vector
-                unlist() |>
-                # Remove names from vector
-                unname() |>
-                # Convert factor of choices to character vector
-                as.character() |>
-                # Sort choices
-                str_sort(numeric = TRUE)
+              # choices <- 
+              #   object()@meta.data |>
+              #   # Get unique values for the group by category
+              #   dplyr::select(.data[[group_by_category()]]) |>
+              #   unique() |>
+              #   # Convert to vector
+              #   unlist() |>
+              #   # Remove names from vector
+              #   unname() |>
+              #   # Convert factor of choices to character vector
+              #   as.character() |>
+              #   # Sort choices
+              #   str_sort(numeric = TRUE)
+              #
+              # choices
               
-              choices
+              SCEPlots::unique_values(
+                object(),
+                var = group_by_category() 
+                ) |>
+                # Sort choices
+                str_sort(
+                  numeric = TRUE
+                  )
               })
         
         ## 3.4. Group Marker/Group Choices Based on Config File ####

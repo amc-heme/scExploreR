@@ -25,6 +25,8 @@ run_scExploreR <-
     library(shiny)
     library(Seurat, quietly = TRUE, warn.conflicts = FALSE)
     
+    #library(SCEPlots, quietly = TRUE, warn.conflicts = FALSE)
+    
     # Shiny add-ons 
     library(shinyWidgets, quietly = TRUE, warn.conflicts = FALSE)
     library(rintrojs, quietly = TRUE, warn.conflicts = FALSE)
