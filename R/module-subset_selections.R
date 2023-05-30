@@ -315,14 +315,18 @@ subset_selections_server <- function(id,
       })
       
       
-      # 3. For later: filter menus in UI based on selections --------------------
+      # 3. Filter menus in UI based on selections ------------------------------
       ## 3.1. Update valid choices in selection menus #### 
       observeEvent(
         selections(),
         ignoreNULL = FALSE,
         {
           # Extract metadata table
-          meta_df <- object()@meta.data
+          meta_df <-
+            SCEPlots::fetch_metadata(
+              object = object(),
+              full_table = TRUE
+              )
           
           # a. Determine cells that match selections made for each category 
           # where filter criteria have been entered
