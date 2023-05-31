@@ -1098,7 +1098,7 @@ run_scExploreR <-
                 # ADT thresholds: add to list if the ADT_threshold assay has been
                 # created in the object
                 adt_threshold_features = 
-                  if ("ADT_threshold" %in% names(object()@assays)){
+                  if ("ADT_threshold" %in% SCEPlots::assay_names(object())){
                     TRUE
                   } else {
                     FALSE
@@ -1239,7 +1239,7 @@ run_scExploreR <-
           } else {
             # Otherwise, get reductions in object, and use the default
             # (UMAP is placed first, if it exists)
-            reductions <- names(object()@reductions)
+            reductions <- SCEPlots::reduction_names(object()) 
             
             if ("umap" %in% reductions){
               reductions <-
