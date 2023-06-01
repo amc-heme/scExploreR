@@ -1054,7 +1054,7 @@ run_scExploreR <-
       
       ## 2.3. Valid features Expressions ####
       # Create a list of valid features using the assays defined above
-      ### 2.3.1 Determine whether to include numeric metadata in feature list ####
+      ### 2.3.1. Determine whether to include numeric metadata in feature list ####
       # Determination depends on the value of `include_numeric_metadata` 
       # in the config file. 
       include_numeric_metadata <- 
@@ -1078,7 +1078,7 @@ run_scExploreR <-
       # May be set in the config app in the future
       numeric_metadata_title <- "Metadata Features"
       
-      ### 2.3.2 valid_features ####
+      ### 2.3.2. valid_features ####
       valid_features <-
         eventReactive(
           c(assay_config(), object()),
@@ -1087,24 +1087,24 @@ run_scExploreR <-
           {
             valid_features <- 
               feature_list_all(
-                object = object,
-                assay_config = assay_config,
+                object = object(),
+                assay_config = assay_config(),
                 # include_numeric_metadata: a boolean variable 
                 # that is hard-coded for now and will be 
                 # defined in the config file
                 numeric_metadata = include_numeric_metadata(), 
                 # The same is true for numeric_metadata_title
                 numeric_metadata_title = numeric_metadata_title,
-                # ADT thresholds: add to list if the ADT_threshold assay has been
-                # created in the object
+                # ADT thresholds: add to list if the ADT_threshold assay 
+                # has been created in the object
                 adt_threshold_features = 
                   if ("ADT_threshold" %in% SCEPlots::assay_names(object())){
                     TRUE
                   } else {
                     FALSE
                   },
-                # Display name for threshold features (can be set in the browser 
-                # config file)
+                # Display name for threshold features (can be set in the 
+                # browser config file)
                 adt_threshold_title = 
                   if (!is.null(adt_threshold_dropdown_title)){
                     adt_threshold_dropdown_title
@@ -1112,7 +1112,7 @@ run_scExploreR <-
                     # Supply default if the value is undefined
                     "ADT Values (Threshold Applied)"
                   }
-              )
+                )
             
             valid_features
           })

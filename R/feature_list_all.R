@@ -3,7 +3,7 @@
 #' Builds a list of features using the Seurat object and the 
 #' assay information defined in the config file. 
 #'
-#' @param object the Seurat object (should be the full object)
+#' @param object a single cell object (should be the full object, not a subset)
 #' @param assay_config the assay section of the config file (called via 
 #' `config$assays`)
 #' @param numeric_metadata if TRUE, numeric metadata columns will be included as
@@ -26,12 +26,14 @@ feature_list_all <-
     adt_threshold_title = "ADT Values (Threshold Applied)"
     ){
     # Extract variables from reactive context
-    if (is.reactive(object)){
-      object <- object()
-    }
-    if (is.reactive(assay_config)){
-      assay_config <- assay_config()
-    }
+    # if (is.reactive(object)){
+    #   object <- object()
+    # }
+    # if (is.reactive(assay_config)){
+    #   assay_config <- assay_config()
+    # }
+    # Functions should not take reactive values as inputs; they should be 
+    # unpacked when calling the function.
     
     # Features from each assay provided will be categorized by
     # assay type in a list.
@@ -40,9 +42,14 @@ feature_list_all <-
     for (assay_entry in assay_config){
       # Fetch the features included in the object under the current assay
       assay_features <- 
-        rownames(
-          object[[assay_entry$assay]]
+        SCEPlots::features_in_assay(
+          object,
+          assay = assay
           )
+        
+        # rownames(
+        #   object[[assay_entry$assay]]
+        #   )
       
       # Generate human-readable feature names
       if (assay_entry$suffix_human != ""){
@@ -88,7 +95,9 @@ feature_list_all <-
     # add that column.
     if (numeric_metadata==TRUE){
       # First, fetch all metadata columns in object.
-      meta_cols <- names(object@meta.data)
+      meta_cols <-
+        SCEPlots::meta_varnames(object)
+        #names(object@meta.data)
       # Next, select columns that have numeric or integer values
       numeric_cols <- 
         meta_cols[
@@ -97,8 +106,13 @@ feature_list_all <-
           sapply(
             meta_cols, 
             FUN = function(x){
-              (class(object@meta.data[[x]])=="numeric") || 
-                (class(object@meta.data[[x]])=="integer")
+              meta_table = 
+                SCEPlots::fetch_metadata(
+                  object,
+                  full_table = TRUE)
+              
+              (class(meta_table[[x]])=="numeric") || 
+                (class(meta_table[[x]])=="integer")
               }
             )
           ]
@@ -112,7 +126,12 @@ feature_list_all <-
     if (adt_threshold_features == TRUE){
       # Fetch features with threshold information (all features in 
       # "ADT_threshold" assay)
-      threshold_features <- rownames(object[["ADT_threshold"]])
+      threshold_features <- 
+        SCEPlots::features_in_assay(
+          object,
+          assay = "ADT_threshold"
+          )
+        #rownames(object[["ADT_threshold"]])
       
       # Define values to display to user in the dropdown
       human_readable <- 
