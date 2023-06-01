@@ -25,16 +25,6 @@ feature_list_all <-
     adt_threshold_features = FALSE,
     adt_threshold_title = "ADT Values (Threshold Applied)"
     ){
-    # Extract variables from reactive context
-    # if (is.reactive(object)){
-    #   object <- object()
-    # }
-    # if (is.reactive(assay_config)){
-    #   assay_config <- assay_config()
-    # }
-    # Functions should not take reactive values as inputs; they should be 
-    # unpacked when calling the function.
-    
     # Features from each assay provided will be categorized by
     # assay type in a list.
     valid_features <- list()
@@ -44,12 +34,8 @@ feature_list_all <-
       assay_features <- 
         SCEPlots::features_in_assay(
           object,
-          assay = assay
+          assay = assay_entry$assay
           )
-        
-        # rownames(
-        #   object[[assay_entry$assay]]
-        #   )
       
       # Generate human-readable feature names
       if (assay_entry$suffix_human != ""){
@@ -95,27 +81,27 @@ feature_list_all <-
     # add that column.
     if (numeric_metadata==TRUE){
       # First, fetch all metadata columns in object.
-      meta_cols <-
-        SCEPlots::meta_varnames(object)
-        #names(object@meta.data)
+      meta_cols <- SCEPlots::meta_varnames(object)
+      
       # Next, select columns that have numeric or integer values
-      numeric_cols <- 
-        meta_cols[
-          # sapply function will test each column for 
-          # the conditional specified in FUN
-          sapply(
-            meta_cols, 
-            FUN = function(x){
-              meta_table = 
-                SCEPlots::fetch_metadata(
-                  object,
-                  full_table = TRUE)
-              
-              (class(meta_table[[x]])=="numeric") || 
-                (class(meta_table[[x]])=="integer")
-              }
-            )
-          ]
+      # Create boolean vector for a column being numeric (having a class of 
+      # "integer" or "numeric")
+      is_numeric <-
+        sapply(
+          meta_cols, 
+          FUN = function(x){
+            meta_table = 
+              SCEPlots::fetch_metadata(
+                object,
+                full_table = TRUE
+                )
+            
+            (class(meta_table[[x]])=="numeric") || 
+              (class(meta_table[[x]])=="integer")
+            }
+          )
+      
+      numeric_cols <- meta_cols[is_numeric]
       
       # Convert to list and include in valid_features, using the dropdown menu 
       # title set by the "numeric_metadata_title" argument
@@ -131,7 +117,6 @@ feature_list_all <-
           object,
           assay = "ADT_threshold"
           )
-        #rownames(object[["ADT_threshold"]])
       
       # Define values to display to user in the dropdown
       human_readable <- 
@@ -156,8 +141,8 @@ feature_list_all <-
           )
       
       # Append to valid_features list
-      # (value passed to `adt_threshold_title` will show in the app as the header
-      # for the thresholded ADT values in the search bar)
+      # (value passed to `adt_threshold_title` will show in the app as the 
+      # header for the thresholded ADT values in the search bar)
       valid_features[[adt_threshold_title]] <- 
         threshold_pairs
     }
