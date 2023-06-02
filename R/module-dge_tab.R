@@ -583,19 +583,36 @@ dge_tab_server <- function(id,
                       group_1 <- test_selections()$group_1
                       group_2 <- test_selections()$group_2
                       
+                      # Create metacluster metadata
+                      # For object class-agnostic code, the metadata table 
+                      # must be pulled via an S3 method, edited as a table, and
+                      # then saved to the object via another S3 method.
+                      meta_table <- 
+                        SCEPlots::fetch_metadata(
+                          subset,
+                          full_table = TRUE
+                        )
+                      
                       # Use case_when to create metacluster 
-                      subset@meta.data$metacluster <- 
+                      meta_table$metacluster <- 
                         case_when(
                           # If the cell has a value for the group by category, 
                           # assign a group name to it based on the members of the
                           # group (for example, a group with "R" and "S" will be
                           # renamed ("R and S"))
-                          subset@meta.data[[metadata_column]] %in% group_1 ~
+                          meta_table[[metadata_column]] %in% group_1 ~
                             vector_to_text(group_1),
-                          subset@meta.data[[metadata_column]] %in% group_2 ~
+                          meta_table[[metadata_column]] %in% group_2 ~
                             vector_to_text(group_2),
                           TRUE ~ "Unspecified"
                           )
+                      
+                      # Save new metadata table to subset
+                      subset <-
+                        scExploreR:::update_object_metadata(
+                          subset,
+                          table = meta_table
+                        )
                     } # End if (metaclusters_present())
                     
                     # Groups based on feature expression thresholds
@@ -634,8 +651,18 @@ dge_tab_server <- function(id,
                         print(head(expr_data >= threshold))
                         }
                       
+                      # Pull metadata table from subset
+                      # For object class-agnostic code, the metadata table 
+                      # must be pulled via an S3 method, edited as a table, and
+                      # then saved to the object via another S3 method.
+                      meta_table <- 
+                        SCEPlots::fetch_metadata(
+                          subset,
+                          full_table = TRUE
+                          )
+                      
                       # Create metadata column based on simple threshold
-                      subset@meta.data$simple_expr_threshold <-
+                      meta_table$simple_expr_threshold <-
                         case_when(
                           # Avoiding "+" and "-" declarations for now
                           # "High" when expresssion value is greater than
@@ -643,6 +670,13 @@ dge_tab_server <- function(id,
                           expr_data >= threshold ~ glue("{feature} High"),
                           expr_data < threshold ~ glue("{feature} Low"),
                           TRUE ~ "error"
+                        )
+                      
+                      # Save metadata table with expression threshold column
+                      subset <- 
+                        scExploreR:::update_object_metadata(
+                          subset,
+                          meta_table
                         )
                       }
                     

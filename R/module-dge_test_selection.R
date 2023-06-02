@@ -281,20 +281,6 @@ dge_test_selections_server <-
         # the config file
         initial_marker_choices <-
           if (!is.na(initial_group_by) & !is.null(initial_group_by)){
-            # object()@meta.data |>
-            #   # Get unique values for the group by category
-            #   # First category is selected at startup
-            #   dplyr::select(.data[[initial_group_by]]) |>
-            #   unique() |>
-            #   # Convert to vector
-            #   unlist() |>
-            #   # Remove names from vector
-            #   unname() |>
-            #   # Convert factor of choices to character vector
-            #   as.character() |>
-            #   # Sort choices
-            #   str_sort(numeric = TRUE)
-            
             # Get unique values for the group by variable
             SCEPlots::unique_values(
               object(),
@@ -381,52 +367,6 @@ dge_test_selections_server <-
             }
           })
         
-        # group_by_menu <- 
-        #   eventReactive(
-        #     # Reacts to dge_mode() defined in 1.
-        #     dge_mode(),
-        #     #ignoreNULL = FALSE,
-        #     label="Test Selection: Group by Selection Menu",
-        #     {
-        #       if (dge_mode() == "mode_dge"){
-        #         # Group by menu for DGE mode
-        #         selectInput(
-        #           # Input IDs for two modes must be named differently 
-        #           # to avoid namespace collisions
-        #           inputId = ns("group_by_dge"),
-        #           label = 
-        #             "Choose metadata to use for differential gene expression:",
-        #           # Remove "none" and "best_response" from selectable 
-        #           # options to group 
-        #           choices = meta_choices()[!meta_choices() %in% "none"],
-        #           # Clusters is selected by default
-        #           selected = "clusters"
-        #           )
-        #         } else if (dge_mode() == "mode_marker"){
-        #           # Group by menu for marker identification mode 
-        #           selectInput(
-        #             # Input IDs for two modes must be named differently 
-        #             # to avoid namespace collisions
-        #             inputId = ns("group_by_marker"),
-        #             label = 
-        #               "Choose metadata to use for marker identification:",
-        #             # Remove "none" and "best_response" from selectable
-        #             # options to group by
-        #             choices =
-        #               meta_choices()[!meta_choices() %in% "none"],
-        #             # At startup, marker selection is ran with clusters 
-        #             # as the group by variable.
-        #             selected = "clusters"
-        #             )
-        #           }
-        #       })
-        # 
-        # # Render UI
-        # output$group_by_menu <- 
-        #   renderUI({
-        #     group_by_menu()
-        #     })
-        
         # 3. Classes/Groups Menu -----------------------------------------------
         ## 3.1. Show/hide possible classes/groups interfaces ####
         observe({
@@ -465,26 +405,6 @@ dge_test_selections_server <-
               )
             }
           }
-          
-          # if (!isTruthy(input$use_feature_expression)){
-          #   # When use feature expression checkbox is de-selected, show 
-          #   # standard DGE UI and hide the threshold DGE UI
-          #   showElement(
-          #     id = standard_groups_id
-          #   )
-          #   hideElement(
-          #     id = threshold_groups_id
-          #   )
-          # } else {
-          #   # When the checkbox is selected, show the threshold DGE UI, and 
-          #   # hide the standard UI
-          #   showElement(
-          #     id = threshold_groups_id
-          #   )
-          #   hideElement(
-          #     id = standard_groups_id
-          #   )
-          # }
         })
         
         ## 3.2. Process group_by choice ####
@@ -501,16 +421,6 @@ dge_test_selections_server <-
               } else {
                 NULL
               }
-              
-              # # dge_mode() must be defined to avoid errors
-              # if (!is.null(dge_mode())){
-              #   # Input to use depends on the selected DGE mode
-              #   if (dge_mode() == "mode_dge"){
-              #     return(input$group_by_dge)
-              #     } else if (dge_mode() == "mode_marker"){
-              #       return(input$group_by_marker)
-              #       }
-              #   } else NULL
               })
         
         ## 3.3. Determine unique values for the group by variable ####
@@ -526,22 +436,6 @@ dge_test_selections_server <-
             # group_by_category is NULL
             ignoreNULL = TRUE,
             {
-              # choices <- 
-              #   object()@meta.data |>
-              #   # Get unique values for the group by category
-              #   dplyr::select(.data[[group_by_category()]]) |>
-              #   unique() |>
-              #   # Convert to vector
-              #   unlist() |>
-              #   # Remove names from vector
-              #   unname() |>
-              #   # Convert factor of choices to character vector
-              #   as.character() |>
-              #   # Sort choices
-              #   str_sort(numeric = TRUE)
-              #
-              # choices
-              
               SCEPlots::unique_values(
                 object(),
                 var = group_by_category() 
@@ -648,136 +542,6 @@ dge_test_selections_server <-
                   )
                 }
             })
-        
-        ## UI for Marker classes/group selection 
-        # Define_UI
-        # classes_menu <- 
-        #   eventReactive(
-        #     # Reacts to group choices, defined in 3.2.
-        #     group_choices(),
-        #     label = "Test Selection: Classes Selection Menu",
-        #     #ignoreNULL = FALSE,
-        #     {
-        #       if (dge_mode() == "mode_dge") {
-        #         # DGE mode: UI depends on whether user selects checkbox for
-        #         # groups by feature expression
-        #         # Both interfaces are hidden by default and are shown based on
-        #         # the condition of the checkbox
-        #         tagList(
-        #           # Standard DGE UI
-        #           # Display menus to select two classes from the metadata 
-        #           # category chosen as the group_by variable. Multiple 
-        #           # selections are possible for each group.
-        #           div(
-        #             id = ns("standard_groups_ui"),
-        #             # Put choices beside one another in two-column format
-        #             pickerInput(
-        #               inputId = ns("group_1"),
-        #               label = "Group 1",
-        #               choices = group_choices(),
-        #               # Nothing selected by default
-        #               selected = character(0),
-        #               multiple = TRUE,
-        #               options =
-        #                 list(
-        #                   "selected-text-format" = "count > 5",
-        #                   "actions-box" = TRUE,
-        #                   # Label for "deselect all" button
-        #                   "deselectAllText" = "Clear selections"
-        #                   )
-        #               ),
-        #             pickerInput(
-        #               inputId = ns("group_2"),
-        #               label = "Group 2",
-        #               choices = group_choices(),
-        #               selected = character(0),
-        #               multiple = TRUE,
-        #               options =
-        #                 list(
-        #                   "selected-text-format" = "count > 5",
-        #                   "actions-box" = TRUE,
-        #                   # Label for "deselect all" button
-        #                   "deselectAllText" = "Clear selections"
-        #                 )
-        #             )
-        #           ),
-        #           # Feature Threshold DGE UI
-        #           # Eventually, will be divided into multiple separate 
-        #           # interfaces for different types of thresholding
-        #           hidden(
-        #             div(
-        #               id = ns("threshold_groups_ui"),
-        #               # Simple threshold menu
-        #               # One feature is chosen, and cells with expression above 
-        #               # the threshold are compared to cells below threshold 
-        #               selectizeInput(
-        #                 inputId = ns("simple_threshold_feature"),
-        #                 label = NULL,
-        #                 choices = NULL,
-        #                 selected = character(0),
-        #                 options = 
-        #                   list(
-        #                     "placeholder" = "Enter feature",
-        #                     "maxItems" = 1,
-        #                     "plugins" = list("remove_button"),
-        #                     "create" = FALSE
-        #                     )
-        #                 ),
-        #               
-        #               # Threshold picker UI (module hides plot
-        #               # until feature is chosen above)
-        #               threshold_picker_ui(
-        #                 id = ns("simple_threshold"),
-        #                 plot_height = "150px"
-        #               )
-        #             )
-        #           )
-        #         )
-        #         } else if (dge_mode() == "mode_marker") {
-        #           # Marker mode: display menu to choose values from the 
-        #           # group by metadata category to include as classes in 
-        #           # marker identification. 
-        #           pickerInput(
-        #             inputId = ns("marker_class_selection"),
-        #             label = "Choose classes to include in marker computation",
-        #             # Choices: if there are groups defined in the 
-        #             # config file for the metadata category, build a list 
-        #             # with the defined groups for the menu
-        #             choices = 
-        #               if (
-        #                 !is.null(metadata_config()[[
-        #                   group_by_category()]]$groups)){
-        #                 # Use group_metadata_choices() to generate list
-        #                 group_metadata_choices(
-        #                   group_info=
-        #                     metadata_config()[[group_by_category()]]$groups,
-        #                   choices = 
-        #                     unique_metadata()[[group_by_category()]]
-        #                   )
-        #                 } else {
-        #                   # Otherwise, use the group_choices() vector 
-        #                   group_choices()
-        #                   },
-        #             
-        #             # Select all unique values at startup
-        #             selected = group_choices(),
-        #             multiple = TRUE,
-        #             options = list(
-        #               "selected-text-format" = "count > 3",
-        #               "size" = 10,
-        #               # Define max options to show at
-        #               # a time to keep menu from being cut off
-        #               "actions-box"=TRUE
-        #               )
-        #             ) # End pickerInput
-        #           }
-        #       })
-        # 
-        # # Render UI
-        # output$classes_menu <-
-        #   renderUI({
-        #      classes_menu()
-        #     })
         
         ## 3.7. Update Standard DGE Group Menus ####
         ### 3.7.1. Update Group 2 based on Group 1 Selection ####
