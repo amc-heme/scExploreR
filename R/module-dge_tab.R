@@ -790,26 +790,15 @@ dge_tab_server <- function(id,
                 {
                   dge_table <-
                     # Run presto on the subset, using the group by category
-                    wilcoxauc(
-                      subset(), 
-                      # Assay: fixed to the designated gene assay for now
-                      seurat_assay =
-                        if (isTruthy(designated_genes_assay())){
-                          designated_genes_assay()
-                          # If designated assay is undefined, use the first
-                          # assay included in the config file.
-                        } else names(assay_config())[[1]],
-                      # If metaclusters are requested, use 
-                      # "metaclusters" for dge groups
-                      group_by = 
-                        if (metaclusters_present()){
-                          "metacluster"
-                        } else if (thresholding_present()){
-                          "simple_expr_threshold"
-                        } else {
-                          group_by_category()
-                        }
-                    ) %>%
+                    # Uses internal S3 method
+                    run_presto(
+                      subset(),
+                      designated_genes_assay = designated_genes_assay(), 
+                      assay_config = assay_config(), 
+                      metaclusters_present = metaclusters_present(), 
+                      thresholding_present = thresholding_present(), 
+                      group_by_category = group_by_category()
+                      ) %>%
                     # Explicitly coerce to tibble
                     as_tibble() %>%
                     # remove stat and auc from the output table
