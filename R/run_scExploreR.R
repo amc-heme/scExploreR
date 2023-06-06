@@ -889,7 +889,7 @@ run_scExploreR <-
       #     
       #   })
       
-      ### 1.5.3. Copy ADT assay for thresholding ####
+      ### 1.5.3. Apply thresholds to ADT Assay ####
       # If thresholding information is provided, copy the ADT assay to a new 
       # assay, and save the new assay to the object
       observeEvent(
@@ -924,43 +924,53 @@ run_scExploreR <-
             # designate multiple in app, but file could be modified to do so)
             if (!is.null(designated_ADT_assay)){
               if (length(designated_ADT_assay) == 1){
-                # Fetch copy of object
-                object_copy <- object()
+                adt_threshold_assay(
+                  object(),
+                  threshold_table = 
+                    config()$adt_thresholds,
+                  designated_adt_assay = 
+                    designated_ADT_assay
+                  ) |> 
+                  # Update object with output of adt_threshold_assay
+                  object()
                 
-                # Copy ADT assay
-                object_copy[["ADT_threshold"]] <- 
-                  object_copy[[designated_ADT_assay]]
-                
-                # Clamp assays to thresholds in config app
-                # Subset assay to features for which threshold information exists
-                #  to conserve memory
-                object_copy[["ADT_threshold"]] <- 
-                  subset(
-                    object_copy[["ADT_threshold"]], 
-                    features = config()$adt_thresholds$adt
-                  )
-                
-                for (i in 1:nrow(config()$adt_thresholds)){
-                  # Fetch ith ADT and threshold value
-                  ADT <- config()$adt_thresholds$adt[i]
-                  threshold <- config()$adt_thresholds$value[i]
-                  
-                  # Subtract threshold
-                  object_copy@assays$ADT_threshold@data[ADT,] <-
-                    object_copy@assays$ADT_threshold@data[ADT,] - threshold 
-                  
-                  # "Clamp" expression values for ADT to zero
-                  object_copy@assays$ADT_threshold@data[ADT,] <- 
-                    sapply(
-                      object_copy@assays$ADT_threshold@data[ADT,],
-                      function(value){
-                        if (value < 0) 0 else value
-                      }
-                    )
-                }
+                # # Fetch copy of object
+                # object_copy <- object()
+                # 
+                # # Copy ADT assay
+                # object_copy[["ADT_threshold"]] <- 
+                #   object_copy[[designated_ADT_assay]]
+                # 
+                # # Clamp assays to thresholds in config app
+                # # Subset assay to features for which threshold information exists
+                # #  to conserve memory
+                # object_copy[["ADT_threshold"]] <- 
+                #   subset(
+                #     object_copy[["ADT_threshold"]], 
+                #     features = config()$adt_thresholds$adt
+                #   )
+                # 
+                # for (i in 1:nrow(config()$adt_thresholds)){
+                #   # Fetch ith ADT and threshold value
+                #   ADT <- config()$adt_thresholds$adt[i]
+                #   threshold <- config()$adt_thresholds$value[i]
+                #   
+                #   # Subtract threshold
+                #   object_copy@assays$ADT_threshold@data[ADT,] <-
+                #     object_copy@assays$ADT_threshold@data[ADT,] - threshold 
+                #   
+                #   # "Clamp" expression values for ADT to zero
+                #   object_copy@assays$ADT_threshold@data[ADT,] <- 
+                #     sapply(
+                #       object_copy@assays$ADT_threshold@data[ADT,],
+                #       function(value){
+                #         if (value < 0) 0 else value
+                #       }
+                #     )
+                #}
                 
                 # Save object with new assay
-                object(object_copy)
+                #object(object_copy)
               }
             }
           }
@@ -1098,7 +1108,7 @@ run_scExploreR <-
                 # ADT thresholds: add to list if the ADT_threshold assay 
                 # has been created in the object
                 adt_threshold_features = 
-                  if ("ADT_threshold" %in% SCEPlots::assay_names(object())){
+                  if ("adtThreshold" %in% SCEPlots::assay_names(object())){
                     TRUE
                   } else {
                     FALSE

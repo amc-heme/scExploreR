@@ -111,11 +111,11 @@ feature_list_all <-
     # Add ADT features with a defined threshold
     if (adt_threshold_features == TRUE){
       # Fetch features with threshold information (all features in 
-      # "ADT_threshold" assay)
+      # "adtThreshold" assay)
       threshold_features <- 
         SCEPlots::features_in_assay(
           object,
-          assay = "ADT_threshold"
+          assay = "adtThreshold"
           )
       
       # Define values to display to user in the dropdown
@@ -128,8 +128,13 @@ feature_list_all <-
       # Define machine-readable names for each feature
       machine_readable <- 
         paste0(
-          # Prepend key for the ADT_threshold assay to each feature
-          Key(object[["ADT_threshold"]]), 
+          # Prepend key for the adtThreshold assay to each feature
+          # Use make_key method for adaptability to Seurat and 
+          # SingleCellExperiment objects
+          scExploreR:::make_key(
+            object,
+            assay = "adtThreshold"
+            ), 
           threshold_features
           )
       
@@ -146,6 +151,10 @@ feature_list_all <-
       valid_features[[adt_threshold_title]] <- 
         threshold_pairs
     }
+    
+    print("Assays for which features are defined")
+    print(names(valid_features))
+    print(valid_features[[adt_threshold_title]])
     
     # Return the valid_features list
     return(valid_features)

@@ -8,15 +8,17 @@
 #' a prefix (for example, RNA features use the '_rna' key)
 #' @param assay_config the assays section of the config file, loaded in the 
 #' main app
+#' @param adt_threshold_key
 #' @param use_suffix if TRUE, add the human readable suffix defined in 
 #' assay_config in parentheses (for example, if the label is "Surface Protein",
-#' this)
+#' this will be added to the end of the title returned.)
 #'
 #' @noRd
 hr_name <- 
   function(
     machine_readable_name, 
     assay_config,
+    #adt_threshold_key,
     use_suffix = TRUE
     ){
     # Error if a multi-element vector is passed for the machine-readable name
@@ -50,9 +52,15 @@ hr_name <-
       }
     }
     
-    # Numeric metadata features: these are not defined in assays. For these 
-    # features, the loop above will not match any assay key, and will not generate
-    # the variable "HR". 
+    # ADT threshold assay: not included in the config file
+    # Must test separately
+    # if (grepl(adt_threshold_key, machine_readable_name)){
+    #   
+    # }
+    
+    # Numeric metadata features: these are not defined in the config file. For 
+    # these features, the loop above will not match any assay key, and will not 
+    # generate the variable "HR". 
     # To allow plotting of numeric metadata variables, the code below will 
     # have hr_name return the machine readable name when no matches are found. 
     if (!exists("HR")){
