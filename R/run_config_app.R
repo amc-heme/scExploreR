@@ -158,24 +158,41 @@ run_config <-
     # config file that is not compatible with the current version of the main app
     config_version <- "0.5.0"
     
-    # Numeric Metadata Columns
-    meta_columns <- names(object@meta.data)
+    # Identify numeric metadata variables
+    # Pull full metadata table first, then test the class of each variable
+    meta_table <- 
+      SCEPlots::fetch_metadata(
+        object,
+        full_table = TRUE
+        )
+    # Identify variables in table
+    meta_vars <- colnames(meta_table)
     
-    # is_numeric: a vector of boolean values used to subset meta_columns for 
-    # numeric metadata
+    # is_numeric: a vector of boolean values used to subset meta_columns 
+    # for numeric metadata
     is_numeric <- 
       sapply(
-        meta_columns,
+        meta_vars,
         function(x, object){
-          class(object@meta.data[[x]]) %in% c("numeric", "integer")
+          class(meta_table[[x]]) %in% c("numeric", "integer")
         },
         object
-      )
-    numeric_cols <- meta_columns[is_numeric]
-    non_numeric_cols <- meta_columns[!is_numeric]
+        )
+    
+    numeric_cols <- meta_vars[is_numeric]
+    non_numeric_cols <- meta_vars[!is_numeric]
+    
+    # Assays in object
+    all_assays <-
+      SCEPlots::assay_names(
+        object
+        )
     
     # Reductions in object
-    reductions <- names(object@reductions)
+    reductions <- 
+      SCEPlots::reduction_names(
+        object
+        )
     
     # Main UI and Server Functions ####
     # 1. Tabs in Main UI ####
@@ -328,7 +345,8 @@ run_config <-
                 inputId = "assays_selected",
                 label = "Choose assays to include:",
                 width = "100%",
-                choices = names(object@assays),
+                choices = all_assays,
+                  #names(object@assays),
                 options = 
                   list(
                     enable_search = FALSE,
@@ -390,7 +408,8 @@ run_config <-
             # shown when their corresponding assay is selected by the user. The 
             # "id" argument in lapply is the name of the assay.
             lapply(
-              names(object@assays),
+              all_assays,
+              #names(object@assays),
               function(assay){
                 options_ui(
                   id = assay,
@@ -1053,7 +1072,7 @@ run_config <-
       all_assay_options <- list()
       
       # Create an assay options module for each assay in the object 
-      for (id in names(object@assays)){
+      for (id in all_assays){
         server_output <- 
           options_server(
             id = id,
@@ -1213,10 +1232,10 @@ run_config <-
       # One server instance is created for each metadata category in the object
       all_metadata_options <- list()
       
-      for (id in names(object@meta.data)){
+      for (var in meta_vars){
         server_output <- 
           options_server(
-            id = id,
+            id = var,
             object = object,
             categories_selected = metadata_selected,
             options_type = "metadata"
@@ -2345,7 +2364,7 @@ run_config <-
             updateSelectInput(
               session = session,
               inputId = "genes_assay",
-              choices = names(object@assays),
+              choices = all_assays,
               selected = config$other_assay_options$gene_assay
             )
           }
@@ -2367,7 +2386,7 @@ run_config <-
             updateSelectInput(
               session = session,
               inputId = "adt_assay",
-              choices = names(object@assays),
+              choices = all_assays,
               selected = config$other_assay_options$adt_assay
             )
           } else {
@@ -2381,7 +2400,7 @@ run_config <-
                 updateSelectInput(
                   session = session,
                   inputId = "adt_assay",
-                  choices = c("none", names(object@assays)),
+                  choices = c("none", all_assays),
                   selected = assay
                 )
 
