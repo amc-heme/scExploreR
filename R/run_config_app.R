@@ -346,7 +346,6 @@ run_config <-
                 label = "Choose assays to include:",
                 width = "100%",
                 choices = all_assays,
-                  #names(object@assays),
                 options = 
                   list(
                     enable_search = FALSE,
@@ -409,7 +408,6 @@ run_config <-
             # "id" argument in lapply is the name of the assay.
             lapply(
               all_assays,
-              #names(object@assays),
               function(assay){
                 options_ui(
                   id = assay,
@@ -1089,7 +1087,8 @@ run_config <-
       # reactive object, which is added to the config_data list. 
       config_data$assays <- 
         reactive({
-          #Options list is only processed when metadata columns have been selected
+          # Options list is only processed when metadata columns 
+          # have been selected
           if (!is.null(input$assays_selected)){
             #Extracts each reactive module output and stores them in a list
             list <- lapply(all_assay_options, function(x) x())
@@ -1600,8 +1599,10 @@ run_config <-
           
           # Fetch ADTs in the designated assay (reacts to assay)
           adts <- 
-            object[[ADT_assay()]] |> 
-            rownames()
+            SCEPlots::features_in_assay(
+              object,
+              assay = ADT_assay()
+              )
           
           # return adts that are not included in the table of defined thresholds
           # (also reacts to changes in the table)
@@ -1620,8 +1621,10 @@ run_config <-
         {
           # Fetch features (surface proteins) for the designated ADT assay
           adts <- 
-            object[[ADT_assay()]] |> 
-            rownames()
+            SCEPlots::features_in_assay(
+              object,
+              assay = ADT_assay()
+              )
           
           # Populate select input with ADT choices 
           updateSelectizeInput(
@@ -1651,8 +1654,16 @@ run_config <-
             # When adding a new threshold, use the adt selected by the user in
             # the search window
             # Add assay key to ADT (threshold server expects this)
+            # paste0(
+            #   Key(object[[isolate({ADT_assay()})]]),
+            #   input$selected_adt
+            # )
             paste0(
-              Key(object[[isolate({ADT_assay()})]]),
+              scExploreR:::make_key(
+                object,
+                assay = isolate({ADT_assay()})
+                ),
+              # Key(object[[isolate({ADT_assay()})]]),
               input$selected_adt
             )
           } else if (module_data$threshold_menu_state == "edit") {
@@ -1660,7 +1671,10 @@ run_config <-
             # (this is set using a reactiveValues object)
             paste0(
               # Add assay key
-              Key(object[[isolate({ADT_assay()})]]),
+              scExploreR:::make_key(
+                object,
+                assay = isolate({ADT_assay()})
+                ),
               editing_data$adt_target
             )
           } 
@@ -1783,8 +1797,10 @@ run_config <-
           # Reset ADT selection input
           # Get names of all ADTs 
           adts <- 
-            object[[ADT_assay()]] |> 
-            rownames()
+            SCEPlots::features_in_assay(
+              object,
+              assay = ADT_assay()
+              )
           
           updateSelectizeInput(
             session = session,
@@ -1850,8 +1866,10 @@ run_config <-
           
           # Update ADT choices to exclude the ADTs currently in the table
           adts <- 
-            object[[ADT_assay()]] |> 
-            rownames()
+            SCEPlots::features_in_assay(
+              object,
+              assay = ADT_assay()
+              )
           
           updateSelectizeInput(
             session = session,
@@ -2014,8 +2032,10 @@ run_config <-
               # list of available ADTs, by updating the select input with all
               # ADTs not in the new table
               adts <- 
-                object[[ADT_assay()]] |> 
-                rownames()
+                SCEPlots::features_in_assay(
+                  object,
+                  assay = ADT_assay()
+                  )
               
               updateSelectizeInput(
                 session = session,

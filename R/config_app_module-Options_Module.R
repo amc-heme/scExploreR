@@ -186,7 +186,11 @@ options_ui <- function(id,
                   id = ns("groups"),
                   unique_values =
                     str_sort(
-                      unique(object@meta.data[[card_name]]),
+                      SCEPlots::unique_values(
+                        object = object,
+                        var = card_name
+                        ),
+                      #unique(object@meta.data[[card_name]]),
                       numeric = TRUE
                       )
                   )
@@ -326,8 +330,13 @@ options_server <-
                 id = "groups",
                 category_name = card_name,
                 unique_values = 
-                  unique(object@meta.data[[card_name]]) |> 
-                  str_sort(numeric=TRUE)
+                  str_sort(
+                    SCEPlots::unique_values(
+                      object = object,
+                      var = card_name
+                      ),
+                    numeric = TRUE
+                    )
                 )
             
             output$test_print <- 
@@ -653,7 +662,11 @@ options_server <-
             reactive({
               list(
                 `assay` = card_name,
-                `key` = Key(object[[card_name]]),
+                `key` = 
+                  scExploreR:::make_key(
+                    object,
+                    assay = card_name
+                    ),
                 `suffix_human` = 
                   if (input$include_label == TRUE) input$hr else "",
                 `dropdown_title` = input$hr#,
