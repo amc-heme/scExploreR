@@ -10,7 +10,6 @@
 #' excluded from the choices of variables for group.by and split.by. 
 #' 
 #' @noRd
-#'
 preview_dimplot_ui <- 
   function(
     id,
@@ -44,7 +43,10 @@ preview_dimplot_ui <-
       selectInput(
         inputId = ns("reduction"),
         label = "Choose Reduction",
-        choices = names(object@reductions)
+        choices = 
+          SCEPlots::reduction_names(
+            object
+            )
         ),
       # Label groups
       checkboxInput(

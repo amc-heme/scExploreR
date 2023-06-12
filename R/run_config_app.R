@@ -1663,7 +1663,6 @@ run_config <-
                 object,
                 assay = isolate({ADT_assay()})
                 ),
-              # Key(object[[isolate({ADT_assay()})]]),
               input$selected_adt
             )
           } else if (module_data$threshold_menu_state == "edit") {
