@@ -33,7 +33,12 @@ options_ui <- function(id,
   # Metadata-specific calculations used to define UI for each metadata type
   if (optcard_type == "metadata"){
     # Get unique values of metadata field for display of summary statistics
-    values <- unique(object@meta.data[[card_name]])
+    values <- 
+      SCEPlots::unique_values(
+        object,
+        var = card_name
+        )
+    
     # Create list of sorted values for display
     values_sorted <- str_sort(values, numeric=TRUE)
     # Determine type of metadata
