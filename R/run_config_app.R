@@ -172,7 +172,8 @@ run_config <-
     # Version of config app #### 
     # Printed in config file. Will be used to alert user if they are using a 
     # config file that is not compatible with the current version of the main app
-    config_version <- "0.5.0"
+    config_version <- 
+      packageVersion("scExploreR")
     
     # Identify numeric metadata variables
     # Pull full metadata table first, then test the class of each variable
