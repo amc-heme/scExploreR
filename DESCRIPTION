@@ -1,7 +1,7 @@
 Package: scExploreR
 Type: Package
 Title: scExploreR
-Version: 0.6.0
+Version: 0.7.0
 Author: William Showers, Krysta Engel, Austin Gillen
 URL: https://github.com/amc-heme/scExploreR
 Maintainer: Heme Informatics Group <heme.informatics@ucdenver.edu>
@@ -17,6 +17,7 @@ Imports:
     ggsci,
     glue,
     gridExtra,
+    HDF5Array,
     patchwork,
     presto,
     profvis (>= 0.3.7),

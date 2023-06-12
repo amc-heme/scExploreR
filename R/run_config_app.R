@@ -10,6 +10,11 @@
 #' loaded when the user selects "load config file" in the config app. This 
 #' should be a YAML file, though .rds files from versions 0.4.0 and earlier will
 #' also be accepted.
+#' @param is_HDF5SummarizedExperiment Set this to TRUE to load an HDF5-enabled 
+#' SingleCellExperiment object saved via saveHDF5SummarizedExperiment. When 
+#' loading an HDF5-enabled object, set the object_path to the directory of the
+#' HDF5-enabled object, created when saving the object via
+#' HDF5Array:saveHDF5SummarizedExperiment.
 #' @param dev_mode Used only for development. If TRUE, the server values for each option chosen by the user will be printed at the bottom of the "general" tab.
 #'
 #' @usage 
@@ -21,6 +26,7 @@ run_config <-
   function(
     object_path,
     config_path = NULL,
+    is_HDF5SummarizedExperiment = FALSE,
     dev_mode = FALSE
   ){
     # Initialize libraries ####
@@ -142,13 +148,23 @@ run_config <-
     
     # Load object #### 
     # object_path and config_path are specified using run_config
-    print("Loading Seurat object...")
-    object <- readRDS(object_path) 
+    print("Loading object...")
+    # Use a separate loading function for HDF5 enabled SingleCellExperiment
+    # objects.
+    object <- 
+      if (!is_HDF5SummarizedExperiment == TRUE){
+        readRDS(object_path) 
+      } else {
+        HDF5Array::loadHDF5SummarizedExperiment(object_path)
+      }
     
     # Test if the loaded object is a Seurat object
-    if (!class(object) == "Seurat"){
-      stop("`object_path` is not a Seurat object.")
-    }
+    if (!class(object) %in% c("Seurat", "SingleCellExperiment")){
+      stop(
+        "`object_path` is not a Seurat or SingleCellExperiment object. Class detected: ", 
+        class(object)
+        )
+      }
     
     # Define Config file path for loading ####
     config_filename <- config_path
