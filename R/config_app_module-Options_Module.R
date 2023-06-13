@@ -40,7 +40,7 @@ options_ui <- function(id,
         )
     
     # Create list of sorted values for display
-    values_sorted <- str_sort(values, numeric=TRUE)
+    values_sorted <- str_sort(values, numeric = TRUE)
     # Determine type of metadata
     metadata_type <- metadata_type(object, card_name)
     
@@ -243,6 +243,8 @@ options_ui <- function(id,
 #' be "assays", "metadata", or "reductions".  
 #' @param card_name the name of the individual category that an instance of
 #' the module applies to. This is the id by default, and can be changed.
+#' @param dev_mode When TRUE, additional logs are printed to the console while 
+#' the app runs. Set using run_config_app().
 #'
 #' @return
 #' 
@@ -253,7 +255,8 @@ options_server <-
     object,
     categories_selected,
     options_type = c("assays", "metadata", "reductions"),
-    card_name = id
+    card_name = id,
+    dev_mode = FALSE
     ){
     # Initialize module
     moduleServer(
@@ -436,13 +439,13 @@ options_server <-
           ## 5.1. Assays ####
           observeEvent(
             session$userData$config(),
+            label = glue("{id}: Update Options Based on Config File"),
             {
               # Search for assay name (module ID) in loaded config file
               if (id %in% names(session$userData$config()$assays)){
                 # Get config info for assay matching module ID
                 config_individual <- 
                   session$userData$config()$assays[[id]]
-                
                 
                 # Update inputs
                 # Text entry for assay label
@@ -463,16 +466,7 @@ options_server <-
                   inputId = "include_label",
                   value =
                     if (isTruthy(config_individual$suffix_human)) TRUE else FALSE
-                )
-                
-                # Designated ADT assay (no longer used; updated in
-                # main interface)
-                # updateCheckboxInput(
-                #   session,
-                #   inputId = "designate_adt",
-                #   value =
-                #     if (isTruthy(config_individual$designated_adt)) TRUE else FALSE
-                # )
+                  )
               }
             })
           
@@ -484,8 +478,6 @@ options_server <-
             {
               # Search for variable name in loaded config file
               if (card_name %in% names(session$userData$config()$metadata)){
-                #print(glue("Update options for {id}"))
-                
                 # Get config info for matching metadata variable
                 config_individual <-
                   session$userData$config()$metadata[[card_name]]
@@ -515,7 +507,6 @@ options_server <-
                 ## Create modules for each group
                 # One module is already created by updateMaterialSwitch
                 # if groups is not NULL
-                
                 
                 # if (!is.null(config_individual$groups)){
                 #   n_groups <- length(config_individual$groups)
@@ -611,8 +602,7 @@ options_server <-
                 #      }
                 #    }
                 # }
-              }
-  
+                }
               })
           
         } else if (options_type == "reductions"){
@@ -628,7 +618,6 @@ options_server <-
                 config_individual <-
                   session$userData$config()$reductions[[id]]
 
-
                 # Update inputs
                 # Text entry for reduction label
                 updateTextInput(
@@ -638,6 +627,7 @@ options_server <-
                   value = config_individual$label
                 )
               }
+              
             })
         }
         
@@ -714,9 +704,9 @@ options_server <-
             return_list_metadata <- 
               reactive({
                 list(
-                  `meta_colname`= card_name,
-                  `label`= input$hr,
-                  `groups`= NULL
+                  `meta_colname` = card_name,
+                  `label` = input$hr,
+                  `groups` = NULL
                 )
               })
           }

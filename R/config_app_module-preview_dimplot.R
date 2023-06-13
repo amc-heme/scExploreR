@@ -158,7 +158,7 @@ preview_dimplot_server <-
                   )
                 }
                 
-                if (isTruthy(preview_plot_settings$split_by)){
+                if (preview_plot_settings$split_by != "none"){
                   # ncol slider
                   # Must also fill min/max slider settings
                   ncol_settings <-
@@ -167,9 +167,7 @@ preview_dimplot_server <-
                       rule = "split_by",
                       split_by = preview_plot_settings$split_by
                     )
-                }
-                
-                if (isTruthy(preview_plot_settings$ncol)){
+                  
                   updateSliderInput(
                     session = session,
                     inputId = "ncol",
@@ -177,7 +175,7 @@ preview_dimplot_server <-
                     value = preview_plot_settings$ncol,
                     max = as.numeric(ncol_settings[2]),
                     step = 1
-                  )
+                    )
                 }
                 
                 if (!is.null(preview_plot_settings$label)){

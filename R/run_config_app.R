@@ -173,7 +173,8 @@ run_config <-
     # Printed in config file. Will be used to alert user if they are using a 
     # config file that is not compatible with the current version of the main app
     config_version <- 
-      packageVersion("scExploreR")
+      packageVersion("scExploreR") |> 
+      as.character()
     
     # Identify numeric metadata variables
     # Pull full metadata table first, then test the class of each variable
@@ -1093,7 +1094,8 @@ run_config <-
             id = id,
             object = object,
             categories_selected = assays_selected,
-            options_type = "assays"
+            options_type = "assays",
+            dev_mode = dev_mode
             )
         
         all_assay_options[[id]] <- server_output
@@ -1254,16 +1256,22 @@ run_config <-
             id = var,
             object = object,
             categories_selected = metadata_selected,
-            options_type = "metadata"
+            options_type = "metadata",
+            dev_mode = dev_mode
             )
         
-        all_metadata_options[[id]] <- server_output
+        all_metadata_options[[var]] <- server_output
       }
       
       ### 3.3.4. RECORD: metadata options in config data ####
       #### 3.3.4.1. Category-specific options ####
       config_data$metadata <- 
         reactive({
+          if (dev_mode == TRUE){
+            print("metadata selected")
+            print(input$metadata_selected)
+          }
+          
           # Options list is only processed when metadata columns 
           # have been selected
           if (isTruthy(input$metadata_selected)){
@@ -1276,6 +1284,11 @@ run_config <-
             # Sort list according to the order specified by the user in the drag
             # and drop menu
             options_list <- options_list[input$metadata_selected]
+            if (dev_mode == TRUE){
+              print("Options list")
+              print(options_list)
+            }
+            
             return(options_list)
           } else {
             # Return NULL if no columns are selected
@@ -1573,8 +1586,9 @@ run_config <-
             id = reduction,
             object = object,
             categories_selected = reductions_selected,
-            options_type = "reductions"
-          )
+            options_type = "reductions",
+            dev_mode = dev_mode
+            )
         
         all_reductions_options[[reduction]] <- server_output
       }
@@ -1609,7 +1623,8 @@ run_config <-
       
       ### 3.5.1. Define/update available ADTs ####
       # Reactive variable will be used for updating the selection menu with
-      # ADTs in the designated assay that have not already been added to the table
+      # ADTs in the designated assay that have not already been added to the
+      # table
       available_adts <-
         reactive({
           req(ADT_assay())
@@ -1722,7 +1737,7 @@ run_config <-
         ignoreInit = TRUE,
         {
           module_data$threshold_menu_state <- "add"
-        })
+          })
       
       #### 3.5.4.2. Disable button while adding or editing a feature ####
       # Prevents user from adding a new feature while editing the current one
@@ -1841,11 +1856,11 @@ run_config <-
         if (!is.null(threshold_value())){
           enable(
             id = "accept_threshold"
-          )
+            )
         } else {
           disable(
             id = "accept_threshold"
-          )
+            )
         }
       })
       
@@ -2211,6 +2226,9 @@ run_config <-
             )
           } else {
             # Trigger to proceed with loading without showing a modal
+            if (dev_mode == TRUE){
+              print("Triggered loading of config file")
+            }
             load_trigger$trigger()
           }
         })
@@ -2234,6 +2252,9 @@ run_config <-
         {
           removeModal()
           
+          if (dev_mode == TRUE){
+            print("Triggered loading of config file")
+          }
           load_trigger$trigger()
         })
       
@@ -2246,6 +2267,9 @@ run_config <-
           ignoreNULL = FALSE,
           ignoreInit = TRUE,
           {
+            if (dev_mode == TRUE){
+              print("Loading config file")
+            }
             # config_filename: for now, use a path from config_init.yaml
             # May soon be chosen with a select input
             if (isTruthy(config_filename)){
@@ -2280,6 +2304,15 @@ run_config <-
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            if (isTruthy(session$userData$config())){
+              print("Config file loaded.")
+              
+              print("Contents")
+              print(session$userData$config())
+            }
+          }
+          
           # In the future, may notify user which fields exist and which do not
           showNotification(
             ui =
@@ -2304,11 +2337,17 @@ run_config <-
         session$userData$config(),
         {
           if (isTruthy(session$userData$config()$label)){
+            if (dev_mode == TRUE){
+              print("Update label")
+            }
             updateTextInput(
               session = session,
               inputId = "dataset_label",
               value = session$userData$config()$label
             )
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2317,11 +2356,19 @@ run_config <-
         session$userData$config(),
         {
           if (isTruthy(session$userData$config()$description)){
+            if (dev_mode == TRUE){
+              print("Update description")
+            }
+            
             updateTextInput(
               session = session,
               inputId = "dataset_description",
               value = session$userData$config()$description,
             )
+            
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2335,11 +2382,19 @@ run_config <-
           # fileInputs create temporary files when the user selects a file, and
           # this can't be re-created from a config file
           if (isTruthy(preview_type)){
+            if (dev_mode == TRUE){
+              print("Update preview type")
+            }
+            
             updateSelectInput(
               session = session,
               inputId = "preview_type",
-              selected = preview_type,
+              selected = preview_type
             )
+            
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2366,6 +2421,10 @@ run_config <-
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            print("Update assays selected")
+          }
+          
           updateMultiInput(
             session,
             inputId = "assays_selected",
@@ -2376,17 +2435,29 @@ run_config <-
                 session$userData$config()$assays
               )
           )
+          
+          if (dev_mode == TRUE){
+            print("Complete")
+          }
         })
       
       ##### 3.7.4.2.2. Include numeric metadata ####
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            print("Update include numeric metadata checkbox")
+          }
+          
           updateAwesomeCheckbox(
             session = session,
             inputId = "include_numeric_metadata",
             value = session$userData$config()$include_numeric_metadata
             )
+          
+          if (dev_mode == TRUE){
+            print("Complete")
+          }
         })
       
       ##### 3.7.4.2.3. Designated Genes assay ####
@@ -2397,12 +2468,20 @@ run_config <-
           config <- session$userData$config()
           
           if (isTruthy(config$other_assay_options)){
+            if (dev_mode == TRUE){
+              print("Update designated genes assay")
+            }
+            
             updateSelectInput(
               session = session,
               inputId = "genes_assay",
               choices = all_assays,
               selected = config$other_assay_options$gene_assay
             )
+            
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2452,6 +2531,10 @@ run_config <-
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            print("Update selected metadata")
+          }
+          
           # Set selected vs. not selected metadata variables using the
           # information in the loaded file.
           # sortable inputs will update when the values below change.
@@ -2475,6 +2558,10 @@ run_config <-
           # module_data$metadata_sortable_not_selected do not change
           # in this case).
           update_metadata_sortable$trigger()
+          
+          if (dev_mode == TRUE){
+            print("Complete")
+            }
         })
       
       ##### 3.7.4.3.2 Patient level meteadata variable ####
@@ -2488,11 +2575,19 @@ run_config <-
           
           # Update menu with variable in config file, if it exists
           if (isTruthy(sample_var)){
+            if (dev_mode == TRUE){
+              print("Update patient/sample level metadata variable")
+            }
+            
             updateSelectInput(
               session = session,
               inputId = "patient_colname",
               selected = sample_var
               )
+            
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2500,6 +2595,10 @@ run_config <-
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            print("Update selected reductions")
+          }
+          
           # Set selected vs. not selected reductions using the information
           # in the loaded file. Also sets the order of reductions selected.
           module_data$reductions_sortable_selected <- 
@@ -2518,6 +2617,10 @@ run_config <-
           # module_data$reductions_sortable_not_selected do not change
           # in this case).
           update_reductions_sortable$trigger()
+          
+          if (dev_mode == TRUE){
+            print("Complete")
+            }
           })
       
       #### 3.7.4.5 ADT threshold table ####
