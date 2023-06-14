@@ -18,9 +18,12 @@ params:
 ```{r libraries, echo = FALSE, message = FALSE, warning = FALSE}
 # Import libraries
 library(Seurat)
+library(SingleCellExperiment)
 library(shiny)
 library(stats)
 library(shinyWidgets)
+library(SCEPlots)
+library(scExploreR)
 
 # Libraries for formatting text
 library(glue)
@@ -83,10 +86,15 @@ To use string subsetting, the metadata categories and their values **must be ent
 
 ```{r Data Dictionary, echo = FALSE, message = FALSE, warning = FALSE}
 # Extract metadata table as a variable
-meta_table <- object@meta.data
+meta_table <- 
+  SCEPlots::fetch_metadata(
+    object,
+    full_table = TRUE
+    )
 
 # Define searchable metadata categories 
-all_meta_cols <- names(meta_table)
+all_meta_cols <- 
+  colnames(meta_table)
 
 # First iteration: build list with information on each metadata category ##### 
 metadata_properties <-
