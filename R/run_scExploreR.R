@@ -435,10 +435,7 @@ run_scExploreR <-
     # path to the dataset, and the corresponding "object" element in the R list will
     # be replaced with the dataset itself.
     for (data_key in names(datasets)){
-      datasets[[data_key]]$object <- 
-        readRDS(datasets[[data_key]]$object)
-      
-      # Also load the config file into memory
+      # Load config files first
       path <- datasets[[data_key]]$config
       
       # Add informative error message when a non-yaml config file is loaded
@@ -446,7 +443,7 @@ run_scExploreR <-
         stop("Only .yaml config files are supported as of version v0.5.0. 
          Existing .rds config files can be converted to .yaml files by 
          loading them into config_app.R and then re-saving as a .yaml file.")
-      }
+        }
       
       # Load config YAML using defined path (file is converted to an R list)
       config_r <- read_yaml(path)
@@ -459,8 +456,87 @@ run_scExploreR <-
           as_tibble(config_r$adt_thresholds)
       }
       
+      # Determine if the object in the config file is a SingleCellExperiment 
+      # object saved using the HDF5Array package (different loading code is
+      # required in this case)
+      is_HDF5SummarizedExperiment <-
+        # Fetch is_HDF5SummarizedExperiment from the selected object's 
+        # config entry
+       config_r$is_HDF5SummarizedExperiment
+      
       # Store config file in datasets
       datasets[[data_key]]$config <- config_r
+      
+      # Load object: different loading code for SingleCellExperiment objects
+      # saved via HDF5 storage
+      if (isTruthy(is_HDF5SummarizedExperiment)){
+        datasets[[data_key]]$object <- 
+          tryCatch(
+            error = 
+              function(cnd){
+                stop(
+                  "There was an error loading the object at path ",
+                  datasets[[data_key]]$object, 
+                  " (loading was attempted via `HDF5Array::loadHDF5SummarizedExperiment`). Please check that the config file for the object 
+                  corresponds to the object. 
+                  \n\n
+                  For HDF5-enabled SingleCellExperiment objects, the object path 
+                  should be set to the folder containing the assays.h5 and the 
+                  se.rds file. This is the same folder that was created when the 
+                  object was saved via `HDF5Array::saveHDF5SummarizedExperiment()`.
+                  \n\n
+                  If this object is not an HDF5-enabled SingleCellExperiment object,
+                  please ensure that is_HDF5SummarizedExperiment is set to `FALSE` 
+                  when run_config_app() is called."
+                  )
+              },
+            {
+              HDF5Array::loadHDF5SummarizedExperiment(
+                datasets[[data_key]]$object
+                )
+            })
+      } else {
+        datasets[[data_key]]$object <- 
+          tryCatch(
+            error = 
+              function(cnd){
+                stop(
+                  "There was an error loading the object at path ",
+                  datasets[[data_key]]$object, 
+                  "(loading was attempted via `readRDS()`). Please check that 
+                  the config file for the object corresponds to the object, and 
+                  that the object path points to a .rds file.
+                  \n\n 
+                  If an object is an HDF5-enabled SingleCellExperiment object, 
+                  the config file must specify this. This is done automatically 
+                  for files produced using scExploreR version 0.7.0. and later. 
+                  To update an older config file, call run_config_app() using 
+                  the object and the config file, with `isHDF5SummarizedExperiment` 
+                  set to `TRUE`. Load the config file in the config app, and 
+                  then save the file."
+                  )
+              },
+            {
+              # Define path and load object
+              path <- datasets[[data_key]]$object
+              
+              object <- 
+                readRDS(
+                  path
+                  )
+              
+              # Check object for valid classes
+              check_dataset(
+                object,
+                path = path
+                )
+              
+              # Return object from TryCatch statement
+              object
+            })
+      }
+      
+     
     }
     
     # Tests for location of general dataset info ####
@@ -862,8 +938,8 @@ run_scExploreR <-
         ignoreNULL = FALSE,
         {
           app_spinner$show()
-          # Fetch Seurat object from datasets list defined at startup and set 
-          # "object" reactiveVal to the result
+          # Fetch object from datasets list defined at startup and store 
+          # in "object" reactiveVal
           object(datasets[[selected_key()]]$object)
           
           app_spinner$hide()
@@ -871,7 +947,8 @@ run_scExploreR <-
       
       ## 1.5. Config file
       ### 1.5.1. Load/update config file ####
-      # Update config file with the one from the selected dataset, if it has changed
+      # Update config file with the one from the selected dataset, 
+      # if it has changed
       observeEvent( 
         dataset_change$depend(),
         label = "Load/Update Config File",

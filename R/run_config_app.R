@@ -158,13 +158,12 @@ run_config <-
         HDF5Array::loadHDF5SummarizedExperiment(object_path)
       }
     
-    # Test if the loaded object is a Seurat object
-    if (!class(object) %in% c("Seurat", "SingleCellExperiment")){
-      stop(
-        "`object_path` is not a Seurat or SingleCellExperiment object. Class detected: ", 
-        class(object)
-        )
-      }
+    # Test if the loaded object is of a supported class; if not, return an error
+    check_dataset(
+      object,
+      path = object_path,
+      return_error = TRUE
+      )
     
     # Define Config file path for loading ####
     config_filename <- config_path
