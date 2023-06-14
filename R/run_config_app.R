@@ -824,8 +824,12 @@ run_config <-
       config_data <- 
         list(
           # Append config app version to list that is printed to file 
-          `config_version` = config_version
-        )
+          `config_version` = config_version,
+          # Record class of object
+          `object_class` = class(object),
+          # Record if a SingleCellExperiment object is HDF5 enabled
+          `is_HDF5SummarizedExperiment` = is_HDF5SummarizedExperiment
+          )
       
       # module_data: reactiveValues object for storing data specific 
       # to this module
