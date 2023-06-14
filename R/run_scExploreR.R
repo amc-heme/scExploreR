@@ -1417,7 +1417,7 @@ run_scExploreR <-
             list(
               object = object(),
               valid_features = valid_features()
-            )
+              )
           
           # PANDOC: path to pandoc needs to be defined in browser mode, on a 
           # Linux server

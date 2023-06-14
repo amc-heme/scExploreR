@@ -381,21 +381,19 @@ subset_selections_server <- function(id,
             lapply(
               X = isolate(meta_categories()),
               FUN = function(category){
-                # Define input ID for each category 
+                # Define input ID for each category (variable)
                 # Formula: <category>_selection
                 category_id <- glue("{category}_selection")
                 
-                # Compute unique values for categories where the user has not 
-                # entered filter criteria (these inputs will be NULL)
+                # Compute unique values for categories where the user has
+                # not entered filter criteria (these inputs will be NULL)
                 if (is.null(input[[category_id]])){
-                  filter_df |> 
-                    # Fetch unique values for each category 
-                    dplyr::select(.data[[category]]) |>
+                  filter_df[, category] |> 
                     unique() |> 
                     # Convert unique values to character vector
                     unlist() |>
                     as.character()
-                }
+                    }
                 # For categories where inputs are defined, NULL will be 
                 # entered for that category in valid_entries. 
               }
