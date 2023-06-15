@@ -197,7 +197,7 @@ run_scExploreR <-
     }
     
     
-    # Non-reactive Global Variables ------------------------------------------------
+    # Non-reactive Global Variables --------------------------------------------
     
     # Non-zero proportion threshold: if the proportion of cells for a 
     # gene is below this threshold, return a warning to the user.
@@ -289,7 +289,7 @@ run_scExploreR <-
         "DkPuDkRd" = c("lightgrey", "#7A2180", "#9E2525")
       )
     
-    # Error Handling: define possible errors ---------------------------------------
+    # Error Handling: define possible errors -----------------------------------
     # Errors are defined in a list using the functions in "./R/error_handling.R". 
     # The error_handler() function is executed in a tryCatch() statement and checks
     # the error message returned against a list of errors.

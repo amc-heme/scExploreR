@@ -91,20 +91,37 @@ make_subset <-
     # Subset using the subset string 
     subset <- 
       eval(
-        parse(text=paste0("subset(object, subset = ", subset_str, ")"))
+        parse(
+          text = 
+            subset_call(
+              object, 
+              subset_str = subset_str
+              )
+          )
         )
     
     # Re-level factors in subset: test every metadata variable 
     # to see if it is a factor
-    meta_vars <- SCEPlots::meta_varnames(subset)
+
+    #must pull metadata table, edit, then save to object
+    meta_table <- 
+      SCEPlots::fetch_metadata(
+        subset, 
+        full_table = TRUE
+        )
     
-    for (meta_var in colnames(subset@meta.data)){
-      if (class(subset@meta.data[[meta_var]]) == "factor"){
+    for (meta_var in colnames(meta_table)){
+      if (class(meta_table[[meta_var]]) == "factor"){
         # If the metadata variable is a factor, drop unused levels
-        subset@meta.data[[meta_var]] <- 
-          droplevels(subset@meta.data[[meta_var]])
+        meta_table[[meta_var]] <- 
+          droplevels(meta_table[[meta_var]])
       }
     }
+    
+    scExploreR:::update_object_metadata(
+      subset,
+      table = meta_table
+    )
     
     # Return subset
     return(subset)
