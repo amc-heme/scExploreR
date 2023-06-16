@@ -1,10 +1,9 @@
-
 #' shiny_vln
 #' 
 #' Accepts inputs from plots_selections module and outputs a Seurat feature plot from the Seurat object passed to it. 
 #'
 #' @param object a Seurat object. This can be either the full object or a subset.
-#' @param features_entered 
+#' @param features_entered Features to plot.
 #' @param group_by user specified group_by metadata category
 #' @param split_by user specified split_by metadata category
 #' @param show_legend if TRUE, a legend is shown to the right of the plot. If FALSE, the legend is hidden (default is TRUE).
@@ -56,19 +55,28 @@ shiny_vln <-
         )
       )
       
+      # Pull metadata table, then modify levels in factor for group_by data
+      meta_table <- 
+        SCEPlots::fetch_metadata(
+          object,
+          full_table = TRUE
+        )
+      
       # Sort group_by levels by default 
       # Plot groups in ascending or descending order by group name
-      object@meta.data[[group_by]] <-
+      meta_table[[group_by]] <-
         # factor() creates a factor if the metadata category is not a factor
         # already, and re-orders a factor if it already exists.
         factor(
-          object@meta.data[[group_by]],
+          meta_table[[group_by]],
           levels = 
             # If sort_groups is "ascending" or "descending", re-factor based on
             # an alphanumeric order
             if (sort_groups %in% c("ascending", "descending")){
-              object@meta.data[[group_by]] |> 
-                unique() |> 
+              SCEPlots::unique_values(
+                object,
+                var = group_by
+                ) |> 
                 str_sort(
                   numeric = TRUE,
                   # For violin plots, groups plot from left to right in same order
@@ -97,23 +105,31 @@ shiny_vln <-
             }
         )
       
+      # Save refactored metadata table to object
+      object <- 
+        scExploreR:::update_object_metadata(
+          object,
+          table = meta_table
+        )
+      
       # Palette: must determine number of colors to create from provided palette
       # The number of colors is equal to the number of unique values in 
       # the group.by category
       n_colors <- 
-        object@meta.data[[group_by]] |>
-        unique() |> 
-        length()
+        n_unique(
+          object,
+          meta_var = group_by
+          )
       
       vln_plot <- 
-        VlnPlot(
+        SCEPlots::plot_violin(
           # Object or subset
           object,
           features = features_entered,
-          group.by = group_by,
+          group_by = group_by,
           # Split.by: NULL if user selects "none", otherwise equal 
           # to user selection
-          split.by = if (split_by == "none") NULL else split_by,
+          split_by = if (split_by == "none") NULL else split_by,
           # Cols: use user defined palette, or the defaults if palette() == NULL 
           cols = 
             if (!is.null(palette)){
@@ -125,9 +141,7 @@ shiny_vln <-
           # ncol: use value of ncol defined in plot_module when more than
           # one feature is entered
           ncol = if (length(features_entered)==1) NULL else ncol
-          ) #+
-        # Legend position: "right" if a legend is desired, and "none" if not
-        #theme(legend.position = if (show_legend==TRUE) "right" else "none")
+          )
       
       # Additional layers
       # legend font size, key size, and number of columns

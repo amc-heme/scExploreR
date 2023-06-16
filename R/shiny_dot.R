@@ -82,6 +82,7 @@ shiny_dot <-
             }
           )
       
+      # Save refactored metadata table to object
       object <- 
         scExploreR:::update_object_metadata(
           object,
