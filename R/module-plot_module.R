@@ -2834,7 +2834,10 @@ plot_module_server <- function(id,
                            # Based on unique values or levels of current group by 
                            # category
                            split_by_metadata <- 
-                             object()@meta.data[[plot_selections$split_by()]]
+                             SCEPlots::fetch_metadata(
+                               object(),
+                               vars = plot_selections$split_by()
+                              )
                            
                            # Test if the current group by category is a factor
                            if (is.factor(split_by_metadata)){
