@@ -1502,7 +1502,9 @@ run_scExploreR <-
       dge_tab_ui_dynamic <-
         eventReactive(
           # UI should only update when the object and config files are switched
-          c(object(), config()),
+          c(config(),
+            object()
+            ),
           label = "DGE Tab Dynamic UI",
           ignoreNULL = FALSE,
           {
@@ -1521,7 +1523,9 @@ run_scExploreR <-
       corr_tab_ui_dynamic <-
         eventReactive(
           # UI should only update when the object and config files are switched
-          c(object(), config()),
+          c(config(),
+            object()
+            ),
           label = "Correlations Tab Dynamic UI",
           ignoreNULL = FALSE,
           {

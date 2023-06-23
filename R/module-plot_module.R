@@ -2755,8 +2755,8 @@ plot_module_server <- function(id,
                      # group by variable
                      refactor_sortable <-
                        eventReactive(
-                         c(object(), 
-                           plot_selections$group_by(),
+                         c(plot_selections$group_by(),
+                           object(),
                            plot_switch()
                            ),
                          {
@@ -2818,8 +2818,8 @@ plot_module_server <- function(id,
                      # Proportion plots: refactoring affects split by variable
                      refactor_sortable <-
                        eventReactive(
-                         c(object(), 
-                           plot_selections$split_by(),
+                         c(plot_selections$split_by(),
+                           object(),
                            plot_switch()
                            ),
                          {
@@ -2836,7 +2836,8 @@ plot_module_server <- function(id,
                            split_by_metadata <- 
                              SCEPlots::fetch_metadata(
                                object(),
-                               vars = plot_selections$split_by()
+                               vars = plot_selections$split_by(),
+                               return_class = "vector"
                               )
                            
                            # Test if the current group by category is a factor
