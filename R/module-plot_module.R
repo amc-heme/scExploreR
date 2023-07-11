@@ -344,7 +344,8 @@ plot_module_ui <- function(id,
       
       ## Refactor groups (dot, violin plots) ####
       if (sort_groups_menu == TRUE){
-        tagList(
+        div(
+          id = ns("sort_groups_menu"),
           selectInput(
             inputId = ns("sort_groups"),
             label = "Order of Groups on plot",
@@ -2764,6 +2765,14 @@ plot_module_server <- function(id,
                            # variable, but only runs when the group by variable is
                            # defined
                            req(plot_selections$group_by())
+                           
+                           # For ridge plots, the group_by variable can also be 
+                           # "none", which will cause errors. The UI should not 
+                           # compute in this case
+                           if (plot_type == "ridge"){
+                             req(plot_selections$group_by() != "none")
+                           }
+                           
                            # Also only runs when the plot is enabled
                            req(plot_switch())
                            
@@ -2900,6 +2909,31 @@ plot_module_server <- function(id,
                        }
                      }
                    })
+                   
+                   ### 8.4.3. Special case: Show/hide entire group sorting UI ####
+                   # For ridge plots, the group_by selection may be "none", which
+                   # will result in the plotting of a single group, "All Cells".
+                   # The entire sorting interface is not useful and should be 
+                   # hidden in this case
+                   if (plot_type == "ridge"){
+                     observe({
+                       req(plot_selections$group_by())
+                       
+                       target_id <- "sort_groups_menu"
+                       
+                       if (plot_selections$group_by() == "none"){
+                         hideElement(
+                           id = target_id,
+                           anim = TRUE
+                         )
+                       } else {
+                         showElement(
+                           id = target_id,
+                           anim = TRUE
+                         )
+                       }
+                     })
+                   }
                  }
                  
                  ## 8.5. Render Dynamic UI ####
