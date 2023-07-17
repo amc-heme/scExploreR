@@ -35,7 +35,10 @@ subset_selections_ui <- function(id,
     config_i <- metadata_config()[[category]]
     
     # Create menu for the current category
-    menu_tag <- pickerInput(
+    menu_tag <- 
+      # INPUT HIDDEN FOR TESTING PURPOSES
+      hidden(
+      pickerInput(
       # input_prefix: will become unnecessary once the subset 
       # menus are placed within a module
       inputId = ns(glue("{category}_selection")),
@@ -74,6 +77,7 @@ subset_selections_ui <- function(id,
         "none-selected-text" = "No Filters Applied"
         )
     ) # End pickerInput
+      )
     
     # Append tag to list using tagList
     menus <- tagList(menus, menu_tag)
@@ -82,6 +86,96 @@ subset_selections_ui <- function(id,
   # Elements to display beneath menu tags (appended using tagList)
   menus <- 
     tagList(
+      # New menu UI
+      uiOutput(
+        outputId = ns("filters_applied")
+        ),
+      actionButton(
+        inputId = ns("add_filter"),
+        label = "Add Filter",
+        # show-on-idle: button will be hidden while a filter is 
+        # being created/edited
+        class = "button-primary compact-button show-on-idle"
+      ),
+      hidden(
+        # UI for adding a subsetting filter
+        div(
+          class = "show-on-add compact-options-container",
+          selectInput(
+            inputId = ns("filter_type"),
+            label = "Choose Filter Type:",
+            choices = 
+              c("Select Type" = "",
+                "Identity Filter (categorical)" = "categorical",
+                "Threshold Filter (numeric)" = "numeric"
+                )
+            ),
+          # Categorical metadata filter menu
+          hidden(
+            div(
+              id = ns("categorical_filter_ui"),
+              tags$b(
+                "Categorical Filter", 
+                class = "center large"
+                ),
+              # Select menu to choose metadata for filtering
+              selectInput(
+                inputId = ns("categorical_var"),
+                label = "Choose categorical metadata:",
+                # Choices are updated in server
+                choices = NULL
+                ),
+              # Picker input to choose values of metadata variable to include
+              pickerInput(
+                inputId = ns("categorical_values"),
+                label = "Choose Values to Include:",
+                # Choices are variable-dependent and are computed 
+                # in the server function
+                choices = NULL,
+                # selected: nothing selected by default. A placeholder will
+                # appear instead
+                selected = character(0),
+                multiple = TRUE,
+                # Options for pickerInput
+                options = 
+                  list(
+                    # Display number of items selected instead of their names
+                    # when more than 5 values are selected
+                    "selected-text-format" = "count > 5",
+                    # Define max options to show at a time to keep menu
+                    # from being cut off
+                    "size" = 7,
+                    # Add "select all" and "deselect all" buttons
+                    "actions-box" = TRUE,
+                    # Label for "deselect all" button
+                    "deselectAllText" = "Remove filter",
+                    # Define placeholder
+                    "none-selected-text" = "Select values"
+                  )
+                )
+              ),
+            div(
+              id = ns("numeric_filter_ui"),
+              tags$b(
+                "Numeric Filter", 
+                class = "center large"
+                ),
+            )
+          ),
+          actionButton(
+            inputId = ns("filter_cancel"),
+            label = "Cancel",
+            #icon = icon("redo-alt"),
+            class = "button-ghost compact-button"
+          ),
+          actionButton(
+            inputId = ns("filter_confirm"),
+            label = "Confirm Filter",
+            class = "button-primary compact-button"
+          )
+        )
+      ),
+      # END NEW UI
       menus,
       # Reset button: appears when subset menus are currently being filtered
       uiOutput(outputId = ns("reset_filter_button")),
@@ -202,9 +296,9 @@ subset_selections_ui <- function(id,
 #' server function upon startup and object change. 
 #' @param metadata_config The metadata section of the config file, loaded in the
 #' main server function.
-#' @param meta_categories A vector of the metadata categories included in the 
-#' config file for the current object. This is computed in the main server
-#' function
+#' @param meta_categories A vector of the metadata categories (variables) 
+#' included in the config file for the current object. This is computed in the 
+#' main server function.
 #' @param valid_features A list of the available features in the current object,
 #' used to populate the choices of the feature selection menu when groups based
 #' on feature thresholds are requested.
@@ -233,10 +327,351 @@ subset_selections_server <- function(id,
       ns <- session$ns
       
       # module_data: reactiveValues object used to store the ridgeplot 
-      # interactively generated in 5.3.
+      # interactively generated in 6.3.
       module_data <- reactiveValues()
       
-      # 1. UI for String Subsetting --------------------------------------------
+      # Initial states for filter menus
+      # State of the entire filter interface (idle by default, and can be 
+      # set to "add" or "edit" via button presses)
+      module_data$filter_menu_state <- "idle"
+      # Type of filter being added/edited (categorical or numeric)
+      module_data$filter_type <- "none"
+      # Empty list for storing subset filters as they're created
+      module_data$filters <- list()
+      
+      # 1. Filter menu UI ------------------------------------------------------
+      ## 1.1. Respond to "add filter" button ####
+      observe({
+        req(input$add_filter)
+        input$add_filter
+        
+        # Set state to "add"
+        module_data$filter_menu_state <- "add"
+      })
+      
+      ## 1.2. Show/hide menus based on add/edit/idle states ####
+      observe({
+        # jQuery selectors for classes that show elements based on state
+        add_selector <- "[class *= 'show-on-add']"
+        edit_selector <- "[class *= 'show-on-edit']"
+        idle_selector <- "[class *= 'show-on-idle']"
+        
+        if (module_data$filter_menu_state == "add"){
+          showElement(
+            selector = add_selector
+          )
+          
+          hideElement(
+            selector = idle_selector
+          )
+        } else if (module_data$filter_menu_state == "edit"){
+          showElement(
+            selector = edit_selector
+          )
+          
+          hideElement(
+            selector = idle_selector
+          )
+        } else if (module_data$filter_menu_state == "idle") {
+          showElement(
+            selector = idle_selector
+          )
+          
+          hideElement(
+            selector = add_selector
+          )
+          hideElement(
+            selector = edit_selector
+          )
+        }
+      })
+      
+      ## 1.3. Record state from filter type selection menu ####
+      observe({
+        if (isTruthy(input$filter_type)){
+          if (input$filter_type == "categorical"){
+            module_data$filter_type <- "categorical"
+          } else if (input$filter_type == "numeric"){
+            module_data$filter_type <- "numeric"
+          }
+          
+          # Also reset the filter type input back to the blank state with
+          # placeholder
+          updateSelectInput(
+            session = session,
+            inputId = "filter_type",
+            selected = ""
+            )
+        } 
+      })
+      
+      ## 1.4. Show/hide UI based on type of filter being edited ####
+      observe({
+        type_selection_ui_id <- "filter_type"
+        categorical_ui_id <- "categorical_filter_ui"
+        numeric_ui_id <- "numeric_filter_ui"
+        
+        if (module_data$filter_type == "categorical"){
+          print("show categorical filter interface")
+          # Show the UI specific to categorical filters
+          showElement(
+            id = categorical_ui_id
+          )
+          
+          # Hide the menu to select the type
+          hideElement(
+            id = type_selection_ui_id
+          )
+        } else if (module_data$filter_type == "numeric"){
+          
+        } else if (module_data$filter_type == "none"){
+          # Show type selection menu, hide categorical and numeric interfaces
+          showElement(
+            id = type_selection_ui_id
+          )
+          
+          hideElement(
+            id = categorical_ui_id
+          )
+        }
+      })
+      
+      ## 1.5. Categorical filters ####
+      ### 1.5.1. Update choices for categorical metadata variables ####
+      observeEvent(
+        module_data$filter_type,
+        label = 
+          glue("{id}: filter menus: update choices for categorical metadata"),
+        {
+          # Runs as long as the type is "categorical"
+          req(module_data$filter_type == "categorical")
+            
+          # Construct vector of metadata choices for filtering
+          # Values: machine-readable variable names
+          categorical_choices <-
+            sapply(metadata_config(), function(var) var$meta_colname) |> 
+            unname()
+          
+          # Names: variable names displayed to user
+          names(categorical_choices) <-
+            sapply(metadata_config(), function(var) var$label) |> 
+            unname()
+          
+          print("length(module_data$filters) > 0")
+          print(length(module_data$filters) > 0)
+          if (length(module_data$filters) > 0){
+            # Subset choices to exclude categorical variables that have already 
+            # been entered as filters
+            # Identify categorical filters
+            existing_categorical_filters <- 
+              module_data$filters[
+                # sapply: creates boolean identifying categorical filters
+                sapply(
+                  module_data$filters,
+                  function(filter_i){
+                    filter_i$type == "categorical"
+                  }
+                )
+              ]
+            
+            # Get var names of invalid choices
+            invalid_choices <- 
+              sapply(
+                existing_categorical_filters,
+                function(filter_i){
+                  filter_i$var
+                }
+              )
+            
+            print("invalid_choices")
+            print(invalid_choices)
+            
+            # Remove invalid choices
+            categorical_choices <- 
+              categorical_choices[!categorical_choices %in% invalid_choices]
+          }
+          
+          # If no variables are left, notify the user using a placeholder
+          if (length(categorical_choices) == 0){
+            categorical_choices <- 
+              c("No remaining variables" = "")
+          }
+          
+          # First element: placeholder text with "falsy" value
+          # categorical_choices <-
+          #   c(
+          #     "Select variable" = "",
+          #     categorical_choices
+          #     )
+            
+          updateSelectInput(
+            session = session,
+            inputId = "categorical_var",
+            choices = categorical_choices
+            )
+          })
+      
+      ### 1.5.2. Choices for values within a given variable ####
+      observeEvent(
+        c(module_data$filter_type, 
+          input$categorical_var
+          ),
+        label = 
+          glue("{id}: filter menus: update choices for categorical metadata"),
+        {
+          req(input$categorical_var)
+          
+          # Determine choices to display for the selected metadata variable
+          
+          # meta_df <-
+          #   SCEPlots::fetch_metadata(
+          #     object = object(),
+          #     full_table = TRUE
+          #   )
+          
+          choices <-
+            SCEPlots::unique_values(
+              object(), 
+              var = input$categorical_var
+              )
+          
+          # Determine which choices, if any, are invalid based on the current
+          # subset
+          
+          # Update picker input with valid choices
+          updatePickerInput(
+            session,
+            inputId = "categorical_values",
+            choices = choices,
+            # Reset selection to nothing being selected (no filters applied; 
+            # use character(0) to do this)
+            selected = character(0)#,
+            # Use boolean vector to enable all choices
+            # choicesOpt = 
+            #   list(
+            #     disabled = is_disabled,
+            #     style = ifelse(
+            #       is_disabled,
+            #       yes = "color: rgba(119, 119, 119, 0.5);",
+            #       no = ""
+            #     )
+            #   )
+          )
+        })
+      
+      ## 1.6. Save filter data ####
+      observeEvent(
+        input$filter_confirm,
+        {
+          # Record filter in list of filters
+          if (module_data$filter_type == "categorical"){
+            filter_data <-
+              list(
+                `type` = "categorical",
+                `var` = input$categorical_var,
+                # Add display name of variable for filter criteria display
+                `label` = metadata_config()[[input$categorical_var]]$label,
+                `value` = input$categorical_values
+                )
+            
+            # Append to end of list ((length + 1)'th element)
+            module_data$filters[[length(module_data$filters) + 1]] <-
+              filter_data
+            }
+          
+          # Set state to idle
+          module_data$filter_menu_state <- "idle"
+          
+          # Also reset state of current filter type
+          module_data$filter_type <- "none"
+        })
+      
+      observe({
+        req(module_data$filters)
+        print("State of recorded filters")
+        print(module_data$filters)
+      })
+      
+      ## 1.7. UI for displaying filters ####
+      filters_ui <-
+        reactive(
+          label = glue("{id}: Compute UI for filter menus"),
+          {
+            if (isTruthy(module_data$filters)){
+              if (length(module_data$filters) > 0){
+                # Create UI for each filter criteria in the list
+                lapply(
+                  1:length(module_data$filters),
+                  function(i){
+                    # Extract type, display name of variable, values
+                    type <- module_data$filters[[i]]$type
+                    label <- module_data$filters[[i]]$label
+                    value <- module_data$filters[[i]]$value
+                    
+                    # Construct "card" summarizing the filter criteria applied
+                    div(
+                      class = "filter-info-card",
+                      # Container for storing filter information
+                      if (type == "categorical"){
+                        # Container for categorical filters: follows format below
+                        # <metadata_variable> in:
+                        # <metadata_values>
+                        div(
+                          #style = "float: left;",
+                          tags$b(glue("{label}:"), style = "float: center;"),
+                          tags$br(),
+                          tags$p(
+                            scExploreR:::vector_to_text(
+                              value
+                            )
+                          )
+                        ) 
+                      },
+                      # Container for edit/delete buttons
+                      div(
+                        div(
+                          style = "float: right;",
+                          class = "btn-group",
+                          role = "group",
+                          `aria-label` = glue("Options for filter {i})"),
+                          # Content: custom button element
+                          # Code adapted from 
+                          # https://github.com/AntoineGuillot2/ButtonsInDataTable
+                          HTML(
+                            # Current list index of filter is passed to button ID
+                            glue(
+                              '<button type="button" class="btn icon-button edit" 
+                                id = edit_{i}> 
+                                <i class = "fa fa-pencil" role = "presentation" 
+                                  aria-label = "Edit" style = "font-size: 1.2em;">
+                                  </i>
+                                </button>
+                                <button type="button" class="btn icon-button 
+                                  delete" id = delete_{i}> 
+                                  <i class = "fa fa-times-circle" 
+                                    role = "presentation" aria-label = "Delete" 
+                                    style = "font-size: 1.2em;">
+                                    </i>
+                                  </button>'
+                              )
+                            )
+                          )
+                        )
+                      )
+                    }
+                  )
+              }
+            } else {
+              # Display "no filters applied" when no filters are entered
+            }
+            })
+      
+      output$filters_applied <-
+        renderUI({
+          filters_ui()
+        })
+      
+      # 2. UI for String Subsetting --------------------------------------------
       # Use shinyjs to show and hide menus based on whether the adv. subsetting
       # checkbox is checked (this ensures inputs exist and can be updated 
       # properly, and improves performance)
@@ -253,9 +688,9 @@ subset_selections_server <- function(id,
           }
         })
       
-      # 2. UI for Filtering Selection Menus ------------------------------------
+      # 3. UI for Filtering Selection Menus ------------------------------------
       # Subset menus will be filtered for 
-      ## 2.1. filters_applied: a boolean that is TRUE when a subset has been 
+      ## 3.1. filters_applied: a boolean that is TRUE when a subset has been 
       # filtered (this may be changed as the filter code is developed)
       filters_applied <- 
         eventReactive(
@@ -290,7 +725,7 @@ subset_selections_server <- function(id,
                 }
             })
       
-      ## 2.2. Create UI for "Reset Filter button"
+      ## 3.2. Create UI for "Reset Filter button"
       # Button is needed after filtering is applied to reset selections 
       reset_filter_ui <- 
         eventReactive(
@@ -315,8 +750,8 @@ subset_selections_server <- function(id,
       })
       
       
-      # 3. Filter menus in UI based on selections ------------------------------
-      ## 3.1. Update valid choices in selection menus #### 
+      # 4. Filter menus in UI based on selections ------------------------------
+      ## 4.1. Update valid choices in selection menus #### 
       observeEvent(
         selections(),
         ignoreNULL = FALSE,
@@ -481,7 +916,7 @@ subset_selections_server <- function(id,
           }
         })
       
-      ## 3.2. Reset button ####
+      ## 4.2. Reset button ####
       observeEvent(
         input$reset_filter,
         label = "Reset Filter Menus",
@@ -536,7 +971,7 @@ subset_selections_server <- function(id,
           }
         })
       
-      # 4. Hide menus, if specified by the user. -------------------------------
+      # 5. Hide menus, if specified by the user. -------------------------------
       # hide_menu is an optional argument that is NULL in modules where it is 
       # not specified. Since hide_menu is intended to be reactive, observers 
       # that use it will crash the app when NULL values are passed to them.
@@ -576,13 +1011,13 @@ subset_selections_server <- function(id,
             })
       }
       
-      # 5. Feature Statistics --------------------------------------------------
+      # 6. Feature Statistics --------------------------------------------------
       # Used for string subsetting
       # Assists user by displaying feature name as it should be entered into the
       # subset function (using the assay key prefix), along with summary
       # statistics for the feature to aid in choosing bounds when subsetting.
       
-      ## 5.1. Update feature search choices ####
+      ## 6.1. Update feature search choices ####
       # Updates occur each time the object is changed
       observeEvent(
         valid_features(),
@@ -605,7 +1040,7 @@ subset_selections_server <- function(id,
             ) 
         })
       
-      ## 5.2. Define UI for Feature Statistics ####
+      ## 6.2. Define UI for Feature Statistics ####
       feature_stats_ui <-
         reactive({
           req(input$search_feature)
@@ -675,7 +1110,7 @@ subset_selections_server <- function(id,
             )
         })
       
-      ## 5.3. Define Ridge Plot Showing Feature Expression ####
+      ## 6.3. Define Ridge Plot Showing Feature Expression ####
       # The plot must be stored in a reactiveValues object (module_data) to
       # avoid reactivity issues when processing hover and click values. 
       # The initial plot is generated below.
@@ -743,7 +1178,7 @@ subset_selections_server <- function(id,
             }
           })
       
-      ## 5.4. Add vertical Line Upon Hovering ####
+      ## 6.4. Add vertical Line Upon Hovering ####
       # In the event the user hovers over or clicks the plot, add the 
       # corresponding vertical line at the x-coordinate of the click.
       observeEvent(
@@ -806,8 +1241,8 @@ subset_selections_server <- function(id,
               input$plot_hover
             })
       
-      ## 5.5. Respond to Click Event ####
-      ### 5.5.1 Add Threshold Line, Record Click Coordinates ####
+      ## 6.5. Respond to Click Event ####
+      ### 6.5.1 Add Threshold Line, Record Click Coordinates ####
       observeEvent(
         input$plot_click,
         # IgnoreNULL must be TRUE to avoid the plot computing when
@@ -858,7 +1293,7 @@ subset_selections_server <- function(id,
             input$plot_click
         })
       
-      # ### 5.5.2 Compute Threshold Stats ###
+      # ### 6.5.2 Compute Threshold Stats ###
       # # Reactive expression must have separate name from function inside
       # threshold_statistics <-
       #   eventReactive(
@@ -878,7 +1313,7 @@ subset_selections_server <- function(id,
       #         )
       #       })
       
-      ### 5.5.2. Display Threshold Stats ####
+      ### 6.5.2. Display Threshold Stats ####
       threshold_stats_ui <- 
         eventReactive(
           module_data$thresh_stats,
@@ -937,7 +1372,7 @@ subset_selections_server <- function(id,
       #     module_data$click_info
       #   })
       
-      ## 5.4. Render Feature Statistics Components ####
+      ## 6.6. Render Feature Statistics Components ####
       output$feature_statistics <- 
         renderUI({
           feature_stats_ui()
@@ -960,7 +1395,7 @@ subset_selections_server <- function(id,
           threshold_stats_ui()
         })
       
-      # 6. Form Reactive List From Menu Selections -----------------------------
+      # 7. Form Reactive List From Menu Selections -----------------------------
       selections <- 
         reactive(
           label = glue("{id}: selections_list"),
@@ -1013,20 +1448,13 @@ subset_selections_server <- function(id,
           # for the string
           if(isTruthy(input$adv_subset)){
             # If the subset string entry is defined, test for newlines.
-            print("string entered")
-            print(input$adv_subset)
-            
             # If newline characters exist in the string, remove them.
             if (grepl("\\n", input$adv_subset)){
-              print("Newline detected")
               # gsub used to remove newline characters
               return_string <- gsub("\\n", "", input$adv_subset)
             } else {
               return_string <- input$adv_subset
             }
-            
-            print("corrected string")
-            print(return_string)
             
             # Return the result to user_string
             return(return_string)
@@ -1035,7 +1463,7 @@ subset_selections_server <- function(id,
           }
           })
       
-      # 7. Return Menu Selections and Manual String Entry ----------------------
+      # 8. Return Menu Selections and Manual String Entry ----------------------
       return(
         list(
           `selections` = selections,

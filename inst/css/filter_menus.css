@@ -1,0 +1,11 @@
+/* card displaying information on a single filter applied */
+.filter-info-card{
+    background-color: #ffffff;
+    border-radius: 8px;
+    display: block;
+    /* Allows child elements to display properly when 
+       float properties are applied */
+    overflow: auto;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+}
