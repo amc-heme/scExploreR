@@ -5,9 +5,10 @@
 #' config file. This is computed in the main server function upon object change.
 #' 
 #' @noRd
-dge_test_selections_ui <- function(id,
-                                  meta_choices
-                                  ){
+dge_test_selections_ui <- 
+  function(id,
+           meta_choices
+           ){
   # Namespace function: prevents conflicts with IDs defined in other modules 
   ns <- NS(id)
   

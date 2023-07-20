@@ -160,6 +160,37 @@ subset_selections_ui <- function(id,
                 "Numeric Filter", 
                 class = "center large"
                 ),
+              selectizeInput(
+                inputId = ns("numeric_feature"),
+                label = "Enter a feature to apply filter to:",
+                choices = NULL,
+                selected = character(0),
+                options = 
+                  list(
+                    "placeholder" = "Enter feature",
+                    "maxItems" = 1,
+                    "plugins" = list("remove_button"),
+                    "create" = FALSE
+                    )
+                ),
+              shinyWidgets::radioGroupButtons(
+                inputId = ns("numeric_mode"),
+                label = "Filter mode:",
+                choices = 
+                  c("<" = "less_than", 
+                    ">" = "greater_than", 
+                    "Range" = "range"
+                    ),
+                justified = TRUE,
+                status = "radio-primary"
+              ),
+              # UI for choosing threshold for filtering
+              # Interface is automatically hidden until a feature is selected
+              threshold_picker_ui(
+                id = ns("filter_threshold"),
+                plot_height = "150px",
+                instruction_panel = TRUE
+              )
             )
           ),
           actionButton(
@@ -413,17 +444,25 @@ subset_selections_server <- function(id,
         
         if (module_data$filter_type == "categorical"){
           print("show categorical filter interface")
-          # Show the UI specific to categorical filters
+          # Show categorical filter UI
           showElement(
             id = categorical_ui_id
           )
           
-          # Hide the menu to select the type
+          # Hide the menu to select filter type
           hideElement(
             id = type_selection_ui_id
           )
         } else if (module_data$filter_type == "numeric"){
+          # Show numeric filter UI
+          showElement(
+            id = numeric_ui_id
+          )
           
+          # Hide the menu to select filter type
+          hideElement(
+            id = type_selection_ui_id
+          )
         } else if (module_data$filter_type == "none"){
           # Show type selection menu, hide categorical and numeric interfaces
           showElement(
@@ -432,6 +471,10 @@ subset_selections_server <- function(id,
           
           hideElement(
             id = categorical_ui_id
+          )
+          
+          hideElement(
+            id = numeric_ui_id
           )
         }
       })
@@ -559,7 +602,43 @@ subset_selections_server <- function(id,
           )
         })
       
-      ## 1.6. Save filter data ####
+      ## 1.6. Numeric filters ####
+      ### 1.6.1. Update choices for numeric metadata features ####
+      # Only needs to run once at startup
+      observeEvent(
+        # Responds to loading of update and creation of UI (to ensure
+        # feature updating is always performed after the input is 
+        # created)
+        valid_features(),
+        label = glue("{id}: Render choices for feature selection"),
+        {
+          updateSelectizeInput(
+            session,
+            inputId = "numeric_feature",
+            choices = valid_features(),
+            selected = character(0),
+            server = TRUE
+            )
+          })
+      
+      ### 1.6.2. Interface for choosing threshold ####
+      numeric_filter_value <- 
+        threshold_picker_server(
+          # Do not namespace module server function IDs 
+          id = "filter_threshold",
+          object = object,
+          feature = reactive({input$numeric_feature}),
+          mode = reactive({input$numeric_mode}),
+          showhide_animation = TRUE
+        )
+      
+      observe({
+        req(numeric_filter_value())
+        print("Chosen numeric filter threshold")
+        print(numeric_filter_value())
+      })
+      
+      ## 1.7. Save filter data ####
       observeEvent(
         input$filter_confirm,
         {
@@ -592,7 +671,7 @@ subset_selections_server <- function(id,
         print(module_data$filters)
       })
       
-      ## 1.7. UI for displaying filters ####
+      ## 1.8. UI for displaying filters ####
       filters_ui <-
         reactive(
           label = glue("{id}: Compute UI for filter menus"),

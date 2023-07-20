@@ -11,6 +11,10 @@
 #' @param plot_height height of the plot, in pixels.
 #' @param buttons_panel if TRUE, buttions for additional options, such as 
 #' resizing the plot, will be displayed on the plot.
+#' @param instruction_panel if TRUE, displays a guide saying what is being 
+#' selected (either a threshold or the upper/lower bounds of a range). The 
+#' default is FALSE, though TRUE is strongly recommended if the "range" mode is
+#' intended to be used with the module instance.
 #'
 #' @noRd
 threshold_picker_ui <- 
@@ -18,7 +22,8 @@ threshold_picker_ui <-
     id,
     plot_width = NULL,
     plot_height = NULL,
-    buttons_panel = TRUE
+    buttons_panel = TRUE,
+    instruction_panel = FALSE
     ){
     # Namespace function: prevents conflicts with IDs defined in other modules
     ns <- NS(id)
@@ -28,8 +33,33 @@ threshold_picker_ui <-
       hidden(
         div(
           id = ns("ridge_plot_ui"),
-          # CSS is applied to allow buttons to appear over the plot
-          class = "plot-with-buttons",
+          # Curve the top, or the bottom of the plot, or both, based on the
+          # indicator/button panels displayed above/below the plot
+          class = 
+            if (instruction_panel == FALSE & buttons_panel == FALSE){
+              "plot-curve-all"
+            } else if (instruction_panel == TRUE & buttons_panel == FALSE){
+              "plot-curve-bottom"
+            } else if (instruction_panel == FALSE & buttons_panel == FALSE){
+              "plot-curve-top"
+            } else {
+              # If both panels are enabled, don't curve plot 
+              # (default, no class applied)
+              ""
+            },
+          # If enabled, indicator panel to display above the plot
+          if (instruction_panel == TRUE){
+            div(
+              class = "plot-button-panel-top",
+              # Container displaying the selection mode to the user
+              div(
+                class = "interactive-plot-instruction",
+                textOutput(
+                  outputId = ns("selection_display")
+                )
+              )
+            )
+          },
           # Ridge plot showing histogram of feature expression in current object
           plotOutput(
             outputId = ns("ridge_plot"),
@@ -56,54 +86,102 @@ threshold_picker_ui <-
             ),
           div(
             class = "plot-button-panel",
-            dropdownButton(
-              # status argument adds classes to button
-              # Space is intentional. dropdownButton adds "btn-" to the 
-              # beginning of the status string
-              status = " icon-button plot-button plot-button-dropdown plot-dropDownButton",
-              size = "xs",
-              tooltip = "Adjust x-axis limits",
-              right = FALSE,
-              up = TRUE,
-              icon = icon("arrows-alt-h"),
-              tagList(
-                div(
-                  class = "inline-containers",
-                  textInput(
-                    inputId = ns("lower_xlim"),
-                    label = "Lower Bound:",
-                    # Default value is filled in the server function
-                    value = NULL
-                  ),
-                  textInput(
-                    inputId = ns("upper_xlim"),
-                    label = "Upper Bound:",
-                    value = NULL
+            # Indicator displaying hover position
+            div(
+              style = "float: left",
+              class = "plot-panel-indicator",
+              textOutput(
+                outputId = ns("hover_position")
+                ) 
+              ),
+            div(
+              style = "float: right;",
+              # Interface for adjusting x-axis limits
+              div(
+                # Use inline-block display to show side-by-side with 
+                # other buttons
+                style = "display: inline-block;",
+                dropdownButton(
+                  # Space prevents "btn-" from being added to first class
+                  status = 
+                    " icon-button plot-button plot-button-dropdown 
+                    plot-dropDownButton",
+                  size = "xs",
+                  tooltip = "Adjust x-axis limits",
+                  right = FALSE,
+                  up = TRUE,
+                  icon = icon("arrows-alt-h"),
+                  tagList(
+                    div(
+                      class = "inline-containers",
+                      textInput(
+                        inputId = ns("lower_xlim"),
+                        label = "Lower Bound:",
+                        # Default value is filled in the server function
+                        value = NULL
+                      ),
+                      textInput(
+                        inputId = ns("upper_xlim"),
+                        label = "Upper Bound:",
+                        value = NULL
+                      )
+                    ),
+                    actionButton(
+                      inputId = ns("apply_xlim"),
+                      class = "button-primary float-right",
+                      style = "margin-left: 10px;",
+                      label = "Apply"
+                    ),
+                    actionButton(
+                      inputId = ns("restore_xlim"),
+                      class = "button-ghost float-right",
+                      icon = icon("undo-alt"),
+                      label = "Restore Original"
+                    )
                   )
-                ),
-                actionButton(
-                  inputId = ns("apply_xlim"),
-                  class = "button-primary float-right",
-                  style = "margin-left: 10px;",
-                  label = "Apply"
-                ),
-                actionButton(
-                  inputId = ns("restore_xlim"),
-                  class = "button-ghost float-right",
-                  icon = icon("undo-alt"),
-                  label = "Restore Original"
+                )
+              ),
+              # Drop-up to modify range: only displays during range mode, 
+              # once a range has been chosen.
+              hidden(
+                div(
+                  id = ns("range-edit-dropdown"),
+                  style = "display: inline-block;",
+                  dropdownButton(
+                    # Button ID: used to close menu when containing 
+                    # buttons are pressed
+                    inputId = ns("range-edit"),
+                    # status argument adds classes to button
+                    # Space is intentional. dropdownButton adds "btn-" to the 
+                    # beginning of the status string
+                    status = 
+                      " icon-button plot-button plot-button-dropdown 
+                      plot-dropDownButton",
+                    size = "xs",
+                    tooltip = "Modify range components",
+                    right = FALSE,
+                    up = TRUE,
+                    icon = icon("pencil-alt"),
+                    tagList(
+                      div(
+                        class = "button-group",
+                        actionButton(
+                          inputId = ns("modify_lower_bound"),
+                          label = "Edit lower bound",
+                          class = "button-ghost"
+                        ),
+                        actionButton(
+                          inputId = ns("modify_upper_bound"),
+                          label = "Edit upper bound",
+                          class = "button-ghost"
+                          )
+                        )
+                      )
+                    )
+                  )
                 )
               )
             )
-          )
-          
-          # actionButton(
-          #   inputId = "adjust_xlim",
-          #   label = NULL,
-          #   icon = icon("arrows-alt-h"),
-          #   class = "icon-button plot-button"
-          #   
-          #   )
           )
         ),
       # UI to display statistics based on selected threshold
@@ -157,6 +235,13 @@ threshold_picker_ui <-
 #' @param feature the feature for which thresholds are being chosen.
 #' @param showhide_animation if TRUE, an animation will be used when displaying
 #' or hiding the stats panel.
+#' @param mode a reactive variable directing the behavior of the widget (equal to 
+#' "greater_than", "less_than", or "range"). The mode will affect the components 
+#' shown to the user, and the interactive behavior of the plot. If the mode is 
+#' "less_than" or "greater_than", a single threshold will be chosen, and if the 
+#' mode is equal to "range", the interface will direct the user to choose an 
+#' upper and lower bound for the range. The stats displayed will vary based on 
+#' the mode.
 #' @param set_threshold A reactive value used to set the selected threshold to
 #' a defined value. For example, when editing the threshold value for a feature,
 #' this is set to the last value selected for the feature, giving a visual 
@@ -170,7 +255,8 @@ threshold_picker_server <-
     object,
     feature,
     showhide_animation = FALSE,
-    set_threshold = NULL
+    set_threshold = NULL,
+    mode = NULL
     ){
     moduleServer(
       id,
@@ -233,7 +319,12 @@ threshold_picker_server <-
         # avoid reactivity issues when processing hover and click values. 
         # The initial plot is generated below.
         observeEvent(
-          feature(),
+          # Responds to changes in mode if it is provided (as a reactive)
+          if (is.reactive(mode)){
+            c(feature(), mode())
+            } else {
+              feature()
+              },
           label = glue("{id}: Ridge Plot Histogram"),
           ignoreNULL = FALSE,
           # This observer must execute before the observer in 5. to ensure 
@@ -250,6 +341,20 @@ threshold_picker_server <-
             module_data$original_xlim <- NULL
             module_data$threshold_x <- NULL
             module_data$threshold_stats <- NULL
+            # Record hover position for display in plot panel
+            module_data$hover_position <- NULL
+            
+            # Variables only used when the mode is equal to "range"
+            print("reset range variables")
+            module_data$lower_bound <- NULL
+            module_data$upper_bound <- NULL
+            module_data$selection_mode <- "lower"
+            
+            # Hide the menu to modify bounds of a range when the plot is 
+            # first loaded, or when it is re-computed
+            hideElement(
+              id = "range-edit-dropdown"
+              )
             
             # Set module_data$ridge_plot to the plot if a feature is entered
             # in the search bar, otherwise set the plot to NULL
@@ -337,26 +442,20 @@ threshold_picker_server <-
                 # as computed in 6.1.
                 distribution_range = current_xlim()[2] - current_xlim()[1],
                 distribution_minimum = module_data$plot_min,
-                plot_min_coord = 0.06,
-                plot_max_coord = 0.96
+                plot_min_coord = plot_min_coord,
+                plot_max_coord = plot_max_coord
               )
+            
+            # Record hover position for display
+            module_data$hover_position <- 
+              # Round to 2 digits (additional precision is not necessary)
+              plot_x_coordinate |> 
+              round(digits = 2)
 
             # Draw vertical line using transformed hover coordinate
             # Hover line is drawn over either the initial plot, or the plot
             # with a defined threshold, depending on whether the user has
             # clicked the plot
-
-            # module_data$click_info is used. module_data$click_info only
-            # changes upon a new click, and does not become NULL while the
-            # plot is re-drawn
-            # if (!is.null(module_data$click_info)){
-            #  base_plot <- module_data$initial_ridge_plot
-            # } else {
-            #   # If module_data$click_info is defined, use the plot with
-            #   # the vertical line at the click location
-            #   base_plot <- module_data$ridge_plot_with_threshold
-            # }
-
             base_plot <-
               if (!is.null(module_data$ridge_plot_with_threshold)){
                 module_data$ridge_plot_with_threshold
@@ -370,7 +469,7 @@ threshold_picker_server <-
                 xintercept = plot_x_coordinate,
                 color = "#666666",
                 size = 0.75
-              )
+                )
           })
         
         # 4. Respond to click event ####
@@ -384,8 +483,11 @@ threshold_picker_server <-
           ignoreNULL = TRUE,
           ignoreInit = TRUE,
           {
-            # Draw a solid, and persistent, line on the x-axis
-            # Transfrom x-coordinate of click to match distribution
+            print("Click recorded")
+            print("Mode:")
+            print(mode())
+            
+            # Process (transform) x-coordinate of click
             plot_x_coordinate <-
               interactive_transform(
                 x_coord = input$plot_click$x, 
@@ -393,39 +495,147 @@ threshold_picker_server <-
                 # as computed in 6.1.
                 distribution_range = current_xlim()[2] - current_xlim()[1],
                 distribution_minimum = module_data$plot_min, 
-                plot_min_coord = plot_min_coord, # 0.08, 
-                plot_max_coord = plot_max_coord # 0.9
+                plot_min_coord = plot_min_coord, 
+                plot_max_coord = plot_max_coord
               )
             
-            # Record transformed x-coordinate 
-            # Round threshold to two decimal places (such that the threshold 
-            # displayed will be consistent with the threshold stats computed if
-            # it is copied and pasted. To my knowledge, there is no need to use
-            # thresholds with greater precision)
-            module_data$threshold_x <- 
-              plot_x_coordinate |> 
-              round(digits = 2)
             
-            # Draw vertical line using transformed click coordinate  
-            module_data$ridge_plot_with_threshold <-
-              module_data$initial_ridge_plot +
-              geom_vline(
-                xintercept = module_data$threshold_x,
-                color = "#000000",
-                size = 0.75
-              )
+            # Behavior of click depends on current mode, if provided
+            if (is.reactive(mode)){
+              if (mode() == "range"){
+                # If a range is selected, clicks will record the lower and upper
+                # bound of a range
+                behavior <- "range"
+              } else {
+                # Draw a single solid line on the x-axis to denote a threshold
+                behavior <- "threshold"
+              }
+            } else {
+              # Default behavior: single line
+              behavior <- "threshold"
+            }
             
-            # Record threshold statistics
-            module_data$threshold_stats <- 
-              threshold_stats(
-                object = object(), 
-                feature = feature(), 
-                threshold = module_data$threshold_x
-              )
+            print("Behavior")
+            print(behavior)
             
-            # Record click coordinates
-            module_data$click_info <- 
-              input$plot_click
+            req(behavior)
+            if (behavior == "threshold"){
+              # Record transformed x-coordinate 
+              # Round threshold to two decimal places (such that the threshold 
+              # displayed will be consistent with the threshold stats computed if
+              # it is copied and pasted. To my knowledge, there is no need to use
+              # thresholds with greater precision)
+              module_data$threshold_x <- 
+                plot_x_coordinate |> 
+                round(digits = 2)
+              
+              # Draw vertical line using transformed click coordinate  
+              module_data$ridge_plot_with_threshold <-
+                module_data$initial_ridge_plot +
+                geom_vline(
+                  xintercept = module_data$threshold_x,
+                  color = "#000000",
+                  size = 0.75
+                )
+              
+              # Record threshold statistics
+              module_data$threshold_stats <- 
+                threshold_stats(
+                  object = object(), 
+                  feature = feature(), 
+                  threshold = module_data$threshold_x
+                )
+              
+              # Record click coordinates
+              module_data$click_info <- 
+                input$plot_click
+            } else if (behavior == "range"){
+              # Click coordinates are recorded for the lower or upper bound
+              # depending on the current selection mode
+              # Selection mode initializes as "lower"  
+              print("selection_mode")
+              print(module_data$selection_mode)
+              
+              if (module_data$selection_mode == "lower"){
+                print("Store lower bound")
+                # Record the lower bound
+                module_data$lower_bound <-
+                  plot_x_coordinate |> 
+                  round(digits = 2)
+                
+                # Change the state of the selection based on range already
+                # selected
+                if (is.null(module_data$upper_bound)){
+                  # Next click defines upper bound if it has not yet been chosen
+                  module_data$selection_mode <- "upper" 
+                } else {
+                  module_data$selection_mode <- "none"
+                }
+                
+                } else if (module_data$selection_mode == "upper"){
+                  print("Store upper bound")
+                  # Record the upper bound
+                  module_data$upper_bound <-
+                    plot_x_coordinate |> 
+                    round(digits = 2)
+                  
+                  # Set the selection mode to "none" 
+                  module_data$selection_mode <- "none"
+                  
+                  # Display interface to edit thresholds
+                  showElement(
+                    id = "range-edit-dropdown"
+                  )
+                }
+              
+              print("state of lower bound")
+              print(module_data$lower_bound)
+              print("upper bound")
+              print(module_data$upper_bound)
+              
+              # If both bounds are selected and if the upper bound is higher 
+              # than the lower bound, switch the position of the bounds.
+              if (!is.null(module_data$lower_bound) & 
+                  !is.null(module_data$upper_bound)){
+                if (module_data$lower_bound > module_data$upper_bound){
+                  new_lower <- module_data$upper_bound
+                  new_upper <- module_data$lower_bound
+                  
+                  module_data$lower_bound <- new_lower
+                  module_data$upper_bound <- new_upper
+                }
+              }
+              
+              # Draw vertical lines for lower/upper bounds, if they exist
+              plot <-
+                module_data$initial_ridge_plot
+              
+              if (!is.null(module_data$lower_bound)){
+                print("Plot lower bound")
+                plot <-
+                  plot +
+                  geom_vline(
+                    xintercept = module_data$lower_bound,
+                    color = "#000000",
+                    size = 0.75
+                    )
+                  }  
+                
+              if (!is.null(module_data$upper_bound)){
+                print("Plot upper bound")
+                plot <-
+                  plot +
+                  geom_vline(
+                    xintercept = module_data$upper_bound,
+                    color = "#000000",
+                    size = 0.75
+                  )
+                }  
+              
+              # Save plot
+              module_data$ridge_plot_with_threshold <- 
+                plot
+              }
             })
         
         ## 4.2 Show stats UI when a threshold is selected ####
@@ -660,11 +870,60 @@ threshold_picker_server <-
             )
           })
 
-        # Stats UI
-        # output$threshold_stats_ui <-
-        #   renderUI({
-        #     threshold_stats_ui()
-        #   })
+        # Hover position indicator
+        output$hover_position <-
+          renderText({
+            if (isTruthy(module_data$hover_position)){
+              paste0(
+                "Position: ",
+                module_data$hover_position
+                )
+              }
+          })
+        
+        # Instructions for current selection
+        output$selection_display <-
+          renderText({
+            # Type of instruction to display to the user:
+            # Default to no instruction in cases not covered by below conditional
+            instruction_display <- "blank"
+            
+            # Determine type of instruction to dispay to user
+            # depends on state of the interface mode, and the selection mode
+            if (is.reactive(mode)){
+              if (mode() == "range"){
+                # For range mode: display instruction based on the threshold 
+                # bound being selected
+                if (module_data$selection_mode == "lower"){
+                  instruction_display <- "lower"
+                } else if (module_data$selection_mode == "upper"){
+                  instruction_display <- "upper"
+                } else if (module_data$selection_mode == "none"){
+                  # Blank instruction when the mode is "none" (after both 
+                  # ends of range are chosen)
+                  instruction_display <- "blank"
+                }
+              } else {
+                # If mode is not a range, use simple threshold instructions
+                instruction_display <- "threshold"
+              }
+            } else {
+              # If the mode is not provided to the server instance, use
+              # instructions for a simple threshold
+              instruction_display <- "threshold"
+            }
+            
+            # Display text based on instruction_display
+            if (instruction_display == "threshold"){
+              "Select threshold"
+            } else if (instruction_display == "lower"){
+              "Select lower bound"
+            } else if (instruction_display == "upper"){
+              "Select upper bound"
+            } else if (instruction_display == "blank"){
+              ""
+            }
+          })
         
         # Chosen threshold
         output$chosen_threshold <-
