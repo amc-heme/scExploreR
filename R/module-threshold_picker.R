@@ -88,19 +88,24 @@ threshold_picker_ui <-
             class = "plot-button-panel",
             # Indicator displaying hover position
             div(
-              style = "float: left",
+              #style = "float: left",
               class = "plot-panel-indicator",
               textOutput(
                 outputId = ns("hover_position")
                 ) 
               ),
+            # Container for buttons displaying on right hand side of plot
             div(
-              style = "float: right;",
+              style =
+                "float: right;
+                 display: flex;",
+              # Apply a fix for dropup menus not appearing to the left
+              class = "flex-dropDownleftFix",
               # Interface for adjusting x-axis limits
               div(
                 # Use inline-block display to show side-by-side with 
-                # other buttons
-                style = "display: inline-block;",
+                # other buttons NOPE
+                # style = "display: inline-block;",
                 dropdownButton(
                   # Space prevents "btn-" from being added to first class
                   status = 
@@ -146,7 +151,7 @@ threshold_picker_ui <-
               hidden(
                 div(
                   id = ns("range-edit-dropdown"),
-                  style = "display: inline-block;",
+                  class = "edit-bounds-dropdown",
                   dropdownButton(
                     # Button ID: used to close menu when containing 
                     # buttons are pressed
@@ -166,14 +171,14 @@ threshold_picker_ui <-
                       div(
                         class = "button-group",
                         actionButton(
-                          inputId = ns("modify_lower_bound"),
+                          inputId = ns("edit_lower_bound"),
                           label = "Edit lower bound",
-                          class = "button-ghost"
+                          class = "button-ghost first-button"
                         ),
                         actionButton(
-                          inputId = ns("modify_upper_bound"),
+                          inputId = ns("edit_upper_bound"),
                           label = "Edit upper bound",
-                          class = "button-ghost"
+                          class = "button-ghost last-button"
                           )
                         )
                       )
@@ -499,21 +504,11 @@ threshold_picker_server <-
                 plot_max_coord = plot_max_coord
               )
             
-            
             # Behavior of click depends on current mode, if provided
-            if (is.reactive(mode)){
-              if (mode() == "range"){
-                # If a range is selected, clicks will record the lower and upper
-                # bound of a range
-                behavior <- "range"
-              } else {
-                # Draw a single solid line on the x-axis to denote a threshold
-                behavior <- "threshold"
-              }
-            } else {
-              # Default behavior: single line
-              behavior <- "threshold"
-            }
+            behavior <-
+              scExploreR:::threshold_picker_behavior(
+                mode = mode
+                )
             
             print("Behavior")
             print(behavior)
@@ -847,16 +842,36 @@ threshold_picker_server <-
               }
             })
         
+        # 7. Adjusting Range ####
+        ## 7.1. Edit lower bound ####
+        observeEvent(
+          input$edit_lower_bound,
+          label = glue("{id}: modify lower bound of range"),
+          {
+            # Change state to lower
+            module_data$selection_mode <- "lower"
+            
+            # Close dropdown menu
+            shinyWidgets::toggleDropdownButton(
+              inputId = "range-edit"
+              )
+            })
         
-        ## Modal server for changing limits
-        # xlim_modal_server(
-        #   id = "xlim_modal",
-        #   reactive_trigger = reactive({input$adjust_xlim}),
-        #   current_xlim = current_xlim,
-        #   xlim_orig = original_xlim
-        # )
+        ## 7.2. Edit upper bound ####
+        observeEvent(
+          input$edit_upper_bound,
+          label = glue("{id}: modify lower bound of range"),
+          {
+            # Change state to upper
+            module_data$selection_mode <- "upper"
+            
+            # Close dropdown menu
+            shinyWidgets::toggleDropdownButton(
+              inputId = "range-edit"
+            )
+          })
         
-        # 7. Render plot and statistics ####
+        # 8. Render plot and statistics ####
         # Plot
         output$ridge_plot <-
           renderPlot({
@@ -955,10 +970,23 @@ threshold_picker_server <-
               )
             })
         
-        # 8. Return chosen threshold from module ####
+        # 9. Return chosen threshold/range ####
         # Package into a reactive value for consistency with other modules
         reactive({
-          module_data$threshold_x
+          # Determine if the module is selecting a single threshold or a range
+          behavior <-
+            scExploreR:::threshold_picker_behavior(
+              mode = mode
+            )
+          
+          if (behavior == "range"){
+            # Range: return a two-length vector of lower and upper bounds
+            c(module_data$lower_bound,
+              module_data$upper_bound)
+          } else if (behavior == "threshold"){
+            # Threshold: return the chosen threshold
+            module_data$threshold_x
+            }
           })
       })
 }

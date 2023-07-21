@@ -97,6 +97,20 @@
 
 /******************************************************************************/
 /* Additional classes applied to buttons*/
+/* Button-group: creates a vertical stack of buttons, each with the same width */
+.button-group button {
+  width: 100%;
+}
+
+/* Curve the ends of only the first and last button */
+.button-group button.first-button{
+  border-radius: 5px 5px 0px 0px;
+}
+
+.button-group button.last-button{
+  border-radius: 0px 0px 5px 5px;
+}
+
 /* Compact button: decreases margins for better fit */
 .compact-button{
   padding: 5px 7px;
@@ -237,6 +251,13 @@ button.extra-space {
   outline: none;
   /* Vertically centers buttons in panel and adds space between buttons*/
   margin: 2.5px 5px;
+}
+
+/* Fixes error with dropdown button menus not displaying to the left 
+when inside a flexbox container */
+.flex-dropDownleftFix ul{
+  left: unset !important;
+  right: 0%
 }
 
 /******************************************************************************/

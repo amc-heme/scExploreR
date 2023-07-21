@@ -20,7 +20,7 @@ hr_name <-
     assay_config,
     #adt_threshold_key,
     use_suffix = TRUE
-    ){
+    ){    
     # Error if a multi-element vector is passed for the machine-readable name
     if (length(machine_readable_name) > 1){
       stop("Error: more than one machine-readable name entered.")

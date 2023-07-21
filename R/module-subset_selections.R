@@ -106,8 +106,8 @@ subset_selections_ui <- function(id,
             label = "Choose Filter Type:",
             choices = 
               c("Select Type" = "",
-                "Identity Filter (categorical)" = "categorical",
-                "Threshold Filter (numeric)" = "numeric"
+                "Categorical Metadata" = "categorical",
+                "Feature Expression" = "numeric"
                 )
             ),
           # Categorical metadata filter menu
@@ -154,12 +154,14 @@ subset_selections_ui <- function(id,
                   )
                 )
               ),
+            # UI for choosing a numeric filter
             div(
               id = ns("numeric_filter_ui"),
               tags$b(
                 "Numeric Filter", 
                 class = "center large"
                 ),
+              # Feature for numeric filere
               selectizeInput(
                 inputId = ns("numeric_feature"),
                 label = "Enter a feature to apply filter to:",
@@ -173,17 +175,21 @@ subset_selections_ui <- function(id,
                     "create" = FALSE
                     )
                 ),
-              shinyWidgets::radioGroupButtons(
-                inputId = ns("numeric_mode"),
-                label = "Filter mode:",
-                choices = 
-                  c("<" = "less_than", 
-                    ">" = "greater_than", 
-                    "Range" = "range"
+              # "Mode" of numeric filter (<, >, range)
+              # Hidden until a feature is entered
+              hidden(
+                shinyWidgets::radioGroupButtons(
+                  inputId = ns("numeric_mode"),
+                  label = "Filter mode:",
+                  choices = 
+                    c("<" = "less_than", 
+                      ">" = "greater_than", 
+                      "Range" = "range"
                     ),
-                justified = TRUE,
-                status = "radio-primary"
-              ),
+                  justified = TRUE,
+                  status = "radio-primary"
+                  )
+                ),
               # UI for choosing threshold for filtering
               # Interface is automatically hidden until a feature is selected
               threshold_picker_ui(
@@ -327,6 +333,8 @@ subset_selections_ui <- function(id,
 #' server function upon startup and object change. 
 #' @param metadata_config The metadata section of the config file, loaded in the
 #' main server function.
+#' @param assay_config The assays section of the config file, loaded in the
+#' main server function.
 #' @param meta_categories A vector of the metadata categories (variables) 
 #' included in the config file for the current object. This is computed in the 
 #' main server function.
@@ -345,6 +353,7 @@ subset_selections_server <- function(id,
                                      object,
                                      unique_metadata,
                                      metadata_config,
+                                     assay_config,
                                      meta_categories,
                                      valid_features,
                                      hide_menu = NULL
@@ -621,7 +630,25 @@ subset_selections_server <- function(id,
             )
           })
       
-      ### 1.6.2. Interface for choosing threshold ####
+      ### 1.6.2. Hide Buttons for choosing filter mode ####
+      # Hide buttons until a feature is entered
+      observe({
+        target_id <- "numeric_mode"
+        
+        if (isTruthy(input$numeric_feature)){
+          showElement(
+            id = target_id,
+            anim = TRUE
+            )
+          } else {
+            hideElement(
+              id = target_id,
+              anim = TRUE
+              )
+            }
+        })
+      
+      ### 1.6.3. Interface for choosing threshold ####
       numeric_filter_value <- 
         threshold_picker_server(
           # Do not namespace module server function IDs 
@@ -638,20 +665,54 @@ subset_selections_server <- function(id,
         print(numeric_filter_value())
       })
       
-      ## 1.7. Save filter data ####
+      ## 1.7. Respond to confirm button ####
+      # Save filter and reset states/menus
       observeEvent(
         input$filter_confirm,
+        label = glue("{id}: respond to confirm button"),
         {
           # Record filter in list of filters
           if (module_data$filter_type == "categorical"){
+            # Categorical filters
             filter_data <-
               list(
                 `type` = "categorical",
+                # Not used for categorical filters
+                `mode` = NULL,
                 `var` = input$categorical_var,
                 # Add display name of variable for filter criteria display
                 `label` = metadata_config()[[input$categorical_var]]$label,
                 `value` = input$categorical_values
                 )
+            
+            # Append to end of list ((length + 1)'th element)
+            # c() will collapse elements into a list at the same level
+            module_data$filters[[length(module_data$filters) + 1]] <-
+              filter_data
+          } else if (module_data$filter_type == "numeric"){
+            # Reset the selected feature
+            updateSelectizeInput(
+              inputId = "numeric_feature",
+              selected = character(0)
+            )
+            
+            # Numeric filters
+            filter_data <-
+              list(
+                `type` = "numeric",
+                `mode` = input$numeric_mode,
+                `var` = input$numeric_feature,
+                `label` = 
+                  # Compute display name using config file
+                  scExploreR:::hr_name(
+                    machine_readable_name = input$numeric_feature,
+                    assay_config = assay_config()
+                    ),
+                # Use return value of threhold_picker module
+                # Either a single number, or a vector of upper and lower bounds
+                # if a range is chosen
+                `value` = numeric_filter_value()
+              )
             
             # Append to end of list ((length + 1)'th element)
             module_data$filters[[length(module_data$filters) + 1]] <-
@@ -662,6 +723,26 @@ subset_selections_server <- function(id,
           module_data$filter_menu_state <- "idle"
           
           # Also reset state of current filter type
+          module_data$filter_type <- "none"
+        })
+      
+      ## 1.8. Respond to cancel button ####
+      observeEvent(
+        input$filter_cancel,
+        label = glue("{id}: respond to cancel button"),
+        {
+          # If the filter being edited was a numeric filter, reset the feature
+          # choice menu
+          if (module_data$filter_type == "numeric"){
+            # Reset the selected feature
+            updateSelectizeInput(
+              inputId = "numeric_feature",
+              selected = character(0)
+              )
+            }
+          
+          # Reset menu state, filter type
+          module_data$filter_menu_state <- "idle"
           module_data$filter_type <- "none"
         })
       
@@ -684,6 +765,8 @@ subset_selections_server <- function(id,
                   function(i){
                     # Extract type, display name of variable, values
                     type <- module_data$filters[[i]]$type
+                    # Only applies to numeric filters
+                    mode <- module_data$filters[[i]]$mode
                     label <- module_data$filters[[i]]$label
                     value <- module_data$filters[[i]]$value
                     
@@ -705,6 +788,21 @@ subset_selections_server <- function(id,
                             )
                           )
                         ) 
+                      } else if (type == "numeric"){
+                        div(
+                          # Numeric filter: UI depends on filter mode (<, >, range) 
+                          tags$b(glue("{label}:"), style = "float: center;"),
+                          tags$br(),
+                          tags$p(
+                            if (mode == "less_than"){
+                              paste0("< ", value)
+                            } else if (mode == "greater_than"){
+                              paste0("> ", value)
+                            } else if (mode == "range"){
+                              paste0("Range: ", value[1], "- ", value[2])
+                            }
+                          )
+                        )
                       },
                       # Container for edit/delete buttons
                       div(

@@ -402,6 +402,7 @@ corr_tab_server <- function(id,
                      object = object,
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config,
+                     assay_config = assay_config,
                      meta_categories = meta_categories,
                      valid_features = valid_features
                      )
