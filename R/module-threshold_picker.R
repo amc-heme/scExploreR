@@ -350,7 +350,6 @@ threshold_picker_server <-
             module_data$hover_position <- NULL
             
             # Variables only used when the mode is equal to "range"
-            print("reset range variables")
             module_data$lower_bound <- NULL
             module_data$upper_bound <- NULL
             module_data$selection_mode <- "lower"
@@ -488,10 +487,6 @@ threshold_picker_server <-
           ignoreNULL = TRUE,
           ignoreInit = TRUE,
           {
-            print("Click recorded")
-            print("Mode:")
-            print(mode())
-            
             # Process (transform) x-coordinate of click
             plot_x_coordinate <-
               interactive_transform(
@@ -509,9 +504,6 @@ threshold_picker_server <-
               scExploreR:::threshold_picker_behavior(
                 mode = mode
                 )
-            
-            print("Behavior")
-            print(behavior)
             
             req(behavior)
             if (behavior == "threshold"){
@@ -548,11 +540,8 @@ threshold_picker_server <-
               # Click coordinates are recorded for the lower or upper bound
               # depending on the current selection mode
               # Selection mode initializes as "lower"  
-              print("selection_mode")
-              print(module_data$selection_mode)
               
               if (module_data$selection_mode == "lower"){
-                print("Store lower bound")
                 # Record the lower bound
                 module_data$lower_bound <-
                   plot_x_coordinate |> 
@@ -568,7 +557,6 @@ threshold_picker_server <-
                 }
                 
                 } else if (module_data$selection_mode == "upper"){
-                  print("Store upper bound")
                   # Record the upper bound
                   module_data$upper_bound <-
                     plot_x_coordinate |> 
@@ -582,11 +570,6 @@ threshold_picker_server <-
                     id = "range-edit-dropdown"
                   )
                 }
-              
-              print("state of lower bound")
-              print(module_data$lower_bound)
-              print("upper bound")
-              print(module_data$upper_bound)
               
               # If both bounds are selected and if the upper bound is higher 
               # than the lower bound, switch the position of the bounds.
@@ -606,7 +589,6 @@ threshold_picker_server <-
                 module_data$initial_ridge_plot
               
               if (!is.null(module_data$lower_bound)){
-                print("Plot lower bound")
                 plot <-
                   plot +
                   geom_vline(
@@ -617,7 +599,6 @@ threshold_picker_server <-
                   }  
                 
               if (!is.null(module_data$upper_bound)){
-                print("Plot upper bound")
                 plot <-
                   plot +
                   geom_vline(
@@ -663,9 +644,6 @@ threshold_picker_server <-
             # (see note for that observer)
             priority = 1,
             {
-              print("Detected previously set threshold:")
-              print(set_threshold())
-              
               # When a new value is passed to set_threshold, set the threshold
               # to the new value
               module_data$threshold_x <- set_threshold()
