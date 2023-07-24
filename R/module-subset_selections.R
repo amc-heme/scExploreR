@@ -813,69 +813,75 @@ subset_selections_server <- function(id,
           {
             if (isTruthy(module_data$filters)){
               if (length(module_data$filters) > 0){
-                # Create UI for each filter criteria in the list
-                lapply(
-                  1:length(module_data$filters),
-                  function(i){
-                    # Extract type, display name of variable, values
-                    type <- module_data$filters[[i]]$type
-                    # Only applies to numeric filters
-                    mode <- module_data$filters[[i]]$mode
-                    label <- module_data$filters[[i]]$label
-                    value <- module_data$filters[[i]]$value
-                    
-                    # Construct "card" summarizing the filter criteria applied
-                    div(
-                      class = "filter-info-card",
-                      # Container for storing filter information
-                      if (type == "categorical"){
-                        # Container for categorical filters: follows format below
-                        # <metadata_variable> in:
-                        # <metadata_values>
-                        div(
-                          #style = "float: left;",
-                          tags$b(
-                            glue("{label}:"), 
-                            class = "center half-space-bottom"
+                div(
+                  # Set a max height for the filter interface, and scroll 
+                  # when the hight is exceeded
+                  style = 
+                    "max-height: 60vh; 
+                     overflow-y: auto;",
+                  # Create UI for each filter criteria in the list
+                  lapply(
+                    1:length(module_data$filters),
+                    function(i){
+                      # Extract type, display name of variable, values
+                      type <- module_data$filters[[i]]$type
+                      # Only applies to numeric filters
+                      mode <- module_data$filters[[i]]$mode
+                      label <- module_data$filters[[i]]$label
+                      value <- module_data$filters[[i]]$value
+                      
+                      # Construct "card" summarizing the filter criteria applied
+                      div(
+                        class = "filter-info-card",
+                        # Container for storing filter information
+                        if (type == "categorical"){
+                          # Container for categorical filters: follows format below
+                          # <metadata_variable> in:
+                          # <metadata_values>
+                          div(
+                            #style = "float: left;",
+                            tags$b(
+                              glue("{label}:"), 
+                              class = "center half-space-bottom"
                             ),
-                          tags$p(
-                            scExploreR:::vector_to_text(
-                              value
+                            tags$p(
+                              scExploreR:::vector_to_text(
+                                value
+                              )
+                            )
+                          ) 
+                        } else if (type == "numeric"){
+                          div(
+                            # Numeric filter: UI depends on filter mode (<, >, range) 
+                            tags$b(
+                              glue("{label}:"), 
+                              class = "center half-space-bottom"
+                            ),
+                            tags$p(
+                              if (mode == "less_than"){
+                                paste0("< ", value)
+                              } else if (mode == "greater_than"){
+                                paste0("> ", value)
+                              } else if (mode == "range"){
+                                paste0("Range: ", value[1], "- ", value[2])
+                              }
                             )
                           )
-                        ) 
-                      } else if (type == "numeric"){
+                        },
+                        # Container for edit/delete buttons
                         div(
-                          # Numeric filter: UI depends on filter mode (<, >, range) 
-                          tags$b(
-                            glue("{label}:"), 
-                            class = "center half-space-bottom"
-                            ),
-                          tags$p(
-                            if (mode == "less_than"){
-                              paste0("< ", value)
-                            } else if (mode == "greater_than"){
-                              paste0("> ", value)
-                            } else if (mode == "range"){
-                              paste0("Range: ", value[1], "- ", value[2])
-                            }
-                          )
-                        )
-                      },
-                      # Container for edit/delete buttons
-                      div(
-                        div(
-                          style = "float: right;",
-                          class = "btn-group",
-                          role = "group",
-                          `aria-label` = glue("Options for filter {i})"),
-                          # Content: custom button element
-                          # Code adapted from 
-                          # https://github.com/AntoineGuillot2/ButtonsInDataTable
-                          HTML(
-                            # Current list index of filter is passed to button ID
-                            glue(
-                              '<button type="button" class="btn icon-button edit" 
+                          div(
+                            style = "float: right;",
+                            class = "btn-group",
+                            role = "group",
+                            `aria-label` = glue("Options for filter {i})"),
+                            # Content: custom button element
+                            # Code adapted from 
+                            # https://github.com/AntoineGuillot2/ButtonsInDataTable
+                            HTML(
+                              # Current list index of filter is passed to button ID
+                              glue(
+                                '<button type="button" class="btn icon-button edit" 
                                 id = edit_{i}> 
                                 <i class = "fa fa-pencil" role = "presentation" 
                                   aria-label = "Edit" style = "font-size: 1.2em;">
@@ -895,6 +901,7 @@ subset_selections_server <- function(id,
                       )
                     }
                   )
+                )
               } else {
                 # Display "no filters applied" when no filters are entered
                 div(
