@@ -1986,7 +1986,7 @@ run_config <-
               Shiny.onInputChange('lastClickId', this.id);
               Shiny.onInputChange('lastClick', Math.random())
               });
-          "
+              "
             )
           }
         })

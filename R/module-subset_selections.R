@@ -806,6 +806,7 @@ subset_selections_server <- function(id,
       })
       
       ## 1.10. UI for displaying filters ####
+      ### 1.10.1. HTML ####
       filters_ui <-
         reactive(
           label = glue("{id}: Compute UI for filter menus"),
@@ -898,7 +899,10 @@ subset_selections_server <- function(id,
                 # Display "no filters applied" when no filters are entered
                 div(
                   class = "filter-info-card",
-                  tags$b("- No filters applied -", style = "float: center;")
+                  tags$b(
+                    "- No filters applied -", 
+                    class = "center"
+                    )
                 )
               }
             } else {
@@ -910,12 +914,59 @@ subset_selections_server <- function(id,
               } 
             })
       
+      ### 1.10.2. JavaScript for buttons ####
+      filter_button_js <-
+        reactive(
+          label = glue("{id}: edit/delete button JavaScript"),
+          {
+            req(module_data$filters)
+            
+            if (length(module_data$filters) > 0){
+              tags$script(
+                paste0(
+                  "$(document).on(
+                    'click',",
+                    # Single quotes enclose # selectior, namespaced id, and the 
+                    # descendent button element selector  
+                    "'#", ns("filters_applied"), " button',",
+                    "function () {
+                      Shiny.onInputChange('", ns("lastClickId"), "', this.id);
+                      Shiny.onInputChange('", ns("lastClick"), "', Math.random());
+                    });"
+                  )
+                  # "
+                  # $(document).on(
+                  #   'click', 
+                  #   '#{ns('filters_applied')} button', 
+                  #   function () {
+                  #     Shiny.onInputChange('lastClickId', this.id);
+                  #     Shiny.onInputChange('lastClick', Math.random())
+                  #   });
+                  #   "
+                )
+              }
+            })
+      
+      ### 1.10.3. Render UI ####
       output$filters_applied <-
         renderUI({
-          filters_ui()
+          # Render UI elements, scripts together
+          tagList(
+            filters_ui(),
+            filter_button_js()
+          )
         })
       
       ## 1.11. Register click on edit/delete buttons ####
+      observeEvent(
+        # Respond to lastClick, which always changes with each click
+        # (lastClickId does not necessarily change)
+        input$lastClick,
+        label = glue("{id}: Register click on edit/delete buttons"),
+        {
+         print("ID of click")
+         print(input$lastClickId)
+        })
       
       # 2. UI for String Subsetting --------------------------------------------
       # Use shinyjs to show and hide menus based on whether the adv. subsetting
