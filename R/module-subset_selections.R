@@ -973,6 +973,29 @@ subset_selections_server <- function(id,
         {
          print("ID of click")
          print(input$lastClickId)
+         
+         # Test if ID of click contains "edit" or "delete"
+         if (grepl("edit", input$lastClickId)){
+           
+         } else if (grepl("delete", input$lastClickId)){
+           # Determine row deleted
+           row_selected <- 
+             gsub("delete_", "", input$lastClickId) |> 
+             as.numeric()
+           
+           # Prevents errors in the event the selected_row is undefined
+           if (!is.null(row_selected) | is.na(row_selected)){
+             # Delete the indicated filter from the list
+             module_data$filters[row_selected] <- NULL
+             
+             # Reset filter menu state variables in the event a filter is deleted while editing it
+             # module_data$filter_menu_state <- "idle"
+             # module_data$filter_type <- "none"
+             
+           } else {
+             warning("Unable to determine the index of the row selected for deletion")
+           }
+         }
         })
       
       # 2. UI for String Subsetting --------------------------------------------
