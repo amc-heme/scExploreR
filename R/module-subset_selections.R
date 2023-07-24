@@ -86,6 +86,9 @@ subset_selections_ui <- function(id,
   # Elements to display beneath menu tags (appended using tagList)
   menus <- 
     tagList(
+      tags$b(
+        "Filters Chosen for Subset:"
+      ),
       # New menu UI
       uiOutput(
         outputId = ns("filters_applied")
@@ -93,9 +96,11 @@ subset_selections_ui <- function(id,
       actionButton(
         inputId = ns("add_filter"),
         label = "Add Filter",
+        icon = icon("plus"),
         # show-on-idle: button will be hidden while a filter is 
         # being created/edited
-        class = "button-primary compact-button show-on-idle"
+        class = "button-primary compact-button show-on-idle"#,
+        #style = "width: 25%;"
       ),
       hidden(
         # UI for adding a subsetting filter
@@ -378,6 +383,11 @@ subset_selections_server <- function(id,
       module_data$filter_type <- "none"
       # Empty list for storing subset filters as they're created
       module_data$filters <- list()
+      
+      # Confirm button for adding filters should start in a disabled state
+      shinyjs::disable(
+        id = "filter_confirm"
+      )
       
       # 1. Filter menu UI ------------------------------------------------------
       ## 1.1. Respond to "add filter" button ####
@@ -665,7 +675,50 @@ subset_selections_server <- function(id,
         print(numeric_filter_value())
       })
       
-      ## 1.7. Respond to confirm button ####
+      ## 1.7. Disable confirm button until proper selections are made ####
+      observe(
+        label = 
+          glue("{id}: disable confirm button until a sensible selection is made "),
+        {
+          target_id <- "filter_confirm"
+          
+          if (module_data$filter_type == "categorical"){
+            # Categorical filters: enable button when a metadata variable 
+            # and values are chosen
+            if (isTruthy(input$categorical_var) & 
+                isTruthy(input$categorical_values)){
+              shinyjs::enable(
+                id = target_id
+              )
+            } else {
+              shinyjs::disable(
+                id = target_id
+              )
+            }
+          } else if (module_data$filter_type == "numeric"){
+            # Numeric filters: enable button when a feature and 
+            # threshold/range are chosen
+            if (isTruthy(input$numeric_feature) &
+                isTruthy(numeric_filter_value())
+                ){
+              shinyjs::enable(
+                id = target_id
+              )
+            } else {
+              shinyjs::disable(
+                id = target_id
+              )
+                }
+          } else if (module_data$filter_type == "none"){
+            # Confirm button is disabled when the filter type is equal to none
+            # (but the button should never show in this case)
+            shinyjs::disable(
+              id = target_id
+            )
+          }
+      })
+      
+      ## 1.8. Respond to confirm button ####
       # Save filter and reset states/menus
       observeEvent(
         input$filter_confirm,
@@ -726,7 +779,7 @@ subset_selections_server <- function(id,
           module_data$filter_type <- "none"
         })
       
-      ## 1.8. Respond to cancel button ####
+      ## 1.9. Respond to cancel button ####
       observeEvent(
         input$filter_cancel,
         label = glue("{id}: respond to cancel button"),
@@ -752,7 +805,7 @@ subset_selections_server <- function(id,
         print(module_data$filters)
       })
       
-      ## 1.8. UI for displaying filters ####
+      ## 1.10. UI for displaying filters ####
       filters_ui <-
         reactive(
           label = glue("{id}: Compute UI for filter menus"),
@@ -780,8 +833,10 @@ subset_selections_server <- function(id,
                         # <metadata_values>
                         div(
                           #style = "float: left;",
-                          tags$b(glue("{label}:"), style = "float: center;"),
-                          tags$br(),
+                          tags$b(
+                            glue("{label}:"), 
+                            class = "center half-space-bottom"
+                            ),
                           tags$p(
                             scExploreR:::vector_to_text(
                               value
@@ -791,8 +846,10 @@ subset_selections_server <- function(id,
                       } else if (type == "numeric"){
                         div(
                           # Numeric filter: UI depends on filter mode (<, >, range) 
-                          tags$b(glue("{label}:"), style = "float: center;"),
-                          tags$br(),
+                          tags$b(
+                            glue("{label}:"), 
+                            class = "center half-space-bottom"
+                            ),
                           tags$p(
                             if (mode == "less_than"){
                               paste0("< ", value)
@@ -837,16 +894,28 @@ subset_selections_server <- function(id,
                       )
                     }
                   )
+              } else {
+                # Display "no filters applied" when no filters are entered
+                div(
+                  class = "filter-info-card",
+                  tags$b("- No filters applied -", style = "float: center;")
+                )
               }
             } else {
               # Display "no filters applied" when no filters are entered
-            }
+              # div(
+              #   class = "filter-info-card",
+              #   tags$b("- No filters applied -", style = "float: center;")
+              #   )
+              } 
             })
       
       output$filters_applied <-
         renderUI({
           filters_ui()
         })
+      
+      ## 1.11. Register click on edit/delete buttons ####
       
       # 2. UI for String Subsetting --------------------------------------------
       # Use shinyjs to show and hide menus based on whether the adv. subsetting

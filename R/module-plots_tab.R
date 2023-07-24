@@ -288,16 +288,16 @@ plots_tab_ui <- function(id,
              div(
                id = ns("subset_stats"),
                # Header for subset summary
-               tags$strong(
-                 "Metadata in Displayed Subset",
-                 id = ns("subset_header")
-               ),
+               # tags$strong(
+               #   "Metadata in Displayed Subset",
+               #   id = ns("subset_header")
+               # ),
                # subset_summary module: prints the unique values for each
                # metadata category in the current subset/object
-               subset_summary_ui(
-                 id = ns("subset_summary"),
-                 category_labels = category_labels
-                 )
+               # subset_summary_ui(
+               #   id = ns("subset_summary"),
+               #   category_labels = category_labels
+               #   )
                ), # End subset_stats div
 
              # 1.5.2. Subset selection menus
