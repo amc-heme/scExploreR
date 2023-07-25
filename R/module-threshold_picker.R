@@ -643,31 +643,92 @@ threshold_picker_server <-
             # (see note for that observer)
             priority = 1,
             {
-              # When a new value is passed to set_threshold, set the threshold
-              # to the new value
-              module_data$threshold_x <- set_threshold()
-              
-              # Draw a vertical line on the plot at the new value, as if a click 
-              # event had occurred at the location of the threshold.
-              # Draw vertical line using transformed click coordinate  
-              module_data$ridge_plot_with_threshold <-
-                module_data$initial_ridge_plot +
-                geom_vline(
-                  xintercept = module_data$threshold_x,
-                  color = "#000000",
-                  size = 0.75
+              # Determine behavior based on "mode"
+              behavior <-
+                scExploreR:::threshold_picker_behavior(
+                  mode = mode
                 )
               
-              # Also update module_data$ridge_plot (the plot that is printed)
-              module_data$ridge_plot <- module_data$ridge_plot_with_threshold
+              if (behavior == "threshold"){
+                # Warn the user if set_threshold() is not a one-element vector
+                if (length(set_threshold()) != 1){
+                  warning(
+                    glue(
+                      'unexpected length ({length(set_threshold())}) for
+                      set_threshold() in {id}. A one-element vector is expected
+                      since the mode is currently "threshold"; unexpected
+                      behavior may result.'
+                    )
+                  )
+                }
+                
+                # When a new value is passed to set_threshold, set the threshold
+                # to the new value
+                module_data$threshold_x <- set_threshold()
+                
+                # Draw a vertical line on the plot at the new value, as if a click 
+                # event had occurred at the location of the threshold.
+                # Draw vertical line using transformed click coordinate  
+                module_data$ridge_plot_with_threshold <-
+                  module_data$initial_ridge_plot +
+                  geom_vline(
+                    xintercept = module_data$threshold_x,
+                    color = "#000000",
+                    size = 0.75
+                  )
+                
+                # Also update module_data$ridge_plot (the plot that is printed)
+                module_data$ridge_plot <- module_data$ridge_plot_with_threshold
+                
+                # Update statistics with new threshold value
+                module_data$threshold_stats <- 
+                  threshold_stats(
+                    object = object(), 
+                    feature = feature(), 
+                    threshold = module_data$threshold_x
+                  )
+              } else if (behavior == "range") {
+                # If a range is passed instead:
+                # Test if the set_threshold value is a two-element vector
+                # warn user if not (errors will likely result)
+                if (length(set_threshold()) != 2){
+                  warning(
+                    glue(
+                      "set_threshold() in {id} is not equal to a two-element
+                      character vector, but range mode is enabled. Unexpected
+                      behavior may result."
+                      )
+                    )
+                }
+                
+                # Set values of lower and upper bound to the first and second
+                # values of set_threshold(), respectively.
+                module_data$lower_bound <- set_threshold()[1]
+                module_data$upper_bound <- set_threshold()[2]
+                
+                # Draw a vertical lines on the plot to reflect the new range
+                # (simulating clicks to create the range)
+                module_data$ridge_plot_with_threshold <-
+                  module_data$initial_ridge_plot +
+                  geom_vline(
+                    xintercept = module_data$lower_bound,
+                    color = "#000000",
+                    size = 0.75
+                  ) +
+                  geom_vline(
+                    xintercept = module_data$upper_bound,
+                    color = "#000000",
+                    size = 0.75
+                  )
+                
+                # Update module_data$ridge_plot (the plot that is printed)
+                module_data$ridge_plot <- module_data$ridge_plot_with_threshold
+                
+                # Set editing state to "none" (user may not edit bounds until 
+                # they press the edit button)
+                module_data$selection_mode <- "none"
+              }
               
-              # Update statistics with new threshold value
-              module_data$threshold_stats <- 
-                threshold_stats(
-                  object = object(), 
-                  feature = feature(), 
-                  threshold = module_data$threshold_x
-                )
             })
           }
         
