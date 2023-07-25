@@ -103,9 +103,9 @@ subset_selections_ui <- function(id,
         #style = "width: 25%;"
       ),
       hidden(
-        # UI for adding a subsetting filter
+        # UI for adding/editing a subsetting filter
         div(
-          class = "show-on-add compact-options-container",
+          class = "show-on-add show-on-edit compact-options-container",
           selectInput(
             inputId = ns("filter_type"),
             label = "Choose Filter Type:",
@@ -123,13 +123,24 @@ subset_selections_ui <- function(id,
                 "Categorical Filter", 
                 class = "center large"
                 ),
-              # Select menu to choose metadata for filtering
-              selectInput(
-                inputId = ns("categorical_var"),
-                label = "Choose categorical metadata:",
-                # Choices are updated in server
-                choices = NULL
+              # Select menu to choose metadata for filtering (add mode)
+              div(
+                class = "show-on-add",
+                selectInput(
+                  inputId = ns("categorical_var"),
+                  label = "Choose categorical metadata:",
+                  # Choices are updated in server
+                  choices = NULL
+                  )
                 ),
+              # Edit mode: display metadata being edited
+              div(
+                class = "show-on-edit",
+                tags$b("Metadata variable:"),
+                textOutput(
+                  outputId = ns("edit_categorical_var")
+                )
+              ),
               # Picker input to choose values of metadata variable to include
               pickerInput(
                 inputId = ns("categorical_values"),
@@ -384,6 +395,23 @@ subset_selections_server <- function(id,
       # Empty list for storing subset filters as they're created
       module_data$filters <- list()
       
+      # editing data: reactiveValues list storing data related to a filter 
+      # being edited
+      # Data must be stored in a reactiveValues object while editing to prevent 
+      # information loss. 
+      editing_data <- reactiveValues()
+      
+      # Numeric feature mode
+      editing_data$mode <- NULL
+      # Categorical metadata variable, or feature, being edited 
+      editing_data$var <- NULL
+      # Value(s) of var 
+      editing_data$value <- NULL
+      # Index of filter being edited in module_data$filters
+      editing_data$target_row <- NULL
+      # Label to display to user
+      editing_data$label <- NULL
+      
       # Confirm button for adding filters should start in a disabled state
       shinyjs::disable(
         id = "filter_confirm"
@@ -406,21 +434,33 @@ subset_selections_server <- function(id,
         edit_selector <- "[class *= 'show-on-edit']"
         idle_selector <- "[class *= 'show-on-idle']"
         
+        # showElement statements are put last on purpose
+        # This allows elements with show-on-add OR show-on-edit classes to be 
+        # visible (if the hideElement statements come after the showElement 
+        # statement, the container with both classes will be shown, then hidden)
         if (module_data$filter_menu_state == "add"){
+          hideElement(
+            selector = edit_selector
+          )
+          
+          hideElement(
+            selector = idle_selector
+          )
+          
           showElement(
+            selector = add_selector
+          )
+        } else if (module_data$filter_menu_state == "edit"){
+          hideElement(
             selector = add_selector
           )
           
           hideElement(
             selector = idle_selector
           )
-        } else if (module_data$filter_menu_state == "edit"){
+          
           showElement(
             selector = edit_selector
-          )
-          
-          hideElement(
-            selector = idle_selector
           )
         } else if (module_data$filter_menu_state == "idle") {
           showElement(
@@ -507,6 +547,8 @@ subset_selections_server <- function(id,
         {
           # Runs as long as the type is "categorical"
           req(module_data$filter_type == "categorical")
+          # Do not run in editing mode
+          req(module_data$filter_menu_state == "add")
             
           # Construct vector of metadata choices for filtering
           # Values: machine-readable variable names
@@ -526,6 +568,9 @@ subset_selections_server <- function(id,
             # been entered as filters
             # Identify categorical filters
             existing_categorical_filters <- 
+              # Must use single brackets to select multiple elements from a 
+              # list of list (double bracket notation with [[c(i,j)]] will fetch
+              # the jth element of the ith sublist)
               module_data$filters[
                 # sapply: creates boolean identifying categorical filters
                 sapply(
@@ -582,6 +627,8 @@ subset_selections_server <- function(id,
           glue("{id}: filter menus: update choices for categorical metadata"),
         {
           req(input$categorical_var)
+          # Do not run in editing mode
+          req(module_data$filter_menu_state == "add")
           
           # Determine choices to display for the selected metadata variable
           
@@ -738,10 +785,18 @@ subset_selections_server <- function(id,
                 `value` = input$categorical_values
                 )
             
-            # Append to end of list ((length + 1)'th element)
-            # c() will collapse elements into a list at the same level
-            module_data$filters[[length(module_data$filters) + 1]] <-
-              filter_data
+            if (module_data$filter_menu_state == "add"){
+              # When adding a filter:
+              # Append to end of list ((length + 1)'th element)
+              # c() will collapse elements into a list at the same level
+              module_data$filters[[length(module_data$filters) + 1]] <-
+                filter_data
+            } else if (module_data$filter_menu_state == "edit"){
+              # When editing a filter:
+              # Save data to the index of the row being edited
+              module_data$filters[[editing_data$target_row]]<-
+                filter_data
+            }
           } else if (module_data$filter_type == "numeric"){
             # Reset the selected feature
             updateSelectizeInput(
@@ -767,9 +822,17 @@ subset_selections_server <- function(id,
                 `value` = numeric_filter_value()
               )
             
-            # Append to end of list ((length + 1)'th element)
-            module_data$filters[[length(module_data$filters) + 1]] <-
-              filter_data
+            if (module_data$filter_menu_state == "add"){
+              # Adding a filter:
+              # Append to end of list ((length + 1)'th element)
+              module_data$filters[[length(module_data$filters) + 1]] <-
+                filter_data
+            } else if (module_data$filter_menu_state == "edit"){
+              # Editing a filter:
+              # Save data to the index of the row being edited
+              module_data$filters[[editing_data$target_row]]<-
+                filter_data
+              }
             }
           
           # Set state to idle
@@ -964,7 +1027,7 @@ subset_selections_server <- function(id,
           )
         })
       
-      ## 1.11. Register click on edit/delete buttons ####
+      ## 1.11. Respond to click on edit/delete buttons ####
       observeEvent(
         # Respond to lastClick, which always changes with each click
         # (lastClickId does not necessarily change)
@@ -976,6 +1039,89 @@ subset_selections_server <- function(id,
          
          # Test if ID of click contains "edit" or "delete"
          if (grepl("edit", input$lastClickId)){
+           # Determine row being edited, and store in editing information
+           row_selected <- 
+             gsub("edit_", "", input$lastClickId) |> 
+             as.numeric()
+           
+           print("Computed row selected")
+           print(row_selected)
+           
+           editing_data$target_row <-
+             row_selected
+           
+           # Fetch filter data from list
+           filter_data <-
+             module_data$filters[[row_selected]]
+           
+           # Determine type of filter being edited
+           # filter_type <- filter_data$type
+           
+           print("Filter data read")
+           print(filter_data)
+           
+           # Set up editing interface 
+           print("filter_data$type")
+           print(filter_data$type)
+           if (filter_data$type == "categorical"){
+             # Set state variable for filter type to show appropriate menus
+             module_data$filter_type <- "categorical"
+             
+             # Store metadata variable for filter being edited
+             editing_data$var <- 
+               filter_data$var
+             
+             # Store label of metadata variable
+             editing_data$label <-
+               filter_data$label
+               
+             # Store selected values of feature
+             editing_data$value <- 
+               filter_data$value
+             
+             # Update selection menu with the values chosen
+             # Determine possible choices for the selected variable
+             choices <-
+               SCEPlots::unique_values(
+                 object(), 
+                 var = editing_data$var
+                )
+             
+             # Update picker input with choices, selected values
+             updatePickerInput(
+               session,
+               inputId = "categorical_values",
+               choices = choices,
+               # Reset selection to nothing being selected (no filters applied; 
+               # use character(0) to do this)
+               selected = editing_data$value#,
+               # Use boolean vector to enable all choices
+               # choicesOpt = 
+               #   list(
+               #     disabled = is_disabled,
+               #     style = ifelse(
+               #       is_disabled,
+               #       yes = "color: rgba(119, 119, 119, 0.5);",
+               #       no = ""
+               #     )
+               #   )
+             )
+           } else if (filter_data$type == "numeric"){
+             # Set state variable for filter type to show appropriate menus
+             module_data$filter_type <- "numeric"
+             
+             # Set mode, move radio button selection to indicated mode
+             
+             # Store feature being edited
+             
+             # Store threshold/range
+             
+             # Update feature selection menu and threshold/range picker interface
+             
+           }
+           
+           # Set state of menu to edit to reveal editing interface
+           module_data$filter_menu_state <- "edit"
            
          } else if (grepl("delete", input$lastClickId)){
            # Determine row deleted
@@ -988,7 +1134,8 @@ subset_selections_server <- function(id,
              # Delete the indicated filter from the list
              module_data$filters[row_selected] <- NULL
              
-             # Reset filter menu state variables in the event a filter is deleted while editing it
+             # Reset filter menu state variables in the event a 
+             # filter is deleted while editing it
              # module_data$filter_menu_state <- "idle"
              # module_data$filter_type <- "none"
              
@@ -997,6 +1144,15 @@ subset_selections_server <- function(id,
            }
          }
         })
+      
+      ## 1.12. Editing interface ####
+      ### 1.12.1. Categorical features: feature being edited ####
+      output$edit_categorical_var <-
+        renderText({
+          req(editing_data$label)
+          
+          editing_data$label
+          })
       
       # 2. UI for String Subsetting --------------------------------------------
       # Use shinyjs to show and hide menus based on whether the adv. subsetting

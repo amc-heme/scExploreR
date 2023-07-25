@@ -248,9 +248,8 @@ threshold_picker_ui <-
 #' upper and lower bound for the range. The stats displayed will vary based on 
 #' the mode.
 #' @param set_threshold A reactive value used to set the selected threshold to
-#' a defined value. For example, when editing the threshold value for a feature,
-#' this is set to the last value selected for the feature, giving a visual 
-#' representation of what the last selection was.
+#' a defined value. When this value changes, the threshold picker interface will
+#' update to reflect a selection at the new value.
 #' 
 #' @noRd
 #'
