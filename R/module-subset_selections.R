@@ -407,6 +407,9 @@ subset_selections_server <- function(id,
       editing_data$var <- NULL
       # Value(s) of var 
       editing_data$value <- NULL
+      # Special variable for numeric filters (threshold picker module responds 
+      # to this value)
+      editing_data$numeric_filter_value <- NULL
       # Index of filter being edited in module_data$filters
       editing_data$target_row <- NULL
       # Label to display to user
@@ -713,6 +716,22 @@ subset_selections_server <- function(id,
           object = object,
           feature = reactive({input$numeric_feature}),
           mode = reactive({input$numeric_mode}),
+          # set_threshold will set the interface to a threshold/range when 
+          # editing a filter
+          set_threshold = 
+            reactive({
+              req(input$numeric_mode)
+              if (input$numeric_mode == "range"){
+                req(length(editing_data$numeric_filter_value) == 2)
+              } else {
+                req(length(editing_data$numeric_filter_value) == 1)
+              }
+               
+              print("Record new set_thrseshold() value:")
+              print(editing_data$numeric_filter_value)
+                
+                editing_data$numeric_filter_value
+              }),
           showhide_animation = TRUE
         )
       
@@ -796,6 +815,8 @@ subset_selections_server <- function(id,
               # Save data to the index of the row being edited
               module_data$filters[[editing_data$target_row]]<-
                 filter_data
+              
+              # Clear all editing data variables
             }
           } else if (module_data$filter_type == "numeric"){
             # Reset the selected feature
@@ -1111,13 +1132,30 @@ subset_selections_server <- function(id,
              module_data$filter_type <- "numeric"
              
              # Set mode, move radio button selection to indicated mode
+             editing_data$mode <- 
+               filter_data$mode
+             
+             shinyWidgets::updateRadioGroupButtons(
+               session = session,
+               inputId = "numeric_mode",
+               selected = editing_data$mode
+               )
              
              # Store feature being edited
+             editing_data$var <- 
+               filter_data$var
              
              # Store threshold/range
+             editing_data$numeric_filter_value <- 
+               filter_data$value
              
-             # Update feature selection menu and threshold/range picker interface
-             
+             # Update feature selection menu
+             updateSelectizeInput(
+               session = session,
+               inputId = "numeric_feature",
+               choices = valid_features(),
+               selected = editing_data$var
+               )
            }
            
            # Set state of menu to edit to reveal editing interface
@@ -1140,12 +1178,14 @@ subset_selections_server <- function(id,
              # module_data$filter_type <- "none"
              
            } else {
-             warning("Unable to determine the index of the row selected for deletion")
+             warning(
+               "Unable to determine the index of the row selected for deletion"
+               )
            }
          }
         })
       
-      ## 1.12. Editing interface ####
+      ## 1.12. Editing UI ####
       ### 1.12.1. Categorical features: feature being edited ####
       output$edit_categorical_var <-
         renderText({

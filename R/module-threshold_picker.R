@@ -249,7 +249,12 @@ threshold_picker_ui <-
 #' the mode.
 #' @param set_threshold A reactive value used to set the selected threshold to
 #' a defined value. When this value changes, the threshold picker interface will
-#' update to reflect a selection at the new value.
+#' update to reflect a selection at the new value. It is reccomended that this 
+#' be set to a reactive({}) call that points to a reactiveValues object that is
+#' changed whenever new theshold/range data is loaded. To avoid bugs, this
+#' variable should be changed to NULL whenever a threshold/range being edited 
+#' is saved or discarded, so the reactive can properly respond to the loading 
+#' of a new threshold in the event it is the same as the previous threshold.
 #' 
 #' @noRd
 #'
@@ -329,7 +334,7 @@ threshold_picker_server <-
             } else {
               feature()
               },
-          label = glue("{id}: Ridge Plot Histogram"),
+          label = glue("{id}: Initial Ridge Plot Histogram"),
           ignoreNULL = FALSE,
           # This observer must execute before the observer in 5. to ensure 
           # user-defined thresholds are being applied after the plot is created
@@ -391,6 +396,8 @@ threshold_picker_server <-
               # interactive coordinates aren't working for Seurat plots
               module_data$plot_range <- 
                 module_data$plot_max - module_data$plot_min
+              
+              print("Drawing initial plot")
               
               module_data$initial_ridge_plot <-
                 shiny_ridge(
@@ -479,7 +486,7 @@ threshold_picker_server <-
         ## 4.1. Draw Vertical line on plot and Compute Statistics ####
         observeEvent(
           input$plot_click,
-          label = glue("{id}: Draw Line on Click and Compute Stats"),
+          label = glue("{id}: Process click event"),
           # IgnoreNULL must be TRUE to avoid the plot computing when
           # input$plot_click is NULL, which will erase the line from the plot
           # as soon as it is drown
@@ -516,13 +523,13 @@ threshold_picker_server <-
                 round(digits = 2)
               
               # Draw vertical line using transformed click coordinate  
-              module_data$ridge_plot_with_threshold <-
-                module_data$initial_ridge_plot +
-                geom_vline(
-                  xintercept = module_data$threshold_x,
-                  color = "#000000",
-                  size = 0.75
-                )
+              # module_data$ridge_plot_with_threshold <-
+              #   module_data$initial_ridge_plot +
+              #   geom_vline(
+              #     xintercept = module_data$threshold_x,
+              #     color = "#000000",
+              #     size = 0.75
+              #   )
               
               # Record threshold statistics
               module_data$threshold_stats <- 
@@ -531,10 +538,6 @@ threshold_picker_server <-
                   feature = feature(), 
                   threshold = module_data$threshold_x
                 )
-              
-              # Record click coordinates
-              module_data$click_info <- 
-                input$plot_click
             } else if (behavior == "range"){
               # Click coordinates are recorded for the lower or upper bound
               # depending on the current selection mode
@@ -584,32 +587,32 @@ threshold_picker_server <-
               }
               
               # Draw vertical lines for lower/upper bounds, if they exist
-              plot <-
-                module_data$initial_ridge_plot
-              
-              if (!is.null(module_data$lower_bound)){
-                plot <-
-                  plot +
-                  geom_vline(
-                    xintercept = module_data$lower_bound,
-                    color = "#000000",
-                    size = 0.75
-                    )
-                  }  
-                
-              if (!is.null(module_data$upper_bound)){
-                plot <-
-                  plot +
-                  geom_vline(
-                    xintercept = module_data$upper_bound,
-                    color = "#000000",
-                    size = 0.75
-                  )
-                }  
-              
-              # Save plot
-              module_data$ridge_plot_with_threshold <- 
-                plot
+              # plot <-
+              #   module_data$initial_ridge_plot
+              # 
+              # if (!is.null(module_data$lower_bound)){
+              #   plot <-
+              #     plot +
+              #     geom_vline(
+              #       xintercept = module_data$lower_bound,
+              #       color = "#000000",
+              #       size = 0.75
+              #       )
+              #     }  
+              #   
+              # if (!is.null(module_data$upper_bound)){
+              #   plot <-
+              #     plot +
+              #     geom_vline(
+              #       xintercept = module_data$upper_bound,
+              #       color = "#000000",
+              #       size = 0.75
+              #     )
+              #   }  
+              # 
+              # # Save plot
+              # module_data$ridge_plot_with_threshold <- 
+              #   plot
               }
             })
         
@@ -630,24 +633,105 @@ threshold_picker_server <-
             }
           })
         
-        # 5. Update a plot with a previously defined threshold ####
+        # 5. Draw plot according to threshold/range ####
+        observe(
+          label = glue("{id}: Draw vertical line on plot"),
+          {
+          print("Draw plot observer")
+          req(
+            c(module_data$initial_ridge_plot, 
+              input$feature)
+            )
+          
+          behavior <-
+            scExploreR:::threshold_picker_behavior(
+              mode = mode
+            )
+          
+          if (behavior == "threshold"){
+            req(module_data$threshold_x)
+            
+            # Draw a single line at module_data$threshold_x()
+            module_data$ridge_plot_with_threshold <-
+              module_data$initial_ridge_plot +
+              geom_vline(
+                xintercept = module_data$threshold_x,
+                color = "#000000",
+                size = 0.75
+              )
+            
+            # Update plot displayed (ridge_plot)
+            module_data$ridge_plot <-
+              module_data$ridge_plot_with_threshold
+          } else if (behavior == "range"){
+            print("Plotting range")
+            
+            # Draw two lines at the lower and upper bounds of the range
+            # (if defined yet)
+            plot <-
+              module_data$initial_ridge_plot
+            
+            if (!is.null(module_data$lower_bound)){
+              print("Draw line for lower bound")
+              plot <-
+                plot +
+                geom_vline(
+                  xintercept = module_data$lower_bound,
+                  color = "#000000",
+                  size = 0.75
+                )
+            }  
+            
+            if (!is.null(module_data$upper_bound)){
+              print("Draw line for upper bound")
+              plot <-
+                plot +
+                geom_vline(
+                  xintercept = module_data$upper_bound,
+                  color = "#000000",
+                  size = 0.75
+                )
+            }  
+            
+            # Save plot
+            module_data$ridge_plot_with_threshold <- 
+              plot
+            
+            # Update final plot displayed
+            print("save plot")
+            module_data$ridge_plot <-
+              module_data$ridge_plot_with_threshold
+          }
+        })
+        
+        # 6. Update a plot with a previously defined threshold ####
         if (is.reactive(set_threshold)){
           # Observer is created only when set_threshold is defined as a 
           # reactive variable (set_threshold is a non-reactive NULL by default,
           # since it is not used on all applications of this module)
           observeEvent(
             set_threshold(),
+            label = glue("{id}: Update plot with previously defined threshold"),
             ignoreNULL = TRUE,
             ignoreInit = TRUE,
             # Must have a lower priority than the observer in 2. 
             # (see note for that observer)
             priority = 1,
             {
+              print("Update threshold picker widget")
+              # Only run when a feature is defined (ridge plot will throw 
+              # errors if undefined)
+              # req(
+              #   c(input$feature, set_threshold())
+              #   )
+              
               # Determine behavior based on "mode"
               behavior <-
                 scExploreR:::threshold_picker_behavior(
                   mode = mode
                 )
+              print("Behavior")
+              print(behavior)
               
               if (behavior == "threshold"){
                 # Warn the user if set_threshold() is not a one-element vector
@@ -656,7 +740,7 @@ threshold_picker_server <-
                     glue(
                       'unexpected length ({length(set_threshold())}) for
                       set_threshold() in {id}. A one-element vector is expected
-                      since the mode is currently "threshold"; unexpected
+                      since the mode is currently "threshold". unexpected
                       behavior may result.'
                     )
                   )
@@ -664,21 +748,22 @@ threshold_picker_server <-
                 
                 # When a new value is passed to set_threshold, set the threshold
                 # to the new value
+                print("Set threshold upon loading")
                 module_data$threshold_x <- set_threshold()
                 
                 # Draw a vertical line on the plot at the new value, as if a click 
                 # event had occurred at the location of the threshold.
                 # Draw vertical line using transformed click coordinate  
-                module_data$ridge_plot_with_threshold <-
-                  module_data$initial_ridge_plot +
-                  geom_vline(
-                    xintercept = module_data$threshold_x,
-                    color = "#000000",
-                    size = 0.75
-                  )
+                # module_data$ridge_plot_with_threshold <-
+                #   module_data$initial_ridge_plot +
+                #   geom_vline(
+                #     xintercept = module_data$threshold_x,
+                #     color = "#000000",
+                #     size = 0.75
+                #   )
                 
                 # Also update module_data$ridge_plot (the plot that is printed)
-                module_data$ridge_plot <- module_data$ridge_plot_with_threshold
+                #module_data$ridge_plot <- module_data$ridge_plot_with_threshold
                 
                 # Update statistics with new threshold value
                 module_data$threshold_stats <- 
@@ -688,6 +773,7 @@ threshold_picker_server <-
                     threshold = module_data$threshold_x
                   )
               } else if (behavior == "range") {
+                print("Execute update code for range")
                 # If a range is passed instead:
                 # Test if the set_threshold value is a two-element vector
                 # warn user if not (errors will likely result)
@@ -706,20 +792,24 @@ threshold_picker_server <-
                 module_data$lower_bound <- set_threshold()[1]
                 module_data$upper_bound <- set_threshold()[2]
                 
+                print("Value of lower bound")
+                print(module_data$lower_bound)
+                print("Value of upper bound")
+                print(module_data$upper_bound)
                 # Draw a vertical lines on the plot to reflect the new range
                 # (simulating clicks to create the range)
-                module_data$ridge_plot_with_threshold <-
-                  module_data$initial_ridge_plot +
-                  geom_vline(
-                    xintercept = module_data$lower_bound,
-                    color = "#000000",
-                    size = 0.75
-                  ) +
-                  geom_vline(
-                    xintercept = module_data$upper_bound,
-                    color = "#000000",
-                    size = 0.75
-                  )
+                # module_data$ridge_plot_with_threshold <-
+                #   module_data$initial_ridge_plot +
+                #   geom_vline(
+                #     xintercept = module_data$lower_bound,
+                #     color = "#000000",
+                #     size = 0.75
+                #   ) +
+                #   geom_vline(
+                #     xintercept = module_data$upper_bound,
+                #     color = "#000000",
+                #     size = 0.75
+                #   )
                 
                 # Update module_data$ridge_plot (the plot that is printed)
                 module_data$ridge_plot <- module_data$ridge_plot_with_threshold
@@ -732,8 +822,8 @@ threshold_picker_server <-
             })
           }
         
-        # 6. Adjusting X-Axis Limits of plot ####
-        ## 6.1. Current X-axis limits ####
+        # 7. Adjusting X-Axis Limits of plot ####
+        ## 7.1. Current X-axis limits ####
         current_xlim <- 
           reactive(
             label = glue("{id}: Current X-Axis Limits of Plot"),
@@ -759,7 +849,7 @@ threshold_picker_server <-
               }
             })
         
-        ## 6.2. Update text entry of limits to reflect current values ####
+        ## 7.2. Update text entry of limits to reflect current values ####
         observe(
           label = glue("{id}: Update Text Entry of Limits"),
           {
@@ -778,10 +868,11 @@ threshold_picker_server <-
               )
             })
         
-        ## 6.3. Respond to apply limits button ####
+        ## 7.3. Respond to apply limits button ####
         # Re-draw Plot With New Limits 
         observeEvent(
           input$apply_xlim,
+          label = glue("{id}: Draw plot with updated x limits"),
           ignoreNULL = FALSE,
           ignoreInit = TRUE,
           {
@@ -807,8 +898,6 @@ threshold_picker_server <-
             module_data$initial_ridge_plot <- 
               plot
             
-            
-            
             # If a threshold is defined, add a vertical line to the plot at
             # the threshold and save to that plot to
             # module_data$ridge_plot_with_threshold (both plots must be updated
@@ -832,7 +921,7 @@ threshold_picker_server <-
             }
           })
         
-        ## 6.4. Respond to restore limits button ####
+        ## 7.4. Respond to restore limits button ####
         observeEvent(
           input$restore_xlim,
           ignoreNULL = FALSE,
@@ -880,8 +969,8 @@ threshold_picker_server <-
               }
             })
         
-        # 7. Adjusting Range ####
-        ## 7.1. Edit lower bound ####
+        # 8. Adjusting Range ####
+        ## 8.1. Edit lower bound ####
         observeEvent(
           input$edit_lower_bound,
           label = glue("{id}: modify lower bound of range"),
@@ -895,7 +984,7 @@ threshold_picker_server <-
               )
             })
         
-        ## 7.2. Edit upper bound ####
+        ## 8.2. Edit upper bound ####
         observeEvent(
           input$edit_upper_bound,
           label = glue("{id}: modify lower bound of range"),
@@ -909,7 +998,7 @@ threshold_picker_server <-
             )
           })
         
-        # 8. Render plot and statistics ####
+        # 9. Render plot and statistics ####
         # Plot
         output$ridge_plot <-
           renderPlot({
@@ -1008,7 +1097,7 @@ threshold_picker_server <-
               )
             })
         
-        # 9. Return chosen threshold/range ####
+        # 10. Return chosen threshold/range ####
         # Package into a reactive value for consistency with other modules
         reactive({
           # Determine if the module is selecting a single threshold or a range
