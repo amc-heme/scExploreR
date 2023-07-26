@@ -336,11 +336,6 @@ threshold_picker_server <-
               },
           label = glue("{id}: Initial Ridge Plot Histogram"),
           ignoreNULL = FALSE,
-          # This observer must execute before the observer in 5. to ensure 
-          # user-defined thresholds are being applied after the plot is created
-          # when switching features (otherwise the threshold will be drawn on
-          # the previous plot instead of the current one)
-          priority = 2,
           {            
             # When drawing a new plot, clear plots and data associated 
             # with the last plot if present
@@ -709,21 +704,17 @@ threshold_picker_server <-
           # Observer is created only when set_threshold is defined as a 
           # reactive variable (set_threshold is a non-reactive NULL by default,
           # since it is not used on all applications of this module)
-          observeEvent(
-            set_threshold(),
+          observe(
             label = glue("{id}: Update plot with previously defined threshold"),
-            ignoreNULL = TRUE,
-            ignoreInit = TRUE,
-            # Must have a lower priority than the observer in 2. 
-            # (see note for that observer)
-            priority = 1,
             {
+              req(
+                c(set_threshold(), 
+                  input$feature, 
+                  mode()
+                  )
+                )
+              
               print("Update threshold picker widget")
-              # Only run when a feature is defined (ridge plot will throw 
-              # errors if undefined)
-              # req(
-              #   c(input$feature, set_threshold())
-              #   )
               
               # Determine behavior based on "mode"
               behavior <-
@@ -750,20 +741,6 @@ threshold_picker_server <-
                 # to the new value
                 print("Set threshold upon loading")
                 module_data$threshold_x <- set_threshold()
-                
-                # Draw a vertical line on the plot at the new value, as if a click 
-                # event had occurred at the location of the threshold.
-                # Draw vertical line using transformed click coordinate  
-                # module_data$ridge_plot_with_threshold <-
-                #   module_data$initial_ridge_plot +
-                #   geom_vline(
-                #     xintercept = module_data$threshold_x,
-                #     color = "#000000",
-                #     size = 0.75
-                #   )
-                
-                # Also update module_data$ridge_plot (the plot that is printed)
-                #module_data$ridge_plot <- module_data$ridge_plot_with_threshold
                 
                 # Update statistics with new threshold value
                 module_data$threshold_stats <- 
@@ -796,23 +773,6 @@ threshold_picker_server <-
                 print(module_data$lower_bound)
                 print("Value of upper bound")
                 print(module_data$upper_bound)
-                # Draw a vertical lines on the plot to reflect the new range
-                # (simulating clicks to create the range)
-                # module_data$ridge_plot_with_threshold <-
-                #   module_data$initial_ridge_plot +
-                #   geom_vline(
-                #     xintercept = module_data$lower_bound,
-                #     color = "#000000",
-                #     size = 0.75
-                #   ) +
-                #   geom_vline(
-                #     xintercept = module_data$upper_bound,
-                #     color = "#000000",
-                #     size = 0.75
-                #   )
-                
-                # Update module_data$ridge_plot (the plot that is printed)
-                module_data$ridge_plot <- module_data$ridge_plot_with_threshold
                 
                 # Set editing state to "none" (user may not edit bounds until 
                 # they press the edit button)
