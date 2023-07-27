@@ -729,8 +729,8 @@ subset_selections_server <- function(id,
                
               print("Record new set_thrseshold() value:")
               print(editing_data$numeric_filter_value)
-                
-                editing_data$numeric_filter_value
+              
+              editing_data$numeric_filter_value
               }),
           showhide_animation = TRUE
         )
@@ -854,7 +854,17 @@ subset_selections_server <- function(id,
               module_data$filters[[editing_data$target_row]]<-
                 filter_data
               }
-            }
+          }
+          
+          # If a filter was being edited, also reset the editing variables
+          if (module_data$filter_menu_state == "edit"){
+            editing_data$mode <- NULL
+            editing_data$var <- NULL
+            editing_data$value <- NULL
+            editing_data$numeric_filter_value <- NULL
+            editing_data$target_row <- NULL
+            editing_data$label <- NULL
+          }
           
           # Set state to idle
           module_data$filter_menu_state <- "idle"
@@ -868,14 +878,23 @@ subset_selections_server <- function(id,
         input$filter_cancel,
         label = glue("{id}: respond to cancel button"),
         {
-          # If the filter being edited was a numeric filter, reset the feature
-          # choice menu
+          # If the filter was a numeric filter, reset the feature choice menu
           if (module_data$filter_type == "numeric"){
             # Reset the selected feature
             updateSelectizeInput(
               inputId = "numeric_feature",
               selected = character(0)
               )
+          }
+          
+          # If a filter was being edited, also reset the editing variables
+          if (module_data$filter_menu_state == "edit"){
+            editing_data$mode <- NULL
+            editing_data$var <- NULL
+            editing_data$value <- NULL
+            editing_data$numeric_filter_value <- NULL
+            editing_data$target_row <- NULL
+            editing_data$label <- NULL
             }
           
           # Reset menu state, filter type
