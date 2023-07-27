@@ -392,8 +392,6 @@ threshold_picker_server <-
               module_data$plot_range <- 
                 module_data$plot_max - module_data$plot_min
               
-              print("Drawing initial plot")
-              
               module_data$initial_ridge_plot <-
                 shiny_ridge(
                   object = object(), 
@@ -588,11 +586,10 @@ threshold_picker_server <-
         observe(
           label = glue("{id}: Draw vertical line on plot"),
           {
-          print("Draw plot observer")
-          req(
-            c(module_data$initial_ridge_plot, 
-              input$feature)
-            )
+            req(
+              c(module_data$initial_ridge_plot, 
+                input$feature)
+              )
           
           behavior <-
             scExploreR:::threshold_picker_behavior(
@@ -615,15 +612,12 @@ threshold_picker_server <-
             module_data$ridge_plot <-
               module_data$ridge_plot_with_threshold
           } else if (behavior == "range"){
-            print("Plotting range")
-            
             # Draw two lines at the lower and upper bounds of the range
             # (if defined yet)
             plot <-
               module_data$initial_ridge_plot
             
             if (!is.null(module_data$lower_bound)){
-              print("Draw line for lower bound")
               plot <-
                 plot +
                 geom_vline(
@@ -634,7 +628,6 @@ threshold_picker_server <-
             }  
             
             if (!is.null(module_data$upper_bound)){
-              print("Draw line for upper bound")
               plot <-
                 plot +
                 geom_vline(
@@ -649,7 +642,6 @@ threshold_picker_server <-
               plot
             
             # Update final plot displayed
-            print("save plot")
             module_data$ridge_plot <-
               module_data$ridge_plot_with_threshold
           }
@@ -659,16 +651,12 @@ threshold_picker_server <-
         observe(
           label = glue("{id}: Compute threshold/range stats"),
           {
-            print("Execute stats observer")
-            
             req(
               c(
                 module_data$threshold_x,
                 input$feature
                 )
             )
-            
-            print("Passed req() statement")
             
             behavior <-
               scExploreR:::threshold_picker_behavior(
@@ -701,15 +689,11 @@ threshold_picker_server <-
                   )
                 )
               
-              print("Update threshold picker widget")
-              
               # Determine behavior based on "mode"
               behavior <-
                 scExploreR:::threshold_picker_behavior(
                   mode = mode
                 )
-              print("Behavior")
-              print(behavior)
               
               if (behavior == "threshold"){
                 # Warn the user if set_threshold() is not a one-element vector
@@ -726,7 +710,6 @@ threshold_picker_server <-
                 
                 # When a new value is passed to set_threshold, set the threshold
                 # to the new value
-                print("Set threshold upon loading")
                 module_data$threshold_x <- set_threshold()
                 
                 # Update statistics with new threshold value
@@ -737,7 +720,6 @@ threshold_picker_server <-
                 #     threshold = module_data$threshold_x
                 #   )
               } else if (behavior == "range") {
-                print("Execute update code for range")
                 # If a range is passed instead:
                 # Test if the set_threshold value is a two-element vector
                 # warn user if not (errors will likely result)
@@ -755,11 +737,6 @@ threshold_picker_server <-
                 # values of set_threshold(), respectively.
                 module_data$lower_bound <- set_threshold()[1]
                 module_data$upper_bound <- set_threshold()[2]
-                
-                print("Value of lower bound")
-                print(module_data$lower_bound)
-                print("Value of upper bound")
-                print(module_data$upper_bound)
                 
                 # Set editing state to "none" (user may not edit bounds until 
                 # they press the edit button)

@@ -1074,18 +1074,12 @@ subset_selections_server <- function(id,
         input$lastClick,
         label = glue("{id}: Register click on edit/delete buttons"),
         {
-         print("ID of click")
-         print(input$lastClickId)
-         
          # Test if ID of click contains "edit" or "delete"
          if (grepl("edit", input$lastClickId)){
            # Determine row being edited, and store in editing information
            row_selected <- 
              gsub("edit_", "", input$lastClickId) |> 
              as.numeric()
-           
-           print("Computed row selected")
-           print(row_selected)
            
            editing_data$target_row <-
              row_selected
@@ -1097,12 +1091,7 @@ subset_selections_server <- function(id,
            # Determine type of filter being edited
            # filter_type <- filter_data$type
            
-           print("Filter data read")
-           print(filter_data)
-           
            # Set up editing interface 
-           print("filter_data$type")
-           print(filter_data$type)
            if (filter_data$type == "categorical"){
              # Set state variable for filter type to show appropriate menus
              module_data$filter_type <- "categorical"
