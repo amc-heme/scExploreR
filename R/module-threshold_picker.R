@@ -517,22 +517,6 @@ threshold_picker_server <-
                 plot_x_coordinate |> 
                 round(digits = 2)
               
-              # Draw vertical line using transformed click coordinate  
-              # module_data$ridge_plot_with_threshold <-
-              #   module_data$initial_ridge_plot +
-              #   geom_vline(
-              #     xintercept = module_data$threshold_x,
-              #     color = "#000000",
-              #     size = 0.75
-              #   )
-              
-              # Record threshold statistics
-              module_data$threshold_stats <- 
-                threshold_stats(
-                  object = object(), 
-                  feature = feature(), 
-                  threshold = module_data$threshold_x
-                )
             } else if (behavior == "range"){
               # Click coordinates are recorded for the lower or upper bound
               # depending on the current selection mode
@@ -580,34 +564,6 @@ threshold_picker_server <-
                   module_data$upper_bound <- new_upper
                 }
               }
-              
-              # Draw vertical lines for lower/upper bounds, if they exist
-              # plot <-
-              #   module_data$initial_ridge_plot
-              # 
-              # if (!is.null(module_data$lower_bound)){
-              #   plot <-
-              #     plot +
-              #     geom_vline(
-              #       xintercept = module_data$lower_bound,
-              #       color = "#000000",
-              #       size = 0.75
-              #       )
-              #     }  
-              #   
-              # if (!is.null(module_data$upper_bound)){
-              #   plot <-
-              #     plot +
-              #     geom_vline(
-              #       xintercept = module_data$upper_bound,
-              #       color = "#000000",
-              #       size = 0.75
-              #     )
-              #   }  
-              # 
-              # # Save plot
-              # module_data$ridge_plot_with_threshold <- 
-              #   plot
               }
             })
         
@@ -699,7 +655,38 @@ threshold_picker_server <-
           }
         })
         
-        # 6. Update a plot with a previously defined threshold ####
+        # 6. Compute stats in response to clicking plot/loading threshold ####
+        observe(
+          label = glue("{id}: Compute threshold/range stats"),
+          {
+            print("Execute stats observer")
+            
+            req(
+              c(
+                module_data$threshold_x,
+                input$feature
+                )
+            )
+            
+            print("Passed req() statement")
+            
+            behavior <-
+              scExploreR:::threshold_picker_behavior(
+                mode = mode
+                )
+            
+            if (behavior == "threshold"){
+              # Record threshold statistics
+              module_data$threshold_stats <- 
+                threshold_stats(
+                  object = object(), 
+                  feature = feature(), 
+                  threshold = module_data$threshold_x
+                )
+            }
+          })
+        
+        # 7. Update a plot with a previously defined threshold ####
         if (is.reactive(set_threshold)){
           # Observer is created only when set_threshold is defined as a 
           # reactive variable (set_threshold is a non-reactive NULL by default,
@@ -743,12 +730,12 @@ threshold_picker_server <-
                 module_data$threshold_x <- set_threshold()
                 
                 # Update statistics with new threshold value
-                module_data$threshold_stats <- 
-                  threshold_stats(
-                    object = object(), 
-                    feature = feature(), 
-                    threshold = module_data$threshold_x
-                  )
+                # module_data$threshold_stats <- 
+                #   threshold_stats(
+                #     object = object(), 
+                #     feature = feature(), 
+                #     threshold = module_data$threshold_x
+                #   )
               } else if (behavior == "range") {
                 print("Execute update code for range")
                 # If a range is passed instead:
@@ -782,8 +769,8 @@ threshold_picker_server <-
             })
           }
         
-        # 7. Adjusting X-Axis Limits of plot ####
-        ## 7.1. Current X-axis limits ####
+        # 8. Adjusting X-Axis Limits of plot ####
+        ## 8.1. Current X-axis limits ####
         current_xlim <- 
           reactive(
             label = glue("{id}: Current X-Axis Limits of Plot"),
@@ -809,7 +796,7 @@ threshold_picker_server <-
               }
             })
         
-        ## 7.2. Update text entry of limits to reflect current values ####
+        ## 8.2. Update text entry of limits to reflect current values ####
         observe(
           label = glue("{id}: Update Text Entry of Limits"),
           {
@@ -828,7 +815,7 @@ threshold_picker_server <-
               )
             })
         
-        ## 7.3. Respond to apply limits button ####
+        ## 8.3. Respond to apply limits button ####
         # Re-draw Plot With New Limits 
         observeEvent(
           input$apply_xlim,
@@ -881,7 +868,7 @@ threshold_picker_server <-
             }
           })
         
-        ## 7.4. Respond to restore limits button ####
+        ## 8.4. Respond to restore limits button ####
         observeEvent(
           input$restore_xlim,
           ignoreNULL = FALSE,
@@ -929,8 +916,8 @@ threshold_picker_server <-
               }
             })
         
-        # 8. Adjusting Range ####
-        ## 8.1. Edit lower bound ####
+        # 9. Adjusting Range ####
+        ## 9.1. Edit lower bound ####
         observeEvent(
           input$edit_lower_bound,
           label = glue("{id}: modify lower bound of range"),
@@ -944,7 +931,7 @@ threshold_picker_server <-
               )
             })
         
-        ## 8.2. Edit upper bound ####
+        ## 9.2. Edit upper bound ####
         observeEvent(
           input$edit_upper_bound,
           label = glue("{id}: modify lower bound of range"),
@@ -958,7 +945,7 @@ threshold_picker_server <-
             )
           })
         
-        # 9. Render plot and statistics ####
+        # 10. Render plot and statistics ####
         # Plot
         output$ridge_plot <-
           renderPlot({
@@ -1057,7 +1044,7 @@ threshold_picker_server <-
               )
             })
         
-        # 10. Return chosen threshold/range ####
+        # 11. Return chosen threshold/range ####
         # Package into a reactive value for consistency with other modules
         reactive({
           # Determine if the module is selecting a single threshold or a range
