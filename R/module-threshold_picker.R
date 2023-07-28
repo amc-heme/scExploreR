@@ -419,7 +419,8 @@ threshold_picker_server <-
             plot_spinner$hide()
           })
         
-        # 3. Respond to hover event (add vertical line) ####
+        # 3. Respond to hover event ####
+        ## 3.1. Register hover coordinate ####
         # In the event the user hovers over or clicks the plot, add the 
         # corresponding vertical line at the x-coordinate of the click.
         observeEvent(
@@ -454,26 +455,64 @@ threshold_picker_server <-
               # Round to 2 digits (additional precision is not necessary)
               plot_x_coordinate |> 
               round(digits = 2)
-
-            # Draw vertical line using transformed hover coordinate
-            # Hover line is drawn over either the initial plot, or the plot
-            # with a defined threshold, depending on whether the user has
-            # clicked the plot
-            base_plot <-
-              if (!is.null(module_data$ridge_plot_with_threshold)){
-                module_data$ridge_plot_with_threshold
-              } else{
-                module_data$initial_ridge_plot
-              }
-
-            module_data$ridge_plot <-
-              base_plot +
-              geom_vline(
-                xintercept = plot_x_coordinate,
-                color = "#666666",
-                size = 0.75
-                )
           })
+        
+        ## 3.2 Determine hover behavior ####
+        draw_line <-
+          reactive(
+            label = glue("{id}: Determine hover behavior "),
+            {
+              # Determine whether to draw a line at the hover coordinate
+              # Always draw in threshold mode, and draw in range mode if the
+              # selection mode is not "none"
+              behavior <-
+                scExploreR:::threshold_picker_behavior(
+                  mode = mode
+                )
+              
+              if (behavior == "threshold"){
+                TRUE
+              } else if (behavior == "range"){
+                if (module_data$selection_mode == "none"){
+                  FALSE
+                } else {
+                  TRUE
+                }
+              }
+              })
+        
+        ## 3.3. Draw line at hover coordinate ####
+        observe(
+          label = glue("{id}: Draw hover line on plot"),
+          {
+            req(
+              c(module_data$hover_position, 
+                module_data$initial_ridge_plot
+                )
+              )
+            
+            if (draw_line() == TRUE){
+              # Determine plot to draw hover line on
+              base_plot <-
+                if (!is.null(module_data$ridge_plot_with_threshold)){
+                  # If the plot with a defined threshold has been drawn (after the 
+                  # user clicks a plot) use that plot.
+                  module_data$ridge_plot_with_threshold
+                } else{
+                  # Otherwise, use the inital ridge plot
+                  module_data$initial_ridge_plot
+                }
+              
+              # Draw vertical line at transformed hover coordinate
+              module_data$ridge_plot <-
+                base_plot +
+                geom_vline(
+                  xintercept = module_data$hover_position,
+                  color = "#666666",
+                  size = 0.75
+                )
+              }
+            })
         
         # 4. Respond to click event ####
         ## 4.1. Draw Vertical line on plot and Compute Statistics ####
