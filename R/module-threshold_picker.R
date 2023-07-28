@@ -279,6 +279,11 @@ threshold_picker_server <-
         # reactiveValues objects.
         module_data <- reactiveValues()
         
+        # Reset state variables when TRUE (sometimes this needs to be set to 
+        # FALSE to avoid resetting state variables when a new plot is computed,
+        # for example after a previous threshold/range is loaded)
+        module_data$reset_state <- TRUE
+        
         # When the user hovers over an interactive plot, the x-coordinate
         # returned is on a zero to one scale based on the position on the plot
         # instead of the true x-coordinate on the plot. Furthermore, zero and
@@ -337,21 +342,37 @@ threshold_picker_server <-
           label = glue("{id}: Initial Ridge Plot Histogram"),
           ignoreNULL = FALSE,
           {            
+            print("Generate initial plot, reset variables")
+            print("reset_state")
+            print(module_data$reset_state)
             # When drawing a new plot, clear plots and data associated 
             # with the last plot if present
             module_data$initial_ridge_plot <- NULL
             module_data$ridge_plot_with_threshold <- NULL
             module_data$ridge_plot <- NULL
+            
             module_data$original_xlim <- NULL
-            module_data$threshold_x <- NULL
             module_data$threshold_stats <- NULL
             # Record hover position for display in plot panel
             module_data$hover_position <- NULL
             
-            # Variables only used when the mode is equal to "range"
-            module_data$lower_bound <- NULL
-            module_data$upper_bound <- NULL
-            module_data$selection_mode <- "lower"
+            # State variables set by selecting or loading a threshold
+            if (module_data$reset_state == TRUE){
+              # Only reset these variables when reset_state == TRUE. This is set
+              # to FALSE when data is loaded into the module
+              module_data$threshold_x <- NULL
+              
+              # Variables only used when the mode is equal to "range"
+              module_data$lower_bound <- NULL
+              module_data$upper_bound <- NULL
+              module_data$selection_mode <- "lower"
+              # Used to show/hide edit menu for bounds of range
+              module_data$show_range_edit <- FALSE
+            } else {
+              # If FALSE, do nothing and set state back to TRUE so the next 
+              # triggering event resets the state selections
+              module_data$reset_state <- TRUE
+            }
             
             # Hide the menu to modify bounds of a range when the plot is 
             # first loaded, or when it is re-computed
@@ -498,7 +519,7 @@ threshold_picker_server <-
                   # If the plot with a defined threshold has been drawn (after the 
                   # user clicks a plot) use that plot.
                   module_data$ridge_plot_with_threshold
-                } else{
+                } else {
                   # Otherwise, use the inital ridge plot
                   module_data$initial_ridge_plot
                 }
@@ -515,7 +536,7 @@ threshold_picker_server <-
             })
         
         # 4. Respond to click event ####
-        ## 4.1. Draw Vertical line on plot and Compute Statistics ####
+        ## 4.1. Record coordinates of click event ####
         observeEvent(
           input$plot_click,
           label = glue("{id}: Process click event"),
@@ -582,11 +603,6 @@ threshold_picker_server <-
                   
                   # Set the selection mode to "none" 
                   module_data$selection_mode <- "none"
-                  
-                  # Display interface to edit thresholds
-                  showElement(
-                    id = "range-edit-dropdown"
-                  )
                 }
               
               # If both bounds are selected and if the upper bound is higher 
@@ -629,6 +645,8 @@ threshold_picker_server <-
               c(module_data$initial_ridge_plot, 
                 input$feature)
               )
+            
+            print("Draw vertical line(s) on plot")
           
           behavior <-
             scExploreR:::threshold_picker_behavior(
@@ -651,6 +669,14 @@ threshold_picker_server <-
             module_data$ridge_plot <-
               module_data$ridge_plot_with_threshold
           } else if (behavior == "range"){
+            print("Draw lines, range behavior")
+            print("Lower bound")
+            print(module_data$lower_bound)
+            print("Upper bound")
+            print(module_data$upper_bound)
+            print("Selection mode")
+            print(module_data$selection_mode)
+            
             # Draw two lines at the lower and upper bounds of the range
             # (if defined yet)
             plot <-
@@ -675,6 +701,12 @@ threshold_picker_server <-
                   size = 0.75
                 )
             }  
+            
+            if (!is.null(module_data$lower_bound) & 
+                !is.null(module_data$upper_bound)){
+              # Show interface to edit the range
+              module_data$show_range_edit <- TRUE
+            }
             
             # Save plot
             module_data$ridge_plot_with_threshold <- 
@@ -721,6 +753,8 @@ threshold_picker_server <-
           observe(
             label = glue("{id}: Update plot with previously defined threshold"),
             {
+              print("Update threshold picker")
+              
               req(
                 c(set_threshold(), 
                   input$feature, 
@@ -728,11 +762,17 @@ threshold_picker_server <-
                   )
                 )
               
+              print("Passed req()")
+              
               # Determine behavior based on "mode"
               behavior <-
                 scExploreR:::threshold_picker_behavior(
                   mode = mode
                 )
+              
+              # Prevent state variables from resetting when a new plot is 
+              # drawn for the feature loaded.
+              module_data$reset_state <- FALSE
               
               if (behavior == "threshold"){
                 # Warn the user if set_threshold() is not a one-element vector
@@ -750,15 +790,8 @@ threshold_picker_server <-
                 # When a new value is passed to set_threshold, set the threshold
                 # to the new value
                 module_data$threshold_x <- set_threshold()
-                
-                # Update statistics with new threshold value
-                # module_data$threshold_stats <- 
-                #   threshold_stats(
-                #     object = object(), 
-                #     feature = feature(), 
-                #     threshold = module_data$threshold_x
-                #   )
               } else if (behavior == "range") {
+                print("Update, range behavior")
                 # If a range is passed instead:
                 # Test if the set_threshold value is a two-element vector
                 # warn user if not (errors will likely result)
@@ -933,7 +966,27 @@ threshold_picker_server <-
             })
         
         # 9. Adjusting Range ####
-        ## 9.1. Edit lower bound ####
+        ## 9.1. Show/hide adjustment interface ####
+        # Display interface to edit thresholds
+        observe({
+          target_id <- "range-edit-dropdown"
+        
+          print("Execute show/hide range menu")
+          
+          if (isTruthy(module_data$show_range_edit)){
+            print("Show range edit menu")
+            showElement(
+              id = target_id
+            )
+          } else {
+            print("Hide range edit menu")
+            hideElement(
+              id = target_id
+            )
+          }
+        })
+        
+        ## 9.2. Edit lower bound ####
         observeEvent(
           input$edit_lower_bound,
           label = glue("{id}: modify lower bound of range"),
@@ -947,7 +1000,7 @@ threshold_picker_server <-
               )
             })
         
-        ## 9.2. Edit upper bound ####
+        ## 9.3. Edit upper bound ####
         observeEvent(
           input$edit_upper_bound,
           label = glue("{id}: modify lower bound of range"),
