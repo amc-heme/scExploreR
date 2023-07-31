@@ -26,7 +26,7 @@ make_subset <-
     # vector, for passing to eval(parse())
     vector_code <- function(vector){
       # content: separate vector elements with "," 
-      content <- paste(vector, collapse= '\",\"')
+      content <- paste(vector, collapse = '\",\"')
       # string: add c(" and ") to the ends of the content
       string <- paste0('c("', content, '")')
       

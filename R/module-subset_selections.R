@@ -102,6 +102,11 @@ subset_selections_ui <- function(id,
         class = "button-primary compact-button show-on-idle"#,
         #style = "width: 25%;"
       ),
+      downloadButton(
+        outputId = ns("download_filters"),
+        label = "Download Filters",
+        class = "button-ghost show-on-idle"
+      ),
       hidden(
         # UI for adding/editing a subsetting filter
         div(
@@ -1995,6 +2000,24 @@ subset_selections_server <- function(id,
           })
       
       # 8. Return Menu Selections and Manual String Entry ----------------------
+      # TEMP: Download button for new filter structure
+      output$download_filters <- downloadHandler(
+        #Filename function
+        filename = function(){
+              "filters.yaml"
+            },
+            #Content function
+            content = function(file){
+              print("Writing filter data")
+              
+              write_yaml(
+                module_data$filters, 
+                file = file
+              )
+            }
+          )#End downloadHandler
+          
+      
       return(
         list(
           `selections` = selections,
