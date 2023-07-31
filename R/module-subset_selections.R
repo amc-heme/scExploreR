@@ -198,8 +198,8 @@ subset_selections_ui <- function(id,
                   inputId = ns("numeric_mode"),
                   label = "Filter mode:",
                   choices = 
-                    c("<" = "less_than", 
-                      ">" = "greater_than", 
+                    c(">" = "greater_than",
+                      "<" = "less_than",
                       "Range" = "range"
                     ),
                   justified = TRUE,
