@@ -1119,7 +1119,7 @@ subset_selections_server <- function(id,
           editing_data$label
           })
       
-      # 2. UI for String Subsetting --------------------------------------------
+      # 2. UI for string subsetting --------------------------------------------
       # Use shinyjs to show and hide menus based on whether the adv. subsetting
       # checkbox is checked (this ensures inputs exist and can be updated 
       # properly, and improves performance)
@@ -1137,71 +1137,39 @@ subset_selections_server <- function(id,
         })
       
       
-      # 4. Reset all filters ------------------------------
-      ## 4.1. Show/hide button ####
+      # 3. Reset all filters ------------------------------
+      ## 3.1. Show/hide reset button ####
+      observe({
+        target_id <- "reset_all_filters"
       
-      ## 4.2. Respond to button ####
+        if (length(module_data$filters) > 0){
+          # Show when at least one filter has been entered
+          showElement(
+            id = target_id
+            )
+        } else {
+        hideElement(
+          id = target_id
+          )
+        }
+      })
+      
+      ## 3.2. Respond to reset button ####
       observeEvent(
         input$reset_all_filters,
         label = "Reset Filter Menus",
         {
-          # When the reset button is pressed, update all of the menus
-          # for (category in meta_categories()){
-          #   # Define original values using unique_metadata, sorting into groups
-          #   # if they are defined in the config file
-          #   initial_choices_sorted <- 
-          #     process_choices(
-          #       metadata_config,
-          #       category = category,
-          #       # Choices input: all unique values for the metadata category
-          #       choices = unique_metadata()[[category]]
-          #     )
-          #   
-          #   # Unpack into a vector, using the same order as the named list 
-          #   # (if groups are defined) or vector (if not) produced above
-          #   initial_choices_vector <-
-          #     initial_choices_sorted |> 
-          #     unlist() |> 
-          #     unname()
-          #   
-          #   # Boolean for disabled setting of updatePickerInput
-          #   # No choices should be disabled. Therefore, the vector of booleans
-          #   # for disabling choices should be all FALSE.
-          #   disable_boolean <- 
-          #     # rep_len: return a vector of all FALSE elements, with a length
-          #     # equal to the number of choices (initial_choices_vector)
-          #     rep_len(FALSE, length(initial_choices_vector))
-          #   
-          #   # Update picker input
-          #   updatePickerInput(
-          #     session,
-          #     inputId = glue("{category}_selection"),
-          #     # Choices: use all sorted choices
-          #     choices = initial_choices_sorted,
-          #     # Reset selection to nothing being selected (no filters applied; 
-          #     # use character(0) to do this)
-          #     selected = character(0),
-          #     # Use boolean vector to enable all choices
-          #     choicesOpt = 
-          #       list(
-          #         disabled = disable_boolean,
-          #         style = ifelse(
-          #           disable_boolean,
-          #           yes = "color: rgba(119, 119, 119, 0.5);",
-          #           no = ""
-          #         )
-          #       )
-          #     )
-          # }
-        })
+          # Reset the filter data to an empty list
+          module_data$filters <- list()
+          })
       
-      # 6. Feature Statistics --------------------------------------------------
+      # 4. Feature statistics --------------------------------------------------
       # Used for string subsetting
       # Assists user by displaying feature name as it should be entered into the
       # subset function (using the assay key prefix), along with summary
       # statistics for the feature to aid in choosing bounds when subsetting.
       
-      ## 6.1. Update feature search choices ####
+      ## 4.1. Update feature search choices ####
       # Updates occur each time the object is changed
       observeEvent(
         valid_features(),
@@ -1224,7 +1192,7 @@ subset_selections_server <- function(id,
             ) 
         })
       
-      ## 6.2. Define UI for Feature Statistics ####
+      ## 4.2. Define UI for feature statistics ####
       feature_stats_ui <-
         reactive({
           req(input$search_feature)
@@ -1294,7 +1262,7 @@ subset_selections_server <- function(id,
             )
         })
       
-      ## 6.3. Define Ridge Plot Showing Feature Expression ####
+      ## 4.3. Define ridge plot showing feature expression ####
       # The plot must be stored in a reactiveValues object (module_data) to
       # avoid reactivity issues when processing hover and click values. 
       # The initial plot is generated below.
@@ -1362,7 +1330,7 @@ subset_selections_server <- function(id,
             }
           })
       
-      ## 6.4. Add vertical Line Upon Hovering ####
+      ## 4.4. Add vertical Line Upon Hovering ####
       # In the event the user hovers over or clicks the plot, add the 
       # corresponding vertical line at the x-coordinate of the click.
       observeEvent(
@@ -1425,8 +1393,8 @@ subset_selections_server <- function(id,
               input$plot_hover
             })
       
-      ## 6.5. Respond to Click Event ####
-      ### 6.5.1 Add Threshold Line, Record Click Coordinates ####
+      ## 4.5. Respond to Click Event ####
+      ### 4.5.1 Add Threshold Line, Record Click Coordinates ####
       observeEvent(
         input$plot_click,
         # IgnoreNULL must be TRUE to avoid the plot computing when
@@ -1477,7 +1445,7 @@ subset_selections_server <- function(id,
             input$plot_click
         })
       
-      # ### 6.5.2 Compute Threshold Stats ###
+      # ### 4.5.2 Compute Threshold Stats ###
       # # Reactive expression must have separate name from function inside
       # threshold_statistics <-
       #   eventReactive(
@@ -1497,7 +1465,7 @@ subset_selections_server <- function(id,
       #         )
       #       })
       
-      ### 6.5.2. Display Threshold Stats ####
+      ### 4.5.2. Display Threshold Stats ####
       threshold_stats_ui <- 
         eventReactive(
           module_data$thresh_stats,
@@ -1556,7 +1524,7 @@ subset_selections_server <- function(id,
       #     module_data$click_info
       #   })
       
-      ## 6.6. Render Feature Statistics Components ####
+      ## 4.6. Render Feature Statistics Components ####
       output$feature_statistics <- 
         renderUI({
           feature_stats_ui()
@@ -1579,7 +1547,7 @@ subset_selections_server <- function(id,
           threshold_stats_ui()
         })
       
-      # 7. Form Reactive List From Menu Selections -----------------------------
+      # 5. Form Reactive List From Menu Selections -----------------------------
       selections <- 
         reactive(
           label = glue("{id}: return value for selections"),
@@ -1625,7 +1593,7 @@ subset_selections_server <- function(id,
             module_data$filters
           })
       
-      # 6. Process Subset String
+      # 6. Process Subset String -----------------------------------------------
       # If entered by the user, record the advanced subsetting string each time 
       # the 'apply subset' button is pressed
       user_string <- 
@@ -1650,7 +1618,7 @@ subset_selections_server <- function(id,
           }
           })
       
-      # 8. Return Menu Selections and Manual String Entry ----------------------
+      # 7. Return Menu Selections and Manual String Entry ----------------------
       return(
         list(
           `selections` = selections,
