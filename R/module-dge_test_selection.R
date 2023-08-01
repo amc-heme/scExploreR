@@ -710,7 +710,8 @@ dge_test_selections_server <-
             id = "simple_threshold",
             object = object,
             feature = reactive({input$simple_threshold_feature}),
-            showhide_animation = TRUE
+            showhide_animation = TRUE,
+            assay_config = assay_config
             )
         
         # 4. Process Test Selections -------------------------------------------
