@@ -567,7 +567,7 @@ corr_tab_server <- function(id,
                                return(
                                  make_subset(
                                    object = object(),
-                                   criteria_list = 
+                                   filter_list = 
                                      subset_selections$selections(),
                                    user_string = 
                                      subset_selections$user_string()

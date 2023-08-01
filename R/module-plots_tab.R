@@ -1136,7 +1136,7 @@ plots_tab_server <- function(id,
                                plots_s_sub <-
                                  make_subset(
                                    object(),
-                                   criteria_list =
+                                   filter_list =
                                      subset_selections$selections(),
                                    user_string =
                                      subset_selections$user_string()

@@ -1,15 +1,10 @@
 #' Subset Creation Function
 #'
 #' @param object a Seurat object.
-#' @param criteria_list a list of name-value pairs with the name of each 
-#' metadata variable used as a criterion, and the unique values within that variable to 
-#' include in the subset. The name of the variable must be entered exactly as it
-#' appears in the metadata slot of the Seurat object, and the list object itself
-#' must be reactive, as opposed to each individual item being reactive. The app
-#'  code should generate the list in the correct format automatically.  
+#' @param filter_list a list of filters constructed by the subset_selections module. 
 #' @param user_string if the user enables the entry of a subset string, the 
 #' value of the string should be passed to this variable. The string passed will
-#' be added to the end of the string generated from criteria_list, with the '&'
+#' be added to the end of the string generated from filter_list, with the '&'
 #' operator separating the string.
 #'
 #' @return A Seurat object subsetted for the criteria entered.
@@ -18,9 +13,14 @@
 make_subset <- 
   function(
     object, 
-    criteria_list,
+    filter_list,
     user_string = NULL
     ){
+    # If filter_list is empty, return the full object
+    if (length(filter_list) == 0){
+      return(object)
+    }
+    
     # vector_code sub-function
     # Converts a vector of subset criterion to a string representation of that 
     # vector, for passing to eval(parse())
@@ -57,22 +57,37 @@ make_subset <-
     # Begin with empty string
     subset_str <- ""
     
-    # Construct a string representation for each criterion, and append to string
-    for (i in 1:length(criteria_list)){
-      # Get the metadata variable associated with the current index (name of
-      # criteria_list[[i]])
-      meta_var <- names(criteria_list)[i]
+    # Construct a string representation for each filter, and append to string
+    for (i in 1:length(filter_list)){
+      # Extract current filter entry
+      entry <- filter_list[[i]]
       
-      # Construct criterion for the current variable 
-      if (i < length(criteria_list)){
-        # For all entries except for the last: add AND (`&`) after the criterion
-        # (Specified criteria are mutually exclusive, so they use the 
-        # AND operator)
+      # Construct subset criterion for the current filter
+      # Add backticks to variable/feature name to prevent errors in edge cases 
+      # where the feature name has a dash, or another character invalid when 
+      # interpreting as a literal 
+      criterion <- 
+        if (entry$type == "categorical"){
+          # Categorical filters: use %in%
+          glue("(`{entry$var}` %in% {vector_code(entry$value)})")
+        } else if (entry$type == "numeric"){
+          # Numeric filters: use < or >, or a group if the value is a range
+          if (entry$mode == "less_than"){
+            glue("(`{entry$var}` < {entry$value})")
+          } else if (entry$mode == "greater_than"){
+            glue("(`{entry$var}` > {entry$value})")
+          } else if (entry$mode == "range"){
+            glue("((`{entry$var}` > {entry$value[1]}) & 
+                  (`{entry$var}` < {entry$value[2]}))")
+          } else {
+            error("Unknown mode for numeric filter")
+          }
+        }
+      
+      # Add "&" logical operator to criterion if it is not the last one
+      if (i < length(filter_list)){
         criterion <- 
-          glue("({meta_var} %in% {vector_code(criteria_list[[i]])}) & ")
-        # Do not use "&" for last criterion, or if there is only one criterion
-      } else if (i == length(criteria_list)){
-        criterion <- glue("({meta_var} %in% {vector_code(criteria_list[[i]])})")
+          paste0(criterion, " & ")
       }
       
       # Add the criterion to the subset string
@@ -101,10 +116,8 @@ make_subset <-
           )
         )
     
-    # Re-level factors in subset: test every metadata variable 
-    # to see if it is a factor
-
-    #must pull metadata table, edit, then save to object
+    # Re-level metadata factors to exclude values that are no longer represented
+    # Must pull metadata table, edit, then save to object
     meta_table <- 
       SCEPlots::fetch_metadata(
         subset, 
@@ -122,7 +135,7 @@ make_subset <-
     scExploreR:::update_object_metadata(
       subset,
       table = meta_table
-    )
+      )
     
     # Return subset
     return(subset)

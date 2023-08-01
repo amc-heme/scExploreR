@@ -572,7 +572,7 @@ dge_tab_server <- function(id,
                     subset <- 
                       make_subset(
                         object = object(),
-                        criteria_list = dge_subset_criteria(),
+                        filter_list = dge_subset_criteria(),
                         user_string = subset_selections$user_string()
                         )
                     

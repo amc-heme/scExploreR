@@ -1929,44 +1929,47 @@ subset_selections_server <- function(id,
       # 7. Form Reactive List From Menu Selections -----------------------------
       selections <- 
         reactive(
-          label = glue("{id}: selections_list"),
+          label = glue("{id}: return value for selections"),
           {
             # Store selections for each input in the UI (one menu is created 
             # for each metadata category in the config file)
-            selections_list <- 
-              lapply(
-                names(metadata_config()),
-                function(category){
-                  # Define input ID for each category 
-                  # Formula: <category>_selection
-                  category_id <- glue("{category}_selection")
-                  
-                  # When menus are empty, no filters are applied.
-                  # Therefore, all unique values should be returned 
-                  # for the category in question
-                  if (is.null(input[[category_id]])){
-                    unique_metadata()[[category]]
-                  } else {
-                    input[[category_id]]
-                  }
-                }
-              )
+            # selections_list <- 
+            #   lapply(
+            #     names(metadata_config()),
+            #     function(category){
+            #       # Define input ID for each category 
+            #       # Formula: <category>_selection
+            #       category_id <- glue("{category}_selection")
+            #       
+            #       # When menus are empty, no filters are applied.
+            #       # Therefore, all unique values should be returned 
+            #       # for the category in question
+            #       if (is.null(input[[category_id]])){
+            #         unique_metadata()[[category]]
+            #       } else {
+            #         input[[category_id]]
+            #       }
+            #     }
+            #   )
+            # 
+            # # Add categories from metadata file to list names
+            # names(selections_list) <- names(metadata_config())
+            # 
+            # # If hide_menu is provided and is a reactive, remove all 
+            # # hidden menus from the selections output
+            # # is.reactive() is used as a conditional to keep app from crashing
+            # # when hide_menu is NULL or not a reactive variable
+            # if (!is.null(hide_menu) && is.reactive(hide_menu)){
+            #   # Remove any categories from the selections list 
+            #   # that are also in hide_menu
+            #   selections_list <-
+            #     selections_list[!names(selections_list) %in% hide_menu()]
+            # }
+            # 
+            # selections_list
             
-            # Add categories from metadata file to list names
-            names(selections_list) <- names(metadata_config())
-            
-            # If hide_menu is provided and is a reactive, remove all 
-            # hidden menus from the selections output
-            # is.reactive() is used as a conditional to keep app from crashing
-            # when hide_menu is NULL or not a reactive variable
-            if (!is.null(hide_menu) && is.reactive(hide_menu)){
-              # Remove any categories from the selections list 
-              # that are also in hide_menu
-              selections_list <-
-                selections_list[!names(selections_list) %in% hide_menu()]
-            }
-            
-            selections_list
+            # Return filters selected in interface
+            module_data$filters
           })
       
       # 6. Process Subset String
