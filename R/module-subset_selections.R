@@ -18,73 +18,17 @@
 #' @return UI code for the subset selections module.
 #' 
 #' @noRd
-subset_selections_ui <- function(id,
-                                 unique_metadata,
-                                 metadata_config,
-                                 auto_dictionary_path,
-                                 string_subsetting_href
-                                 ){
-  # Namespace function: prevents conflicts with IDs defined in other modules 
-  ns <- NS(id)
-  
-  # Create a list for storing the Shiny tags from each menu 
-  menus <- tagList()
-  
-  for (category in names(metadata_config())){
-    # Fetch config information for current category
-    config_i <- metadata_config()[[category]]
+subset_selections_ui <- 
+  function(
+    id,
+    unique_metadata,
+    metadata_config,
+    auto_dictionary_path,
+    string_subsetting_href
+    ){
+    # Namespace function: prevents conflicts with IDs defined in other modules 
+    ns <- NS(id)
     
-    # Create menu for the current category
-    menu_tag <- 
-      # INPUT HIDDEN FOR TESTING PURPOSES
-      hidden(
-      pickerInput(
-      # input_prefix: will become unnecessary once the subset 
-      # menus are placed within a module
-      inputId = ns(glue("{category}_selection")),
-      #label: uses the label defined for the category 
-      # in the config file
-      label = glue("Filter by {config_i$label}"),
-      # choices: filled using the unique_metadata list
-      # If the metadata category has defined groups, sort choices
-      # into a named list based on the groups. This will show choices
-      # divided by group in the pickerInput menu.
-      # If groups do not exist for the metadata category, 
-      # unique_metadata()[[category]] will be returned as a vector.
-      choices = 
-        process_choices(
-          metadata_config,
-          category = category,
-          choices = unique_metadata()[[category]]
-          ),
-      
-      # selected: nothing selected by default. A placeholder will appear instead
-      selected = character(0),
-      multiple = TRUE,
-      # Options for pickerInput
-      options = list(
-        # Display number of items selected instead of their names
-        # when more than 5 values are selected
-        "selected-text-format" = "count > 5",
-        # Define max options to show at a time to keep menu
-        # from being cut off
-        "size" = 7,
-        # Add "select all" and "deselect all" buttons
-        "actions-box" = TRUE,
-        # Label for "deselect all" button
-        "deselectAllText" = "Remove filter",
-        # Define placeholder
-        "none-selected-text" = "No Filters Applied"
-        )
-    ) # End pickerInput
-      )
-    
-    # Append tag to list using tagList
-    menus <- tagList(menus, menu_tag)
-  }
-  
-  # Elements to display beneath menu tags (appended using tagList)
-  menus <- 
     tagList(
       tags$b(
         "Filters Chosen for Subset:"
@@ -92,7 +36,7 @@ subset_selections_ui <- function(id,
       # New menu UI
       uiOutput(
         outputId = ns("filters_applied")
-        ),
+      ),
       actionButton(
         inputId = ns("add_filter"),
         label = "Add Filter",
@@ -101,6 +45,15 @@ subset_selections_ui <- function(id,
         # being created/edited
         class = "button-primary compact-button show-on-idle"#,
         #style = "width: 25%;"
+      ),
+      # Reset all filters button: shown when at least one filter is present
+      hidden(
+        actionButton(
+          inputId = ns("reset_all_filters"),
+          label = "Remove All Filters",
+          icon = icon("times-circle"),
+          class = "button-ghost compact-button show-on-idle"
+        )
       ),
       hidden(
         # UI for adding/editing a subsetting filter
@@ -113,8 +66,8 @@ subset_selections_ui <- function(id,
               c("Select Type" = "",
                 "Categorical Metadata" = "categorical",
                 "Feature Expression" = "numeric"
-                )
-            ),
+              )
+          ),
           # Categorical metadata filter menu
           hidden(
             div(
@@ -122,7 +75,7 @@ subset_selections_ui <- function(id,
               tags$b(
                 "Categorical Filter", 
                 class = "center large"
-                ),
+              ),
               # Select menu to choose metadata for filtering (add mode)
               div(
                 class = "show-on-add",
@@ -131,8 +84,8 @@ subset_selections_ui <- function(id,
                   label = "Choose categorical metadata:",
                   # Choices are updated in server
                   choices = NULL
-                  )
-                ),
+                )
+              ),
               # Edit mode: display metadata being edited
               div(
                 class = "show-on-edit",
@@ -168,15 +121,15 @@ subset_selections_ui <- function(id,
                     # Define placeholder
                     "none-selected-text" = "Select values"
                   )
-                )
-              ),
+              )
+            ),
             # UI for choosing a numeric filter
             div(
               id = ns("numeric_filter_ui"),
               tags$b(
                 "Numeric Filter", 
                 class = "center large"
-                ),
+              ),
               # Feature for numeric filere
               selectizeInput(
                 inputId = ns("numeric_feature"),
@@ -204,34 +157,30 @@ subset_selections_ui <- function(id,
                     ),
                   justified = TRUE,
                   status = "radio-primary"
-                  )
-                ),
+                )
+              ),
               # UI for choosing threshold for filtering
               # Interface is automatically hidden until a feature is selected
               threshold_picker_ui(
                 id = ns("filter_threshold"),
                 plot_height = "150px",
                 instruction_panel = TRUE
+                )
               )
-            )
-          ),
+            ),
           actionButton(
             inputId = ns("filter_cancel"),
             label = "Cancel",
             #icon = icon("redo-alt"),
             class = "button-ghost compact-button"
-          ),
+            ),
           actionButton(
             inputId = ns("filter_confirm"),
             label = "Confirm Filter",
             class = "button-primary compact-button"
+            )
           )
-        )
-      ),
-      # END NEW UI
-      menus,
-      # Reset button: appears when subset menus are currently being filtered
-      uiOutput(outputId = ns("reset_filter_button")),
+        ),
       # Checkbox to enable advanced subsetting
       checkboxInput(
         inputId = ns("string_subsetting"), 
@@ -269,7 +218,7 @@ subset_selections_ui <- function(id,
                     # in the list of options
                     'create' = FALSE,
                     'placeholder' = "enter feature"
-                    )
+                  )
               ),
               # Feature statistics: summary stats based on feature entered
               uiOutput(ns("feature_statistics")),
@@ -294,32 +243,6 @@ subset_selections_ui <- function(id,
             )
           ),
           
-          # Option B: display information in a modal
-          # dropdownButton(
-          #   inputId = ns("adv_subset_dropdown"),
-          #   label = "",
-          #   size = "xs",
-          #   icon = icon("bars"),
-          #   style = "border-radius: 10px;",
-          #   # Dropdown content
-          #   tagList(
-          #     # Link to the auto-generated object dictionary
-              # tags$a(
-              #   "Metadata guide and help",
-              #   href = "Auto_Dictionary.html",
-              #   target = "_blank",
-              #   rel = "noopener noreferrer",
-              #   class = "blue_hover"
-              # ),
-          #     # Opens modal for statistics by feature
-          #     actionLink(
-          #       inputId = "feature_dictionary_modal",
-          #       label = "Feature Search",
-          #       class = "blue_hover"
-          #       )
-          #   )
-          # ),
-          
           # textAreaInput for entering string subset
           textAreaInput(
             inputId = ns("adv_subset"),
@@ -328,16 +251,10 @@ subset_selections_ui <- function(id,
             rows = 4,
             resize = "vertical"
             )
+          )
         )
       )
-      
-      # If checkbox is selected, show string subsetting menu
-      #uiOutput(outputId = ns("string_subsetting_menu"))
-     )
-  
-  # Return list of menu tags
-  menus
-  }
+    }
 
 #' Subset Selections Module 
 #'
@@ -1219,328 +1136,64 @@ subset_selections_server <- function(id,
           }
         })
       
-      # 3. UI for Filtering Selection Menus ------------------------------------
-      # Subset menus will be filtered for 
-      ## 3.1. filters_applied: a boolean that is TRUE when a subset has been 
-      # filtered (this may be changed as the filter code is developed)
-      filters_applied <- 
-        eventReactive(
-          selections(),
-          ignoreNULL = FALSE,
-          {
-            # Check if selections() is shorter than the original list of 
-            # choices used to generate the menus (account for hidden menus if 
-            # these are specified).
-            if (!is.null(hide_menu) && is.reactive(hide_menu)){
-              # If hide menu is specified, remove the hidden category from 
-              # the list of original choices
-              all_values <- 
-                unique_metadata()[!names(unique_metadata()) %in% hide_menu()]
-            } else {
-              # If hide_menu is not specified, use the list of original choices
-              all_values <- unique_metadata()
-              }
-            
-            not_equal <- 
-              !(setequal(
-                unlist(all_values),
-                unlist(selections())
-                ))
-            
-            # If selections is shorter (not_equal==TRUE), 
-            # return TRUE, and vice versa 
-            if (not_equal == TRUE){
-              return(TRUE)
-              } else {
-                return(FALSE)
-                }
-            })
       
-      ## 3.2. Create UI for "Reset Filter button"
-      # Button is needed after filtering is applied to reset selections 
-      reset_filter_ui <- 
-        eventReactive(
-          filters_applied(),
-          ignoreNULL = FALSE,
-          {
-            if (filters_applied() == TRUE){
-              # Display reset button if filters have been applied 
-              actionButton(
-                inputId = ns("reset_filter"),
-                label = "Remove All Filters",
-                icon = icon("times-circle")
-                )
-              
-              # Do not display anything otherwise
-              } else NULL
-            })
+      # 4. Reset all filters ------------------------------
+      ## 4.1. Show/hide button ####
       
-      # Render UI for reset button
-      output$reset_filter_button <- renderUI({
-        reset_filter_ui()
-      })
-      
-      
-      # 4. Filter menus in UI based on selections ------------------------------
-      ## 4.1. Update valid choices in selection menus #### 
+      ## 4.2. Respond to button ####
       observeEvent(
-        selections(),
-        ignoreNULL = FALSE,
-        {
-          # Extract metadata table
-          meta_df <-
-            SCEPlots::fetch_metadata(
-              object = object(),
-              full_table = TRUE
-              )
-          
-          # a. Determine cells that match selections made for each category 
-          # where filter criteria have been entered
-          
-          #print("a. Filter by category")
-          
-          filter_by_category <-
-            lapply(
-              X = isolate(meta_categories()),
-              FUN = function(category){
-                # Define input ID for each category 
-                # Formula: <category>_selection
-                category_id <- glue("{category}_selection")
-                
-                # "" %in% input[[category_id]]: this is TRUE when the input
-                # menu for the chosen category has nothing selected
-                if (!is.null(input[[category_id]])){
-                  if (! "" %in% input[[category_id]]){
-                    meta_df[[category]] %in% input[[category_id]]
-                  } else {
-                    # If the menu is blank, return a vector of all TRUE values 
-                    # (so the data is not narrowed down based on this category)
-                    rep_len(TRUE, length(meta_df[[category]]))
-                  }
-                } else {
-                  # Do the same when the menu is not defined 
-                  # at all to avoid errors
-                  rep_len(TRUE, length(meta_df[[category]]))
-                }
-              }
-            )
-          
-          # b. Identify cells that match all of the above selected criteria 
-          # Return TRUE for rows that match each criteria 
-          # entered (TRUE for all categories)
-          
-          #print("b. Cells in Common")
-          
-          in_common <- Reduce(f = `&`, x = filter_by_category)
-          
-          # c. Subset original table for all rows that are TRUE
-          #print("c. Filter Seurat Metadata")
-          
-          filter_df <- meta_df[in_common, ]
-          
-          # d. For each category where filters are not selected, 
-          # fetch the unique values
-          
-          #print("d. Unique values for valid filter categories")
-          
-          valid_entries <-
-            lapply(
-              X = isolate(meta_categories()),
-              FUN = function(category){
-                # Define input ID for each category (variable)
-                # Formula: <category>_selection
-                category_id <- glue("{category}_selection")
-                
-                # Compute unique values for categories where the user has
-                # not entered filter criteria (these inputs will be NULL)
-                if (is.null(input[[category_id]])){
-                  filter_df[, category] |> 
-                    unique() |> 
-                    # Convert unique values to character vector
-                    unlist() |>
-                    as.character()
-                    }
-                # For categories where inputs are defined, NULL will be 
-                # entered for that category in valid_entries. 
-              }
-            )
-          # Add category names to valid_entries
-          names(valid_entries) <- isolate(meta_categories())
-          
-          # e. Update selection menus with options in valid entries
-          # Invalid entries will still display, but will be disabled
-          
-          #print("e. Update individual menus")
-          
-          for (category in isolate(meta_categories())){
-            # Update only menus for which the values in valid_entries 
-            # are not NULL
-            if (!is.null(valid_entries[[category]])){
-              # Define input ID for category 
-              # Formula: <category>_selection
-              category_id <- glue("{category}_selection")
-              # Define choices available (this does not change, but it must be 
-              # passed to updateSelectizeinput for the update to work)
-              # Sort choices into a named list if group information is defined
-              # in the config file; if group information is not defined, a 
-              # vector will be returned.
-              sorted_choices <-
-                process_choices(
-                  metadata_config,
-                  category = category,
-                  # Choices: all unique metadata values for current category
-                  choices = unique_metadata()[[category]]
-                )
-              # Choices vector: vectorized format of sorted_choices, without 
-              # names. Used to identify invalid choices to disable. Vector will
-              # display choices in the order they appear in the named list,
-              # and therefore the order they appear in the app
-              choices_vector <-
-                sorted_choices |> 
-                unlist() |> 
-                unname()
-              # Define invalid choices to disable 
-              invalid_choices <- 
-                choices_vector[!(choices_vector %in% valid_entries[[category]])]
-              # Boolean of invalid choices
-              # `Disable` attribute in choicesOpt argument requires a logical
-              # vector of the same length as the choices passed (choices with a 
-              # TRUE entry at the index of the logical vector corresponding to 
-              # their index will be disabled)
-              disable_boolean <- 
-                # Use choices_vector (vector format is required for %in%)
-                # All choices in invalid_choices are disabled
-                choices_vector %in% invalid_choices
-              
-              updatePickerInput(
-                session,
-                inputId = category_id,
-                # Choices: these do not change but must be defined 
-                # to avoid errors
-                choices = sorted_choices,
-                # Selected: all previously selected choices that are not in
-                # the disabled values (though there should not be any selected
-                # choices)
-                selected = 
-                  input[[category_id]][
-                    !input[[category_id]] %in% invalid_choices],
-                choicesOpt = 
-                  list(
-                    disabled = disable_boolean,
-                    style = ifelse(
-                      disable_boolean,
-                      yes = "color: rgba(119, 119, 119, 0.5);",
-                      no = ""
-                      )
-                    ),
-                options =
-                  list(
-                    "selected-text-format" = "count > 5",
-                    "actions-box" = TRUE,
-                    # Placeholder
-                    "none-selected-text" = "No Filters Applied",
-                    # Label for "deselect all" button
-                    "deselectAllText" = "Remove filter"
-                    )
-                )
-      }
-          }
-        })
-      
-      ## 4.2. Reset button ####
-      observeEvent(
-        input$reset_filter,
+        input$reset_all_filters,
         label = "Reset Filter Menus",
         {
           # When the reset button is pressed, update all of the menus
-          for (category in meta_categories()){
-            # Define original values using unique_metadata, sorting into groups
-            # if they are defined in the config file
-            initial_choices_sorted <- 
-              process_choices(
-                metadata_config,
-                category = category,
-                # Choices input: all unique values for the metadata category
-                choices = unique_metadata()[[category]]
-              )
-            
-            # Unpack into a vector, using the same order as the named list 
-            # (if groups are defined) or vector (if not) produced above
-            initial_choices_vector <-
-              initial_choices_sorted |> 
-              unlist() |> 
-              unname()
-            
-            # Boolean for disabled setting of updatePickerInput
-            # No choices should be disabled. Therefore, the vector of booleans
-            # for disabling choices should be all FALSE.
-            disable_boolean <- 
-              # rep_len: return a vector of all FALSE elements, with a length
-              # equal to the number of choices (initial_choices_vector)
-              rep_len(FALSE, length(initial_choices_vector))
-            
-            # Update picker input
-            updatePickerInput(
-              session,
-              inputId = glue("{category}_selection"),
-              # Choices: use all sorted choices
-              choices = initial_choices_sorted,
-              # Reset selection to nothing being selected (no filters applied; 
-              # use character(0) to do this)
-              selected = character(0),
-              # Use boolean vector to enable all choices
-              choicesOpt = 
-                list(
-                  disabled = disable_boolean,
-                  style = ifelse(
-                    disable_boolean,
-                    yes = "color: rgba(119, 119, 119, 0.5);",
-                    no = ""
-                  )
-                )
-              )
-          }
+          # for (category in meta_categories()){
+          #   # Define original values using unique_metadata, sorting into groups
+          #   # if they are defined in the config file
+          #   initial_choices_sorted <- 
+          #     process_choices(
+          #       metadata_config,
+          #       category = category,
+          #       # Choices input: all unique values for the metadata category
+          #       choices = unique_metadata()[[category]]
+          #     )
+          #   
+          #   # Unpack into a vector, using the same order as the named list 
+          #   # (if groups are defined) or vector (if not) produced above
+          #   initial_choices_vector <-
+          #     initial_choices_sorted |> 
+          #     unlist() |> 
+          #     unname()
+          #   
+          #   # Boolean for disabled setting of updatePickerInput
+          #   # No choices should be disabled. Therefore, the vector of booleans
+          #   # for disabling choices should be all FALSE.
+          #   disable_boolean <- 
+          #     # rep_len: return a vector of all FALSE elements, with a length
+          #     # equal to the number of choices (initial_choices_vector)
+          #     rep_len(FALSE, length(initial_choices_vector))
+          #   
+          #   # Update picker input
+          #   updatePickerInput(
+          #     session,
+          #     inputId = glue("{category}_selection"),
+          #     # Choices: use all sorted choices
+          #     choices = initial_choices_sorted,
+          #     # Reset selection to nothing being selected (no filters applied; 
+          #     # use character(0) to do this)
+          #     selected = character(0),
+          #     # Use boolean vector to enable all choices
+          #     choicesOpt = 
+          #       list(
+          #         disabled = disable_boolean,
+          #         style = ifelse(
+          #           disable_boolean,
+          #           yes = "color: rgba(119, 119, 119, 0.5);",
+          #           no = ""
+          #         )
+          #       )
+          #     )
+          # }
         })
-      
-      # 5. Hide menus, if specified by the user. -------------------------------
-      # hide_menu is an optional argument that is NULL in modules where it is 
-      # not specified. Since hide_menu is intended to be reactive, observers 
-      # that use it will crash the app when NULL values are passed to them.
-      if (!is.null(hide_menu) && is.reactive(hide_menu)){
-        observeEvent(
-          hide_menu(),
-          label = "Subset Selections: Hide Menu",
-          # NULL values should be processed (all menus shown when NULL)
-          ignoreNULL = FALSE,
-          {
-            # Hide menus if hide_menu is not equal to NULL
-            if (!is.null(hide_menu())){
-              # Hide all menus specified in hide_menus (may be a 
-              # single menu or multiple menus)
-              for (menu_category in hide_menu()){
-                hideElement(
-                  id = glue("{menu_category}_selection")
-                )
-              }
-              # Show all menus in the module that are not in the 
-              # hide_menu vector
-              for (category in names(metadata_config())){
-                if (!category %in% hide_menu()){
-                  showElement(
-                    id = glue("{category}_selection")
-                  )
-                }
-              }
-            } else {
-              # If hide_menu is NULL, show all menus 
-              for (category in names(metadata_config())){
-                showElement(
-                  id = glue("{category}_selection")
-                  )
-                }
-              }
-            })
-      }
       
       # 6. Feature Statistics --------------------------------------------------
       # Used for string subsetting
