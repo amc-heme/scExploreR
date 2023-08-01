@@ -649,7 +649,8 @@ subset_selections_server <- function(id,
               
               editing_data$numeric_filter_value
               }),
-          showhide_animation = TRUE
+          showhide_animation = TRUE,
+          assay_config = assay_config
         )
       
       observe({

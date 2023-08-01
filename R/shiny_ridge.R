@@ -303,7 +303,10 @@ shiny_ridge <-
                 )
               )
           } else {
-              warning("assay_config must be defined to create human-readable titles")
+              warning(
+                "`assay_config` is not defined. The plot will still render, but 
+                human-readable titles will not be created."
+                )
             }
           }
         }

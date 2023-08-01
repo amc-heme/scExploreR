@@ -236,17 +236,11 @@ threshold_picker_ui <-
 #' beneath the plot.
 #'
 #' @param id ID to use for module server instance.
-#' @param object a Seurat object or a subset.
+#' @param object a single cell object or a subset. All object types supported 
+#' by SCEPlots may be passed to this module.
 #' @param feature the feature for which thresholds are being chosen.
 #' @param showhide_animation if TRUE, an animation will be used when displaying
 #' or hiding the stats panel.
-#' @param mode a reactive variable directing the behavior of the widget (equal to 
-#' "greater_than", "less_than", or "range"). The mode will affect the components 
-#' shown to the user, and the interactive behavior of the plot. If the mode is 
-#' "less_than" or "greater_than", a single threshold will be chosen, and if the 
-#' mode is equal to "range", the interface will direct the user to choose an 
-#' upper and lower bound for the range. The stats displayed will vary based on 
-#' the mode.
 #' @param set_threshold A reactive value used to set the selected threshold to
 #' a defined value. When this value changes, the threshold picker interface will
 #' update to reflect a selection at the new value. It is reccomended that this 
@@ -255,6 +249,16 @@ threshold_picker_ui <-
 #' variable should be changed to NULL whenever a threshold/range being edited 
 #' is saved or discarded, so the reactive can properly respond to the loading 
 #' of a new threshold in the event it is the same as the previous threshold.
+#' @param mode a reactive variable directing the behavior of the widget (equal to 
+#' "greater_than", "less_than", or "range"). The mode will affect the components 
+#' shown to the user, and the interactive behavior of the plot. If the mode is 
+#' "less_than" or "greater_than", a single threshold will be chosen, and if the 
+#' mode is equal to "range", clicking the plot will choose the lower and upper
+#' bounds of a range. If mode is not specified, the module will default to 
+#' choosing a single threshold. The stats displayed will vary based on the mode.
+#' @param assay_config The assays section of the config file. If passed to the
+#' module, assay_config will be used to display human-readable feature names on
+#' the interactive ridge plot.
 #' 
 #' @noRd
 #'
@@ -265,7 +269,8 @@ threshold_picker_server <-
     feature,
     showhide_animation = FALSE,
     set_threshold = NULL,
-    mode = NULL
+    mode = NULL,
+    assay_config = NULL
     ){
     moduleServer(
       id,
@@ -420,7 +425,11 @@ threshold_picker_server <-
                   group_by = "none", 
                   show_legend = FALSE, 
                   palette = c("#000088"),
-                  center_x_axis_title = TRUE
+                  center_x_axis_title = TRUE,
+                  assay_config =
+                    if (is.reactive(assay_config)){
+                      assay_config()
+                    }
                   ) 
               
               # After drawing the plot, record the original x-axis limits
