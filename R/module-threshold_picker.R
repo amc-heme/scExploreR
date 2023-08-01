@@ -642,7 +642,7 @@ threshold_picker_server <-
           label = glue("{id}: Draw vertical line on plot"),
           {
             req(module_data$initial_ridge_plot)
-            req(input$feature)
+            req(feature())
             
             print("Draw vertical line(s) on plot")
           
@@ -721,7 +721,7 @@ threshold_picker_server <-
           label = glue("{id}: Compute threshold/range stats"),
           {
             req(module_data$threshold_x)
-            req(input$feature)
+            req(feature())
             
             behavior <-
               scExploreR:::threshold_picker_behavior(
@@ -751,7 +751,7 @@ threshold_picker_server <-
               
               req(
                 c(set_threshold(), 
-                  input$feature, 
+                  feature(), 
                   mode()
                   )
                 )
