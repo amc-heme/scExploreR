@@ -24,33 +24,34 @@ make_subset <-
     # vector_code sub-function
     # Converts a vector of subset criterion to a string representation of that 
     # vector, for passing to eval(parse())
-    vector_code <- function(vector){
-      # content: separate vector elements with "," 
-      content <- paste(vector, collapse= '\",\"')
-      # string: add c(" and ") to the ends of the content
-      string <- paste0('c("', content, '")')
-      
-      # Special cases
-      # 1. NA
-      # NA values appear as "NA" in the vector created above. 
-      # "NA" (NA-as-a-string) will cause issues with data that uses the literal 
-      # NA, so the string representation of the vector created here must output 
-      # the literal NA
-      string <- gsub('\"NA\"', 'NA', string)
-      
-      # 2. NaN
-      # While less common, NaN should also be corrected from a string to a literal
-      string <- gsub('\"NaN\"', 'NaN', string)
-      
-      # 3. NULL 
-      # When NULL literals are passed to a vector, they do not appear in the 
-      # vector at all. Thus, it is unlikely they will need to be corrected.
-      # They will be substituted for literals here, but a NULL literal could 
-      # cause issues downstream
-      string <- gsub('\"NULL\"', 'NULL', string)
-      
-      return(string)
-    }
+    vector_code <- 
+      function(vector){
+        # content: separate vector elements with "," 
+        content <- paste(vector, collapse = '\",\"')
+        # string: add c(" and ") to the ends of the content
+        string <- paste0('c("', content, '")')
+        
+        # Special cases
+        # 1. NA
+        # NA values appear as "NA" in the vector created above. 
+        # "NA" (NA-as-a-string) will cause issues with data that uses the literal 
+        # NA, so the string representation of the vector created here must output 
+        # the literal NA
+        string <- gsub('\"NA\"', 'NA', string)
+        
+        # 2. NaN
+        # While less common, NaN should also be corrected from a string to a literal
+        string <- gsub('\"NaN\"', 'NaN', string)
+        
+        # 3. NULL 
+        # When NULL literals are passed to a vector, they do not appear in the 
+        # vector at all. Thus, it is unlikely they will need to be corrected.
+        # They will be substituted for literals here, but a NULL literal could 
+        # cause issues downstream
+        string <- gsub('\"NULL\"', 'NULL', string)
+        
+        return(string)
+        }
     
     # Construct string for subsetting
     # Begin with empty string
