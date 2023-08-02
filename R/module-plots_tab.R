@@ -1100,14 +1100,8 @@ plots_tab_server <- function(id,
 
                              # If the user has entered an advanced subsetting
                              # string, log what was entered
-                             log_info("Error in plots tab subsetting.")
-                             if (!is.null(subset_selections$user_string())){
-                               log_info("Advanced subsetting: TRUE.")
-                               log_info("String entered by user:")
-                               log_info(subset_selections$user_string())
-                             } else {
-                               log_info("Advanced subsetting: FALSE.")
-                             }
+                             log_info("Error in plots tab subsetting. Subset filters entered:")
+                             log_info(subset_selections)
 
                              error_handler(
                                session,
@@ -1137,9 +1131,7 @@ plots_tab_server <- function(id,
                                  make_subset(
                                    object(),
                                    filter_list =
-                                     subset_selections$selections(),
-                                   user_string =
-                                     subset_selections$user_string()
+                                     subset_selections()
                                    )
                                }
                              }

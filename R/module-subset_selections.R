@@ -1316,13 +1316,9 @@ subset_selections_server <- function(id,
             module_data$filters
           })
       
-      # 6. Return Menu Selections and Manual String Entry ----------------------
+      # 6. Return Selected Filters ---------------------------------------------
       return(
-        list(
-          `selections` = selections,
-          # Store advanced string input reactively, if it exists
-          `user_string` = reactive({NULL}) # user_string
-          )
+        selections
         )
     }
   )

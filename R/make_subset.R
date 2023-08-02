@@ -13,8 +13,7 @@
 make_subset <- 
   function(
     object, 
-    filter_list,
-    user_string = NULL
+    filter_list
     ){
     # If filter_list is empty, return the full object
     if (length(filter_list) == 0){
@@ -97,16 +96,6 @@ make_subset <-
       # Add the criterion to the subset string
       subset_str <- paste0(subset_str, criterion)
     }
-    
-    # String Subsetting
-    # If string subsetting is enabled, user_string will be defined, but it may 
-    # be equal to "". This will cause errors in the concatenation below due to 
-    # the creation of an "&" operator before parentheses with no 
-    # if (isTruthy(user_string)){
-    #   # Add the user-defined string in parentheses with an "&" 
-    #   # operator if it is defined and not equal to "". 
-    #   subset_str <- glue('{subset_str} & ({user_string})')
-    # }
     
     # Subset using the subset string 
     subset <- 
