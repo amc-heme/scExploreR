@@ -71,7 +71,8 @@ make_subset <-
           # Categorical filters: use %in%
           glue("(`{entry$var}` %in% {vector_code(entry$value)})")
         } else if (entry$type == "numeric"){
-          # Numeric filters: use < or >, or a group if the value is a range
+          # Numeric filters: test entry *mode*
+          # use < or >, or a group if the value is a range
           if (entry$mode == "less_than"){
             glue("(`{entry$var}` < {entry$value})")
           } else if (entry$mode == "greater_than"){
@@ -82,6 +83,9 @@ make_subset <-
           } else {
             error("Unknown mode for numeric filter")
           }
+        } else if (entry$type == "advanced"){
+          # Advanced (string/code) subsetting: pass value as-is
+          entry$value
         }
       
       # Add "&" logical operator to criterion if it is not the last one
@@ -98,11 +102,11 @@ make_subset <-
     # If string subsetting is enabled, user_string will be defined, but it may 
     # be equal to "". This will cause errors in the concatenation below due to 
     # the creation of an "&" operator before parentheses with no 
-    if (isTruthy(user_string)){
-      # Add the user-defined string in parentheses with an "&" 
-      # operator if it is defined and not equal to "". 
-      subset_str <- glue('{subset_str} & ({user_string})')
-    }
+    # if (isTruthy(user_string)){
+    #   # Add the user-defined string in parentheses with an "&" 
+    #   # operator if it is defined and not equal to "". 
+    #   subset_str <- glue('{subset_str} & ({user_string})')
+    # }
     
     # Subset using the subset string 
     subset <- 

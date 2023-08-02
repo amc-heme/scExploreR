@@ -65,10 +65,11 @@ subset_selections_ui <-
             choices = 
               c("Select Type" = "",
                 "Categorical Metadata" = "categorical",
-                "Feature Expression" = "numeric"
-              )
-          ),
-          # Categorical metadata filter menu
+                "Feature Expression" = "numeric",
+                "Advanced Subsetting" = "advanced"
+                )
+            ),
+          # A. Categorical metadata filter UI ####
           hidden(
             div(
               id = ns("categorical_filter_ui"),
@@ -123,14 +124,14 @@ subset_selections_ui <-
                   )
               )
             ),
-            # UI for choosing a numeric filter
+            # B. Numeric filter UI ####
             div(
               id = ns("numeric_filter_ui"),
               tags$b(
                 "Numeric Filter", 
                 class = "center large"
               ),
-              # Feature for numeric filere
+              # Feature for numeric filters
               selectizeInput(
                 inputId = ns("numeric_feature"),
                 label = "Enter a feature to apply filter to:",
@@ -166,6 +167,78 @@ subset_selections_ui <-
                 plot_height = "150px",
                 instruction_panel = TRUE
                 )
+              ),
+            # C. Advanced filter UI ####
+            div(
+              id = ns("advanced_filter_ui"),
+              tags$b(
+                "Advanced Filter", 
+                class = "center large"
+              ),
+              tags$b("Enter R code below to apply a custom filter."),
+              # textAreaInput for entering string subset
+              textAreaInput(
+                inputId = ns("adv_filter_code"),
+                label = NULL,
+                width = "100%",
+                rows = 4,
+                resize = "vertical"
+                ),
+              dropdownButton(
+                inputId = ns("feature_search_dropup"),
+                label = "",
+                size = "sm",
+                status = "feature_search_btn",
+                icon = icon("search"), 
+                up = TRUE,
+                # Dropdown content
+                div(
+                  class = "feature_statistics_container",
+                  onclick = "event.stopPropagation()",
+                  selectizeInput(
+                    inputId = ns("search_feature"),
+                    label = "Feature Search:",
+                    choices = NULL,
+                    selected = character(0),
+                    width = "200px",
+                    options = 
+                      list(
+                        # Add remove button to inputs
+                        'plugins' = list('remove_button'),
+                        # Do not allow user to input features not
+                        # in the list of options
+                        'create' = FALSE,
+                        'placeholder' = "enter feature"
+                        )
+                    ),
+                  # Feature statistics: summary stats based on feature entered
+                  uiOutput(ns("feature_statistics")),
+                  # Threshold_picker module to explore stats for feature
+                  threshold_picker_ui(
+                    id = ns("feature_stats_interactive"),
+                    plot_width = "200px",
+                    plot_height = "250px"
+                    )
+                  )
+                ),
+              tags$a(
+                "String Subsetting Help",
+                href = string_subsetting_href,
+                target = "_blank",
+                rel = "noopener noreferrer",
+                class = "blue_hover underline underline-hover left",
+                # Decrease padding around link
+                style = "padding: 3px 6px; margin-top: 15px;"
+              ),
+              tags$a(
+                "View Object Metadata",
+                href = auto_dictionary_path,
+                target = "_blank",
+                rel = "noopener noreferrer",
+                class = "blue_hover underline underline-hover left",
+                # Decrease padding around link
+                style = "padding: 3px 6px;"
+                )
               )
             ),
           actionButton(
@@ -178,78 +251,6 @@ subset_selections_ui <-
             inputId = ns("filter_confirm"),
             label = "Confirm Filter",
             class = "button-primary compact-button"
-            )
-          )
-        ),
-      # Checkbox to enable advanced subsetting
-      checkboxInput(
-        inputId = ns("string_subsetting"), 
-        label = "String subsetting (advanced mode)"
-        ),
-      # Advanced string subsetting
-      # Hidden initially, then shown using shinyjs when the checkbox above is 
-      # selected (ensures inputs are avilable upon initiation of module, so
-      # updateSelectizeInput will work)
-      shinyjs::hidden(
-        div(
-          id = ns("string_subsetting_ui"),
-          # Feature Search Dropdown
-          dropdownButton(
-            inputId = ns("feature_search_dropup"),
-            label = "",
-            size = "sm",
-            status = "feature_search_btn",
-            icon = icon("search"), 
-            up = TRUE,
-            # Dropdown content
-            div(
-              class = "feature_statistics_container",
-              onclick="event.stopPropagation()",
-              selectizeInput(
-                inputId = ns("search_feature"),
-                label = "Feature Search:",
-                choices = NULL,
-                selected = character(0),
-                options = 
-                  list(
-                    # Add remove button to inputs
-                    'plugins' = list('remove_button'),
-                    # Do not allow user to input features not
-                    # in the list of options
-                    'create' = FALSE,
-                    'placeholder' = "enter feature"
-                  )
-              ),
-              # Feature statistics: summary stats based on feature entered
-              uiOutput(ns("feature_statistics")),
-              tags$a(
-                "View Object Metadata",
-                href = auto_dictionary_path,
-                target = "_blank",
-                rel = "noopener noreferrer",
-                class = "blue_hover underline underline-hover left",
-                # Decrease padding around link
-                style = "padding: 3px 6px; margin-top: 15px;"
-              ),
-              tags$a(
-                "String Subsetting Help",
-                href = string_subsetting_href,
-                target = "_blank",
-                rel = "noopener noreferrer",
-                class = "blue_hover underline underline-hover left",
-                # Decrease padding around link; do not add margin above
-                style = "padding: 3px 6px;"
-              )
-            )
-          ),
-          
-          # textAreaInput for entering string subset
-          textAreaInput(
-            inputId = ns("adv_subset"),
-            label = NULL,
-            width = "100%",
-            rows = 4,
-            resize = "vertical"
             )
           )
         )
@@ -403,6 +404,8 @@ subset_selections_server <- function(id,
             module_data$filter_type <- "categorical"
           } else if (input$filter_type == "numeric"){
             module_data$filter_type <- "numeric"
+          } else if (input$filter_type == "advanced"){
+            module_data$filter_type <- "advanced"
           }
           
           # Also reset the filter type input back to the blank state with
@@ -420,6 +423,7 @@ subset_selections_server <- function(id,
         type_selection_ui_id <- "filter_type"
         categorical_ui_id <- "categorical_filter_ui"
         numeric_ui_id <- "numeric_filter_ui"
+        advanced_ui_id <- "advanced_filter_ui"
         
         if (module_data$filter_type == "categorical"){
           print("show categorical filter interface")
@@ -442,6 +446,16 @@ subset_selections_server <- function(id,
           hideElement(
             id = type_selection_ui_id
           )
+        } else if (module_data$filter_type == "advanced") {
+          # Show advanced filter UI
+          showElement(
+            id = advanced_ui_id
+          )
+          
+          # Hide menu to select filter type
+          hideElement(
+            id = type_selection_ui_id
+          )
         } else if (module_data$filter_type == "none"){
           # Show type selection menu, hide categorical and numeric interfaces
           showElement(
@@ -454,6 +468,10 @@ subset_selections_server <- function(id,
           
           hideElement(
             id = numeric_ui_id
+          )
+          
+          hideElement(
+            id = advanced_ui_id
           )
         }
       })
@@ -659,7 +677,85 @@ subset_selections_server <- function(id,
         print(numeric_filter_value())
       })
       
-      ## 1.7. Disable confirm button until proper selections are made ####
+      ## 1.7. Advanced (String) filter: stats dropdown ####
+      # Assists user by displaying feature name as it should be entered into the
+      # subset function (using the assay key prefix), along with summary
+      # statistics for the feature to aid in choosing bounds when subsetting.
+      
+      ### 1.7.1 Feature Search Choices ####
+      # Updates occur each time the object is changed
+      observeEvent(
+        valid_features(),
+        {
+          updateSelectizeInput(
+            session,
+            inputId = "search_feature",
+            choices = valid_features(),
+            selected = character(0),
+            server = TRUE,
+            options = 
+              list(
+                # Add remove button to inputs
+                'plugins' = list('remove_button'),
+                # Do not allow user to input features not
+                # in the list of options
+                'create' = FALSE,
+                'placeholder' = "enter feature"
+              )
+          ) 
+        })
+      
+      ### 1.7.2. Feature statistics UI ####
+      feature_stats_ui <-
+        reactive({
+          req(input$search_feature)
+          
+          # Obtain summary stats for feature
+          feature_summary <-
+            # Uses FetchData methods to pull expression data for the feature
+            # Data slot is pulled by default; this can be changed
+            FetchData(
+              object(),
+              vars = input$search_feature
+            )[,1] |> 
+            summary()
+          
+          # Display summary stats for feature
+          tagList(
+            # Feature ID
+            tags$p(
+              class = "bold-blue large",
+              tags$b(
+                "Feature ID:"
+              ),
+              input$search_feature
+            ),
+            tags$p("(This must be entered exactly as it displays above)"),
+            # Summary Statistics
+            tags$b("Summary Statistics", class = "bold-blue"),
+            summary_tags(
+              feature_summary,
+              header_class = "bold-blue"
+            )
+          )
+        })
+      
+      ### 1.7.3. Render Feature Statistics Components ####
+      output$feature_statistics <- 
+        renderUI({
+          feature_stats_ui()
+        })
+      
+      ### 1.7.4. Interactive ridge plot server ####
+      threshold_picker_server(
+        id = "feature_stats_interactive",
+        object = object,
+        feature = reactive({input$search_feature}),
+        showhide_animation = TRUE,
+        assay_config = assay_config
+        )
+      
+      ## 1.8. Disable confirm button until proper selections are made ####
       observe(
         label = 
           glue("{id}: disable confirm button until a sensible selection is made "),
@@ -693,10 +789,31 @@ subset_selections_server <- function(id,
                 id = target_id
               )
                 }
+          } else if (module_data$filter_type == "advanced"){
+            # Advanced filters: enable button when code has been entered
+            if (isTruthy(input$adv_filter_code)){
+              shinyjs::enable(
+                id = target_id
+              )
+            } else {
+              shinyjs::disable(
+                id = target_id
+              )
+            }
           } else if (module_data$filter_type == "none"){
             # Confirm button is disabled when the filter type is equal to none
             # (but the button should never show in this case)
             shinyjs::disable(
+              id = target_id
+            )
+          } else {
+            # Unforeseen cases: show warning and enable the button
+            warning(
+              glue(
+                "Observer in {id} detected an unexpected value for `module_data$filter_type`. The confirm button for filters will be enabled in this case")
+              )
+            
+            shinyjs::enable(
               id = target_id
             )
           }
@@ -722,20 +839,20 @@ subset_selections_server <- function(id,
                 `value` = input$categorical_values
                 )
             
-            if (module_data$filter_menu_state == "add"){
-              # When adding a filter:
-              # Append to end of list ((length + 1)'th element)
-              # c() will collapse elements into a list at the same level
-              module_data$filters[[length(module_data$filters) + 1]] <-
-                filter_data
-            } else if (module_data$filter_menu_state == "edit"){
-              # When editing a filter:
-              # Save data to the index of the row being edited
-              module_data$filters[[editing_data$target_row]]<-
-                filter_data
-              
-              # Clear all editing data variables
-            }
+            # if (module_data$filter_menu_state == "add"){
+            #   # When adding a filter:
+            #   # Append to end of list ((length + 1)'th element)
+            #   # c() will collapse elements into a list at the same level
+            #   module_data$filters[[length(module_data$filters) + 1]] <-
+            #     filter_data
+            # } else if (module_data$filter_menu_state == "edit"){
+            #   # When editing a filter:
+            #   # Save data to the index of the row being edited
+            #   module_data$filters[[editing_data$target_row]]<-
+            #     filter_data
+            #   
+            #   # Clear all editing data variables
+            # }
           } else if (module_data$filter_type == "numeric"){
             # Reset the selected feature
             updateSelectizeInput(
@@ -743,7 +860,7 @@ subset_selections_server <- function(id,
               selected = character(0)
             )
             
-            # Numeric filters
+            # Store filter data
             filter_data <-
               list(
                 `type` = "numeric",
@@ -761,17 +878,37 @@ subset_selections_server <- function(id,
                 `value` = numeric_filter_value()
               )
             
-            if (module_data$filter_menu_state == "add"){
-              # Adding a filter:
-              # Append to end of list ((length + 1)'th element)
-              module_data$filters[[length(module_data$filters) + 1]] <-
-                filter_data
-            } else if (module_data$filter_menu_state == "edit"){
-              # Editing a filter:
-              # Save data to the index of the row being edited
-              module_data$filters[[editing_data$target_row]]<-
-                filter_data
-              }
+          } else if (module_data$filter_type == "advanced"){
+            # Store filter data (only type and value are used)
+            filter_data <-
+              list(
+                `type` = "advanced",
+                `mode` = NULL,
+                `var` = NULL,
+                `label` = NULL,
+                # Use text entry in multi-line text box
+                `value` = input$adv_filter_code
+              )
+            
+            # Reset text (code) entry
+            updateTextAreaInput(
+              session = session,
+              inputId = "adv_filter_code",
+              value = ""
+              )
+          }
+          
+          # Save filter data to list (depends on mode)
+          if (module_data$filter_menu_state == "add"){
+            # Adding a filter:
+            # Append to end of list ((length + 1)'th element)
+            module_data$filters[[length(module_data$filters) + 1]] <-
+              filter_data
+          } else if (module_data$filter_menu_state == "edit"){
+            # Editing a filter:
+            # Save data to the index of the row being edited
+            module_data$filters[[editing_data$target_row]]<-
+              filter_data
           }
           
           # If a filter was being edited, also reset the editing variables
@@ -800,9 +937,17 @@ subset_selections_server <- function(id,
           if (module_data$filter_type == "numeric"){
             # Reset the selected feature
             updateSelectizeInput(
+              session = session,
               inputId = "numeric_feature",
               selected = character(0)
               )
+          } else if (module_data$filter_type == "advanced"){
+            # Reset text (code) entry
+            updateTextAreaInput(
+              session = session,
+              inputId = "adv_filter_code",
+              value = ""
+            )
           }
           
           # If a filter was being edited, also reset the editing variables
@@ -888,6 +1033,17 @@ subset_selections_server <- function(id,
                               }
                             )
                           )
+                        } else if (type == "advanced"){
+                          div(
+                            # Advanced filter: display code entered 
+                            tags$b(
+                              glue("Custom filter:"), 
+                              class = "center half-space-bottom"
+                            ),
+                            tags$p(
+                              glue("{value}")
+                            )
+                          )
                         },
                         # Container for edit/delete buttons
                         div(
@@ -931,15 +1087,9 @@ subset_selections_server <- function(id,
                     "- No filters applied -", 
                     class = "center"
                     )
-                )
+                  )
+                }
               }
-            } else {
-              # Display "no filters applied" when no filters are entered
-              # div(
-              #   class = "filter-info-card",
-              #   tags$b("- No filters applied -", style = "float: center;")
-              #   )
-              } 
             })
       
       ### 1.10.2. JavaScript for buttons ####
@@ -1005,9 +1155,6 @@ subset_selections_server <- function(id,
            # Fetch filter data from list
            filter_data <-
              module_data$filters[[row_selected]]
-           
-           # Determine type of filter being edited
-           # filter_type <- filter_data$type
            
            # Set up editing interface 
            if (filter_data$type == "categorical"){
@@ -1082,6 +1229,20 @@ subset_selections_server <- function(id,
                choices = valid_features(),
                selected = editing_data$var
                )
+           } else if (filter_data$type == "advanced"){
+             # Set state variable for filter type to show appropriate menus
+             module_data$filter_type <- "advanced"
+             
+             # Store value
+             editing_data$value <- 
+               filter_data$value
+             
+             # Update code entry
+             updateTextAreaInput(
+               session = session,
+               inputId = "adv_filter_code",
+               value = editing_data$value
+               )
            }
            
            # Set state of menu to edit to reveal editing interface
@@ -1120,26 +1281,8 @@ subset_selections_server <- function(id,
           editing_data$label
           })
       
-      # 2. UI for string subsetting --------------------------------------------
-      # Use shinyjs to show and hide menus based on whether the adv. subsetting
-      # checkbox is checked (this ensures inputs exist and can be updated 
-      # properly, and improves performance)
-      observeEvent(
-        input$string_subsetting,
-        # Must ignore NULL values for the conditional to run without errors
-        ignoreNULL = TRUE,
-        {
-          # Show or hide string subsetting UI based on state of checkbox
-          if (input$string_subsetting == TRUE){
-            shinyjs::show("string_subsetting_ui")
-          } else {
-            shinyjs::hide("string_subsetting_ui")
-          }
-        })
-      
-      
-      # 3. Reset all filters ------------------------------
-      ## 3.1. Show/hide reset button ####
+      ## 1.13. Reset all filters ------------------------------
+      ### 1.13.1. Show/hide reset button ####
       observe({
         target_id <- "reset_all_filters"
       
@@ -1155,7 +1298,7 @@ subset_selections_server <- function(id,
         }
       })
       
-      ## 3.2. Respond to reset button ####
+      ### 1.13.2. Respond to reset button ####
       observeEvent(
         input$reset_all_filters,
         label = "Reset Filter Menus",
@@ -1164,467 +1307,21 @@ subset_selections_server <- function(id,
           module_data$filters <- list()
           })
       
-      # 4. Feature statistics --------------------------------------------------
-      # Used for string subsetting
-      # Assists user by displaying feature name as it should be entered into the
-      # subset function (using the assay key prefix), along with summary
-      # statistics for the feature to aid in choosing bounds when subsetting.
-      
-      ## 4.1. Update feature search choices ####
-      # Updates occur each time the object is changed
-      observeEvent(
-        valid_features(),
-        {
-          updateSelectizeInput(
-            session,
-            inputId = "search_feature",
-            choices = valid_features(),
-            selected = character(0),
-            server = TRUE,
-            options = 
-              list(
-                # Add remove button to inputs
-                'plugins' = list('remove_button'),
-                # Do not allow user to input features not
-                # in the list of options
-                'create' = FALSE,
-                'placeholder' = "enter feature"
-                )
-            ) 
-        })
-      
-      ## 4.2. Define UI for feature statistics ####
-      feature_stats_ui <-
-        reactive({
-          req(input$search_feature)
-          
-          # Obtain summary stats for feature
-          feature_summary <-
-            # Uses Seurat::FetchData to pull data matrix for the feature
-            # Data slot is pulled by default; this can be changed
-            FetchData(
-              object(),
-              vars = input$search_feature
-            )[,1] |> 
-            # (summary is a base function)
-            summary()
-          
-          # Print UI below
-          tagList(
-            # Feature ID
-            tags$p(
-              class = "bold-blue large",
-              tags$b(
-                "Feature ID:"
-                ),
-              input$search_feature
-              ),
-            tags$p("(This must be entered exactly as it displays above)"),
-            # Summary Statistics
-            tags$b("Summary Statistics", class = "bold-blue"),
-            summary_tags(
-              feature_summary,
-              header_class = "bold-blue"
-              ),
-            # Ridge plot showing histogram of feature expression (in all cells)
-            plotOutput(
-              outputId = ns("feature_summary_ridge"),
-              height = "150px",
-              # Draw vertical line upon user click
-              # Adding "plot_hover" will create `input$plot_hover`.
-              # A vertical line will be drawn according to the x coordinate 
-              # corresponding to the pointer location 
-              hover = 
-                hoverOpts(
-                  id = ns("plot_hover"),
-                  # Draw line when 
-                  delay = 300,
-                  delayType = "throttle"
-                  ),
-              click =
-                clickOpts(
-                  id = ns("plot_click")
-                )
-              ),
-            # UI to display statistics based on selected threshold
-            uiOutput(
-              outputId = ns("threshold_stats_ui")
-            )#,
-            
-            # TEMP: Show hover coordinates
-            # tags$p("Hover Data"),
-            # verbatimTextOutput(
-            #   outputId = ns("print_hover_coords")
-            #   ),
-            # tags$p("Click Data"),
-            # verbatimTextOutput(
-            #   outputId = ns("print_click_info")
-            #   )
-            )
-        })
-      
-      ## 4.3. Define ridge plot showing feature expression ####
-      # The plot must be stored in a reactiveValues object (module_data) to
-      # avoid reactivity issues when processing hover and click values. 
-      # The initial plot is generated below.
-      observeEvent(
-        input$search_feature,
-        label = "Subset Selections: Ridge Plot Histogram",
-        ignoreNULL = FALSE,
-        {
-          # When drawing a new plot, clear plots and data associated with the
-          # last plot if present
-          module_data$initial_ridge_plot <- NULL
-          module_data$ridge_plot_with_threshold <- NULL
-          module_data$ridge_plot <- NULL
-          module_data$threshold_x <- NULL
-          module_data$thresh_stats <- NULL
-          
-          # Set module_data$ridge_plot to the plot if a feature is entered
-          # in the search bar, otherwise set the plot to NULL
-          if (isTruthy(input$search_feature)){
-            data <- 
-              FetchData(
-                object = object(),
-                vars = input$search_feature
-                )
-            
-            # Get minimum and maximum values of data
-            module_data$plot_max <- 
-              data |> 
-              max()
-            
-            module_data$plot_min <-
-              data |> 
-              min()
-            
-            ### TEMP ###
-            # Also make a ggplot histogram
-            # module_data$gg_histogram <-
-            #   ggplot(data = data, aes(x = .data[[input$search_feature]])) +
-            #   geom_histogram(color = "#000000", fill = "#000088") +
-            #   theme_light()
-            
-            # The coordinates returned from hover and click events will
-            # be multiplied by the range to allow the user to properly select
-            # a region on the plot
-            # This is a workaround, it would be ideal to find out why Shiny
-            # interactive coordinates aren't working for Seurat plots
-            module_data$plot_range <- 
-              module_data$plot_max - module_data$plot_min
-            
-            module_data$initial_ridge_plot <-
-              shiny_ridge(
-                object = object(), 
-                features_entered = input$search_feature, 
-                group_by = "none", 
-                show_legend = FALSE, 
-                palette = c("#000088"),
-                center_x_axis_title = TRUE
-                ) 
-            # Extract the object from patchwork format
-            module_data$initial_ridge_plot <-
-              module_data$initial_ridge_plot[[1]]
-          } else {
-            module_data$initial_ridge_plot <-
-              NULL
-            }
-          })
-      
-      ## 4.4. Add vertical Line Upon Hovering ####
-      # In the event the user hovers over or clicks the plot, add the 
-      # corresponding vertical line at the x-coordinate of the click.
-      observeEvent(
-        input$plot_hover,
-        # IgnoreNULL must be TRUE to avoid the plot computing when
-        # input$plot_hover is NULL, which will erase the line from the plot
-        # as soon as it is drown
-        ignoreNULL = TRUE,
-        ignoreInit = TRUE,
-        {
-          # The saved plot must be different from the initial plot, or a series
-          # of vertical lines will be created each time a hover event is 
-          # registered
-          
-          # Transforming X-coordinates for compatibility with hover/click
-          # Coordinates are incorrectly being from zero to one, with one
-          # being the max value on the plot.
-          x_original <-
-            interactive_transform(
-              x_coord = input$plot_hover$x, 
-              distribution_range = module_data$plot_range,
-              distribution_minimum = module_data$plot_min, 
-              plot_min_coord = 0.08, 
-              plot_max_coord = 0.9
-              )
-          
-          # Draw vertical line using transformed hover coordinate  
-          # Hover line is drawn over either the initial plot, or the plot
-          # with a defined threshold, depending on whether the user has
-          # clicked the plot
-          
-          # module_data$click_info is used. module_data$click_info only 
-          # changes upon a new click, and does not become NULL while the 
-          # plot is re-drawn
-          # if (!is.null(module_data$click_info)){
-          #  base_plot <- module_data$initial_ridge_plot 
-          # } else {
-          #   # If module_data$click_info is defined, use the plot with 
-          #   # the vertical line at the click location
-          #   base_plot <- module_data$ridge_plot_with_threshold 
-          # }
-          
-          base_plot <- 
-            if (!is.null(module_data$ridge_plot_with_threshold)){
-              module_data$ridge_plot_with_threshold
-            } else{
-              module_data$initial_ridge_plot
-            }
-          
-          module_data$ridge_plot <-
-            base_plot +
-            geom_vline(
-              xintercept = x_original,
-              color = "#666666",
-              size = 0.75
-            )
-            
-            # TEMP: update hover coordinates for renderPrint output
-            module_data$hover_coords <- 
-              input$plot_hover
-            })
-      
-      ## 4.5. Respond to Click Event ####
-      ### 4.5.1 Add Threshold Line, Record Click Coordinates ####
-      observeEvent(
-        input$plot_click,
-        # IgnoreNULL must be TRUE to avoid the plot computing when
-        # input$plot_click is NULL, which will erase the line from the plot
-        # as soon as it is drown
-        ignoreNULL = TRUE,
-        ignoreInit = TRUE,
-        {
-          # Draw a solid, and persistent, line on the x-axis
-          # Transfrom x-coordinate of click to match distribution
-          x_original <-
-            interactive_transform(
-              x_coord = input$plot_click$x, 
-              distribution_range = module_data$plot_range,
-              distribution_minimum = module_data$plot_min, 
-              plot_min_coord = 0.08, 
-              plot_max_coord = 0.9
-              )
-          
-          # Record transformed x-coordinate 
-          # Round threshold to two decimal places (such that the threshold 
-          # displayed will be consistent with the threshold stats computed if
-          # it is copied and pasted. To my knowledge, there is no need to use
-          # thresholds with greater precision)
-          module_data$threshold_x <- 
-            x_original |> 
-            round(digits = 2)
-          
-          # Draw vertical line using transformed hover coordinate  
-          module_data$ridge_plot_with_threshold <-
-            module_data$initial_ridge_plot +
-            geom_vline(
-              xintercept = module_data$threshold_x,
-              color = "#000000",
-              size = 0.75
-              )
-          
-          # Record threshold statistics
-          module_data$thresh_stats <- 
-            threshold_stats(
-              object = object(), 
-              feature = input$search_feature, 
-              threshold = module_data$threshold_x
-              )
-          
-          # Record click coordinates
-          module_data$click_info <- 
-            input$plot_click
-        })
-      
-      # ### 4.5.2 Compute Threshold Stats ###
-      # # Reactive expression must have separate name from function inside
-      # threshold_statistics <-
-      #   eventReactive(
-      #     input$plot_click,
-      #     # Must ignore NULL events to avoid stats resetting while the plot
-      #     # is drawing the threshold line
-      #     ignoreNULL = TRUE,
-      #     ignoreInit = TRUE,
-      #     {
-      #       print("Compute threshold stats")
-      #       
-      #       # Threshold stats function
-      #       threshold_stats(
-      #         object = object(), 
-      #         feature = input$search_feature, 
-      #         threshold = module_data$threshold_x
-      #         )
-      #       })
-      
-      ### 4.5.2. Display Threshold Stats ####
-      threshold_stats_ui <- 
-        eventReactive(
-          module_data$thresh_stats,
-          ignoreNULL = FALSE,
-          {
-            # Display UI only when a selection is made
-            if (!is.null(module_data$threshold_x)){
-              div(
-                class = "compact-options-container",
-                tags$b(
-                  class = "center",
-                  "Chosen threshold"
-                ),
-                tags$b(
-                  class ="center half-space-bottom",
-                  style = "background-color: #FFFFFF; border-radius: 10px;",
-                  format(
-                    module_data$threshold_x,
-                    # Display at least three sig figs in percentage
-                    digits = 3,
-                    # Display at least two digits after decimal point
-                    nsmall = 2,
-                    scientific = FALSE
-                  )
-                ),
-                tags$b(
-                  "Number of cells above threshold:"
-                ),
-                glue(
-                  "{module_data$thresh_stats$n_above}
-                  ({module_data$thresh_stats$percent_above}%)"
-                ),
-                tags$br(),
-                tags$b(
-                  "Number of cells below threshold:"
-                ),
-                glue(
-                  "{module_data$thresh_stats$n_below} 
-                  ({module_data$thresh_stats$percent_below}%)"
-                )
-              )
-            } 
-            })
-      
-      # output$print_hover_coords <-
-      #   renderPrint({
-      #     req(module_data$hover_coords)
-      #     
-      #     module_data$hover_coords
-      #   })
-      # 
-      # output$print_click_info <-
-      #   renderPrint({
-      #     req(module_data$click_info)
-      #     
-      #     module_data$click_info
-      #   })
-      
-      ## 4.6. Render Feature Statistics Components ####
-      output$feature_statistics <- 
-        renderUI({
-          feature_stats_ui()
-        })
-      
-      output$feature_summary_ridge <-
-        renderPlot({
-          # Must use suppressMessages and print(plot) to suppress a
-          # "Picking joint bandwidth of ___" message from ggridges, which
-          # overwhelms the console when interactive hovering is used
-          # SuppressMessages alone is not enough, print(plot) must also be
-          # used. See https://github.com/tidyverse/ggplot2/issues/1101
-          suppressMessages(
-            print(module_data$ridge_plot)
-          )
-        })
-      
-      output$threshold_stats_ui <-
-        renderUI({
-          threshold_stats_ui()
-        })
-      
       # 5. Form Reactive List From Menu Selections -----------------------------
       selections <- 
         reactive(
           label = glue("{id}: return value for selections"),
           {
-            # Store selections for each input in the UI (one menu is created 
-            # for each metadata category in the config file)
-            # selections_list <- 
-            #   lapply(
-            #     names(metadata_config()),
-            #     function(category){
-            #       # Define input ID for each category 
-            #       # Formula: <category>_selection
-            #       category_id <- glue("{category}_selection")
-            #       
-            #       # When menus are empty, no filters are applied.
-            #       # Therefore, all unique values should be returned 
-            #       # for the category in question
-            #       if (is.null(input[[category_id]])){
-            #         unique_metadata()[[category]]
-            #       } else {
-            #         input[[category_id]]
-            #       }
-            #     }
-            #   )
-            # 
-            # # Add categories from metadata file to list names
-            # names(selections_list) <- names(metadata_config())
-            # 
-            # # If hide_menu is provided and is a reactive, remove all 
-            # # hidden menus from the selections output
-            # # is.reactive() is used as a conditional to keep app from crashing
-            # # when hide_menu is NULL or not a reactive variable
-            # if (!is.null(hide_menu) && is.reactive(hide_menu)){
-            #   # Remove any categories from the selections list 
-            #   # that are also in hide_menu
-            #   selections_list <-
-            #     selections_list[!names(selections_list) %in% hide_menu()]
-            # }
-            # 
-            # selections_list
-            
             # Return filters selected in interface
             module_data$filters
           })
       
-      # 6. Process Subset String -----------------------------------------------
-      # If entered by the user, record the advanced subsetting string each time 
-      # the 'apply subset' button is pressed
-      user_string <- 
-        reactive({
-          # isTruthy: if the manual subset string entry box does not exist 
-          # (which is the case before the checkbox is selected), return NULL 
-          # for the string
-          if(isTruthy(input$adv_subset)){
-            # If the subset string entry is defined, test for newlines.
-            # If newline characters exist in the string, remove them.
-            if (grepl("\\n", input$adv_subset)){
-              # gsub used to remove newline characters
-              return_string <- gsub("\\n", "", input$adv_subset)
-            } else {
-              return_string <- input$adv_subset
-            }
-            
-            # Return the result to user_string
-            return(return_string)
-          } else {
-            return(NULL)
-          }
-          })
-      
-      # 7. Return Menu Selections and Manual String Entry ----------------------
+      # 6. Return Menu Selections and Manual String Entry ----------------------
       return(
         list(
           `selections` = selections,
           # Store advanced string input reactively, if it exists
-          `user_string` = user_string
+          `user_string` = reactive({NULL}) # user_string
           )
         )
     }
