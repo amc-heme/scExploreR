@@ -478,6 +478,25 @@ subset_selections_server <- function(id,
         }
       })
       
+      ## 1.-. Hide filters not supported by object class ####
+      # SingleCellExperiment objects cannot be subsetted by feature expression
+      # using the current make_subset implementation. 
+      # For now, "feature expression" and "advanced" filters will be hidden.
+      observe(
+        label = 
+          glue("{id}: restrict filter choices in SingleCellExperiment objects"),
+        {
+          if (class(object()) == "SingleCellExperiment"){
+            updateSelectInput(
+              inputId = "filter_type",
+              choices =
+                c("Select Type" = "",
+                  "Categorical Metadata" = "categorical"
+                  )
+                )
+              }
+          })
+      
       ## 1.5. Categorical filters ####
       ### 1.5.1. Update choices for categorical metadata variables ####
       observeEvent(
