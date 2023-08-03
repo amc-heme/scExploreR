@@ -276,8 +276,10 @@ subset_selections_ui <-
 #' used to populate the choices of the feature selection menu when groups based
 #' on feature thresholds are requested.
 #' @param hide_menu (optional) a string or character vector giving 
-#' the name(s) of metadata categories for which to hide menus in the
-#' subset selection interface.
+#' the name(s) of categorical metadata variables to hide in the subset selection
+#' interface. This avoids inaccurate results in the DGE tab. Subsetting for DGE 
+#' occurs on the group by variable separate of the selections made in this 
+#' module
 #' 
 #' @return Server code for the subset selections module.
 #' 
@@ -499,11 +501,14 @@ subset_selections_server <- function(id,
             sapply(metadata_config(), function(var) var$label) |> 
             unname()
           
-          print("length(module_data$filters) > 0")
-          print(length(module_data$filters) > 0)
+          # Exclude any choices in hide_menu(), if the reactive is specified
+          if (is.reactive(hide_menu)){
+            categorical_choices <- 
+              categorical_choices[!categorical_choices %in% hide_menu()]
+          }
+          
+          # Exclude categorical variables that have already been entered as filters
           if (length(module_data$filters) > 0){
-            # Subset choices to exclude categorical variables that have already 
-            # been entered as filters
             # Identify categorical filters
             existing_categorical_filters <- 
               # Must use single brackets to select multiple elements from a 
@@ -527,9 +532,6 @@ subset_selections_server <- function(id,
                   filter_i$var
                 }
               )
-            
-            print("invalid_choices")
-            print(invalid_choices)
             
             # Remove invalid choices
             categorical_choices <- 
@@ -592,19 +594,9 @@ subset_selections_server <- function(id,
             choices = choices,
             # Reset selection to nothing being selected (no filters applied; 
             # use character(0) to do this)
-            selected = character(0)#,
-            # Use boolean vector to enable all choices
-            # choicesOpt = 
-            #   list(
-            #     disabled = is_disabled,
-            #     style = ifelse(
-            #       is_disabled,
-            #       yes = "color: rgba(119, 119, 119, 0.5);",
-            #       no = ""
-            #     )
-            #   )
-          )
-        })
+            selected = character(0)
+            )
+          })
       
       ## 1.6. Numeric filters ####
       ### 1.6.1. Update choices for numeric metadata features ####
@@ -1188,18 +1180,8 @@ subset_selections_server <- function(id,
                choices = choices,
                # Reset selection to nothing being selected (no filters applied; 
                # use character(0) to do this)
-               selected = editing_data$value#,
-               # Use boolean vector to enable all choices
-               # choicesOpt = 
-               #   list(
-               #     disabled = is_disabled,
-               #     style = ifelse(
-               #       is_disabled,
-               #       yes = "color: rgba(119, 119, 119, 0.5);",
-               #       no = ""
-               #     )
-               #   )
-             )
+               selected = editing_data$value
+               )
            } else if (filter_data$type == "numeric"){
              # Set state variable for filter type to show appropriate menus
              module_data$filter_type <- "numeric"
@@ -1271,6 +1253,37 @@ subset_selections_server <- function(id,
            }
          }
         })
+      
+      ## 1.--. Delete hidden variables from the filter list ####
+      # *** Avoids inaccurate results in the DGE tab ***
+      # If the variables specified by hide_menu() change, delete filters that 
+      # involve these variables.
+      # Without this, groups/markers included in the test may be different
+      # than what the user entered
+      if (is.reactive(hide_menu)){
+        observe({
+          print("Execute hide_menu observer")
+          hide_menu()
+          
+          # Errors will result if there are no filters defined
+          # module_data$filters is still truthy in this case, so length > 0
+          # must also be tested for in the req() statement
+          req(length(module_data$filters) > 0)
+          
+          # Avoid re-computing observer when filter list changes
+          isolate({
+            for (i in 1:length(module_data$filters)){
+              filter_i <- module_data$filters[[i]]
+              
+              # Delete the filter if the variable involved is part of hide_menu()
+              if (filter_i$var %in% hide_menu()){
+                module_data$filters[[i]] <- NULL 
+              }
+            }
+          })
+          
+        })
+      }
       
       ## 1.12. Editing UI ####
       ### 1.12.1. Categorical features: feature being edited ####

@@ -463,11 +463,12 @@ dge_tab_server <- function(id,
               # test selections do not influence the subset. Only
               # the subset selections are used. There is also no 
               # group by category.
-              subset_criteria <- subset_selections$selections()
+              subset_criteria <- subset_selections()
             } else {
               # Standard behavior 
               
-              # Chosen groups/classes from the category to include in the subset
+              # Append chosen groups/classes from the group by variable to the
+              # subset filters
               if (test_selections()$dge_mode == "mode_dge"){
                 choices <-
                   c(test_selections()$group_1, 
@@ -482,10 +483,18 @@ dge_tab_server <- function(id,
               # Fetch subset selections
               # Must unpack from reactive to avoid modifying the
               # reactive with test_selections data
-              subset_criteria <- subset_selections$selections()
+              subset_criteria <- subset_selections()
               # Add group by metadata category with 
               # classes/groups to subset instructions
-              subset_criteria[[group_by_category()]] <- choices
+              subset_criteria[[length(subset_criteria) + 1]] <- 
+                list(
+                  `type` = "categorical",
+                  `mode` = NULL,
+                  `var` = test_selections()$group_by,
+                  # Add display name of variable for filter criteria display
+                  `label` = metadata_config()[[test_selections()$group_by]]$label,
+                  `value` = choices
+                )
             }
             
             # Return subset criteria
@@ -532,18 +541,9 @@ dge_tab_server <- function(id,
             subset <- 
               tryCatch(
                 error = function(cnd){
-                  # If the user has entered an advanced subsetting
-                  # string, log what was entered
-                  log_info("Error in dge tab subsetting.")
-                  if (
-                    !is.null(subset_selections$user_string())
-                  ){
-                    log_info("Advanced subsetting: TRUE.")
-                    log_info("String entered by user:")
-                    log_info(subset_selections$user_string())
-                  } else {
-                    log_info("Advanced subsetting: FALSE.")
-                  }
+                  # Log interpreted subset filters in the event of an error
+                  log_info("Error in dge tab subsetting. Subset filters entered:")
+                  log_info(subset_selections())
                   
                   # Use error_handler to display notification to user
                   error_handler(
@@ -572,8 +572,7 @@ dge_tab_server <- function(id,
                     subset <- 
                       make_subset(
                         object = object(),
-                        filter_list = dge_subset_criteria(),
-                        user_string = subset_selections$user_string()
+                        filter_list = dge_subset_criteria()
                         )
                     
                     # Modification of subset
