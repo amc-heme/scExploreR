@@ -340,8 +340,7 @@ subset_selections_server <- function(id,
         id = "filter_confirm"
       )
       
-      # 1. Filter menu UI ------------------------------------------------------
-      ## 1.1. Respond to "add filter" button ####
+      # 1. Respond to "add filter" button --------------------------------------
       observe({
         req(input$add_filter)
         input$add_filter
@@ -350,7 +349,7 @@ subset_selections_server <- function(id,
         module_data$filter_menu_state <- "add"
       })
       
-      ## 1.2. Show/hide menus based on add/edit/idle states ####
+      # 2. Show/hide UI based on add/edit/idle states --------------------------
       observe({
         # jQuery selectors for classes that show elements based on state
         add_selector <- "[class *= 'show-on-add']"
@@ -399,7 +398,7 @@ subset_selections_server <- function(id,
         }
       })
       
-      ## 1.3. Record state from filter type selection menu ####
+      # 3. Record state from filter type selection menu ------------------------
       observe({
         if (isTruthy(input$filter_type)){
           if (input$filter_type == "categorical"){
@@ -420,7 +419,7 @@ subset_selections_server <- function(id,
         } 
       })
       
-      ## 1.4. Show/hide UI based on type of filter being edited ####
+      # 4. Show/hide UI based on type of filter being edited -------------------
       observe({
         type_selection_ui_id <- "filter_type"
         categorical_ui_id <- "categorical_filter_ui"
@@ -478,7 +477,7 @@ subset_selections_server <- function(id,
         }
       })
       
-      ## 1.-. Hide filters not supported by object class ####
+      # 5. Hide filters not supported by object class --------------------------
       # SingleCellExperiment objects cannot be subsetted by feature expression
       # using the current make_subset implementation. 
       # For now, "feature expression" and "advanced" filters will be hidden.
@@ -497,8 +496,8 @@ subset_selections_server <- function(id,
               }
           })
       
-      ## 1.5. Categorical filters ####
-      ### 1.5.1. Update choices for categorical metadata variables ####
+      # 6. Categorical filters -------------------------------------------------
+      ## 6.1. Update choices for categorical metadata variables ####
       observeEvent(
         module_data$filter_type,
         label = 
@@ -577,7 +576,7 @@ subset_selections_server <- function(id,
             )
           })
       
-      ### 1.5.2. Choices for values within a given variable ####
+      ## 6.2. Choices for values within a given variable ####
       observeEvent(
         c(module_data$filter_type, 
           input$categorical_var
@@ -617,8 +616,8 @@ subset_selections_server <- function(id,
             )
           })
       
-      ## 1.6. Numeric filters ####
-      ### 1.6.1. Update choices for numeric metadata features ####
+      # 7. Numeric filters ####
+      ## 7.1. Update choices for numeric metadata features ####
       # Only needs to run once at startup
       observeEvent(
         # Responds to loading of update and creation of UI (to ensure
@@ -636,7 +635,7 @@ subset_selections_server <- function(id,
             )
           })
       
-      ### 1.6.2. Hide Buttons for choosing filter mode ####
+      ## 7.2. Hide Buttons for choosing filter mode ####
       # Hide buttons until a feature is entered
       observe({
         target_id <- "numeric_mode"
@@ -654,7 +653,7 @@ subset_selections_server <- function(id,
             }
         })
       
-      ### 1.6.3. Interface for choosing threshold ####
+      ## 7.3. Interface for choosing threshold ####
       numeric_filter_value <- 
         threshold_picker_server(
           # Do not namespace module server function IDs 
@@ -688,12 +687,13 @@ subset_selections_server <- function(id,
         print(numeric_filter_value())
       })
       
-      ## 1.7. Advanced (String) filter: stats dropdown ####
+      # 8. Advanced (String) filter --------------------------------------------
+      # Stats dropdown
       # Assists user by displaying feature name as it should be entered into the
       # subset function (using the assay key prefix), along with summary
       # statistics for the feature to aid in choosing bounds when subsetting.
       
-      ### 1.7.1 Feature Search Choices ####
+      ## 8.1. Feature Search Choices ####
       # Updates occur each time the object is changed
       observeEvent(
         valid_features(),
@@ -716,7 +716,7 @@ subset_selections_server <- function(id,
           ) 
         })
       
-      ### 1.7.2. Feature statistics UI ####
+      ## 8.2. Feature statistics UI ####
       feature_stats_ui <-
         reactive({
           req(input$search_feature)
@@ -751,13 +751,13 @@ subset_selections_server <- function(id,
           )
         })
       
-      ### 1.7.3. Render Feature Statistics Components ####
+      ## 8.3. Render Feature Statistics Components ####
       output$feature_statistics <- 
         renderUI({
           feature_stats_ui()
         })
       
-      ### 1.7.4. Interactive ridge plot server ####
+      ## 8.4. Interactive ridge plot server ####
       threshold_picker_server(
         id = "feature_stats_interactive",
         object = object,
@@ -766,7 +766,7 @@ subset_selections_server <- function(id,
         assay_config = assay_config
         )
       
-      ## 1.8. Disable confirm button until proper selections are made ####
+      # 9. Disable confirm button until proper selections are made -------------
       observe(
         label = 
           glue("{id}: disable confirm button until a sensible selection is made "),
@@ -830,7 +830,7 @@ subset_selections_server <- function(id,
           }
       })
       
-      ## 1.8. Respond to confirm button ####
+      # 10. Respond to confirm button ------------------------------------------
       # Save filter and reset states/menus
       observeEvent(
         input$filter_confirm,
@@ -939,7 +939,7 @@ subset_selections_server <- function(id,
           module_data$filter_type <- "none"
         })
       
-      ## 1.9. Respond to cancel button ####
+      # 11. Respond to cancel button -------------------------------------------
       observeEvent(
         input$filter_cancel,
         label = glue("{id}: respond to cancel button"),
@@ -982,8 +982,8 @@ subset_selections_server <- function(id,
         print(module_data$filters)
       })
       
-      ## 1.10. UI for displaying filters ####
-      ### 1.10.1. HTML ####
+      # 12. UI for displaying filters ------------------------------------------
+      ## 12.1. HTML ####
       filters_ui <-
         reactive(
           label = glue("{id}: Compute UI for filter menus"),
@@ -1103,7 +1103,7 @@ subset_selections_server <- function(id,
               }
             })
       
-      ### 1.10.2. JavaScript for buttons ####
+      ## 12.2. JavaScript for buttons ####
       filter_button_js <-
         reactive(
           label = glue("{id}: edit/delete button JavaScript"),
@@ -1136,7 +1136,7 @@ subset_selections_server <- function(id,
               }
             })
       
-      ### 1.10.3. Render UI ####
+      ## 12.3. Render UI ####
       output$filters_applied <-
         renderUI({
           # Render UI elements, scripts together
@@ -1146,7 +1146,7 @@ subset_selections_server <- function(id,
           )
         })
       
-      ## 1.11. Respond to click on edit/delete buttons ####
+      # 13. Respond to click on edit/delete buttons ----------------------------
       observeEvent(
         # Respond to lastClick, which always changes with each click
         # (lastClickId does not necessarily change)
@@ -1273,7 +1273,7 @@ subset_selections_server <- function(id,
          }
         })
       
-      ## 1.--. Delete hidden variables from the filter list ####
+      # 14. Delete hidden variables from the filter list -----------------------
       # *** Avoids inaccurate results in the DGE tab ***
       # If the variables specified by hide_menu() change, delete filters that 
       # involve these variables.
@@ -1304,8 +1304,8 @@ subset_selections_server <- function(id,
         })
       }
       
-      ## 1.12. Editing UI ####
-      ### 1.12.1. Categorical features: feature being edited ####
+      # 15. Editing UI  --------------------------------------------------------
+      ## 15.1. Categorical features: feature being edited ####
       output$edit_categorical_var <-
         renderText({
           req(editing_data$label)
@@ -1313,8 +1313,8 @@ subset_selections_server <- function(id,
           editing_data$label
           })
       
-      ## 1.13. Reset all filters ------------------------------
-      ### 1.13.1. Show/hide reset button ####
+      # 16. Reset all filters --------------------------------------------------
+      ## 16.1. Show/hide reset button ####
       observe({
         target_id <- "reset_all_filters"
       
@@ -1330,7 +1330,7 @@ subset_selections_server <- function(id,
         }
       })
       
-      ### 1.13.2. Respond to reset button ####
+      ## 16.2. Respond to reset button ####
       observeEvent(
         input$reset_all_filters,
         label = "Reset Filter Menus",
@@ -1339,7 +1339,7 @@ subset_selections_server <- function(id,
           module_data$filters <- list()
           })
       
-      # 5. Form Reactive List From Menu Selections -----------------------------
+      # 17. Form Reactive List From Menu Selections ----------------------------
       selections <- 
         reactive(
           label = glue("{id}: return value for selections"),
@@ -1348,7 +1348,7 @@ subset_selections_server <- function(id,
             module_data$filters
           })
       
-      # 6. Return Selected Filters ---------------------------------------------
+      # 18. Return Selected Filters --------------------------------------------
       return(
         selections
         )
