@@ -262,6 +262,7 @@ dge_test_selections_server <-
            object,
            unique_metadata,
            metadata_config,
+           assay_config,
            meta_choices,
            valid_features
            ){
