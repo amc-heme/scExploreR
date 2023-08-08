@@ -616,6 +616,14 @@ subset_selections_server <- function(id,
             )
           })
       
+      ## 6.3. Display feature label during editing ####
+      output$edit_categorical_var <-
+        renderText({
+          req(editing_data$label)
+          
+          editing_data$label
+        })
+      
       # 7. Numeric filters ####
       ## 7.1. Update choices for numeric metadata features ####
       # Only needs to run once at startup
@@ -1303,18 +1311,9 @@ subset_selections_server <- function(id,
           
         })
       }
-      
-      # 15. Editing UI  --------------------------------------------------------
-      ## 15.1. Categorical features: feature being edited ####
-      output$edit_categorical_var <-
-        renderText({
-          req(editing_data$label)
-          
-          editing_data$label
-          })
-      
-      # 16. Reset all filters --------------------------------------------------
-      ## 16.1. Show/hide reset button ####
+
+      # 15. Reset all filters --------------------------------------------------
+      ## 15.1. Show/hide reset button ####
       observe({
         target_id <- "reset_all_filters"
       
@@ -1330,7 +1329,7 @@ subset_selections_server <- function(id,
         }
       })
       
-      ## 16.2. Respond to reset button ####
+      ## 15.2. Respond to reset button ####
       observeEvent(
         input$reset_all_filters,
         label = "Reset Filter Menus",
@@ -1339,7 +1338,7 @@ subset_selections_server <- function(id,
           module_data$filters <- list()
           })
       
-      # 17. Form Reactive List From Menu Selections ----------------------------
+      # 16. Form Reactive List From Menu Selections ----------------------------
       selections <- 
         reactive(
           label = glue("{id}: return value for selections"),
@@ -1348,7 +1347,7 @@ subset_selections_server <- function(id,
             module_data$filters
           })
       
-      # 18. Return Selected Filters --------------------------------------------
+      # 17. Return Selected Filters --------------------------------------------
       return(
         selections
         )
