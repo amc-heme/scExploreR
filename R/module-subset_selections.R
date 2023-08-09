@@ -171,7 +171,8 @@ subset_selections_ui <-
               threshold_picker_ui(
                 id = ns("filter_threshold"),
                 plot_height = "150px",
-                instruction_panel = TRUE
+                instruction_panel = TRUE,
+                show_stats = FALSE
                 )
               ),
             # C. Advanced filter UI ####

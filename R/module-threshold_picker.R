@@ -15,6 +15,8 @@
 #' selected (either a threshold or the upper/lower bounds of a range). The 
 #' default is FALSE, though TRUE is strongly recommended if the "range" mode is
 #' intended to be used with the module instance.
+#' @param show_stats Whether to show stats for the selected threshold or range
+#' (default is TRUE). If FALSE, only the selected threshold will be displayed.
 #'
 #' @noRd
 threshold_picker_ui <- 
@@ -23,7 +25,8 @@ threshold_picker_ui <-
     plot_width = NULL,
     plot_height = NULL,
     buttons_panel = TRUE,
-    instruction_panel = FALSE
+    instruction_panel = FALSE,
+    show_stats = TRUE
     ){
     # Namespace function: prevents conflicts with IDs defined in other modules
     ns <- NS(id)
@@ -103,9 +106,6 @@ threshold_picker_ui <-
               class = "flex-dropDownleftFix",
               # Interface for adjusting x-axis limits
               div(
-                # Use inline-block display to show side-by-side with 
-                # other buttons NOPE
-                # style = "display: inline-block;",
                 dropdownButton(
                   # Space prevents "btn-" from being added to first class
                   status = 
@@ -189,7 +189,7 @@ threshold_picker_ui <-
             )
           )
         ),
-      # UI to display statistics based on selected threshold
+      # UI to display statistics based on selected threshold 
       # Threshold statistics are hidden until a threshold is selected
       hidden(
         div(
@@ -207,24 +207,29 @@ threshold_picker_ui <-
                border-radius: 10px;",
             textOutput(
               outputId = ns("chosen_threshold")
-              )
-            ),
-          # Number and percentage of cells above and below threshold
-          tags$b(
-            "Number of cells above threshold:"
-            ),
-          textOutput(
-            outputId = ns("above_stats")
-          ),
-          tags$b(
-            class = "half-space-top",
-            "Number of cells below threshold:"
-            ),
-          textOutput(
-            outputId = ns("below_stats")
             )
-          )
+          ),
+          # Number and percentage of cells above and below threshold
+          # Displays if stats are enabled
+          if (show_stats == TRUE){
+            tagList(
+              tags$b(
+                "Number of cells above threshold:"
+              ),
+              textOutput(
+                outputId = ns("above_stats")
+              ),
+              tags$b(
+                class = "half-space-top",
+                "Number of cells below threshold:"
+              ),
+              textOutput(
+                outputId = ns("below_stats")
+              )
+            )
+          }
         )
+      )
     )
 }
 
