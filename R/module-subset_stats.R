@@ -58,7 +58,7 @@ subset_stats_ui <- function(id,
       # Metadata-specific subset statistics
       tags$strong(
         "Subset Used for Test", 
-        class = "x-large inline-block space-top"
+        class = "x-large inline-block half-space-top"
         ),
       
       # Loop through the metadata categories read on app startup
@@ -86,7 +86,7 @@ subset_stats_ui <- function(id,
       div(
         tags$strong(
           "Number of cells in subset: ",
-          class = "space-top inline-block"
+          class = "half-space-top inline-block"
           ),
         textOutput(
           outputId = ns("n_cells"), 
@@ -105,7 +105,7 @@ subset_stats_ui <- function(id,
     # UI for stats in correlations tab
     ui <- tagList(
       tags$strong("Subset Summary and Quality Statistics", 
-                  class = "x-large inline-block space-top"),
+                  class = "x-large inline-block half-space-top"),
       # Restriction criteria
       # Create outputs for each subset menu
       lapply(
@@ -137,7 +137,7 @@ subset_stats_ui <- function(id,
       # Number of cells in subset
       div(
         tags$strong("Number of cells in subset: ",
-                      class = "space-top inline-block"),
+                      class = "half-space-top inline-block"),
         textOutput(outputId = ns("n_cells"), inline = TRUE)
         ),
       

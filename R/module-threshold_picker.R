@@ -217,7 +217,7 @@ threshold_picker_ui <-
             outputId = ns("above_stats")
           ),
           tags$b(
-            class = "space-top",
+            class = "half-space-top",
             "Number of cells below threshold:"
             ),
           textOutput(

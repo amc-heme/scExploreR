@@ -76,7 +76,7 @@ corr_tab_ui <- function(id,
                 label = "Download Table",
                 icon = icon("table"),
                 # Add space before button, and display in block format
-                class = "space-top button-ghost",
+                class = "half-space-top button-ghost",
                 style = "display: block;"
                 )
               ),
@@ -118,7 +118,7 @@ corr_tab_ui <- function(id,
                     icon = icon("poll"),
                     # Adds space before button (this class is removed if a 
                     # subset is not selected) 
-                    class = "space-top button-ghost",
+                    class = "half-space-top button-ghost",
                     style = "display: block;"
                   ) # End downloadButton
                 ) # End collapsible_panel  
@@ -1062,11 +1062,11 @@ corr_tab_server <- function(id,
                    label = "Corr: add/remove CSS class from scatterplot download button",
                    {
                    if (is_subset() == TRUE){
-                     # "space-top": adds space before the global 
+                     # "half-space-top": adds space before the global 
                      # scatterplot download button
                      shinyjs::addClass(
                        id = "download_scatter_global",
-                       class = "space-top"
+                       class = "half-space-top"
                        )
                      
                      # Responsive button label: changes size of button label
@@ -1086,7 +1086,7 @@ corr_tab_server <- function(id,
                      # labels described above
                      shinyjs::removeClass(
                        id = "download_scatter_global",
-                       class = "space-top"
+                       class = "half-space-top"
                        )
                      
                      shinyjs::removeClass(
@@ -1133,7 +1133,7 @@ corr_tab_server <- function(id,
                        #         outputId = ns("download_scatter_subset"),
                        #         label = "Download Scatterplot (Subset)",
                        #         # Adds space before button
-                       #         class = "space-top",
+                       #         class = "half-space-top",
                        #         icon = icon("poll")
                        #         )
                        #       } else NULL, # End downloadButton tag
@@ -1149,11 +1149,11 @@ corr_tab_server <- function(id,
                        #           "Download Scatterplot"
                        #           },
                        #       
-                       #       # space-top class: adds space before button 
+                       #       # half-space-top class: adds space before button 
                        #       # this is only needed when a subset is 
                        #       # selected and there are two buttons
                        #       class = if (is_subset() == TRUE){
-                       #         "space-top"
+                       #         "half-space-top"
                        #         } else NULL,
                        #       icon = icon("poll")
                        #       ) # End downloadButton

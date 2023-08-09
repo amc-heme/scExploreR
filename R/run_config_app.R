@@ -634,7 +634,7 @@ run_config <-
                 ),
                 # Buttons to accept or discard threshold
                 div(
-                  class = "show-on-add show-on-edit space-top",
+                  class = "show-on-add show-on-edit half-space-top",
                   # Accept button: disabled at first; enabled when a feature 
                   # threshold has been selected using the interactive ridge plot
                   disabled(
@@ -672,7 +672,7 @@ run_config <-
               
               # Button to add a new threshold
               div(
-                class = "space-top",
+                class = "half-space-top",
                 actionButton(
                   inputId = "add_threshold",
                   label = "New Threshold",
