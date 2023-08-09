@@ -29,31 +29,37 @@ subset_selections_ui <-
     # Namespace function: prevents conflicts with IDs defined in other modules 
     ns <- NS(id)
     
-    tagList(
+    div(
+      style = "margin-bottom: 10px;",
       tags$b(
         "Filters Chosen for Subset:"
       ),
-      # New menu UI
       uiOutput(
         outputId = ns("filters_applied")
       ),
-      actionButton(
-        inputId = ns("add_filter"),
-        label = "Add Filter",
-        icon = icon("plus"),
-        # show-on-idle: button will be hidden while a filter is 
-        # being created/edited
-        class = "button-primary compact-button show-on-idle"#,
-        #style = "width: 25%;"
-      ),
-      # Reset all filters button: shown when at least one filter is present
-      hidden(
+      # Container for add filter and reset all filter buttons
+      div(
         actionButton(
-          inputId = ns("reset_all_filters"),
-          label = "Remove All Filters",
-          icon = icon("times-circle"),
-          class = "button-ghost compact-button show-on-idle"
-        )
+          inputId = ns("add_filter"),
+          label = "Add Filter",
+          icon = icon("plus"),
+          # show-on-idle: button will be hidden while a filter is 
+          # being created/edited
+          class = 
+            "button-primary compact-button show-on-idle half-space-bottom",
+          style = "font-size: 0.95em;"
+          ),
+        # Reset all filters button: shown when at least one filter is present
+        hidden(
+          actionButton(
+            inputId = ns("reset_all_filters"),
+            label = "Reset All",
+            icon = icon("times-circle"),
+            class = 
+              "button-ghost compact-button show-on-idle half-space-bottom",
+            style = "font-size: 0.95em;"
+            )
+          )
       ),
       hidden(
         # UI for adding/editing a subsetting filter

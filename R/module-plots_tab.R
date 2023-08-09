@@ -312,7 +312,9 @@ plots_tab_ui <- function(id,
              # 1.5.3. Submit button for subset
              actionButton(
                inputId = ns("subset_submit"),
-               label="Apply Subset"
+               label = "Apply Subset",
+               class = "button-ghost",
+               style = "width: 75%;"
                )
              ) # End subset_panel div
          ), # End 1.5
