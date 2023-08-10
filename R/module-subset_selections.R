@@ -1271,7 +1271,7 @@ subset_selections_server <- function(id,
              as.numeric()
            
            # Prevents errors in the event the selected_row is undefined
-           if (!is.null(row_selected) | is.na(row_selected)){
+           if (!is.null(row_selected) | !is.na(row_selected)){
              # Delete the indicated filter from the list
              module_data$filters[row_selected] <- NULL
              
