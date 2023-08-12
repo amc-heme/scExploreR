@@ -23,6 +23,7 @@ run_scExploreR <-
     # Load Libraries and Data ------------------------------------------------------
     ## Initialize libraries ####
     library(shiny)
+    library(shinymanager)
     library(Seurat, quietly = TRUE, warn.conflicts = FALSE)
     
     # Shiny add-ons 
@@ -508,6 +509,12 @@ run_scExploreR <-
     # Table of Contents ------------------------------------------------------------
     # TODO: Add module tree here
     
+    # Set up authentication credentials
+    credentials <- data.frame(
+      user = browser_config$auth_users,
+      password = browser_config$auth_passwords
+      )
+    
     # Main UI ----------------------------------------------------------------------
     # Navigation panel and references to tabs
     ui <- tagList(
@@ -655,8 +662,22 @@ run_scExploreR <-
       js_list
     )
     
+    # Wrap your UI with secure_app
+    ui <- secure_app(ui)
+    
     # Main Server function ---------------------------------------------------------
     server <- function(input, output, session){
+      
+      # call the server part
+      # check_credentials returns a function to authenticate users
+      res_auth <- secure_server(
+         check_credentials = check_credentials(credentials)
+      )
+  
+       output$auth_output <- renderPrint({
+         reactiveValuesToList(res_auth)
+      })
+      
       # Record whether app is in dev mode (signals modules to display more 
       # information for testing and development)
       session$userData$dev_mode = dev_mode
