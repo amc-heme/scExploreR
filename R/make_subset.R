@@ -2,10 +2,6 @@
 #'
 #' @param object a Seurat object.
 #' @param filter_list a list of filters constructed by the subset_selections module. 
-#' @param user_string if the user enables the entry of a subset string, the 
-#' value of the string should be passed to this variable. The string passed will
-#' be added to the end of the string generated from filter_list, with the '&'
-#' operator separating the string.
 #'
 #' @return A Seurat object subsetted for the criteria entered.
 #' 
