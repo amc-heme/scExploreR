@@ -59,6 +59,13 @@ subset_selections_ui <-
               "button-ghost compact-button show-on-idle half-space-bottom",
             style = "font-size: 0.95em;"
             )
+          ),
+        downloadButton(
+          outputId = ns("download_filters"),
+          label = "Download Filters",
+          class = 
+            "button-ghost compact-button show-on-idle half-space-bottom",
+          style = "font-size: 0.95em;"
           )
       ),
       hidden(
@@ -607,7 +614,13 @@ subset_selections_server <- function(id,
             SCEPlots::unique_values(
               object(), 
               var = input$categorical_var
-              )
+              ) 
+          
+          # If choices is a factor, the integer levels will be displayed to the 
+          # user instead of the corresponding values. This is corrected here.
+          if (is.factor(choices)){
+            choices <- as.character(choices)
+          }
           
           # Determine which choices, if any, are invalid based on the current
           # subset
@@ -1353,6 +1366,19 @@ subset_selections_server <- function(id,
             # Return filters selected in interface
             module_data$filters
           })
+      
+      # TEMP Download Button ----
+      output$download_filters <-
+        downloadHandler(
+          filename = "filters.yaml",
+          content = 
+            function(file){
+              write_yaml(
+                module_data$filters,
+                file = file
+              )
+            }
+        )
       
       # 17. Return Selected Filters --------------------------------------------
       return(
