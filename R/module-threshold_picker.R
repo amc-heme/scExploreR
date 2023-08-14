@@ -763,14 +763,11 @@ threshold_picker_server <-
             {
               print("Update threshold picker")
               
-              req(
-                c(set_threshold(), 
-                  feature(), 
-                  mode()
-                  )
-                )
-              
-              print("Passed req()")
+              req(set_threshold())
+              req(feature())
+              if (is.reactive(mode)){
+                req(mode())
+              }
               
               # Determine behavior based on "mode"
               behavior <-
