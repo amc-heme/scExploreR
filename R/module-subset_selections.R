@@ -604,12 +604,6 @@ subset_selections_server <- function(id,
           
           # Determine choices to display for the selected metadata variable
           
-          # meta_df <-
-          #   SCEPlots::fetch_metadata(
-          #     object = object(),
-          #     full_table = TRUE
-          #   )
-          
           choices <-
             SCEPlots::unique_values(
               object(), 
@@ -622,8 +616,29 @@ subset_selections_server <- function(id,
             choices <- as.character(choices)
           }
           
-          # Determine which choices, if any, are invalid based on the current
-          # subset
+          # Determine which choices are valid based on the current subset
+          # Filter metadata table for cells that match current filter criteria
+          if (length(module_data$filters) > 0){
+            subset_table <-
+              categorical_subset_preview(
+                object(),
+                filter_list = module_data$filters
+              )
+            
+            valid_choices <- 
+              subset_table[[input$categorical_var]] |> 
+              unique()
+            
+            # If valid choices is a factor, transform to a character vector
+            if (is.factor(valid_choices)){
+              valid_choices <- as.character(valid_choices)
+            }
+          } else {
+            valid_choices <- choices
+          }
+          
+          # Boolean vector of choices to be diabled
+          disable_boolean <- !choices %in% valid_choices
           
           # Update picker input with valid choices
           updatePickerInput(
@@ -632,9 +647,18 @@ subset_selections_server <- function(id,
             choices = choices,
             # Reset selection to nothing being selected (no filters applied; 
             # use character(0) to do this)
-            selected = character(0)
-            )
-          })
+            selected = character(0),
+            choicesOpt =
+              list(
+                disabled = disable_boolean,
+                style = ifelse(
+                  disable_boolean,
+                  yes = "color: #88888888;",
+                  no = ""
+                  )
+                )
+              )
+            })
       
       ## 6.3. Display feature label during editing ####
       output$edit_categorical_var <-
