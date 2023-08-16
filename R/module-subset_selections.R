@@ -891,25 +891,26 @@ subset_selections_server <- function(id,
           # Record filter in list of filters
           if (module_data$filter_type == "categorical"){
             # Categorical filters
+            var_use <- 
+              # var_use: when editing, the variable is fixed and stored in 
+              # editing_data$var instead. input$categorical var is not
+              # updated since the selection menu is not displayed, and 
+              # can therefore reflect a different variable than the one
+              # being edited. 
+              if (module_data$filter_menu_state == "add"){
+                input$categorical_var
+              } else if (module_data$filter_menu_state == "edit"){
+                editing_data$var
+              }
+            
             filter_data <-
               list(
                 `type` = "categorical",
                 # Not used for categorical filters
                 `mode` = NULL,
-                `var` = 
-                  if (module_data$filter_menu_state == "add"){
-                    # IF adding a filter, use the variable selected
-                    input$categorical_var
-                  } else if (module_data$filter_menu_state == "edit"){
-                    # When editing, the variable is fixed and stored in 
-                    # editing_data$var instead. input$categorical var is not
-                    # updated since the selection menu is not displayed, and 
-                    # can therefore reflect a different variable than the one
-                    # being edited. 
-                    editing_data$var
-                  },
+                `var` = var_use,
                 # Add display name of variable for filter criteria display
-                `label` = metadata_config()[[input$categorical_var]]$label,
+                `label` = metadata_config()[[var_use]]$label,
                 `value` = input$categorical_values
                 )
             
@@ -941,6 +942,16 @@ subset_selections_server <- function(id,
                 `type` = "numeric",
                 `mode` = input$numeric_mode,
                 `var` = input$numeric_feature,
+                  # if (module_data$filter_menu_state == "add"){
+                  #   input$numeric_feature
+                  # } else if (module_data$filter_menu_state == "edit"){
+                  #   # When editing, the feature is fixed and stored in 
+                  #   # editing_data$var instead. input$numeric_feature is not
+                  #   # updated since the selection menu is not displayed, and 
+                  #   # can therefore reflect a different variable than the one
+                  #   # being edited. 
+                  #   editing_data$var
+                  # },
                 `label` = 
                   # Compute display name using config file
                   scExploreR:::hr_name(
@@ -1256,6 +1267,11 @@ subset_selections_server <- function(id,
                  object(), 
                  var = editing_data$var
                 )
+             
+             # If a factor, convert the choices to a vector 
+             if (is.factor(choices)){
+               choices <- as.character(choices)
+             }
              
              # Update picker input with choices, selected values
              updatePickerInput(
