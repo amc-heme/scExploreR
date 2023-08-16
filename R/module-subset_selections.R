@@ -931,7 +931,8 @@ subset_selections_server <- function(id,
             # Reset the selected feature
             updateSelectizeInput(
               inputId = "numeric_feature",
-              selected = character(0)
+              selected = character(0),
+              server = TRUE
             )
             
             # Store filter data
@@ -1013,7 +1014,8 @@ subset_selections_server <- function(id,
             updateSelectizeInput(
               session = session,
               inputId = "numeric_feature",
-              selected = character(0)
+              selected = character(0),
+              server = TRUE
               )
           } else if (module_data$filter_type == "advanced"){
             # Reset text (code) entry
@@ -1291,7 +1293,8 @@ subset_selections_server <- function(id,
                session = session,
                inputId = "numeric_feature",
                choices = valid_features(),
-               selected = editing_data$var
+               selected = editing_data$var,
+               server = TRUE
                )
            } else if (filter_data$type == "advanced"){
              # Set state variable for filter type to show appropriate menus
