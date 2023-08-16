@@ -609,7 +609,7 @@ dge_test_selections_server <-
                   disabled = disable_boolean,
                   style = ifelse(
                     disable_boolean,
-                    yes = "color: rgba(119, 119, 119, 0.5);",
+                    yes = "color: #88888888;",
                     no = ""
                     )
                   )
@@ -675,7 +675,7 @@ dge_test_selections_server <-
                   disabled = disable_boolean,
                   style = ifelse(
                     disable_boolean,
-                    yes = "color: rgba(119, 119, 119, 0.5);",
+                    yes = "color: #88888888;",
                     no = ""
                   )
                 )
