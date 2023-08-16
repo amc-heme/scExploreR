@@ -896,7 +896,18 @@ subset_selections_server <- function(id,
                 `type` = "categorical",
                 # Not used for categorical filters
                 `mode` = NULL,
-                `var` = input$categorical_var,
+                `var` = 
+                  if (module_data$filter_menu_state == "add"){
+                    # IF adding a filter, use the variable selected
+                    input$categorical_var
+                  } else if (module_data$filter_menu_state == "edit"){
+                    # When editing, the variable is fixed and stored in 
+                    # editing_data$var instead. input$categorical var is not
+                    # updated since the selection menu is not displayed, and 
+                    # can therefore reflect a different variable than the one
+                    # being edited. 
+                    editing_data$var
+                  },
                 # Add display name of variable for filter criteria display
                 `label` = metadata_config()[[input$categorical_var]]$label,
                 `value` = input$categorical_values
