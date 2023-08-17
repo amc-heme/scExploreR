@@ -932,6 +932,7 @@ subset_selections_server <- function(id,
             # Reset the selected feature
             updateSelectizeInput(
               inputId = "numeric_feature",
+              choices = valid_features(),
               selected = character(0),
               server = TRUE
             )
