@@ -441,7 +441,6 @@ subset_selections_server <- function(id,
         advanced_ui_id <- "advanced_filter_ui"
         
         if (module_data$filter_type == "categorical"){
-          print("show categorical filter interface")
           # Show categorical filter UI
           showElement(
             id = categorical_ui_id
@@ -723,21 +722,12 @@ subset_selections_server <- function(id,
               } else {
                 req(length(editing_data$numeric_filter_value) == 1)
               }
-               
-              print("Record new set_thrseshold() value:")
-              print(editing_data$numeric_filter_value)
               
               editing_data$numeric_filter_value
               }),
           showhide_animation = TRUE,
           assay_config = assay_config
         )
-      
-      observe({
-        req(numeric_filter_value())
-        print("Chosen numeric filter threshold")
-        print(numeric_filter_value())
-      })
       
       # 8. Advanced (String) filter --------------------------------------------
       # Stats dropdown
@@ -943,6 +933,8 @@ subset_selections_server <- function(id,
                 `type` = "numeric",
                 `mode` = input$numeric_mode,
                 `var` = input$numeric_feature,
+                # Uncomment the lines below if a different feature shows after
+                # pressing confirm after editing one feature
                   # if (module_data$filter_menu_state == "add"){
                   #   input$numeric_feature
                   # } else if (module_data$filter_menu_state == "edit"){
@@ -963,7 +955,7 @@ subset_selections_server <- function(id,
                 # Either a single number, or a vector of upper and lower bounds
                 # if a range is chosen
                 `value` = numeric_filter_value()
-              )
+                )
             
           } else if (module_data$filter_type == "advanced"){
             # Store filter data (only type and value are used)
@@ -975,7 +967,7 @@ subset_selections_server <- function(id,
                 `label` = NULL,
                 # Use text entry in multi-line text box
                 `value` = input$adv_filter_code
-              )
+                )
             
             # Reset text (code) entry
             updateTextAreaInput(
@@ -1035,7 +1027,7 @@ subset_selections_server <- function(id,
               session = session,
               inputId = "adv_filter_code",
               value = ""
-            )
+              )
           }
           
           # If a filter was being edited, also reset the editing variables
@@ -1052,12 +1044,6 @@ subset_selections_server <- function(id,
           module_data$filter_menu_state <- "idle"
           module_data$filter_type <- "none"
         })
-      
-      observe({
-        req(module_data$filters)
-        print("State of recorded filters")
-        print(module_data$filters)
-      })
       
       # 12. UI for displaying filters ------------------------------------------
       ## 12.1. HTML ####
@@ -1364,7 +1350,6 @@ subset_selections_server <- function(id,
       # than what the user entered
       if (is.reactive(hide_menu)){
         observe({
-          print("Execute hide_menu observer")
           hide_menu()
           
           # Errors will result if there are no filters defined
