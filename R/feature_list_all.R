@@ -32,7 +32,7 @@ feature_list_all <-
     for (assay_entry in assay_config){
       # Fetch the features included in the object under the current assay
       assay_features <- 
-        SCEPlots::features_in_assay(
+        SCUBA::features_in_assay(
           object,
           assay = assay_entry$assay
           )
@@ -81,7 +81,7 @@ feature_list_all <-
     # add that column.
     if (numeric_metadata==TRUE){
       # First, fetch all metadata columns in object.
-      meta_cols <- SCEPlots::meta_varnames(object)
+      meta_cols <- SCUBA::meta_varnames(object)
       
       # Next, select columns that have numeric or integer values
       # Create boolean vector for a column being numeric (having a class of 
@@ -91,7 +91,7 @@ feature_list_all <-
           meta_cols, 
           FUN = function(x){
             meta_table = 
-              SCEPlots::fetch_metadata(
+              SCUBA::fetch_metadata(
                 object,
                 full_table = TRUE
                 )
@@ -113,7 +113,7 @@ feature_list_all <-
       # Fetch features with threshold information (all features in 
       # "adtThreshold" assay)
       threshold_features <- 
-        SCEPlots::features_in_assay(
+        SCUBA::features_in_assay(
           object,
           assay = "adtThreshold"
           )

@@ -1208,7 +1208,7 @@ plot_module_server <- function(id,
                                req(plot_selections$split_by())
                                
                                default_titles <-
-                                 SCEPlots::unique_values(
+                                 SCUBA::unique_values(
                                    object = object(),
                                    var = plot_selections$split_by()
                                    ) |> 
@@ -2780,7 +2780,7 @@ plot_module_server <- function(id,
                            # Based on unique values or levels of current group by 
                            # category
                            group_by_metadata <- 
-                             SCEPlots::fetch_metadata(
+                             SCUBA::fetch_metadata(
                                object = object(),
                                vars = plot_selections$group_by(), 
                                return_class = "vector"
@@ -2843,7 +2843,7 @@ plot_module_server <- function(id,
                            # Based on unique values or levels of current group by 
                            # category
                            split_by_metadata <- 
-                             SCEPlots::fetch_metadata(
+                             SCUBA::fetch_metadata(
                                object(),
                                vars = plot_selections$split_by(),
                                return_class = "vector"
@@ -3405,7 +3405,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
                          
-                         SCEPlots::shiny_stacked_bar(
+                         SCUBA::shiny_stacked_bar(
                            object = object(),
                            group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
@@ -3447,7 +3447,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
                          
-                         SCEPlots::shiny_pie(
+                         SCUBA::shiny_pie(
                            object = object(),
                            patient_colname = patient_colname(),
                            group_by = plot_selections$group_by(),

@@ -222,7 +222,7 @@ subset_stats_server <-
           eventReactive(
             event_expr(),
             {
-              SCEPlots::get_all_cells(subset()) |> 
+              SCUBA::get_all_cells(subset()) |> 
               length()
             })
         
@@ -282,7 +282,7 @@ subset_stats_server <-
               event_expr(),
               {
                 # Take unique values for DGE groups
-                SCEPlots::unique_values(
+                SCUBA::unique_values(
                   subset(),
                   var = 
                     # Metadata variable to use: use metaclusters or the simple 
@@ -358,7 +358,7 @@ subset_stats_server <-
                   
                 n_cells_tibble <-
                   # Fetch full metadata table, then group by metadata variable
-                  SCEPlots::fetch_metadata(
+                  SCUBA::fetch_metadata(
                     subset(),
                     full_table = TRUE
                     ) |>
@@ -496,7 +496,7 @@ subset_stats_server <-
               renderText({
                 # Display unique values appearing in the subset 
                 # for the category
-                SCEPlots::unique_values(
+                SCUBA::unique_values(
                   subset(),
                   var = category
                   ) |> 

@@ -178,7 +178,7 @@ run_config <-
     # Identify numeric metadata variables
     # Pull full metadata table first, then test the class of each variable
     meta_table <- 
-      SCEPlots::fetch_metadata(
+      SCUBA::fetch_metadata(
         object,
         full_table = TRUE
         )
@@ -201,13 +201,13 @@ run_config <-
     
     # Assays in object
     all_assays <-
-      SCEPlots::assay_names(
+      SCUBA::assay_names(
         object
         )
     
     # Reductions in object
     reductions <- 
-      SCEPlots::reduction_names(
+      SCUBA::reduction_names(
         object
         )
     
@@ -1634,7 +1634,7 @@ run_config <-
           
           # Fetch ADTs in the designated assay (reacts to assay)
           adts <- 
-            SCEPlots::features_in_assay(
+            SCUBA::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -1656,7 +1656,7 @@ run_config <-
         {
           # Fetch features (surface proteins) for the designated ADT assay
           adts <- 
-            SCEPlots::features_in_assay(
+            SCUBA::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -1831,7 +1831,7 @@ run_config <-
           # Reset ADT selection input
           # Get names of all ADTs 
           adts <- 
-            SCEPlots::features_in_assay(
+            SCUBA::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -1900,7 +1900,7 @@ run_config <-
           
           # Update ADT choices to exclude the ADTs currently in the table
           adts <- 
-            SCEPlots::features_in_assay(
+            SCUBA::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -2066,7 +2066,7 @@ run_config <-
               # list of available ADTs, by updating the select input with all
               # ADTs not in the new table
               adts <- 
-                SCEPlots::features_in_assay(
+                SCUBA::features_in_assay(
                   object,
                   assay = ADT_assay()
                   )

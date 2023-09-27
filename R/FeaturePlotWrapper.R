@@ -81,7 +81,7 @@ FeaturePlotSingle<-
     # Handling of NULL values
     # If reduction is NULL, set to the default for the object
     if (is.null(reduction)){
-      reduction <- SCEPlots::default_reduction(object)
+      reduction <- SCUBA::default_reduction(object)
     }
     # If colors is NULL, set to default Seurat gradient for continuous data
     if (is.null(colors)){
@@ -105,12 +105,12 @@ FeaturePlotSingle<-
       )
       colors <- c(color_lower, color_upper)
     }
-  all_cells <- SCEPlots::get_all_cells(object)
+  all_cells <- SCUBA::get_all_cells(object)
   # If a metadata column is defined, define a vector of groups based on the
   # unique values of the column.
   if (!is.null(split_by)){
     groups <- 
-      SCEPlots::unique_values(
+      SCUBA::unique_values(
         object,
         var = split_by
         ) |>  
@@ -135,7 +135,7 @@ FeaturePlotSingle<-
       vars = feature,
       # Slot: will use "data" for Seurat objects and "logcounts" 
       # for SingleCellExperiment objects
-      slot = SCEPlots::default_slot(object)
+      slot = SCUBA::default_slot(object)
     )[,1]
   minimal <- min(feature_data)
   maximal <- max(feature_data)
@@ -145,7 +145,7 @@ FeaturePlotSingle<-
   # coordinates in the current object
   if (is.null(xlim) | is.null(ylim)){
     reduction_coords <-
-      SCEPlots::fetch_reduction(
+      SCUBA::fetch_reduction(
         object,
         reduction = reduction,
         dims = c(1, 2)
@@ -196,7 +196,7 @@ FeaturePlotSingle<-
   if (length(groups) > 1){
     # Fetch metadata table for referencing split_by groups
     meta_table <-
-      SCEPlots::fetch_metadata(
+      SCUBA::fetch_metadata(
         object,
         full_table = TRUE
         )
@@ -209,7 +209,7 @@ FeaturePlotSingle<-
       subset_cells <- all_cells[subset_indx]
       
       p <- 
-        SCEPlots::plot_feature(
+        SCUBA::plot_feature(
           object, 
           features = feature, 
           cells = subset_cells, 
@@ -302,7 +302,7 @@ FeaturePlotSingle<-
     # for the object provided.
     p <- 
       suppressMessages(
-        SCEPlots::plot_feature(
+        SCUBA::plot_feature(
           object, 
           features = feature, 
           reduction = reduction,
@@ -446,7 +446,7 @@ MultiFeatureSimple <-
     # Handling of NULL values
     # If reduction is NULL, set to the default for the object
     if (is.null(reduction)){
-      reduction <- SCEPlots::default_reduction(object)
+      reduction <- SCUBA::default_reduction(object)
     }
     # If colors is NULL, set to default Seurat gradient for continuous data
     if (is.null(colors)){
@@ -484,7 +484,7 @@ MultiFeatureSimple <-
       }
     }
     
-    all_cells <- SCEPlots::get_all_cells(object)
+    all_cells <- SCUBA::get_all_cells(object)
     
     # 1. Build groups ----------------------------------------------------------
     # Groups are features in this case
@@ -511,7 +511,7 @@ MultiFeatureSimple <-
     if (is.null(xlim) | is.null(ylim)){
       # Pull reduction coordinates if either xlim or ylim are NULL
       reduction_coords <-
-        SCEPlots::fetch_reduction(
+        SCUBA::fetch_reduction(
           object,
           reduction = reduction,
           dims = c(1, 2)
@@ -552,7 +552,7 @@ MultiFeatureSimple <-
                 vars = group,
                 # Slot: will use "data" for Seurat objects and "logcounts" 
                 # for SingleCellExperiment objects
-                slot = SCEPlots::default_slot(object)
+                slot = SCUBA::default_slot(object)
                 )[,1]
             # Return minimum value of data
             min(feature_data)
@@ -572,7 +572,7 @@ MultiFeatureSimple <-
                 vars = group,
                 # Slot: will use "data" for Seurat objects and "logcounts" 
                 # for SingleCellExperiment objects
-                slot = SCEPlots::default_slot(object)
+                slot = SCUBA::default_slot(object)
               )[,1]
             # Return minimum value of data
             max(feature_data)
@@ -610,7 +610,7 @@ MultiFeatureSimple <-
       
       # 4.2. Create plot 
       p <- 
-        SCEPlots::plot_feature(
+        SCUBA::plot_feature(
           object, 
           features = group, 
           reduction = reduction,

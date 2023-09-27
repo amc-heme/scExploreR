@@ -242,7 +242,7 @@ threshold_picker_ui <-
 #'
 #' @param id ID to use for module server instance.
 #' @param object a single cell object or a subset. All object types supported 
-#' by SCEPlots may be passed to this module.
+#' by SCUBA may be passed to this module.
 #' @param feature the feature for which thresholds are being chosen.
 #' @param showhide_animation if TRUE, an animation will be used when displaying
 #' or hiding the stats panel.

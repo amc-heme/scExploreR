@@ -181,7 +181,7 @@ shiny_feature <- function(object,
     } else {
       # If a split_by category is defined, use Seurat FeaturePlot function
       feature_plot <-
-        SCEPlots::plot_feature(
+        SCUBA::plot_feature(
           # Object or subset
           object,
           features = features_entered,
@@ -278,7 +278,7 @@ shiny_feature <- function(object,
     
     # Use Seurat::FeaturePlot
     feature_plot <-
-      SCEPlots::plot_feature(
+      SCUBA::plot_feature(
         # Object or subset
         object,
         features = features_entered,

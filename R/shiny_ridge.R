@@ -52,7 +52,7 @@ shiny_ridge <-
     if (group_by == "none"){
       # Pull metadata table, modify, then save to object
       meta_table <-
-        SCEPlots::fetch_metadata(
+        SCUBA::fetch_metadata(
           object,
           full_table = TRUE
           )
@@ -83,7 +83,7 @@ shiny_ridge <-
     if (isTruthy(sort_groups) && group_by != "none"){
       # Pull metadata table, then modify levels in factor for group_by data
       meta_table <- 
-        SCEPlots::fetch_metadata(
+        SCUBA::fetch_metadata(
           object,
           full_table = TRUE
           )
@@ -138,7 +138,7 @@ shiny_ridge <-
     # If there is at least one feature entered, create the ridge plot
     if (length(features_entered) > 0){
       plot <-
-        SCEPlots::plot_ridge(
+        SCUBA::plot_ridge(
           object,
           # cols: uses user-defined categorical palette, 
           # or default palette if not provided

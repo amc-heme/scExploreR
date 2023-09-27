@@ -57,7 +57,7 @@ shiny_vln <-
       
       # Pull metadata table, then modify levels in factor for group_by data
       meta_table <- 
-        SCEPlots::fetch_metadata(
+        SCUBA::fetch_metadata(
           object,
           full_table = TRUE
         )
@@ -73,7 +73,7 @@ shiny_vln <-
             # If sort_groups is "ascending" or "descending", re-factor based on
             # an alphanumeric order
             if (sort_groups %in% c("ascending", "descending")){
-              SCEPlots::unique_values(
+              SCUBA::unique_values(
                 object,
                 var = group_by
                 ) |> 
@@ -122,7 +122,7 @@ shiny_vln <-
           )
       
       vln_plot <- 
-        SCEPlots::plot_violin(
+        SCUBA::plot_violin(
           # Object or subset
           object,
           features = features_entered,

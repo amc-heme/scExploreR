@@ -44,7 +44,7 @@ preview_dimplot_ui <-
         inputId = ns("reduction"),
         label = "Choose Reduction",
         choices = 
-          SCEPlots::reduction_names(
+          SCUBA::reduction_names(
             object
             )
         ),
