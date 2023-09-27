@@ -6,6 +6,17 @@ var timerId = null;
 // if the spinner is hidden and then re-shown in a split second
 var restoreMessage = false;
 
+// Array of IDs for which to show a spinner 
+// IDs for plots for which to display a spinner are added to the array
+// when the plot modules are initialized in Shiny
+const plotIds = [];
+
+Shiny.addCustomMessageHandler(
+    type = "add-plot-spinner-id",
+    function(message){
+        plotIds.push(message);
+    });
+
 // Displays addional text beneath the main message of the spinner
 function showSpinnerMessage(){
     let spinnerMessageElement = $("#plots_preparing_plots_spinner");
@@ -30,50 +41,51 @@ function showPlotsTabSpinner(event){
     // Conditional event id matches, AND spinner does not already exist
     if ((event.target.id.endsWith("plot_output_ui") || 
         event.target.id.endsWith("plot")) &&
-        plotsTabSpinnerShown == false){
-        waiter.show({
-            id: "object_plots-main_panel",
-            html: '<div class="loaderz-02" style="color:#555588;"></div> \
+            plotsTabSpinnerShown == false){
+
+            waiter.show({
+                id: "object_plots-main_panel",
+                html: '<div class="loaderz-02" style="color:#555588;"></div> \
                     <div class="spinner_text" id = "plots_preparing_plots_spinner"> \
                         Preparing plots, please wait... \
                     </div>', 
-            color: '#FFFFFF', 
-            hideOnRender: true, 
-            hideOnError: true, 
-            hideOnSilentError: true, 
-            image: '',
-            fadeOut: false
-            });
+                color: '#FFFFFF', 
+                hideOnRender: true, 
+                hideOnError: true, 
+                hideOnSilentError: true, 
+                image: '',
+                fadeOut: false
+                });
 
-        // Set spinner status to TRUE
-        plotsTabSpinnerShown = true;
+            // Set spinner status to TRUE
+            plotsTabSpinnerShown = true;
 
-        // Spinner container takes up only one screen, and it is 
-        // possible to scroll beneath it. To prevent this, plots 
-        // are hidden while the spinner is displayed.
-        let plots = $('[id$="plot_output_ui"]');
-        plots.css('display', 'none');
+            // Spinner container takes up only one screen, and it is 
+            // possible to scroll beneath it. To prevent this, plots 
+            // are hidden while the spinner is displayed.
+            let plots = $('[id$="plot_output_ui"]');
+            plots.css('display', 'none');
 
-        // If the spinner is still shown after 5 seconds, add text saying
-        // the process might take a while on large datasets
-        messageDuration = 5;
-        // Display the message immediately if a previous spinner with the message was just hidden
-        if (restoreMessage == true){
-            showSpinnerMessage();
-        } else {
-            // Timer ID is stored: if the spinner is hidden before the indicated time has elapsed
-            timerId = 
-                setTimeout(
-                    function() {
-                        // Only create if there is still a spinner and no message has been added
-                        if (plotsTabSpinnerShown == true && plotsTabSpinnerMessage == false){
-                            showSpinnerMessage();
-                        }
-                    }, 
-                    messageDuration * 1000
-                    );
+            // If the spinner is still shown after 5 seconds, add text saying
+            // the process might take a while on large datasets
+            messageDuration = 5;
+            // Display the message immediately if a previous spinner with the message was just hidden
+            if (restoreMessage == true){
+                showSpinnerMessage();
+            } else {
+                // Timer ID is stored: if the spinner is hidden before the indicated time has elapsed
+                timerId = 
+                    setTimeout(
+                        function() {
+                            // Only create if there is still a spinner and no message has been added
+                            if (plotsTabSpinnerShown == true && plotsTabSpinnerMessage == false){
+                                showSpinnerMessage();
+                            }
+                        }, 
+                        messageDuration * 1000
+                        );
+            }
         }
-    }
 };
 
 // Show spinner on response to the invalidation or computation of plots in the plots tab
@@ -89,28 +101,31 @@ $(document).on(
         showPlotsTabSpinner(event);
     });
 
-$(document).on('shiny:idle', function(){
-    // When all computation is complete, hide spinner and show plots
-    let plots = $('[id$="plot_output_ui"]');
-    waiter.hide("object_plots-main_panel");
-    plots.css('display', 'block');
+$(document).on('shiny:value', function(event){
+    if (event.target.name.endsWith("plot_output_ui") || 
+    event.target.name.endsWith("plot")){
+        // When all computation is complete, hide spinner and show plots
+        let plots = $('[id$="plot_output_ui"]');
+        waiter.hide("object_plots-main_panel");
+        plots.css('display', 'block');
 
-    // Set an indicator restore the message on a spinner within 200 milliseconds of
-    // hiding a spinner with the addon message.
-    if (plotsTabSpinnerMessage == true){
-        restoreMessage = true;
-        setTimeout(() => {
-            restoreMessage = false;
-        }, 200);
-    }    
+        // Set an indicator restore the message on a spinner within 200 milliseconds of
+        // hiding a spinner with the addon message.
+        if (plotsTabSpinnerMessage == true){
+            restoreMessage = true;
+            setTimeout(() => {
+                restoreMessage = false;
+            }, 200);
+        }    
 
-    // Set status variables back to false
-    plotsTabSpinnerShown = false;
-    plotsTabSpinnerMessage = false;
+        // Set status variables back to false
+        plotsTabSpinnerShown = false;
+        plotsTabSpinnerMessage = false;
 
-    // If the timer for adding the message to the plot spinner has not yet gone off, cancel it
-    clearTimeout(timerId);
+        // If the timer for adding the message to the plot spinner has not yet gone off, cancel it
+        clearTimeout(timerId);
 
-    // Delete the addon message from above function if it was created
-    $('#plots_preparing_plots_spinner_addon').remove();
+        // Delete the addon message from above function if it was created
+        $('#plots_preparing_plots_spinner_addon').remove();
+        }
 });

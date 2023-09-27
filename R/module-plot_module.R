@@ -807,6 +807,8 @@ plot_module_ui <- function(id,
 #' enter features that apply just to that plot.
 #' @param blend_palettes special palettes used for blended feature plots (
 #' this is the full list of palettes).
+#' @param plots_tab_spinner If TRUE, display a spinner over the plots tab while
+#' the plot is being computed (default is FALSE)
 #'
 #' @noRd
 plot_module_server <- function(id,
@@ -824,7 +826,8 @@ plot_module_server <- function(id,
                                assay_config = NULL,
                                patient_colname = NULL,
                                separate_features_server = FALSE, #Non-reactive
-                               blend_palettes = NULL
+                               blend_palettes = NULL,
+                               plots_tab_spinner = FALSE
                                ){
   moduleServer(id,
                function(input,output,session){
@@ -858,6 +861,15 @@ plot_module_server <- function(id,
                      session = session
                    )
                  }
+                 
+                 # If a spinner is desired over the plots tab while the plot
+                 # re-computes, send the full ID of the plot to JavaScript
+                 # if (plots_tab_spinner == TRUE){
+                 #   session$sendCustomMessage(
+                 #     type = "add-plot-spinner-id",
+                 #     message = ns("plot")
+                 #   )
+                 # }
                  
                  # 1. Manual Dimensions Module Server --------------------------
                  if (manual_dimensions == TRUE){

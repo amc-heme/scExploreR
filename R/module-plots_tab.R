@@ -879,7 +879,8 @@ plots_tab_server <- function(id,
                    metadata_config = metadata_config,
                    # DimPlots use categorical palettes
                    # Pass categorical palette selected by user to the server
-                   palette = selected_categorical_palette
+                   palette = selected_categorical_palette,
+                   plots_tab_spinner = FALSE
                    )
                  
                  ## 2.2. Feature Plot ####
@@ -935,7 +936,8 @@ plots_tab_server <- function(id,
                    valid_features = valid_features,
                    separate_features_server = TRUE,
                    # Use continuous palettes for dot plot
-                   palette = selected_continuous_palette
+                   palette = selected_continuous_palette,
+                   plots_tab_spinner = FALSE
                    )
                  
                  ## 2.5. Scatterplot ####
