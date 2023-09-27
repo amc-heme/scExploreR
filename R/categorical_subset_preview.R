@@ -5,7 +5,7 @@
 #' the valid values of a new metadata variable used in subsetting based on the 
 #' subset filters entered so far.
 #'
-#' @param object a single cell object supported by SCUBA (formerly SCEPlots).
+#' @param object a single cell object supported by SCUBA (formerly SCUBA).
 #' @param filter_list a list of filters generated in the subset_selections module.
 #'
 #' @noRd
@@ -14,7 +14,7 @@ categorical_subset_preview <-
   function(object, filter_list){
     # Pull full metadata table
     meta_table <-
-      SCEPlots::fetch_metadata(
+      SCUBA::fetch_metadata(
         object = object,
         full_table = TRUE
         )

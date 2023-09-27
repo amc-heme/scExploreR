@@ -22,7 +22,7 @@ library(SingleCellExperiment)
 library(shiny)
 library(stats)
 library(shinyWidgets)
-library(SCEPlots)
+library(SCUBA)
 library(scExploreR)
 
 # Libraries for formatting text
@@ -87,7 +87,7 @@ To use string subsetting, the metadata categories and their values **must be ent
 ```{r Data Dictionary, echo = FALSE, message = FALSE, warning = FALSE}
 # Extract metadata table as a variable
 meta_table <- 
-  SCEPlots::fetch_metadata(
+  SCUBA::fetch_metadata(
     object,
     full_table = TRUE
     )

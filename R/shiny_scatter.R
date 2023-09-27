@@ -43,7 +43,7 @@ shiny_scatter <- function(object,
   
   # Plot: uses FeatureScatter
   plot <- 
-    SCEPlots::plot_scatter(
+    SCUBA::plot_scatter(
       object, 
       feature_1 = feature_1,
       feature_2 = feature_2,

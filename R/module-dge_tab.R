@@ -589,7 +589,7 @@ dge_tab_server <- function(id,
                       # must be pulled via an S3 method, edited as a table, and
                       # then saved to the object via another S3 method.
                       meta_table <- 
-                        SCEPlots::fetch_metadata(
+                        SCUBA::fetch_metadata(
                           subset,
                           full_table = TRUE
                         )
@@ -657,7 +657,7 @@ dge_tab_server <- function(id,
                       # must be pulled via an S3 method, edited as a table, and
                       # then saved to the object via another S3 method.
                       meta_table <- 
-                        SCEPlots::fetch_metadata(
+                        SCUBA::fetch_metadata(
                           subset,
                           full_table = TRUE
                           )

@@ -604,7 +604,7 @@ subset_selections_server <- function(id,
           # Determine choices to display for the selected metadata variable
           
           choices <-
-            SCEPlots::unique_values(
+            SCUBA::unique_values(
               object(), 
               var = input$categorical_var
               ) 
@@ -1250,7 +1250,7 @@ subset_selections_server <- function(id,
              # Update selection menu with the values chosen
              # Determine possible choices for the selected variable
              choices <-
-               SCEPlots::unique_values(
+               SCUBA::unique_values(
                  object(), 
                  var = editing_data$var
                 )

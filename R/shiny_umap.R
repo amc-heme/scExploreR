@@ -117,7 +117,7 @@ shiny_umap <-
         )
     
     plot <- 
-      SCEPlots::plot_reduction(
+      SCUBA::plot_reduction(
         # "object" is either the object or the subset, depending on user
         # selections in parent modules
         object = object,

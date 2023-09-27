@@ -34,7 +34,7 @@ options_ui <- function(id,
   if (optcard_type == "metadata"){
     # Get unique values of metadata field for display of summary statistics
     values <- 
-      SCEPlots::unique_values(
+      SCUBA::unique_values(
         object,
         var = card_name
         )
@@ -191,7 +191,7 @@ options_ui <- function(id,
                   id = ns("groups"),
                   unique_values =
                     str_sort(
-                      SCEPlots::unique_values(
+                      SCUBA::unique_values(
                         object = object,
                         var = card_name
                         ),
@@ -339,7 +339,7 @@ options_server <-
                 category_name = card_name,
                 unique_values = 
                   str_sort(
-                    SCEPlots::unique_values(
+                    SCUBA::unique_values(
                       object = object,
                       var = card_name
                       ),

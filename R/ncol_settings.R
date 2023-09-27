@@ -3,7 +3,7 @@
 #' Determines the min and max settings for the ncol slider for DimPlots, feature
 #' plots, and violin plots based on selections made by the user in scExploreR.
 #'
-#' @param object A single cell object (any object class supported by SCEPlots
+#' @param object A single cell object (any object class supported by SCUBA
 #' may be entered).
 #' @param rule The means of calculating ncol limits, depending on the plot type.
 #' This can be either "split_by" (for DimPlots and feature plots), or "features"

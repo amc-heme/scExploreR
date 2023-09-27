@@ -10,7 +10,7 @@
 #' @noRd
 metadata_type <- function(object, meta_var){
   # Get unique values of metadata field for display of summary statistics
-  values <- SCEPlots::unique_values(object, var = meta_var)
+  values <- SCUBA::unique_values(object, var = meta_var)
   
   # Determine type of metadata (class of values)
   class <- class(values)

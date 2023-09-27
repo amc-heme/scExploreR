@@ -25,7 +25,7 @@ run_scExploreR <-
     library(shiny)
     library(Seurat, quietly = TRUE, warn.conflicts = FALSE)
     
-    #library(SCEPlots, quietly = TRUE, warn.conflicts = FALSE)
+    #library(SCUBA, quietly = TRUE, warn.conflicts = FALSE)
     
     # Shiny add-ons 
     library(shinyWidgets, quietly = TRUE, warn.conflicts = FALSE)
@@ -1185,7 +1185,7 @@ run_scExploreR <-
                 # ADT thresholds: add to list if the ADT_threshold assay 
                 # has been created in the object
                 adt_threshold_features = 
-                  if ("adtThreshold" %in% SCEPlots::assay_names(object())){
+                  if ("adtThreshold" %in% SCUBA::assay_names(object())){
                     TRUE
                   } else {
                     FALSE
@@ -1275,7 +1275,7 @@ run_scExploreR <-
               # Use sobj@meta.data[[category]] instead of object()[[category]] 
               # to return a vector (sobj[[category]] returns a dataframe)
               unique_metadata[[meta_var]] <- 
-                SCEPlots::unique_values(
+                SCUBA::unique_values(
                   object = object(), 
                   var = meta_var
                   )
@@ -1326,7 +1326,7 @@ run_scExploreR <-
           } else {
             # Otherwise, get reductions in object, and use the default
             # (UMAP is placed first, if it exists)
-            reductions <- SCEPlots::reduction_names(object()) 
+            reductions <- SCUBA::reduction_names(object()) 
             
             if ("umap" %in% reductions){
               reductions <-
@@ -1363,7 +1363,7 @@ run_scExploreR <-
                   # limits calculation: uses cell embeddings
                   # Fetch coordinates, then determine min/max values
                   reduction_coords <- 
-                    SCEPlots::fetch_reduction(
+                    SCUBA::fetch_reduction(
                       object = object(), 
                       reduction = reduction, 
                       dims = c(1, 2)

@@ -37,7 +37,7 @@ shiny_dot <-
       
       # Pull metadata table, then modify levels in factor for group_by data
       meta_table <- 
-        SCEPlots::fetch_metadata(
+        SCUBA::fetch_metadata(
           object,
           full_table = TRUE
           )
@@ -91,7 +91,7 @@ shiny_dot <-
       
       #Create plot if at least one feature is passed to shiny_dot()
       plot <- 
-        SCEPlots::plot_dot(
+        SCUBA::plot_dot(
           # Seurat object or subset 
           object, 
           features = features_entered,

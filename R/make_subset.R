@@ -108,7 +108,7 @@ make_subset <-
     # Re-level metadata factors to exclude values that are no longer represented
     # Must pull metadata table, edit, then save to object
     meta_table <- 
-      SCEPlots::fetch_metadata(
+      SCUBA::fetch_metadata(
         subset, 
         full_table = TRUE
         )

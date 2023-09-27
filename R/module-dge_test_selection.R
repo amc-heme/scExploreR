@@ -284,7 +284,7 @@ dge_test_selections_server <-
         initial_marker_choices <-
           if (!is.na(initial_group_by) & !is.null(initial_group_by)){
             # Get unique values for the group by variable
-            SCEPlots::unique_values(
+            SCUBA::unique_values(
               object(),
               var = initial_group_by
               ) |> 
@@ -438,7 +438,7 @@ dge_test_selections_server <-
             # group_by_category is NULL
             ignoreNULL = TRUE,
             {
-              SCEPlots::unique_values(
+              SCUBA::unique_values(
                 object(),
                 var = group_by_category() 
                 ) |>

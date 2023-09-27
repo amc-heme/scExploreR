@@ -1,8 +1,8 @@
 Package: scExploreR
 Type: Package
 Title: scExploreR
-Version: 0.7.0
-Author: William Showers, Krysta Engel, Austin Gillen
+Version: 0.9.0
+Author: William Showers, Krysta Engel, Jai Desai, Austin Gillen
 URL: https://github.com/amc-heme/scExploreR
 Maintainer: Heme Informatics Group <heme.informatics@ucdenver.edu>
 Description: Shiny app for scRNA-seq visualization and analysis
@@ -29,6 +29,7 @@ Imports:
     rlang,
     rlog (>= 0.1.0),
     scales,
+    SCUBA,
     Seurat (>= 3.0.0),
     shiny (>= 1.6.1),
     shinycssloaders (>= 1.0.0),
