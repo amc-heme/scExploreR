@@ -3405,7 +3405,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
                          
-                         SCUBA::shiny_stacked_bar(
+                         SCUBA:::shiny_stacked_bar(
                            object = object(),
                            group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
@@ -3447,7 +3447,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
                          
-                         SCUBA::shiny_pie(
+                         SCUBA:::shiny_pie(
                            object = object(),
                            patient_colname = patient_colname(),
                            group_by = plot_selections$group_by(),
