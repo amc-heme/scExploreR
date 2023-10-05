@@ -9,3 +9,8 @@
     padding: 5px 10px;
     margin-bottom: 10px;
 }
+
+/* Keeps picker inputs with long options from extending beyond the sidebar menu */
+.picker-menu-restrict-width div.dropdown-menu .open{
+    max-width: 25vw;
+}

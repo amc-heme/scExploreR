@@ -59,14 +59,17 @@ subset_selections_ui <-
               "button-ghost compact-button show-on-idle half-space-bottom",
             style = "font-size: 0.95em;"
             )
-          ),
+          )
+      ),
+      # Download button goes on next line
+      div(
         downloadButton(
           outputId = ns("download_filters"),
           label = "Download Filters",
           class = 
             "button-ghost compact-button show-on-idle half-space-bottom",
           style = "font-size: 0.95em;"
-          )
+        )
       ),
       hidden(
         # UI for adding/editing a subsetting filter
@@ -109,33 +112,36 @@ subset_selections_ui <-
                 )
               ),
               # Picker input to choose values of metadata variable to include
-              pickerInput(
-                inputId = ns("categorical_values"),
-                label = "Choose Values to Include:",
-                # Choices are variable-dependent and are computed 
-                # in the server function
-                choices = NULL,
-                # selected: nothing selected by default. A placeholder will
-                # appear instead
-                selected = character(0),
-                multiple = TRUE,
-                # Options for pickerInput
-                options = 
-                  list(
-                    # Display number of items selected instead of their names
-                    # when more than 5 values are selected
-                    "selected-text-format" = "count > 5",
-                    # Define max options to show at a time to keep menu
-                    # from being cut off
-                    "size" = 7,
-                    # Add "select all" and "deselect all" buttons
-                    "actions-box" = TRUE,
-                    # Label for "deselect all" button
-                    "deselectAllText" = "Remove filter",
-                    # Define placeholder
-                    "none-selected-text" = "Select values"
+              div(
+                class = "picker-menu-restrict-width",
+                pickerInput(
+                  inputId = ns("categorical_values"),
+                  label = "Choose Values to Include:",
+                  # Choices are variable-dependent and are computed 
+                  # in the server function
+                  choices = NULL,
+                  # selected: nothing selected by default. A placeholder will
+                  # appear instead
+                  selected = character(0),
+                  multiple = TRUE,
+                  # Options for pickerInput
+                  options = 
+                    list(
+                      # Display number of items selected instead of their names
+                      # when more than 3 values are selected
+                      "selected-text-format" = "count > 3",
+                      # Define max options to show at a time to keep menu
+                      # from being cut off
+                      "size" = 7,
+                      # Add "select all" and "deselect all" buttons
+                      "actions-box" = TRUE,
+                      # Label for "deselect all" button
+                      "deselectAllText" = "Remove filter",
+                      # Define placeholder
+                      "none-selected-text" = "Select values"
+                    )
                   )
-              )
+                )
             ),
             # B. Numeric filter UI ####
             div(
