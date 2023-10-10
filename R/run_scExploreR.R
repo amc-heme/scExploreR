@@ -606,18 +606,21 @@ run_scExploreR <-
                  lang = "en",
                  tabPanel(
                    "Plots",
+                   value = "plots",
                    uiOutput(
                      outputId = "plots_dynamic_ui"
                    )
                  ),
                  tabPanel(
                    "Differential Expression",
+                   value = "dge",
                    uiOutput(
                      outputId = "dge_dynamic_ui"
                    )
                  ),
                  tabPanel(
                    "Gene Correlations",
+                   value = "corr",
                    uiOutput(
                      outputId = "corr_dynamic_ui"
                    )
@@ -1457,6 +1460,14 @@ run_scExploreR <-
           config()$other_metadata_options$patient_colname
         })
       
+      ## 2.13. Whether object is a SCE object with HDF5 Storage ####
+      is_HDF5SummarizedExperiment <-
+        reactive({
+          req(config())
+          
+          isTruthy(config()$is_HDF5SummarizedExperiment)
+        })
+      
       # 3. Initialize Modules --------------------------------------------------
       ## 3.1. Dynamic UI ####
       # All UI for modules is dynamic as it depends on the currently 
@@ -1832,8 +1843,43 @@ run_scExploreR <-
           )
         })
       
-      # 6. Callbacks -----------------------------------------------------------
-      ## 6.1. Code to run when the user disconnects ####
+      # 6. Enable/Disable Tabs -------------------------------------------------
+      ## 6.1. DGE Tab, based on object type ####
+      # Disable the DGE tab (for now) if the object is an SCE object with
+      # DelayedArray (HDF5-enabled) matrices
+      observe(
+        label = "Enable/Disable DGE tab, SCE Objects",
+        {
+          # jQuery selectors for the DGE, corr tab navbar buttons
+          dge_tab_button <- "nav [data-value = 'dge']"
+          corr_tab_button <- "nav [data-value = 'corr']"
+          
+          if (isTruthy(is_HDF5SummarizedExperiment())){
+            shinyjs::addClass(
+              selector = dge_tab_button, 
+              class = "navbar-hide" 
+              )
+            
+            shinyjs::addClass(
+              selector = corr_tab_button, 
+              class = "navbar-hide" 
+            )
+          } else {
+            shinyjs::removeClass(
+              selector = dge_tab_button,
+              class = "navbar-hide"
+            )
+            
+            shinyjs::removeClass(
+              selector = corr_tab_button,
+              class = "navbar-hide"
+            )
+          }
+        })
+      
+      
+      # 7. Callbacks -----------------------------------------------------------
+      ## 7.1. Code to run when the user disconnects ####
       onSessionEnded(
         function(){
           log_info(glue("Session {session$token} disconnected."))

@@ -387,3 +387,12 @@ when inside a flexbox container */
 .plot-download-button > div > button.btn:active {
   background-color: var(--mid-blue-active) !important;
 }
+
+/******************************************************************************/
+/* Hide navbar buttons that are not applicable to the current object */
+.navbar-hide,
+.navbar-hide:hover,
+.navbar-hide:focus {
+  display: none !important;
+}
+

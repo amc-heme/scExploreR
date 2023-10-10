@@ -241,7 +241,8 @@ dge_tab_server <- function(id,
                            meta_choices,
                            valid_features,
                            object_trigger,
-                           error_list
+                           error_list,
+                           is_HDF5SummarizedExperiment
                            ){
   moduleServer(
     id,
