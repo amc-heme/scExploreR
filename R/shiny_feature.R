@@ -77,13 +77,11 @@ shiny_feature <- function(object,
                           blend_layout = NULL,
                           reduction = NULL
 ){
-  # validate will keep plot code from running if the subset
-  # is NULL (no cells in subset)
+  # Validate will keep plot code from running if the object is undefined
   validate(
     need(
-      if (is.reactive(object)) object() else object,
-      # No message displayed (a notification is already
-      # displayed) (*was displayed*)
+      object,
+      # A notification is already displayed in the app if the object is NULL
       message = ""
     )
   )
@@ -108,20 +106,14 @@ shiny_feature <- function(object,
     )
   )
   
-  if (!is.null(group_by)){
-    object <-
-      SetIdent(
-        object,
-        value = group_by
-      )
-    }
-  
   if (length(features_entered) == 1){
     # Use FeaturePlotSingle.R for single-feature plots
     FeaturePlotSingle(
       object,
       feature = features_entered,
-      metadata_column = if (split_by != "none") split_by else NULL,
+      split_by = if (split_by != "none") split_by else NULL,
+      # Labels for groups: passed to plot_feature
+      label_by = group_by,
       # Colors: set to colors passed in the palette. 
       # If NULL, Seurat defaults are used
       colors = if (!is.null(palette)) palette,
@@ -142,7 +134,7 @@ shiny_feature <- function(object,
           ylim_orig
         } else NULL,
       show_legend = show_legend,
-      # `...` arguments passed to FeaturePlot
+      # `...` arguments passed to plot_feature
       label = show_label,
       order = order,
       assay_config = assay_config
@@ -159,6 +151,7 @@ shiny_feature <- function(object,
       MultiFeatureSimple(
         object,
         features = features_entered,
+        label_by = group_by,
         # Colors: set to colors passed in the palette. 
         # If NULL, Seurat defaults are used
         colors = if (!is.null(palette)) palette,
@@ -188,11 +181,13 @@ shiny_feature <- function(object,
     } else {
       # If a split_by category is defined, use Seurat FeaturePlot function
       feature_plot <-
-        FeaturePlot(
+        SCUBA::plot_feature(
           # Object or subset
           object,
           features = features_entered,
-          split.by = if (split_by != "none") split_by else NULL,
+          split_by = if (split_by != "none") split_by else NULL,
+          # Use the group_by variable for labeling
+          label_by = group_by,
           # ncol: valid when split.by is not defined
           ncol = ncol,
           # Order: whether to plot cells in order by expression
@@ -283,13 +278,15 @@ shiny_feature <- function(object,
     
     # Use Seurat::FeaturePlot
     feature_plot <-
-      FeaturePlot(
+      SCUBA::plot_feature(
         # Object or subset
         object,
         features = features_entered,
         cols = blend_palette,
         blend = blend,
         split.by = if (split_by != "none") split_by else NULL,
+        # Use the group_by variable for labeling groups
+        label_by = group_by,
         # ncol: valid when split.by is not defined
         ncol = ncol,
         # Order: whether to plot cells in order by expression

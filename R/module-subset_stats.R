@@ -58,7 +58,7 @@ subset_stats_ui <- function(id,
       # Metadata-specific subset statistics
       tags$strong(
         "Subset Used for Test", 
-        class = "x-large inline-block space-top"
+        class = "x-large inline-block half-space-top"
         ),
       
       # Loop through the metadata categories read on app startup
@@ -86,7 +86,7 @@ subset_stats_ui <- function(id,
       div(
         tags$strong(
           "Number of cells in subset: ",
-          class = "space-top inline-block"
+          class = "half-space-top inline-block"
           ),
         textOutput(
           outputId = ns("n_cells"), 
@@ -105,7 +105,7 @@ subset_stats_ui <- function(id,
     # UI for stats in correlations tab
     ui <- tagList(
       tags$strong("Subset Summary and Quality Statistics", 
-                  class = "x-large inline-block space-top"),
+                  class = "x-large inline-block half-space-top"),
       # Restriction criteria
       # Create outputs for each subset menu
       lapply(
@@ -137,7 +137,7 @@ subset_stats_ui <- function(id,
       # Number of cells in subset
       div(
         tags$strong("Number of cells in subset: ",
-                      class = "space-top inline-block"),
+                      class = "half-space-top inline-block"),
         textOutput(outputId = ns("n_cells"), inline = TRUE)
         ),
       
@@ -222,7 +222,8 @@ subset_stats_server <-
           eventReactive(
             event_expr(),
             {
-              length(Cells(subset()))
+              SCUBA::get_all_cells(subset()) |> 
+              length()
             })
         
         # Nonzero reads, proportion of nonzero reads, and percentage
@@ -233,7 +234,17 @@ subset_stats_server <-
             eventReactive(
               event_expr(),
               {
-                sum(subset()@assays$RNA@counts[gene_selected(),] != 0)
+                # Will work as long as the raw counts slot/assay/layer is 
+                # "counts" (case sensitive. This is the default name for Seurat 
+                # and SingleCellExperiment objects)
+                expr_data <-
+                  FetchData(
+                    subset(),
+                    vars = gene_selected(),
+                    slot = "counts"
+                    ) 
+                
+                sum(expr_data > 0)
               })
           
           # Proportion of nonzero reads
@@ -270,22 +281,21 @@ subset_stats_server <-
             eventReactive(
               event_expr(),
               {
-                if (metaclusters_present()){
-                  # When metaclusters are enabled, use two classes from 
-                  # "metacluster" column
-                  subset()@meta.data$metacluster |> 
-                    unique()
-                } else if (thresholding_present()){
-                  # Simple thresholding: use classes from 
-                  # "simple_expr_threshold" column
-                  subset()@meta.data$simple_expr_threshold |> 
-                    unique()
-                } else {
-                  # Standard behavior
-                  # Use unique values for selected group by category in subset
-                  subset()@meta.data[,group_by_category()] |> 
-                    unique()
-                  }
+                # Take unique values for DGE groups
+                SCUBA::unique_values(
+                  subset(),
+                  var = 
+                    # Metadata variable to use: use metaclusters or the simple 
+                    # expression threshold if either of those modes are enabled.
+                    # Otherwise, use the group by variable (category).
+                    if (metaclusters_present()){
+                      "metacluster"
+                      } else if (thresholding_present()){
+                      "simple_expr_threshold"
+                      } else {
+                      group_by_category()
+                      }
+                  )
                 })
           
           # Number of classes of the group_by metadata 
@@ -334,15 +344,6 @@ subset_stats_server <-
                 # the conditional statements passed evaluate to, even if the 
                 # value is not assigned 
                 
-                # grouping_column <-
-                #   case_when(
-                #     # For metaclusters, "metacluster"
-                #     metaclusters_present() ~ "metacluster",
-                #     # For simple thresholding, "simple_expr_threshold"
-                #     thresholding_present() ~ "simple_expr_threshold",
-                #     TRUE ~ group_by_category()
-                #     )
-
                 grouping_column <-
                   if (metaclusters_present()){
                     # For metaclusters, "metacluster"
@@ -354,11 +355,13 @@ subset_stats_server <-
                     # Standard behavior: use group_by category
                     group_by_category()
                   }
-                
                   
                 n_cells_tibble <-
-                  subset()@meta.data |>
-                  # Group by the metadata column identified above
+                  # Fetch full metadata table, then group by metadata variable
+                  SCUBA::fetch_metadata(
+                    subset(),
+                    full_table = TRUE
+                    ) |>
                   group_by(.data[[grouping_column]]) |>
                   # Calculate number of cells per group
                   summarise(n = n())
@@ -493,10 +496,13 @@ subset_stats_server <-
               renderText({
                 # Display unique values appearing in the subset 
                 # for the category
-                unique(subset()@meta.data[[category]]) |> 
+                SCUBA::unique_values(
+                  subset(),
+                  var = category
+                  ) |> 
                   # Sort unique values alphanumerically
                   # May add support for custom order later
-                  str_sort(numeric=TRUE) |> 
+                  str_sort(numeric = TRUE) |> 
                   vector_to_text()
               }) # End renderText
           }

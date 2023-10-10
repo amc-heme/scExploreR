@@ -1,10 +1,11 @@
-#' Number of Classes in Seurat Object
+#' Object metadata: number of unique values
 #'
-#' Returns the number of unique values in the Seurat object, for the specified
-#' metadata column.
+#' Returns the number of unique values in a single cell object, for the specified
+#' metadata variable. Any object type supported by 
+#' \code{\link[SCUBA::unique_values]{SCUBA::unique_values}} may be used.
 #'
-#' @param object A Seurat object.
-#' @param metadata_column Name of a column in the metadata table for the object.
+#' @param object A single cell object.
+#' @param meta_var Name of a metadata variable.
 #'
 #' @return Number of unique classes (integer).
 #' 
@@ -12,9 +13,11 @@
 n_unique <-
   function(
     object,
-    metadata_column
+    meta_var
   ){
-    object@meta.data[[metadata_column]] |> 
-      unique() |> 
+    SCUBA::unique_values(
+      object = object, 
+      var = meta_var
+      ) |> 
       length()
   }

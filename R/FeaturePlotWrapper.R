@@ -5,8 +5,9 @@
 #'
 #' @param object A Seurat object (may be the full object or a subset).
 #' @param feature A feature to plot: only one feature is supported
-#' @param metadata_column Metadata to split plots by. Identical in function to 
+#' @param split_by Metadata to split plots by. Identical in function to 
 #' split.by used for FeaturePlots.
+#' @param label_by Metadata variable to use for labeling groups.
 #' @param colors A vector of colors to use for plotting expression values. Any
 #' number of colors may be specified, and palettes can be passed if they are 
 #' formatted so that they yield a list of color hex codes. If NULL, the default
@@ -14,11 +15,11 @@
 #' @param color_lower This is deprecated, please use `colors` instead.
 #' @param color_upper This is deprecated, please use `colors` instead.
 #' @param ncol The number of columns to use when plotting multiple panels 
-#' (applies when metadata_column is defined)
+#' (applies when split_by is defined)
 #' @param show_title If TRUE, display titles on each panel of the plot.
 #' @param custom_titles A vector of titles to use for each panel of the plot. 
 #' If NULL, default titles will be used (defaults to name of each split by
-#' category if metadata_column is defined, or the name of the feature if no 
+#' category if split_by is defined, or the name of the feature if no 
 #' split.by category is defined). 
 #' @param legend_title 
 #' 
@@ -26,7 +27,7 @@
 #' "right", display feature name vertically on the right-hand side of the plot. 
 #' If "none", do not display a title. If NULL, legend_title is set to "default".
 #' @param super_title If TRUE, display the feature name above all panels. This 
-#' argument is ignored when metadata_column is NULL.
+#' argument is ignored when split_by is NULL.
 #' @param reduction The dimensionality reduction to use for plotting cell 
 #' coordinates.
 #' @param xlim If specified, custom limits to use for the x-axis of the feature 
@@ -42,11 +43,11 @@
 #' startup and upon changing datasets.
 #' @param ... A list of arguments to pass to FeaturePlot
 #'
-#' @examples 
+#' @example
 #' FeaturePlotSingle(
 #'      object = prim.mono, 
 #'      feature = "XIST", 
-#'      metadata_column = "htb", 
+#'      split_by = "htb", 
 #'      pt.size = 0.05, 
 #'      colors = viridisLite::rocket(42, direction = -1),
 #'      custom_titles = c("Normal", "Ven Reistant", "Ven Sensitive"),
@@ -59,7 +60,8 @@ FeaturePlotSingle<-
   function(
     object, 
     feature, 
-    metadata_column = NULL, 
+    split_by = NULL, 
+    label_by = NULL,
     colors = NULL,
     # Deprecated: use colors vector instead
     color_lower = NULL,
@@ -79,7 +81,7 @@ FeaturePlotSingle<-
     # Handling of NULL values
     # If reduction is NULL, set to the default for the object
     if (is.null(reduction)){
-      reduction <- DefaultDimReduc(object)
+      reduction <- SCUBA::default_reduction(object)
     }
     # If colors is NULL, set to default Seurat gradient for continuous data
     if (is.null(colors)){
@@ -103,13 +105,15 @@ FeaturePlotSingle<-
       )
       colors <- c(color_lower, color_upper)
     }
-  all_cells <- colnames(object)
+  all_cells <- SCUBA::get_all_cells(object)
   # If a metadata column is defined, define a vector of groups based on the
   # unique values of the column.
-  if (!is.null(metadata_column)){
+  if (!is.null(split_by)){
     groups <- 
-      object@meta.data[, metadata_column] |> 
-      unique() |> 
+      SCUBA::unique_values(
+        object,
+        var = split_by
+        ) |>  
       # Will plot groups in lexicographical order
       str_sort(numeric = TRUE)
   } else {
@@ -124,30 +128,41 @@ FeaturePlotSingle<-
     ncol <- length(groups)
   }
   
-  # the minimal and maximal of the value to make the legend scale the same.
+  # Pull minimum and maximum expression values to make the legend scale the same.
   feature_data <-
     FetchData(
       object,
       vars = feature,
-      slot = "data"
+      # Slot: will use "data" for Seurat objects and "logcounts" 
+      # for SingleCellExperiment objects
+      slot = SCUBA::default_slot(object)
     )[,1]
   minimal <- min(feature_data)
   maximal <- max(feature_data)
   
-  # the minimal and maximal of the values to make the x and y scales the same.
+  # Pull min/max values to make the x and y scales the same.
   # If limits are not defined (default behavior), use the min and max of cell
   # coordinates in the current object
+  if (is.null(xlim) | is.null(ylim)){
+    reduction_coords <-
+      SCUBA::fetch_reduction(
+        object,
+        reduction = reduction,
+        dims = c(1, 2)
+      )
+    }
+  
   if (is.null(xlim)){
-    xmin <- min(object@reductions[[reduction]]@cell.embeddings[,1])
-    xmax <- max(object@reductions[[reduction]]@cell.embeddings[,1])
+    xmin <- min(reduction_coords[,1])
+    xmax <- max(reduction_coords[,1])
   } else {
     xmin <- xlim[1]
     xmax <- xlim[2]
   }
   
   if (is.null(ylim)){
-    ymin <- min(object@reductions[[reduction]]@cell.embeddings[,2])
-    ymax <- max(object@reductions[[reduction]]@cell.embeddings[,2]) 
+    ymin <- min(reduction_coords[,2])
+    ymax <- max(reduction_coords[,2]) 
   } else {
     ymin <- ylim[1]
     ymax <- ylim[2]
@@ -179,21 +194,29 @@ FeaturePlotSingle<-
   ps <- list()
   
   if (length(groups) > 1){
+    # Fetch metadata table for referencing split_by groups
+    meta_table <-
+      SCUBA::fetch_metadata(
+        object,
+        full_table = TRUE
+        )
+    
     # Feature plot with multiple split.by groups
     for (group in groups) {
       i <- which(groups == group)
       
-      subset_indx <- object@meta.data[, metadata_column] == group
+      subset_indx <- meta_table[, split_by] == group
       subset_cells <- all_cells[subset_indx]
       
       p <- 
-        FeaturePlot(
+        SCUBA::plot_feature(
           object, 
           features = feature, 
           cells = subset_cells, 
           reduction = reduction,
+          label_by = label_by,
           ...
-        ) +
+          ) +
         # List of layers to apply to plot: depends on settings specified
         coord_cartesian(
           xlim = c(xmin, xmax), 
@@ -275,14 +298,15 @@ FeaturePlotSingle<-
     
   } else {
     # Metadata column is not defined:
-    # If only one group or if metadata_column is undefined, create one plot 
+    # If only one group or if split_by is undefined, create one plot 
     # for the object provided.
     p <- 
       suppressMessages(
-        FeaturePlot(
+        SCUBA::plot_feature(
           object, 
           features = feature, 
           reduction = reduction,
+          label_by = label_by,
           ...
         ) +
           coord_cartesian(
@@ -353,6 +377,7 @@ FeaturePlotSingle<-
 #'
 #' @param object A Seurat object (may be the full object or a subset).
 #' @param features A series of features to plot.
+#' @param label_by Metadata variable to use for labeling groups.
 #' @param colors A vector of colors to use for plotting expression values. Any
 #' number of colors may be specified, and palettes can be passed if they are 
 #' formatted so that they yield a list of color hex codes. If NULL, the default
@@ -366,7 +391,7 @@ FeaturePlotSingle<-
 #' dark green, and the  second plot will have an expression gradient of light 
 #' gray to dark blue. 
 #' @param ncol The number of columns to use when plotting multiple panels 
-#' (applies when metadata_column is defined)
+#' (applies when split_by is defined)
 #' @param show_title If TRUE, display titles on each panel of the plot.
 #' @param custom_titles A vector of titles to use for each panel of the plot. 
 #' If NULL, default titles will be used (defaults to name of each feature). 
@@ -401,7 +426,8 @@ MultiFeatureSimple <-
   function(
     object, 
     features, 
-    #metadata_column = NULL, 
+    #split_by = NULL, 
+    label_by = NULL,
     colors = NULL,
     color_by_feature = FALSE,
     ncol = NULL,
@@ -420,7 +446,7 @@ MultiFeatureSimple <-
     # Handling of NULL values
     # If reduction is NULL, set to the default for the object
     if (is.null(reduction)){
-      reduction <- DefaultDimReduc(object)
+      reduction <- SCUBA::default_reduction(object)
     }
     # If colors is NULL, set to default Seurat gradient for continuous data
     if (is.null(colors)){
@@ -458,12 +484,7 @@ MultiFeatureSimple <-
       }
     }
     
-    # Legend title options
-    # if (!legend_title %in% c("default", "right", "none")){
-    #   stop("Invalid value for legend_title. Please enter one of `default`, `right`, or `none`, or input NULL for default behavior.")
-    # }
-    
-    all_cells <- colnames(object)
+    all_cells <- SCUBA::get_all_cells(object)
     
     # 1. Build groups ----------------------------------------------------------
     # Groups are features in this case
@@ -487,17 +508,27 @@ MultiFeatureSimple <-
     # The minimal and maximal of the values to make the x and y scales the same.
     # If limits are not defined (default behavior), use the min and max of cell
     # coordinates in the current object
+    if (is.null(xlim) | is.null(ylim)){
+      # Pull reduction coordinates if either xlim or ylim are NULL
+      reduction_coords <-
+        SCUBA::fetch_reduction(
+          object,
+          reduction = reduction,
+          dims = c(1, 2)
+          )
+        }
+    
     if (is.null(xlim)){
-      xmin <- min(object@reductions[[reduction]]@cell.embeddings[,1])
-      xmax <- max(object@reductions[[reduction]]@cell.embeddings[,1])
+      xmin <- min(reduction_coords[,1])
+      xmax <- max(reduction_coords[,1])
     } else {
       xmin <- xlim[1]
       xmax <- xlim[2]
     }
     
     if (is.null(ylim)){
-      ymin <- min(object@reductions[[reduction]]@cell.embeddings[,2])
-      ymax <- max(object@reductions[[reduction]]@cell.embeddings[,2])
+      ymin <- min(reduction_coords[,2])
+      ymax <- max(reduction_coords[,2])
     } else {
       ymin <- ylim[1]
       ymax <- ylim[2]
@@ -519,8 +550,10 @@ MultiFeatureSimple <-
                 object,
                 # Fetch data for group (feature)
                 vars = group,
-                slot = "data"
-              )[,1]
+                # Slot: will use "data" for Seurat objects and "logcounts" 
+                # for SingleCellExperiment objects
+                slot = SCUBA::default_slot(object)
+                )[,1]
             # Return minimum value of data
             min(feature_data)
           },
@@ -537,7 +570,9 @@ MultiFeatureSimple <-
                 object,
                 # Fetch data for group (feature)
                 vars = group,
-                slot = "data"
+                # Slot: will use "data" for Seurat objects and "logcounts" 
+                # for SingleCellExperiment objects
+                slot = SCUBA::default_slot(object)
               )[,1]
             # Return minimum value of data
             max(feature_data)
@@ -575,12 +610,13 @@ MultiFeatureSimple <-
       
       # 4.2. Create plot 
       p <- 
-        FeaturePlot(
+        SCUBA::plot_feature(
           object, 
           features = group, 
           reduction = reduction,
+          label_by = label_by,
           ...
-        ) +
+          ) +
         # List of layers to apply to plot: depends on settings specified
         coord_cartesian(
           xlim = c(xmin, xmax),

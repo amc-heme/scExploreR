@@ -50,15 +50,29 @@ shiny_ridge <-
     # If group_by is equal to none, add a dummy metadata column that labels
     # all cells with... "All Cells"
     if (group_by == "none"){
-      object@meta.data$allcells <- "All Cells"
+      # Pull metadata table, modify, then save to object
+      meta_table <-
+        SCUBA::fetch_metadata(
+          object,
+          full_table = TRUE
+          )
+      
+      meta_table$allcells <- "All Cells"
+      
+      object <- 
+        scExploreR:::update_object_metadata(
+          object,
+          table = meta_table
+          )
     }
     
     # n_colors (equal to number of groups, determines how palette is applied)
     if (group_by != "none"){
       n_colors <- 
-        object@meta.data[[group_by]] |>
-        unique() |> 
-        length()
+        scExploreR:::n_unique(
+          object,
+          meta_var = group_by
+          )
     } else {
       # Only one group exists when group_by is equal to none
       n_colors <- 1
@@ -67,16 +81,22 @@ shiny_ridge <-
     # Factor/refactor group by metadata, but only if sort_groups is defined,
     # and group by is not "none"
     if (isTruthy(sort_groups) && group_by != "none"){
-      print("refactoring code")
-      object@meta.data[[group_by]] <-
+      # Pull metadata table, then modify levels in factor for group_by data
+      meta_table <- 
+        SCUBA::fetch_metadata(
+          object,
+          full_table = TRUE
+          )
+      
+      meta_table[[group_by]] <-
         # factor() creates a factor if the metadata category is not a factor
         # already, and re-orders a factor if it already exists.
         factor(
-          object@meta.data[[group_by]],
+          meta_table[[group_by]],
           levels = 
             # Levels based on ascending or descending order
             if (sort_groups %in% c("ascending", "descending")){
-              object@meta.data[[group_by]] |> 
+              meta_table[[group_by]] |> 
                 unique() |> 
                 str_sort(
                   numeric = TRUE,
@@ -106,12 +126,19 @@ shiny_ridge <-
                 rev()
             }
         )
+      
+      # Save modified metadata table to object
+      object <- 
+        scExploreR:::update_object_metadata(
+          object,
+          table = meta_table
+        )
     }
     
     # If there is at least one feature entered, create the ridge plot
     if (length(features_entered) > 0){
       plot <-
-        RidgePlot(
+        SCUBA::plot_ridge(
           object,
           # cols: uses user-defined categorical palette, 
           # or default palette if not provided
@@ -123,9 +150,9 @@ shiny_ridge <-
               # Use ggplot2 defaults if palette() is unspecified
               } else NULL, 
           features = features_entered, 
-          group.by = if (group_by == "none") "allcells" else group_by, 
-          # Add toggle for same.y.lims
-          #same.y.lims = same_y_lims
+          group_by = if (group_by == "none") "allcells" else group_by, 
+          # Add toggle for same_y_lims
+          #same_y_lims = same_y_lims
         ) 
       
       # If group_by is "none", remove y-axis labels (which appear redundant
@@ -146,42 +173,6 @@ shiny_ridge <-
       # Additional layers
       layers <-
         c(
-          # # Element A: Toggle legend
-          # list(
-          #   theme(
-          #     legend.position =
-          #       if (show_legend == TRUE) {
-          #         "right"
-          #       } else "none"
-          #     ) 
-          #   ),
-          # # Element B: Disables "identity" label on Y-axis
-          # list(
-          #   theme(
-          #     axis.title.y = element_blank()
-          #     )
-          #   ),
-          # # Element C: Centers title on plot
-          # list(
-          #   theme(
-          #     plot.title = 
-          #       element_text(
-          #         hjust = 0.5
-          #         )
-          #     )
-          #   ),
-          # # Element D: Center X-axis label
-          # if (center_x_axis_title == TRUE){
-          #   list(
-          #     theme(
-          #       axis.title.x = 
-          #         element_text(
-          #           hjust = 0.5
-          #         )
-          #     )
-          #   )
-          # },
-          
           # Elements A-F: arguments called via theme()
           list(
             do.call(
@@ -312,7 +303,10 @@ shiny_ridge <-
                 )
               )
           } else {
-              warning("assay_config must be defined to create human-readable titles")
+              warning(
+                "`assay_config` is not defined. The plot will still render, but 
+                human-readable titles will not be created."
+                )
             }
           }
         }

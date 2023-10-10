@@ -288,16 +288,16 @@ plots_tab_ui <- function(id,
              div(
                id = ns("subset_stats"),
                # Header for subset summary
-               tags$strong(
-                 "Metadata in Displayed Subset",
-                 id = ns("subset_header")
-               ),
+               # tags$strong(
+               #   "Metadata in Displayed Subset",
+               #   id = ns("subset_header")
+               # ),
                # subset_summary module: prints the unique values for each
                # metadata category in the current subset/object
-               subset_summary_ui(
-                 id = ns("subset_summary"),
-                 category_labels = category_labels
-                 )
+               # subset_summary_ui(
+               #   id = ns("subset_summary"),
+               #   category_labels = category_labels
+               #   )
                ), # End subset_stats div
 
              # 1.5.2. Subset selection menus
@@ -312,7 +312,9 @@ plots_tab_ui <- function(id,
              # 1.5.3. Submit button for subset
              actionButton(
                inputId = ns("subset_submit"),
-               label="Apply Subset"
+               label = "Apply Subset",
+               class = "button-ghost center",
+               style = "width: 100%;"
                )
              ) # End subset_panel div
          ), # End 1.5
@@ -1043,6 +1045,7 @@ plots_tab_server <- function(id,
                      object = object,
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config,
+                     assay_config = assay_config,
                      meta_categories = meta_categories,
                      valid_features = valid_features
                      )
@@ -1099,14 +1102,8 @@ plots_tab_server <- function(id,
 
                              # If the user has entered an advanced subsetting
                              # string, log what was entered
-                             log_info("Error in plots tab subsetting.")
-                             if (!is.null(subset_selections$user_string())){
-                               log_info("Advanced subsetting: TRUE.")
-                               log_info("String entered by user:")
-                               log_info(subset_selections$user_string())
-                             } else {
-                               log_info("Advanced subsetting: FALSE.")
-                             }
+                             log_info("Error in plots tab subsetting. Subset filters entered:")
+                             log_info(subset_selections())
 
                              error_handler(
                                session,
@@ -1135,10 +1132,8 @@ plots_tab_server <- function(id,
                                plots_s_sub <-
                                  make_subset(
                                    object(),
-                                   criteria_list =
-                                     subset_selections$selections(),
-                                   user_string =
-                                     subset_selections$user_string()
+                                   filter_list =
+                                     subset_selections()
                                    )
                                }
                              }
@@ -1161,7 +1156,7 @@ plots_tab_server <- function(id,
                    {
                      if (!is.null(subset())){
                        # Error A: Subset Only Contains one Cell
-                       if (length(Cells(subset())) == 1){
+                       if (n_cells(subset()) == 1){
                          showNotification(
                            ui = 
                              icon_notification_ui(

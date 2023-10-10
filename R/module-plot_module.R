@@ -344,7 +344,8 @@ plot_module_ui <- function(id,
       
       ## Refactor groups (dot, violin plots) ####
       if (sort_groups_menu == TRUE){
-        tagList(
+        div(
+          id = ns("sort_groups_menu"),
           selectInput(
             inputId = ns("sort_groups"),
             label = "Order of Groups on plot",
@@ -1207,9 +1208,10 @@ plot_module_server <- function(id,
                                req(plot_selections$split_by())
                                
                                default_titles <-
-                                 object()@meta.data[[
-                                   plot_selections$split_by()]] |> 
-                                 unique() |> 
+                                 SCUBA::unique_values(
+                                   object = object(),
+                                   var = plot_selections$split_by()
+                                   ) |> 
                                  str_sort(numeric = TRUE)
                                
                                return(default_titles)
@@ -2402,15 +2404,13 @@ plot_module_server <- function(id,
                          )
 
                        # Compute number of cells in subset
-                       n_cells_subset <-
-                         object() |>
-                         Cells() |>
-                         length()
+                       n_cells_test <- 
+                         scExploreR:::n_cells(object())
   
                        # Test if the number of cells in the subset differs from
                        # the number of cells in the original object. If this
                        # conditional is TRUE, then the object read is a subset
-                       n_cells_original() != n_cells_subset
+                       n_cells_original() != n_cells_test
                    })
                  
                  # 8. Conditional UI -------------------------------------------
@@ -2756,8 +2756,8 @@ plot_module_server <- function(id,
                      # group by variable
                      refactor_sortable <-
                        eventReactive(
-                         c(object(), 
-                           plot_selections$group_by(),
+                         c(plot_selections$group_by(),
+                           object(),
                            plot_switch()
                            ),
                          {
@@ -2765,6 +2765,14 @@ plot_module_server <- function(id,
                            # variable, but only runs when the group by variable is
                            # defined
                            req(plot_selections$group_by())
+                           
+                           # For ridge plots, the group_by variable can also be 
+                           # "none", which will cause errors. The UI should not 
+                           # compute in this case
+                           if (plot_type == "ridge"){
+                             req(plot_selections$group_by() != "none")
+                           }
+                           
                            # Also only runs when the plot is enabled
                            req(plot_switch())
                            
@@ -2772,7 +2780,11 @@ plot_module_server <- function(id,
                            # Based on unique values or levels of current group by 
                            # category
                            group_by_metadata <- 
-                             object()@meta.data[[plot_selections$group_by()]]
+                             SCUBA::fetch_metadata(
+                               object = object(),
+                               vars = plot_selections$group_by(), 
+                               return_class = "vector"
+                               )
                            
                            # Test if the current group by category is a factor
                            if (is.factor(group_by_metadata)){
@@ -2815,8 +2827,8 @@ plot_module_server <- function(id,
                      # Proportion plots: refactoring affects split by variable
                      refactor_sortable <-
                        eventReactive(
-                         c(object(), 
-                           plot_selections$split_by(),
+                         c(plot_selections$split_by(),
+                           object(),
                            plot_switch()
                            ),
                          {
@@ -2831,7 +2843,11 @@ plot_module_server <- function(id,
                            # Based on unique values or levels of current group by 
                            # category
                            split_by_metadata <- 
-                             object()@meta.data[[plot_selections$split_by()]]
+                             SCUBA::fetch_metadata(
+                               object(),
+                               vars = plot_selections$split_by(),
+                               return_class = "vector"
+                              )
                            
                            # Test if the current group by category is a factor
                            if (is.factor(split_by_metadata)){
@@ -2893,6 +2909,31 @@ plot_module_server <- function(id,
                        }
                      }
                    })
+                   
+                   ### 8.4.3. Special case: Show/hide entire group sorting UI ####
+                   # For ridge plots, the group_by selection may be "none", which
+                   # will result in the plotting of a single group, "All Cells".
+                   # The entire sorting interface is not useful and should be 
+                   # hidden in this case
+                   if (plot_type == "ridge"){
+                     observe({
+                       req(plot_selections$group_by())
+                       
+                       target_id <- "sort_groups_menu"
+                       
+                       if (plot_selections$group_by() == "none"){
+                         hideElement(
+                           id = target_id,
+                           anim = TRUE
+                         )
+                       } else {
+                         showElement(
+                           id = target_id,
+                           anim = TRUE
+                         )
+                       }
+                     })
+                   }
                  }
                  
                  ## 8.5. Render Dynamic UI ####
@@ -3364,7 +3405,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
                          
-                         shiny_stacked_bar(
+                         SCUBA:::shiny_stacked_bar(
                            object = object(),
                            group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
@@ -3406,7 +3447,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
                          
-                         shiny_pie(
+                         SCUBA:::shiny_pie(
                            object = object(),
                            patient_colname = patient_colname(),
                            group_by = plot_selections$group_by(),

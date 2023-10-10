@@ -37,6 +37,31 @@
 }
 
 /******************************************************************************/
+/* Radio Buttons */
+/* CSS for radio button class that combines the ghost and primary styles */
+.btn-radio-primary{
+  background-color: #FFFFFF;
+  color: #000000;
+  border-color: #000000;
+  border-radius: var(--button-border-radius);
+}
+
+.btn-radio-primary:hover{
+  border-color: #333333;
+  background-color: #E8E8E8
+}
+
+.btn-radio-primary.active,
+.btn-radio-primary.focus,
+.btn-radio-primary:focus,
+.btn-radio-primary:active{
+  background-color: var(--mid-blue);
+  color: #FFFFFF;
+  border-color: var(--markdown-blue);
+  border-radius: var(--button-border-radius);
+}
+
+/******************************************************************************/
 /* Icon Buttons */
 /* For buttons that consist solely of a fontawesome icon */
 .icon-button {
@@ -72,6 +97,20 @@
 
 /******************************************************************************/
 /* Additional classes applied to buttons*/
+/* Button-group: creates a vertical stack of buttons, each with the same width */
+.button-group button {
+  width: 100%;
+}
+
+/* Curve the ends of only the first and last button */
+.button-group button.first-button{
+  border-radius: 5px 5px 0px 0px;
+}
+
+.button-group button.last-button{
+  border-radius: 0px 0px 5px 5px;
+}
+
 /* Compact button: decreases margins for better fit */
 .compact-button{
   padding: 5px 7px;
@@ -116,13 +155,21 @@ button.extra-space {
 
  }
 
- /* Round upper left and upper right corners of plot (for visual consistency
-    with the plot options panel beneath the plot) */
+ /* Classes to curve top, bottom, or both of a plot based on whether there are 
+ panels on the top or bottom, or both */
  /* Space between selectors: selects all img elements that are descendents of
     an element with .plot-with-buttons, regardless of position in the
     hierarchy (as opposed to >, which will only select direct descendents) */
- .plot-with-buttons img {
+ .plot-curve-top img {
    border-radius: 8px 8px 0px 0px;
+ }
+
+ .plot-curve-bottom img {
+  border-radius: 0px 0px 8px 8px;
+ }
+
+ .plot-curve-all img {
+  border-radius: 8px;
  }
 
 /* For each button over the plot, position is set to absolute to display over
@@ -139,7 +186,10 @@ button.extra-space {
  .plot-button-panel {
    position: relative;
    width: inherit;
-   height: 25px;
+   /* Allows for proper re-sizing of panel to fit components */
+   display: flex;
+   /* Aligns left-hand and right-hand panels to sides of plot */
+   justify-content: space-between;
    /* Rounds the bottom corners but not the top corners for visual
       continuity with plot window */
    border-radius: 0px 0px 8px 8px;
@@ -149,6 +199,46 @@ button.extra-space {
    padding: 0px 5px;
    margin-bottom: 10px;
  }
+
+ /* For button/indicator panels that display
+    above the plot */
+ .plot-button-panel-top {
+  position: relative;
+  width: inherit;
+  /* Height used to be pre-set; now it is a function of 
+     descendent elemeents. To allow the panel to properly size
+     to accomodate descendants, the overflow: auto clearfix is 
+     added.  */
+  /* height: 25px; */
+  overflow: auto;
+  /* Rounds the bottom corners but not the top corners for visual
+     continuity with plot window */
+  border-radius: 8px 8px 0px 0px;
+  background-color: #BBBBBB55;
+  /* Padding on left and right adds additional space to buttons at the end of
+     the panel */
+  padding: 0px 5px;
+  /* margin-bottom: 10px; */
+}
+
+/* Style for indicator panels in a plot button panel */
+.plot-panel-indicator {
+  background-color: #FFFFFF;
+  border-radius: 6px;
+  padding: 2.5px 5px;
+  margin: 2.5px 2px;
+  font-size: 0.8em;
+  /* Shows an empty window in the event no text is displayed */
+  min-height: 20px;
+  min-width: 75px;
+}
+
+.interactive-plot-instruction {
+  text-align: center;
+  font-weight: bold;
+  /* Displays window when instructions are blank */
+  min-height: 25px;
+}
 
 /* This class is intended for a button in a .plot-button-panel continer created
    using shinyWidgets::dropDownButton */
@@ -161,6 +251,13 @@ button.extra-space {
   outline: none;
   /* Vertically centers buttons in panel and adds space between buttons*/
   margin: 2.5px 5px;
+}
+
+/* Fixes error with dropdown button menus not displaying to the left 
+when inside a flexbox container */
+.flex-dropDownleftFix ul{
+  left: unset !important;
+  right: 0%
 }
 
 /******************************************************************************/
@@ -290,3 +387,12 @@ button.extra-space {
 .plot-download-button > div > button.btn:active {
   background-color: var(--mid-blue-active) !important;
 }
+
+/******************************************************************************/
+/* Hide navbar buttons that are not applicable to the current object */
+.navbar-hide,
+.navbar-hide:hover,
+.navbar-hide:focus {
+  display: none !important;
+}
+
