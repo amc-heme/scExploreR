@@ -992,7 +992,10 @@ run_config <-
             split_by = preview_dimplot_options$split_by(),
             reduction = preview_dimplot_options$reduction(),
             ncol = preview_dimplot_options$ncol(), 
-            show_legend = TRUE,
+            show_legend = 
+              if (!is.null(preview_dimplot_options$legend())){
+                preview_dimplot_options$legend()
+              } else TRUE,
             show_label = 
               if (!is.null(preview_dimplot_options$label())){
                 preview_dimplot_options$label()
