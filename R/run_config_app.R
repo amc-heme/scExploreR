@@ -149,14 +149,27 @@ run_config <-
     # Load object #### 
     # object_path and config_path are specified using run_config
     print("Loading object...")
-    # Use a separate loading function for HDF5 enabled SingleCellExperiment
-    # objects.
-    object <- 
-      if (!is_HDF5SummarizedExperiment == TRUE){
-        readRDS(object_path) 
+    # Separate loading functions are needed for different object types
+    # SCE objects with DelayedArray assays: path is a directory, not a file 
+    if (is_HDF5SummarizedExperiment == TRUE){
+      # Directory is loaded via loadHDF5SummarizedExperiment
+      object <- HDF5Array::loadHDF5SummarizedExperiment(object_path)
+    } else {
+      # All other formats: choose loading function based on extension
+      extension <- tools::file_ext(object_path)
+      
+      if (extension == "rds"){
+        object <- readRDS(object_path)
+      } else if (extension == "h5ad") {
+        object <- anndata::read_h5ad(object_path)
       } else {
-        HDF5Array::loadHDF5SummarizedExperiment(object_path)
+        stop(
+          "Unrecognized file extension (.",
+          extension,
+          "). Currently supported extensions: .rds, and .h5ad.",
+          )
       }
+    }
     
     # Test if the loaded object is of a supported class; if not, return an error
     check_dataset(
@@ -199,17 +212,39 @@ run_config <-
     numeric_cols <- meta_vars[is_numeric]
     non_numeric_cols <- meta_vars[!is_numeric]
     
-    # Assays in object
+    # Assays, reductions in object
     all_assays <-
       SCUBA::assay_names(
         object
-        )
+      )
     
-    # Reductions in object
     reductions <- 
       SCUBA::reduction_names(
         object
-        )
+      )
+    
+    # # inherits is used instead of a method because this code only appears once
+    # if (inherits(object, "AnnDataR6")){
+    #   # Anndata objects: both assays and reductions are stored in obsm, so it
+    #   # is not possible to tell which are assays and which are reductions.
+    #   reductions <- object$obsm_keys()
+    #   # Assays: obsm_keys plus X, the main modality (assay)
+    #   all_assays <- c("X", reductions)
+    #   
+    #   # TODO: add a warning in the config app for these objects
+    # } else {
+    #   # All other object classes: use SCUBA methods to fetch assays, reductions
+    #   all_assays <-
+    #     SCUBA::assay_names(
+    #       object
+    #     )
+    #   
+    #   # Reductions in object
+    #   reductions <- 
+    #     SCUBA::reduction_names(
+    #       object
+    #     )
+    # }
     
     # Main UI and Server Functions ####
     # 1. Tabs in Main UI ####
@@ -432,7 +467,7 @@ run_config <-
                   optcard_type = "assays"
                 )
               }
-            ),
+            )
             
             # Button to activate warning modal (for testing purposes)
             # actionButton(
@@ -825,7 +860,7 @@ run_config <-
           # Append config app version to list that is printed to file 
           `config_version` = config_version,
           # Record class of object
-          `object_class` = class(object),
+          `object_class` = is(object),
           # Record if a SingleCellExperiment object is HDF5 enabled
           `is_HDF5SummarizedExperiment` = is_HDF5SummarizedExperiment
           )
