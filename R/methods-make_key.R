@@ -66,3 +66,15 @@ make_key.SingleCellExperiment <-
     # the SCUBA package.
     paste0(assay, "_")
   }
+
+#' @describeIn make_key Anndata objects
+#' @export
+#' @noRd
+make_key.AnnDataR6 <-
+  function(
+    object,
+    assay
+  ){
+    # As with SingleCellExperiment, add an underscore to the assay name.
+    paste0(assay, "_")
+  }
