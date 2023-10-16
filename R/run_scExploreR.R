@@ -475,19 +475,20 @@ run_scExploreR <-
             error = 
               function(cnd){
                 stop(
-                  "There was an error loading the object at path ",
+                  "There was an error loading the object at path\n",
                   datasets[[data_key]]$object, 
-                  " (loading was attempted via `HDF5Array::loadHDF5SummarizedExperiment`). Please check that the config file for the object 
-                  corresponds to the object. 
-                  \n\n
-                  For HDF5-enabled SingleCellExperiment objects, the object path 
-                  should be set to the folder containing the assays.h5 and the 
-                  se.rds file. This is the same folder that was created when the 
-                  object was saved via `HDF5Array::saveHDF5SummarizedExperiment()`.
-                  \n\n
-                  If this object is not an HDF5-enabled SingleCellExperiment object,
-                  please ensure that is_HDF5SummarizedExperiment is set to `FALSE` 
-                  when run_config_app() is called."
+                  "\nLoading was attempted via `HDF5Array::loadHDF5SummarizedExperiment`.\n",
+                  "Please check that the config file for the object corresponds \n",
+                  "to the object.",
+                  "\n",
+                  "For HDF5-enabled SingleCellExperiment objects, the object\n",
+                  "path should be set to the folder containing the assays.h5 \n",
+                  "and the se.rds file. This is the same folder that was created\n",
+                  "when the object was saved via `HDF5Array::saveHDF5SummarizedExperiment()`\n.",
+                  "\n",
+                  "If this object is not an HDF5-enabled SingleCellExperiment\n",
+                  "object, please ensure that is_HDF5SummarizedExperiment is set\n",
+                  "to `FALSE` when run_config_app() is called."
                   )
               },
             {
@@ -496,44 +497,87 @@ run_scExploreR <-
                 )
             })
       } else {
-        datasets[[data_key]]$object <- 
-          tryCatch(
-            error = 
-              function(cnd){
-                stop(
-                  "There was an error loading the object at path ",
-                  datasets[[data_key]]$object, 
-                  "(loading was attempted via `readRDS()`). Please check that 
-                  the config file for the object corresponds to the object, and 
-                  that the object path points to a .rds file.
-                  \n\n 
-                  If an object is an HDF5-enabled SingleCellExperiment object, 
-                  the config file must specify this. This is done automatically 
-                  for files produced using scExploreR version 0.7.0. and later. 
-                  To update an older config file, call run_config_app() using 
-                  the object and the config file, with `isHDF5SummarizedExperiment` 
-                  set to `TRUE`. Load the config file in the config app, and 
-                  then save the file."
+        # All other object classes: load based on file extension
+        extension <- tools::file_ext(object_path)
+        
+        if (extension == "rds") {
+          datasets[[data_key]]$object <- 
+            tryCatch(
+              error = 
+                function(cnd){
+                  stop(
+                    "There was an error loading the object at path \n",
+                    datasets[[data_key]]$object, 
+                    "\nLoading was attempted via `readRDS()`. Please check that\n",
+                    "the config file for the object corresponds to the object,\n",
+                    "and that the object path points to a .rds file.\n",
+                    "\n",
+                    "If an object is an HDF5-enabled SingleCellExperiment\n",
+                    "object, the config file must specify this. This is done\n", 
+                    "automatically for files produced using scExploreR version\n",
+                    "0.7.0. and later. To update an older config file, call\n",
+                    "run_config_app() using the object and the config file,\n",
+                    "with `isHDF5SummarizedExperiment` set to `TRUE`. Load the\n",
+                    "config file in the config app, and then save the file."
                   )
-              },
-            {
-              # Define path and load object
-              path <- datasets[[data_key]]$object
-              
-              object <- 
-                readRDS(
-                  path
+                },
+              {
+                # Define path and load object
+                path <- datasets[[data_key]]$object
+                
+                object <- 
+                  readRDS(
+                    path
                   )
-              
-              # Check object for valid classes
-              check_dataset(
-                object,
-                path = path
+                
+                # Check object for valid classes
+                check_dataset(
+                  object,
+                  path = path
                 )
-              
-              # Return object from TryCatch statement
-              object
-            })
+                
+                # Return object from TryCatch statement
+                object
+              })
+        } else if (extension == "h5ad") {
+          # .h5ad anndata::read_h5ad
+          datasets[[data_key]]$object <- 
+            tryCatch(
+              error = 
+                function(cnd){
+                  stop(
+                    "There was an error loading the object at path \n",
+                    datasets[[data_key]]$object, 
+                    "\nLoading was attempted via `anndata::read_h5ad()`."
+                  )
+                },
+              {
+                # Define path and load object
+                path <- datasets[[data_key]]$object
+                
+                object <- 
+                  anndata::read_h5ad(
+                    path
+                  )
+                
+                # Check object for valid classes
+                check_dataset(
+                  object,
+                  path = path
+                )
+                
+                # Return object from TryCatch statement
+                object
+              })
+        } else {
+          # Unrecognized file extensions
+          stop(
+            "File extension (.", 
+            extension,
+            "not recognized. Currently supported extensions:\n",
+            ".rds, and .h5ad."
+            )
+        }
       }
       
      
