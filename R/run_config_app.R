@@ -219,37 +219,14 @@ run_config <-
     
     # Assays, reductions in object
     all_assays <-
-      SCUBA::assay_names(
+      scExploreR::assay_names(
         object
       )
     
     reductions <- 
-      SCUBA::reduction_names(
+      scExploreR::reduction_names(
         object
       )
-    
-    # # inherits is used instead of a method because this code only appears once
-    # if (inherits(object, "AnnDataR6")){
-    #   # Anndata objects: both assays and reductions are stored in obsm, so it
-    #   # is not possible to tell which are assays and which are reductions.
-    #   reductions <- object$obsm_keys()
-    #   # Assays: obsm_keys plus X, the main modality (assay)
-    #   all_assays <- c("X", reductions)
-    #   
-    #   # TODO: add a warning in the config app for these objects
-    # } else {
-    #   # All other object classes: use SCUBA methods to fetch assays, reductions
-    #   all_assays <-
-    #     SCUBA::assay_names(
-    #       object
-    #     )
-    #   
-    #   # Reductions in object
-    #   reductions <- 
-    #     SCUBA::reduction_names(
-    #       object
-    #     )
-    # }
     
     # Main UI and Server Functions ####
     # 1. Tabs in Main UI ####
