@@ -25,7 +25,7 @@ config_app_sidebar_panel <-
       # Column width specifications vary based on viewport size and are given using 
       # Bootstrap classes (R Studio creates a "small" window by default on a MacBook
       # pro) https://getbootstrap.com/docs/3.3/css/#responsive-utilities
-      class = paste0("shinysc-sidebar-panel col-sm-6 col-md-5 col-lg-4 ",class),
+      class = paste0("shinysc-sidebar-panel col-sm-8 col-md-7 col-lg-6 ",class),
       # Pass content to sidebarPanel
       tagList(...)
     )
