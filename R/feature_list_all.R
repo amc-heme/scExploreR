@@ -32,7 +32,7 @@ feature_list_all <-
     for (assay_entry in assay_config){
       # Fetch the features included in the object under the current assay
       assay_features <- 
-        SCUBA::features_in_assay(
+        scExploreR:::features_in_assay(
           object,
           assay = assay_entry$assay
           )
@@ -113,7 +113,7 @@ feature_list_all <-
       # Fetch features with threshold information (all features in 
       # "adtThreshold" assay)
       threshold_features <- 
-        SCUBA::features_in_assay(
+        scExploreR:::features_in_assay(
           object,
           assay = "adtThreshold"
           )

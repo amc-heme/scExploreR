@@ -9,8 +9,9 @@
 #' @param ... Currently unused.
 #'
 #' @rdname assay_names
+#' 
+#' @keywords internal
 #'
-#' @export
 assay_names <-
   function(
     object,

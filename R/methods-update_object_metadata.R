@@ -62,3 +62,16 @@ update_object_metadata.SingleCellExperiment <-
     
     object
   }
+
+#' @describeIn update_object_metadata Anndata objects
+#' @export
+#' @noRd
+update_object_metadata.AnnDataR6 <-
+  function(
+    object,
+    table
+  ){
+    object$obs <- table
+    
+    object
+  }

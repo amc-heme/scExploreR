@@ -39,3 +39,4 @@ slot. To use reduction_names with Anndata objects, a vector of reductions
 will return an error if this data is not present in the object.
 
 }}
+\keyword{internal}

@@ -7,8 +7,9 @@
 #' @param ... Currently unused.
 #'
 #' @rdname reduction_names
+#' 
+#' @keywords internal
 #'
-#' @export
 reduction_names <-
   function(
     object,

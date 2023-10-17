@@ -4,6 +4,7 @@
 \alias{features_in_assay}
 \alias{features_in_assay.Seurat}
 \alias{features_in_assay.SingleCellExperiment}
+\alias{features_in_assay.AnnDataR6}
 \title{Get names of all features in an assay/experiment}
 \usage{
 features_in_assay(object, assay, ...)
@@ -11,18 +12,18 @@ features_in_assay(object, assay, ...)
 \method{features_in_assay}{Seurat}(object, assay)
 
 \method{features_in_assay}{SingleCellExperiment}(object, assay)
+
+\method{features_in_assay}{AnnDataR6}(object, assay)
 }
 \arguments{
-\item{object}{a single-cell object. Currently, Seurat and
-SingleCellExperiment objects are supported.}
+\item{object}{a single-cell object.}
 
-\item{assay}{the name of an assay/experiment for which to view features}
+\item{assay}{the name of an assay/modality for which to view features}
 
 \item{...}{Currently unused.}
 }
 \description{
-Returns the names of all features in an assay (Seurat objects) or experiment
-(SingleCellExperiment objects)
+Returns the names of all features in an assay/modality
 }
 \section{Methods (by class)}{
 \itemize{
@@ -30,4 +31,7 @@ Returns the names of all features in an assay (Seurat objects) or experiment
 
 \item \code{features_in_assay(SingleCellExperiment)}: SingleCellExperiment objects
 
+\item \code{features_in_assay(AnnDataR6)}: Anndata objects
+
 }}
+\keyword{internal}

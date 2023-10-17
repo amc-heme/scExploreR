@@ -1,16 +1,15 @@
 #' Get names of all features in an assay/experiment
 #'
-#' Returns the names of all features in an assay (Seurat objects) or experiment
-#' (SingleCellExperiment objects)
+#' Returns the names of all features in an assay/modality
 #'
-#' @param object a single-cell object. Currently, Seurat and
-#' SingleCellExperiment objects are supported.
-#' @param assay the name of an assay/experiment for which to view features
+#' @param object a single-cell object. 
+#' @param assay the name of an assay/modality for which to view features
 #' @param ... Currently unused.
 #'
 #' @rdname features_in_assay
+#' 
+#' @keywords internal
 #'
-#' @export
 features_in_assay <-
   function(
     object,
@@ -72,5 +71,25 @@ features_in_assay.SingleCellExperiment <-
       rownames(object)
     } else {
       rownames(altExps(object)[[assay]])
+    }
+  }
+
+#' @describeIn features_in_assay Anndata objects
+#' @export
+features_in_assay.AnnDataR6 <-
+  function(
+    object,
+    assay
+  ){
+    if (!assay %in% assay_names(object)){
+      stop("Assay", assay, "not found in the current object.")
+    }
+    
+    if (assay == "X"){
+      # For the X matrix, feature names are in var_names
+      object$var_names
+    } else {
+      # Otherwise, use the column names of the matrix stored in obsm
+      colnames(object$obsm[["protein"]])
     }
   }
