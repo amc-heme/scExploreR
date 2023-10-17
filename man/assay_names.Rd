@@ -41,3 +41,4 @@ modalities. To use assay_names with Anndata objects, a vector of assays
 will return an error if this data is not present in the object.
 
 }}
+\keyword{internal}

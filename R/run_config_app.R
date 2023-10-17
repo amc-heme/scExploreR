@@ -219,12 +219,12 @@ run_config <-
     
     # Assays, reductions in object
     all_assays <-
-      scExploreR::assay_names(
+      scExploreR:::assay_names(
         object
       )
     
     reductions <- 
-      scExploreR::reduction_names(
+      scExploreR:::reduction_names(
         object
       )
     
@@ -1654,7 +1654,7 @@ run_config <-
           
           # Fetch ADTs in the designated assay (reacts to assay)
           adts <- 
-            SCUBA::features_in_assay(
+            scExploreR:::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -1676,7 +1676,7 @@ run_config <-
         {
           # Fetch features (surface proteins) for the designated ADT assay
           adts <- 
-            SCUBA::features_in_assay(
+            scExploreR:::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -1851,7 +1851,7 @@ run_config <-
           # Reset ADT selection input
           # Get names of all ADTs 
           adts <- 
-            SCUBA::features_in_assay(
+            scExploreR:::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -1920,7 +1920,7 @@ run_config <-
           
           # Update ADT choices to exclude the ADTs currently in the table
           adts <- 
-            SCUBA::features_in_assay(
+            scExploreR:::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -2086,7 +2086,7 @@ run_config <-
               # list of available ADTs, by updating the select input with all
               # ADTs not in the new table
               adts <- 
-                SCUBA::features_in_assay(
+                scExploreR:::features_in_assay(
                   object,
                   assay = ADT_assay()
                   )

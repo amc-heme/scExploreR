@@ -44,7 +44,7 @@ preview_dimplot_ui <-
         inputId = ns("reduction"),
         label = "Choose Reduction",
         choices = 
-          scExploreR::reduction_names(
+          scExploreR:::reduction_names(
             object
           )
         ),
