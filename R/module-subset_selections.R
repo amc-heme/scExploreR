@@ -504,7 +504,7 @@ subset_selections_server <- function(id,
         label = 
           glue("{id}: restrict filter choices in SingleCellExperiment objects"),
         {
-          if (class(object()) == "SingleCellExperiment"){
+          if (inherits(object(), "SingleCellExperiment")){
             updateSelectInput(
               inputId = "filter_type",
               choices =
