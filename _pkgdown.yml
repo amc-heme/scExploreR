@@ -1,23 +1,26 @@
-url: ~
+url: https://amc-heme.github.io/scExploreR/
 template:
   bootstrap: 5
 home:
   title: scExploreR
-  description: >
-    Welcome to the single cell visualization tool you didn’t know you were looking 
-    for! This app is designed to make exploration of highly complex data sets easy 
-    for anyone, regardless of informatics background.
+  description: |
+    Welcome to the single cell visualization tool you didn’t know you were looking  for! This app is designed to make exploration of highly complex data sets easy  for anyone, regardless of informatics background.
   links:
   - text: Report a Bug
     href: https://github.com/amc-heme/scExploreR/issues
   sidebar:
-    # Removed "citation" for now, will add after preprint is complete 
-    structure: [links, license, community, authors, dev]
-
-navbar:
+    structure:
+    - links
+    - license
+    - community
+    - authors
+    - dev
+navbar: ~
 structure:
-  left: [articles, reference]
-  right: [github]
+  left:
+  - articles
+  - reference
+  right: github
 components:
   articles:
     text: Vignettes
@@ -31,7 +34,8 @@ components:
       href: articles/advanced_subsetting_documentation.html
     - text: Full App Manual
       href: articles/full_documentation.html
-    - text: -------
+    - text: '-------'
     - text: Setting up a Browser
     - text: Config App Documentation
       href: articles/config_documentation.html
+
