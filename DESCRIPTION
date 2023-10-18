@@ -1,7 +1,7 @@
 Package: scExploreR
 Type: Package
 Title: scExploreR
-Version: 0.9.0
+Version: 0.9.1
 Author: William Showers, Krysta Engel, Jai Desai, Austin Gillen
 URL: https://github.com/amc-heme/scExploreR
 Maintainer: Heme Informatics Group <heme.informatics@ucdenver.edu>
