@@ -401,7 +401,7 @@ plot_module_ui <- function(id,
           inputId = ns("legend_options_panel"),
           label = "Legend Options",
           active = TRUE,
-          content_background_color = "#D1D1D1",
+          class = "legend-options-panel",
           checkboxInput(
             inputId = ns("legend"),
             label = "Include Legend",
