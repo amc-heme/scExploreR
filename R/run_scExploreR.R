@@ -1512,6 +1512,22 @@ run_scExploreR <-
           isTruthy(config()$is_HDF5SummarizedExperiment)
         })
       
+      ## 2.14. Object is an anndata/mudata object ####
+      is_anndata <-
+        reactive({
+          req(config())
+          
+          if (!is.null(config()$object_class)){
+            if (config()$object_class %in% c("AnnDataR6")){
+              TRUE
+            } else {
+              FALSE
+            }
+          } else {
+            FALSE
+          }
+        })
+      
       # 3. Initialize Modules --------------------------------------------------
       ## 3.1. Dynamic UI ####
       # All UI for modules is dynamic as it depends on the currently 
@@ -1890,7 +1906,7 @@ run_scExploreR <-
       # 6. Enable/Disable Tabs -------------------------------------------------
       ## 6.1. DGE Tab, based on object type ####
       # Disable the DGE tab (for now) if the object is an SCE object with
-      # DelayedArray (HDF5-enabled) matrices
+      # DelayedArray (HDF5-enabled) matrices, or an anndata object
       observe(
         label = "Enable/Disable DGE tab, SCE Objects",
         {
@@ -1898,7 +1914,9 @@ run_scExploreR <-
           dge_tab_button <- "nav [data-value = 'dge']"
           corr_tab_button <- "nav [data-value = 'corr']"
           
-          if (isTruthy(is_HDF5SummarizedExperiment())){
+          if (isTruthy(is_HDF5SummarizedExperiment())|
+              isTruthy(is_anndata())
+              ){
             shinyjs::addClass(
               selector = dge_tab_button, 
               class = "navbar-hide" 
