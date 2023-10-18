@@ -90,6 +90,6 @@ features_in_assay.AnnDataR6 <-
       object$var_names
     } else {
       # Otherwise, use the column names of the matrix stored in obsm
-      colnames(object$obsm[["protein"]])
+      colnames(object$obsm[[assay]])
     }
   }
