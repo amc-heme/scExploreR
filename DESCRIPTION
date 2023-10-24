@@ -1,8 +1,8 @@
 Package: scExploreR
 Type: Package
 Title: scExploreR
-Version: 0.6.0
-Author: William Showers, Krysta Engel, Austin Gillen
+Version: 0.9.1
+Author: William Showers, Krysta Engel, Jai Desai, Austin Gillen
 URL: https://github.com/amc-heme/scExploreR,
     https://amc-heme.github.io/scExploreR/
 Maintainer: Heme Informatics Group <heme.informatics@ucdenver.edu>
@@ -18,6 +18,7 @@ Imports:
     ggsci,
     glue,
     gridExtra,
+    HDF5Array,
     patchwork,
     presto,
     profvis (>= 0.3.7),
@@ -29,6 +30,7 @@ Imports:
     rlang,
     rlog (>= 0.1.0),
     scales,
+    SCUBA,
     Seurat (>= 3.0.0),
     shiny (>= 1.6.1),
     shinycssloaders (>= 1.0.0),
@@ -43,6 +45,9 @@ Imports:
     viridisLite,
     waiter (>= 0.2.5),
     yaml
+Remotes: 
+    github::immunogenomics/presto,
+    github::amc-heme/SCUBA
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 Depends: 
