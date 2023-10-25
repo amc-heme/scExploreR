@@ -1079,7 +1079,7 @@ plots_tab_server <- function(id,
                      # subset must be created each time a new object is loaded 
                      # to avoid downstream errors. 
                      c(input$subset_submit, object_trigger$depend()),
-                     ignoreNULL=FALSE,
+                     ignoreNULL = FALSE,
                      label = "Plots Subset",
                      {
                        # Display spinner over main window while the
@@ -1102,8 +1102,13 @@ plots_tab_server <- function(id,
 
                              # If the user has entered an advanced subsetting
                              # string, log what was entered
-                             log_info("Error in plots tab subsetting. Subset filters entered:")
-                             log_info(subset_selections())
+                             log_info(
+                                "Error in plots tab subsetting. ",
+                                "Subset filters entered:"
+                                )
+                              scExploreR:::log_subset(
+                                 filter_list = subset_selections()
+                                 )
 
                              error_handler(
                                session,
@@ -1121,22 +1126,28 @@ plots_tab_server <- function(id,
                            # Begin tryCatch code
                            {
                              if (object_init() == TRUE){
-                               # if object_init is TRUE, return the full object
-                               # instead of subsetting. Also set object_init
-                               # back to FALSE.
-                               object_init(FALSE)
-                               plots_s_sub <- object()
+                                # if object_init is TRUE, return the full object
+                                # instead of subsetting. Also set object_init
+                                # back to FALSE.
+                                object_init(FALSE)
+                                
+                                plots_s_sub <- object()
                              } else {
-                               # Use subsetting function with the output of the
-                               # subset selections module as `criteria_list`.
-                               plots_s_sub <-
-                                 make_subset(
-                                   object(),
-                                   filter_list =
-                                     subset_selections()
+                                # Log the subset selected by the user
+                                scExploreR:::log_subset(
+                                   filter_list = subset_selections()
                                    )
-                               }
-                             }
+                                
+                                # Use subsetting function with the output of the
+                                # subset selections module as `criteria_list`.
+                                plots_s_sub <-
+                                   make_subset(
+                                      object(),
+                                      filter_list =
+                                         subset_selections()
+                                      )
+                                }
+                              }
                            )#End tryCatch
 
                        # Hide the spinners
@@ -1190,11 +1201,17 @@ plots_tab_server <- function(id,
                    ignoreNULL = FALSE,
                    label = "Post-subset Memory Query",
                    {
-                     log_session(session)
-                     log_info(
-                       glue("Memory used after creating subset in plots tab: {to_GB(mem_used())}")
-                       )
-                   })
+                      # Do not log memory usage when the object is initiazed
+                      req(object_init() == FALSE)
+                      
+                      log_session(session)
+                      log_info(
+                         glue(
+                            "Memory used after creating subset in plots tab: ", 
+                            "{to_GB(mem_used())}"
+                            )
+                         )
+                      })
                  
                })
   }

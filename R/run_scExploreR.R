@@ -1126,11 +1126,14 @@ run_scExploreR <-
           ignoreNULL = FALSE,
           {
             if (!is.null(input$data_key)){
-              # Record value of input$data_key
+              # Log and record value of input$data_key
+              rlog::log_info(paste0("Dataset selected: ", input$data_key))
+              
               input$data_key
             } else {
               # If input$data_key is NULL, the key has not yet been defined.
               # in this case, use the default data key (the first one)
+              rlog::log_info(paste0("Dataset selected: ", names(datasets)[1]))
               names(datasets)[1]
             }
           })

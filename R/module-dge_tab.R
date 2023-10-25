@@ -544,8 +544,13 @@ dge_tab_server <- function(id,
               tryCatch(
                 error = function(cnd){
                   # Log interpreted subset filters in the event of an error
-                  log_info("Error in dge tab subsetting. Subset filters entered:")
-                  log_info(subset_selections())
+                  log_info(
+                    "Error in dge tab subsetting. ",
+                    "Subset filters entered:"
+                    )
+                  scExploreR:::log_subset(
+                    filter_list = subset_selections()
+                    )
                   
                   # Use error_handler to display notification to user
                   error_handler(
@@ -576,6 +581,11 @@ dge_tab_server <- function(id,
                         object = object(),
                         filter_list = dge_subset_criteria()
                         )
+                    
+                    # Log subset created
+                    scExploreR:::log_subset(
+                      filter_list = subset_selections()
+                    )
                     
                     # Modification of subset
                     # Metacluster Creation (if applicable)
