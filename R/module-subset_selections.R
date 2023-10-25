@@ -512,7 +512,17 @@ subset_selections_server <- function(id,
                   "Categorical Metadata" = "categorical"
                   )
                 )
-              }
+          } else if (inherits(object(), "AnnDataR6")){
+            # Anndata objects, hide advanced filters
+            updateSelectInput(
+              inputId = "filter_type",
+              choices =
+                c("Select Type" = "",
+                  "Categorical Metadata" = "categorical",
+                  "Feature Expression" = "numeric"
+                  )
+              )
+            }
           })
       
       # 6. Categorical filters -------------------------------------------------
