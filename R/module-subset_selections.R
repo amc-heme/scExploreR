@@ -61,7 +61,7 @@ subset_selections_ui <-
             )
           )
       ),
-      # Download button goes on next line
+      # Download button goes on next line (hidden if dev mode is disabled)
       div(
         downloadButton(
           outputId = ns("download_filters"),
@@ -1423,20 +1423,27 @@ subset_selections_server <- function(id,
             module_data$filters
           })
       
-      # TEMP Download Button ----
-      output$download_filters <-
-        downloadHandler(
-          filename = "filters.yaml",
-          content = 
-            function(file){
-              write_yaml(
-                module_data$filters,
-                file = file
-              )
-            }
+      # 17. Download Button (dev mode) ----
+      if (session$userData$dev_mode == TRUE){
+        output$download_filters <-
+          downloadHandler(
+            filename = "filters.yaml",
+            content = 
+              function(file){
+                write_yaml(
+                  module_data$filters,
+                  file = file
+                )
+              }
+          )
+      } else {
+        # If dev mode is off, hide the download button
+        shinyjs::hideElement(
+          id = "download_filters"
         )
+      }
       
-      # 17. Return Selected Filters --------------------------------------------
+      # 18. Return Selected Filters --------------------------------------------
       return(
         selections
         )
