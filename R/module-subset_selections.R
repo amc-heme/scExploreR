@@ -1423,7 +1423,7 @@ subset_selections_server <- function(id,
             module_data$filters
           })
       
-      # 17. Download Button (dev mode) ----
+      # 17. Download Button (dev mode) -----------------------------------------
       if (session$userData$dev_mode == TRUE){
         output$download_filters <-
           downloadHandler(

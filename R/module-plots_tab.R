@@ -106,7 +106,7 @@ plots_tab_ui <- function(id,
            ),# End div
            # Right column
            div(
-             class="two_column",
+             class = "two_column",
              # Switch for violin plot
              materialSwitch(
                inputId = ns("make_vln"),
@@ -1051,34 +1051,13 @@ plots_tab_server <- function(id,
                      )
                  
                  ## 4.2. Make Subset ####
-                 # object_init: a reactive value set to TRUE when a new object 
-                 # is loaded. When object_init is TRUE it signals the 
-                 # plots_subset eventReactive to return the full object
-                 # instead of a subset the first time a new dataset is loaded.
-                 object_init <- reactiveVal(FALSE)
-                 
-                 # Create a reactive trigger 
-                 object_trigger <- makeReactiveTrigger()
-                 
-                 # Set object_init to TRUE when an object is loaded, 
-                 # and trigger the plots_subset eventReactive to run
-                 observeEvent(
-                   # Respond to downstream variable (results in less lag time 
-                   # between removal of loading screen and rendering of DimPlot)
-                   metadata_config(),
-                   label = "Plots: object_init(TRUE)",
-                   {
-                     object_init(TRUE)
-                     object_trigger$trigger()
-                   })
-                 
                  subset <-
                    eventReactive(
                      # Also reacts to the object. All downstream functions in 
                      # the plots tab respond to the "subset" object, so the 
                      # subset must be created each time a new object is loaded 
                      # to avoid downstream errors. 
-                     c(input$subset_submit, object_trigger$depend()),
+                     c(input$subset_submit, object()),
                      ignoreNULL = FALSE,
                      label = "Plots Subset",
                      {
@@ -1118,37 +1097,28 @@ plots_tab_server <- function(id,
                                error_list = error_list$subset_errors
                                )
 
-                             # Return "NULL" for subset when an
+                             # Return NULL for subset when an
                              # error has occurred
                              plots_s_sub <- NULL
                              return(plots_s_sub)
                              }, # End tryCatch error function
                            # Begin tryCatch code
                            {
-                             if (object_init() == TRUE){
-                                # if object_init is TRUE, return the full object
-                                # instead of subsetting. Also set object_init
-                                # back to FALSE.
-                                object_init(FALSE)
-                                
-                                plots_s_sub <- object()
-                             } else {
-                                # Log the subset selected by the user
-                                scExploreR:::log_subset(
-                                   filter_list = subset_selections()
-                                   )
-                                
-                                # Use subsetting function with the output of the
-                                # subset selections module as `criteria_list`.
-                                plots_s_sub <-
-                                   make_subset(
-                                      object(),
-                                      filter_list =
-                                         subset_selections()
-                                      )
-                                }
+                              # Log the subset selected by the user
+                              scExploreR:::log_subset(
+                                 filter_list = subset_selections()
+                              )
+                              
+                              # Use subsetting function with the output of the
+                              # subset selections module as `criteria_list`.
+                              plots_s_sub <-
+                                 make_subset(
+                                    object(),
+                                    filter_list =
+                                       subset_selections()
+                                    )
                               }
-                           )#End tryCatch
+                           ) # End tryCatch
 
                        # Hide the spinners
                        main_spinner$hide()
@@ -1201,16 +1171,26 @@ plots_tab_server <- function(id,
                    ignoreNULL = FALSE,
                    label = "Post-subset Memory Query",
                    {
-                      # Do not log memory usage when the object is initiazed
-                      req(object_init() == FALSE)
-                      
                       log_session(session)
-                      log_info(
-                         glue(
-                            "Memory used after creating subset in plots tab: ", 
-                            "{to_GB(mem_used())}"
+                      # Show message with memory used after either creating a
+                      # subset, or loading the full object.
+                      if (length(subset_selections()) == 0){
+                         # Full object if subset_selections() has a length 
+                         # of zero
+                         log_info(
+                            glue(
+                               "Memory used after loading full object in ",
+                               "plots tab: {to_GB(mem_used())}"
+                               )
                             )
-                         )
+                      } else {
+                         log_info(
+                            glue(
+                               "Memory used after creating subset in plots ",
+                               "tab: {to_GB(mem_used())}"
+                               )
+                            )
+                         }
                       })
                  
                })
