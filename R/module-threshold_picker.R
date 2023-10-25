@@ -352,9 +352,6 @@ threshold_picker_server <-
           label = glue("{id}: Initial Ridge Plot Histogram"),
           ignoreNULL = FALSE,
           {            
-            print("Generate initial plot, reset variables")
-            print("reset_state")
-            print(module_data$reset_state)
             # When drawing a new plot, clear plots and data associated 
             # with the last plot if present
             module_data$initial_ridge_plot <- NULL
@@ -657,8 +654,6 @@ threshold_picker_server <-
           {
             req(module_data$initial_ridge_plot)
             req(feature())
-            
-            print("Draw vertical line(s) on plot")
           
           behavior <-
             scExploreR:::threshold_picker_behavior(
@@ -681,14 +676,6 @@ threshold_picker_server <-
             module_data$ridge_plot <-
               module_data$ridge_plot_with_threshold
           } else if (behavior == "range"){
-            print("Draw lines, range behavior")
-            print("Lower bound")
-            print(module_data$lower_bound)
-            print("Upper bound")
-            print(module_data$upper_bound)
-            print("Selection mode")
-            print(module_data$selection_mode)
-            
             # Draw two lines at the lower and upper bounds of the range
             # (if defined yet)
             plot <-
@@ -761,8 +748,6 @@ threshold_picker_server <-
           observe(
             label = glue("{id}: Update plot with previously defined threshold"),
             {
-              print("Update threshold picker")
-              
               req(set_threshold())
               req(feature())
               if (is.reactive(mode)){
@@ -796,7 +781,6 @@ threshold_picker_server <-
                 # to the new value
                 module_data$threshold_x <- set_threshold()
               } else if (behavior == "range") {
-                print("Update, range behavior")
                 # If a range is passed instead:
                 # Test if the set_threshold value is a two-element vector
                 # warn user if not (errors will likely result)
@@ -975,16 +959,12 @@ threshold_picker_server <-
         # Display interface to edit thresholds
         observe({
           target_id <- "range-edit-dropdown"
-        
-          print("Execute show/hide range menu")
           
           if (isTruthy(module_data$show_range_edit)){
-            print("Show range edit menu")
             showElement(
               id = target_id
             )
           } else {
-            print("Hide range edit menu")
             hideElement(
               id = target_id
             )
