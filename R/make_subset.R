@@ -1,16 +1,30 @@
-#' Subset Creation Function
+#' Subset Creation
 #'
-#' @param object a Seurat object.
+#' @param object a single cell object
 #' @param filter_list a list of filters constructed by the subset_selections module. 
 #'
 #' @return A Seurat object subsetted for the criteria entered.
 #' 
-#' @noRd
-make_subset <- 
+#' @rdname make_subset
+#' 
+#' @keywords internal
+make_subset <-
+  function(
+    object,
+    filter_list
+  ){
+    UseMethod("make_subset")
+  }
+
+#' Method ran for all classes besides anndata
+#'
+#' @describeIn make_subset Seurat, SingleCellExperiment objects
+#' @export
+make_subset.default <- 
   function(
     object, 
     filter_list
-    ){
+  ){
     # If filter_list is empty, return the full object
     if (length(filter_list) == 0){
       return(object)
@@ -69,12 +83,12 @@ make_subset <-
           # Numeric filters: test entry *mode*
           # use < or >, or a group if the value is a range
           if (entry$mode == "less_than"){
-            glue("(`{entry$var}` < {entry$value})")
+            glue("(`{entry$var}` <= {entry$value})")
           } else if (entry$mode == "greater_than"){
-            glue("(`{entry$var}` > {entry$value})")
+            glue("(`{entry$var}` >= {entry$value})")
           } else if (entry$mode == "range"){
-            glue("((`{entry$var}` > {entry$value[1]}) & 
-                  (`{entry$var}` < {entry$value[2]}))")
+            glue("((`{entry$var}` >= {entry$value[1]}) & 
+                  (`{entry$var}` <= {entry$value[2]}))")
           } else {
             error("Unknown mode for numeric filter")
           }
@@ -128,4 +142,88 @@ make_subset <-
     
     # Return subset
     return(subset)
+  }
+
+#' @describeIn make_subset Anndata objects
+#' @export
+make_subset.AnnDataR6 <-
+  function(
+    object,
+    filter_list
+  ){
+    # If filter_list is empty, return the full object
+    if (length(filter_list) == 0){
+      return(object)
+    }
+    
+    # Otherwise, form vector of variables included in filter criteria, 
+    # and pull data on each variable for all cells in the object
+    all_filter_vars <-
+      sapply(
+        filter_list,
+        function(x) x$var
+      )
+    
+    filter_table <-
+      FetchData(
+        object,
+        vars = all_filter_vars
+      )
+    
+    # Test cells satisfying each filter criterion
+    matching_cells <- 
+      lapply(
+        filter_list,
+        function(filter_i, filter_table){
+          if (filter_i$type == "categorical"){
+            # Categorical crtieria
+            # subset using anndata subset format, and return cells matching 
+            # the criteria
+            rownames(
+              filter_table[
+                filter_table[[filter_i$var]] %in% filter_i$value, , drop = FALSE
+                ]
+              )
+          } else if (filter_i$type == "numeric"){
+            # # Numeric criteria
+            # Apply greater-than/less-than logic to expression data/numeric metadata
+            # based on filter mode
+            if (filter_i$mode == "greater_than"){
+              rownames(
+                filter_table[
+                  filter_table[[filter_i$var]] >= filter_i$value, , drop = FALSE
+                  ]
+                )
+            } else if (filter_i$mode == "less_than"){
+              rownames(
+                filter_table[
+                  filter_table[[filter_i$var]] <= filter_i$value, , drop = FALSE
+                  ]
+                )
+            } else if (filter_i$mode == "range"){
+              # Range: expression must be greater than first value, and 
+              # less than second value
+              rownames(
+                filter_table[
+                  filter_table[[filter_i$var]] >= filter_i$value[1] &
+                    filter_table[[filter_i$var]] <= filter_i$value[2], , drop = FALSE]
+              )
+            }
+          }
+        },
+        filter_table
+      )
+
+    # Determine cells for subsetting object
+    # If there is only one filter criterion, unpack the vector of matching cells
+    cells <- 
+      if (length(matching_cells) == 1){
+        matching_cells[[1]]
+      } else {
+        # Multiple criteria: take the intersect of cells matching each critierion
+        Reduce(f = intersect, x = matching_cells)
+      }
+    
+    # Subset Anndata object for cells
+    object[cells,]
   }
