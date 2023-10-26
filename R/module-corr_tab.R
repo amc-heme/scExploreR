@@ -530,7 +530,7 @@ corr_tab_server <- function(id,
                                "Subset filters entered:"
                                )
                              scExploreR:::log_subset(
-                               filter_list = subset_selections()
+                               filter_list = subset_selections$selections()
                              )
                              
                              # Use error_handler to display notification to user
@@ -564,7 +564,7 @@ corr_tab_server <- function(id,
                                
                                # Log subset created
                                scExploreR:::log_subset(
-                                 filter_list = subset_selections()
+                                 filter_list = subset_selections$selections()
                                  )
                                
                                return(

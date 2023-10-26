@@ -1415,13 +1415,13 @@ subset_selections_server <- function(id,
           })
       
       # 16. Form Reactive List From Menu Selections ----------------------------
-      selections <- 
-        reactive(
-          label = glue("{id}: return value for selections"),
-          {
-            # Return filters selected in interface
-            module_data$filters
-          })
+      # selections <- 
+      #   reactive(
+      #     label = glue("{id}: return value for selections"),
+      #     {
+      #       # Return filters selected in interface
+      #       module_data$filters
+      #     })
       
       # 17. Download Button (dev mode) -----------------------------------------
       if (session$userData$dev_mode == TRUE){
@@ -1445,7 +1445,28 @@ subset_selections_server <- function(id,
       
       # 18. Return Selected Filters --------------------------------------------
       return(
-        selections
+        list(
+          `selections` = 
+            reactive(
+              label = glue("{id}: return value for selections"),
+              {
+                # Return filters selected in interface
+                module_data$filters
+              }),
+          # Edit mode: signals upstream modues that a filter is being edited
+          `edit_mode` = 
+            reactive(
+              label = glue("{id}: return information on edit state"),
+              {
+                # TRUE if the filter menu state exists, and is set to "edit"
+                if (isTruthy(module_data$filter_menu_state)){
+                  module_data$filter_menu_state == "edit" |
+                    module_data$filter_menu_state == "add"
+                } else {
+                  FALSE
+                }
+              })
+          )
         )
     }
   )

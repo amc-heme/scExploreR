@@ -36,6 +36,11 @@
   background-color: #E1E1E1
 }
 
+.button-ghost .disabled{
+  background-color: #FFFFFF !important;
+  color: #888888
+}
+
 /******************************************************************************/
 /* Radio Buttons */
 /* CSS for radio button class that combines the ghost and primary styles */

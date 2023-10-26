@@ -1050,6 +1050,36 @@ plots_tab_server <- function(id,
                      valid_features = valid_features
                      )
                  
+                 ## 4.2. Enable/Disable "Apply Subset" button ####
+                 # When filters are being edited, the apply subset button must
+                 # be disabled to prevent the subset from computing while the
+                 # user is still choosing a filter.
+                 observe(
+                    label = glue("{id}: enable/disable apply subset button"),
+                    {
+                       target_id = "subset_submit"
+                       
+                       if (isTruthy(subset_selections$edit_mode())){
+                          shinyjs::disable(
+                             id = target_id
+                             )
+                          
+                          shinyjs::addClass(
+                             id = target_id,
+                             class = "disabled"
+                             )
+                       } else {
+                          shinyjs::enable(
+                             id = target_id
+                             )
+                          
+                          shinyjs::removeClass(
+                             id = target_id,
+                             class = "disabled"
+                             )
+                       }
+                    })
+                 
                  ## 4.2. Make Subset ####
                  subset <-
                    eventReactive(
@@ -1086,7 +1116,7 @@ plots_tab_server <- function(id,
                                 "Subset filters entered:"
                                 )
                               scExploreR:::log_subset(
-                                 filter_list = subset_selections()
+                                 filter_list = subset_selections$selections()
                                  )
 
                              error_handler(
@@ -1106,7 +1136,7 @@ plots_tab_server <- function(id,
                            {
                               # Log the subset selected by the user
                               scExploreR:::log_subset(
-                                 filter_list = subset_selections()
+                                 filter_list = subset_selections$selections()
                               )
                               
                               # Use subsetting function with the output of the
@@ -1115,7 +1145,7 @@ plots_tab_server <- function(id,
                                  make_subset(
                                     object(),
                                     filter_list =
-                                       subset_selections()
+                                       subset_selections$selections()
                                     )
                               }
                            ) # End tryCatch
@@ -1174,9 +1204,8 @@ plots_tab_server <- function(id,
                       log_session(session)
                       # Show message with memory used after either creating a
                       # subset, or loading the full object.
-                      if (length(subset_selections()) == 0){
-                         # Full object if subset_selections() has a length 
-                         # of zero
+                      if (length(subset_selections$selections()) == 0){
+                         # Full object if no subset filters are selected
                          log_info(
                             glue(
                                "Memory used after loading full object in ",
