@@ -810,20 +810,21 @@ plot_module_ui <- function(id,
 #'
 #' @noRd
 plot_module_server <- function(id,
-                               plot_type, #Non-reactive
-                               plot_label, #Non-reactive
-                               object, #Reactive
-                               plot_switch, #Reactive
-                               n_cells_original, #Reactive
-                               features_entered = NULL, #Reactive 
-                               manual_dimensions = TRUE, #Non-reactive
-                               valid_features = NULL, #Reactive
-                               lim_orig = lim_orig, #Reactive
-                               palette = NULL, #Reactive
+                               plot_type,
+                               plot_label,
+                               object,
+                               plot_switch,
+                               n_cells_original,
+                               plots_tab_spinner = NULL,
+                               features_entered = NULL,
+                               manual_dimensions = TRUE,
+                               valid_features = NULL, 
+                               lim_orig = lim_orig, 
+                               palette = NULL, 
                                metadata_config = NULL,
                                assay_config = NULL,
                                patient_colname = NULL,
-                               separate_features_server = FALSE, #Non-reactive
+                               separate_features_server = FALSE,
                                blend_palettes = NULL
                                ){
   moduleServer(id,
@@ -3265,7 +3266,7 @@ plot_module_server <- function(id,
                          })
                    
                  } else if (plot_type == "violin") {
-                   ### 11.2.3 Violin Plot ####
+                   ### 11.2.3. Violin Plot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -3501,8 +3502,39 @@ plot_module_server <- function(id,
                          )
                        }
                      
+                     if (!is.null(plots_tab_spinner)){
+                       # Show spinner over main window in plots tab
+                       plots_tab_spinner$show()
+                       
+                       # Hide container to keep user from being able to scroll
+                       # underneath the spinner
+                       # jQuery selector for the container to hide
+                       plots_tab_container = '[id$="plot_output_ui"]'
+                       
+                       shinyjs::hide(
+                         selector = plots_tab_container
+                       )
+                       
+                       onFlush(
+                         fun = 
+                           function(){
+                             # Hide spinner
+                             plots_tab_spinner$hide()
+                             
+                             # Restore plots tab container
+                             plots_tab_container = '[id$="plot_output_ui"]'
+                             
+                             shinyjs::show(
+                               selector = plots_tab_container
+                               )
+                             },
+                         session = session
+                         )
+                     }
+                     
                      plot()
                    })
+                 
                  
                  # 12. Custom x-axis limits server (ridge plots) ---------------
                  # Server recieves plot in 9. and outputs the chosen limits

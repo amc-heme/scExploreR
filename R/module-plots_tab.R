@@ -616,65 +616,66 @@ plots_tab_ui <- function(id,
        
        # 2. Main panel for displaying plot output ------------------------------
        mainPanel(
+         id = ns("mainpanel"),
          # div added to contain Waiter spinner (forces the spinner to cover 
          # the full main panel)
          div(
-           id = ns("main_panel"), 
-           class = "spinner-container-main",
-           # Panels for plots: display if checkboxes corresponding to 
-           # each type are checked
-           ## 2.1. DimPlot plot panel
-           plot_module_ui(
-             id = ns("dimplot"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.2. Panel for feature plot 
-           # Will be a message or a plot, depending on whether features have 
-           # been entered
-           plot_module_ui(
-             id = ns("feature"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.3. Panel for violin plot
-           # UI displayed will vary based on the entry into the feature text box
-           plot_module_ui(
-             id = ns("violin"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.4. Dot plot panel
-           plot_module_ui(
-             id = ns("dot"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.5. Scatterplot panel
-           plot_module_ui(
-             id = ns("scatter"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.6. Ridge plot panel
-           plot_module_ui(
-             id = ns("ridge"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.7. Cell proportion stacked bar plot panel
-           plot_module_ui(
-             id = ns("proportion"),
-             ui_component = "plot"
-           ),
-           
-           ## 2.8. Metadata pie chart panel
-           if (!is.null(patient_colname())){
-             plot_module_ui(
-               id = ns("pie"),
+            id = ns("main_panel"), 
+            class = "spinner-container-main",
+            # Panels for plots: display if checkboxes corresponding to 
+            # each type are checked
+            ## 2.1. DimPlot plot panel
+            plot_module_ui(
+               id = ns("dimplot"),
                ui_component = "plot"
-             )
-           }
+            ),
+            
+            ## 2.2. Panel for feature plot 
+            # Will be a message or a plot, depending on whether features have 
+            # been entered
+            plot_module_ui(
+               id = ns("feature"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.3. Panel for violin plot
+            # UI displayed will vary based on the entry into the feature text box
+            plot_module_ui(
+               id = ns("violin"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.4. Dot plot panel
+            plot_module_ui(
+               id = ns("dot"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.5. Scatterplot panel
+            plot_module_ui(
+               id = ns("scatter"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.6. Ridge plot panel
+            plot_module_ui(
+               id = ns("ridge"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.7. Cell proportion stacked bar plot panel
+            plot_module_ui(
+               id = ns("proportion"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.8. Metadata pie chart panel
+            if (!is.null(patient_colname())){
+               plot_module_ui(
+                  id = ns("pie"),
+                  ui_component = "plot"
+               )
+            }
          ) # End div
        ) # End 2.
      ) # End sidebarLayout() 
@@ -872,7 +873,8 @@ plots_tab_server <- function(id,
                    # plot_switch: uses the input$make_dimplot switch
                    plot_switch = reactive({input$make_dimplot}),
                    plot_label = "DimPlot",
-                   n_cells_original = n_cells_original, # Non-reactive
+                   n_cells_original = n_cells_original,
+                   plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "dimplot",
                    lim_orig = lim_orig,
@@ -891,6 +893,7 @@ plots_tab_server <- function(id,
                    features_entered = reactive({input$text_features}),
                    plot_label = "Feature Plot",
                    n_cells_original = n_cells_original, 
+                   plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "feature",
                    assay_config = assay_config,
@@ -914,6 +917,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_vln}),
                    plot_label = "Violin Plot",
                    features_entered = reactive({input$text_features}),
+                   plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "violin",
                    assay_config = assay_config,
@@ -928,6 +932,7 @@ plots_tab_server <- function(id,
                    # plot_switch: uses the input$make_dot switch
                    plot_switch = reactive({input$make_dot}),
                    features_entered = reactive({input$text_features}),
+                   plots_tab_spinner = main_spinner,
                    plot_label = "Dot Plot", 
                    # Instructs server on which plot function to run
                    plot_type = "dot",
@@ -944,6 +949,7 @@ plots_tab_server <- function(id,
                    object = subset, 
                    # plot_switch: uses the input$make_scatter switch
                    plot_switch = reactive({input$make_scatter}),
+                   plots_tab_spinner = main_spinner,
                    plot_label = "Scatterplot",
                    # Instructs server on which plot function to run
                    plot_type = "scatter",
@@ -960,6 +966,7 @@ plots_tab_server <- function(id,
                    object = subset, 
                    # plot_switch: uses the input$make_ridge switch
                    plot_switch = reactive({input$make_ridge}),
+                   plots_tab_spinner = main_spinner,
                    plot_label = "Ridge Plot", 
                    # Relies on feature text entry
                    features_entered = reactive({input$text_features}),
@@ -976,6 +983,7 @@ plots_tab_server <- function(id,
                    object = subset,
                    # plot_switch: uses the input$make_proportion switch
                    plot_switch = reactive({input$make_proportion}),
+                   plots_tab_spinner = main_spinner,
                    plot_label = "Cell Proportion Plot", 
                    # Instructs server on which plot function to run
                    plot_type = "proportion",
@@ -994,6 +1002,7 @@ plots_tab_server <- function(id,
                      object = subset,
                      # plot_switch: uses the input$make_pie switch
                      plot_switch = reactive({input$make_pie}),
+                     plots_tab_spinner = main_spinner,
                      plot_label = "Metadata Pie Chart", 
                      # Instructs server on which plot function to run
                      plot_type = "pie",
