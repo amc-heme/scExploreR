@@ -642,6 +642,17 @@ run_scExploreR <-
       useWaiter(),
       # Shinyjs: a Shiny JavaScript extension
       useShinyjs(),
+      # Import custom ShinyJS functions from js folder
+      shinyjs::extendShinyjs(
+        script = 
+          system.file(
+            "js/scExploreR_shinyJS.js", 
+            package = "scExploreR"
+            ),
+        functions = 
+          c("getTopScroll", 
+            "setTopScroll")
+      ),
       # CSS and JS for collapsible panel
       navbarPage("Shiny scExplorer",
                  windowTitle = "Shiny scExplorer",

@@ -832,6 +832,10 @@ plot_module_server <- function(id,
                  # Server namespace function: for dynamic UI
                  ns <- session$ns
                  
+                 # Reactive trigger to restore scroll position of plots tab 
+                 # when the plots tab interface is hidden and shown again
+                 scroll_restore <- scExploreR:::makeReactiveTrigger()
+                 
                  # Return error notification if the plot type is not in the list
                  # of supported types
                  if (!plot_type %in% 
@@ -3511,9 +3515,19 @@ plot_module_server <- function(id,
                        # jQuery selector for the container to hide
                        plots_tab_container = '[id$="plot_output_ui"]'
                        
+                       # Record the scroll position of the plots tab window to
+                       # Restore the position after the window is hidden and 
+                       # re-shown
+                       shinyjs::js$getTopScroll(
+                         # First parameter: target ID to get scroll position
+                         session$userData$plots_tab_main_panel_id,
+                         # Second parameter: input ID to record scroll position
+                         ns("topscroll")
+                         )
+                       
                        shinyjs::hide(
                          selector = plots_tab_container
-                       )
+                         )
                        
                        onFlush(
                          fun = 
@@ -3527,6 +3541,13 @@ plot_module_server <- function(id,
                              shinyjs::show(
                                selector = plots_tab_container
                                )
+                             
+                             # Trigger restore of container scroll position
+                             scroll_restore$trigger()
+                             
+                             # Restore the scroll position recorded when the 
+                             # plots tab container was hidden
+                             
                              },
                          session = session
                          )
@@ -3535,8 +3556,22 @@ plot_module_server <- function(id,
                      plot()
                    })
                  
+                 # 12. Restore scroll position of plot tab window --------------
+                 observe(
+                   label = glue("{id}: Restore scroll position"),
+                   {
+                     scroll_restore$depend()
+                     
+                     shinyjs::js$setTopScroll(
+                       # First parameter: target ID to get scroll position
+                       session$userData$plots_tab_main_panel_id,
+                       # Second parameter: recorded scroll position
+                       # to set
+                       isolate({input$topscroll})
+                     )
+                     })
                  
-                 # 12. Custom x-axis limits server (ridge plots) ---------------
+                 # 13. Custom x-axis limits server (ridge plots) ---------------
                  # Server recieves plot in 9. and outputs the chosen limits
                  if (plot_type == "ridge"){
                    custom_xlim <-
@@ -3546,7 +3581,7 @@ plot_module_server <- function(id,
                      )
                  }
                  
-                 # 13. Download handler ----------------------------------------
+                 # 14. Download handler ----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 

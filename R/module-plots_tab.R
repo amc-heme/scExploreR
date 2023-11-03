@@ -616,7 +616,7 @@ plots_tab_ui <- function(id,
        
        # 2. Main panel for displaying plot output ------------------------------
        mainPanel(
-         id = ns("mainpanel"),
+         id = ns("plots_tab_main"),
          # div added to contain Waiter spinner (forces the spinner to cover 
          # the full main panel)
          div(
@@ -781,6 +781,12 @@ plots_tab_server <- function(id,
                      # Gives manual control of showing/hiding spinner
                      hide_on_render = FALSE
                    )
+                 
+                 # Store the id of the mainPanel element for the plots tab
+                 # (used to reset scroll position when the spinner is shown 
+                 # and then removed)
+                 session$userData$plots_tab_main_panel_id <-
+                    ns("plots_tab_main")
                  
                  # Feature choices for text entry 
                  observeEvent(
