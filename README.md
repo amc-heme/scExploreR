@@ -8,9 +8,10 @@
 
 <br>
 
-* A pre-processed and finalized Seurat object (or a set of finalized objects).
-* Config files for each object (generated with this app), and a browser config YAML. See "Installation and Use" for more information.
-* A server to host the app. This can be any computer with at least 16 GB of RAM, that can be left on and be connected to the internet continuously.
+* A pre-processed and finalized single cell object (or a set of finalized objects). scExploreR can except most common single cell data formats! The currently supported formats are Seurat, SingleCellExperiment, and Anndata.
+* A server to host the app. This can be any computer with at that can be left on and be connected to the internet continuously. RAM requirements vary depending on the object type.
+<!-- Add page on HDF5 storage, and put a link here -->
+  <!-- For Seurat objects, you need at least as much RAM as the size of the object in memory, but the size of the object can be considerably greater than the available RAM for Anndata and SingleCellExperiment objects using HDF5 storage. -->
 
 Some bioinformatics experience is required to install the app and configure each Seurat object, but once set up, the app can be used by anyone.
 
@@ -22,9 +23,9 @@ Some bioinformatics experience is required to install the app and configure each
 ```
 remotes::install_github("amc-heme/scExploreR")
 ```
-2. Process or obtain a finalized Seurat object.
+2. Process or obtain a finalized single cell object.
 
-3. Configure a Seurat object for the browser by using the configuration app provided with the package. For more information on the config app, see the [config app documentation]().
+3. Configure an object for the browser by using the configuration app provided with the package. For more information on the config app, see the [config app documentation]().
 ```
 scExploreR::run_config(
   object_path = "path_to_your_seurat_object.rds",
@@ -33,7 +34,7 @@ scExploreR::run_config(
   )
 ```
 
-4. To set up a browser for others to use, create a browser config YAML file (If you are using the browser locally for your own use, skip to step 4). The file will contain a list of datasets with the path to the Seurat objects and config files for each, along with browser specific settings. See [browser config setup]() for more info.
+4. To set up a browser for others to use, create a browser config YAML file (If you are using the browser locally for your own use, skip to step 4). The file will contain a list of datasets with the path to the objects and config files for each, along with browser specific settings. See [browser config setup]() for more info.
 
 5. Run scExploreR. There are multiple ways to do this: 
 
@@ -73,7 +74,6 @@ scExploreR::run_config(
 <br>
 -->
 
-* A more advanced version of this app will not only accept Seurat objets, but also Scanpy. 
 * Additional analyses such as GSEA will be added in the future
 * Explicit support for single cell data besides CITE-seq will be added.
 
