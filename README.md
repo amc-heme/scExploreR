@@ -6,16 +6,12 @@
 
 ## Requirements
 
-<br>
-
 * A pre-processed and finalized single cell object (or a set of finalized objects). scExploreR can except most common single cell data formats! The currently supported formats are Seurat, SingleCellExperiment, and Anndata.
 * A server to host the app. This can be any computer with at that can be left on and be connected to the internet continuously. RAM requirements vary depending on the object type.
 <!-- Add page on HDF5 storage, and put a link here -->
   <!-- For Seurat objects, you need at least as much RAM as the size of the object in memory, but the size of the object can be considerably greater than the available RAM for Anndata and SingleCellExperiment objects using HDF5 storage. -->
 
 Some bioinformatics experience is required to install the app and configure each Seurat object, but once set up, the app can be used by anyone.
-
-<br>
 
 ## Installation and Use
 
