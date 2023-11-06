@@ -61,7 +61,7 @@ subset_selections_ui <-
             )
           )
       ),
-      # Download button goes on next line
+      # Download button goes on next line (hidden if dev mode is disabled)
       div(
         downloadButton(
           outputId = ns("download_filters"),
@@ -504,7 +504,7 @@ subset_selections_server <- function(id,
         label = 
           glue("{id}: restrict filter choices in SingleCellExperiment objects"),
         {
-          if (class(object()) == "SingleCellExperiment"){
+          if (inherits(object(), "SingleCellExperiment")){
             updateSelectInput(
               inputId = "filter_type",
               choices =
@@ -512,7 +512,17 @@ subset_selections_server <- function(id,
                   "Categorical Metadata" = "categorical"
                   )
                 )
-              }
+          } else if (inherits(object(), "AnnDataR6")){
+            # Anndata objects, hide advanced filters
+            updateSelectInput(
+              inputId = "filter_type",
+              choices =
+                c("Select Type" = "",
+                  "Categorical Metadata" = "categorical",
+                  "Feature Expression" = "numeric"
+                  )
+              )
+            }
           })
       
       # 6. Categorical filters -------------------------------------------------
@@ -1405,30 +1415,58 @@ subset_selections_server <- function(id,
           })
       
       # 16. Form Reactive List From Menu Selections ----------------------------
-      selections <- 
-        reactive(
-          label = glue("{id}: return value for selections"),
-          {
-            # Return filters selected in interface
-            module_data$filters
-          })
+      # selections <- 
+      #   reactive(
+      #     label = glue("{id}: return value for selections"),
+      #     {
+      #       # Return filters selected in interface
+      #       module_data$filters
+      #     })
       
-      # TEMP Download Button ----
-      output$download_filters <-
-        downloadHandler(
-          filename = "filters.yaml",
-          content = 
-            function(file){
-              write_yaml(
-                module_data$filters,
-                file = file
-              )
-            }
+      # 17. Download Button (dev mode) -----------------------------------------
+      if (session$userData$dev_mode == TRUE){
+        output$download_filters <-
+          downloadHandler(
+            filename = "filters.yaml",
+            content = 
+              function(file){
+                write_yaml(
+                  module_data$filters,
+                  file = file
+                )
+              }
+          )
+      } else {
+        # If dev mode is off, hide the download button
+        shinyjs::hideElement(
+          id = "download_filters"
         )
+      }
       
-      # 17. Return Selected Filters --------------------------------------------
+      # 18. Return Selected Filters --------------------------------------------
       return(
-        selections
+        list(
+          `selections` = 
+            reactive(
+              label = glue("{id}: return value for selections"),
+              {
+                # Return filters selected in interface
+                module_data$filters
+              }),
+          # Edit mode: signals upstream modues that a filter is being edited
+          `edit_mode` = 
+            reactive(
+              label = glue("{id}: return information on edit state"),
+              {
+                # TRUE if the filter menu state exists, and is set to "edit"
+                if (isTruthy(module_data$filter_menu_state)){
+                  module_data$filter_menu_state == "edit" |
+                    module_data$filter_menu_state == "add"
+                } else {
+                  FALSE
+                }
+              })
+          )
         )
     }
   )

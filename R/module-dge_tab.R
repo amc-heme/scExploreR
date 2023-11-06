@@ -465,7 +465,7 @@ dge_tab_server <- function(id,
               # test selections do not influence the subset. Only
               # the subset selections are used. There is also no 
               # group by category.
-              subset_criteria <- subset_selections()
+              subset_criteria <- subset_selections$selections()
             } else {
               # Standard behavior 
               
@@ -485,7 +485,7 @@ dge_tab_server <- function(id,
               # Fetch subset selections
               # Must unpack from reactive to avoid modifying the
               # reactive with test_selections data
-              subset_criteria <- subset_selections()
+              subset_criteria <- subset_selections$selections()
               # Add group by metadata category with 
               # classes/groups to subset instructions
               subset_criteria[[length(subset_criteria) + 1]] <- 
@@ -544,8 +544,13 @@ dge_tab_server <- function(id,
               tryCatch(
                 error = function(cnd){
                   # Log interpreted subset filters in the event of an error
-                  log_info("Error in dge tab subsetting. Subset filters entered:")
-                  log_info(subset_selections())
+                  log_info(
+                    "Error in dge tab subsetting. ",
+                    "Subset filters entered:"
+                    )
+                  scExploreR:::log_subset(
+                    filter_list = subset_selections$selections()
+                    )
                   
                   # Use error_handler to display notification to user
                   error_handler(
@@ -576,6 +581,11 @@ dge_tab_server <- function(id,
                         object = object(),
                         filter_list = dge_subset_criteria()
                         )
+                    
+                    # Log subset created
+                    scExploreR:::log_subset(
+                      filter_list = subset_selections$selections()
+                    )
                     
                     # Modification of subset
                     # Metacluster Creation (if applicable)
@@ -1103,20 +1113,6 @@ dge_tab_server <- function(id,
             dge_umap()
             })
           )
-      
-      #During development: render outputs of reactive variables in tab
-      # output$test_selection_output <- renderPrint({
-      #   test_selections()
-      # })
-      # output$subset_selection_output <- renderPrint({
-      #   subset_selections()
-      # })
-      # output$subset_info_output <- renderPrint({
-      #   subset()
-      # })
-      # output$subset_stats_output<- renderPrint({
-      #   subset_stats()
-      # })
       
       # 5. Download Handler for DGE Table --------------------------------------
       output$download_table <- 

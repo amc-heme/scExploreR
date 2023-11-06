@@ -1,21 +1,7 @@
 /* Plots tab-specific CSS */
 
-/* Custom title menu */
-/* A search button is added to the text input for choosing a custom title:
-   this button is not desired but must be added for the update function for
-   this input to work. The button will be hidden with CSS so it is visible
-   to shiny, but not to the user. */
-/* Selector: elements containing the id below (allows for application of
-   style to multiple menus)*/
-/* Search button for custom title input */
-/* [id*="custom_title_search"]{
-  display: none !important;
-} */
-
-/* Reset button for custom title input */
-/* [id*="custom_title_reset"]{
-  height: 30px;
-  width: 30px;
-  border-radius: 50% !important;
-  padding: 0px;
-} */
+/* Legend options collapsible panel in plots tab */
+/* Use a slightly darker color for the background */
+.legend-options-panel{
+  background-color: #D1D1D1;
+}

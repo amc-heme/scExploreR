@@ -44,14 +44,21 @@ preview_dimplot_ui <-
         inputId = ns("reduction"),
         label = "Choose Reduction",
         choices = 
-          SCUBA::reduction_names(
+          scExploreR:::reduction_names(
             object
-            )
+          )
         ),
       # Label groups
       checkboxInput(
         inputId = ns("label"),
         label = "Label Groups",
+        # Default value is TRUE
+        value = TRUE
+        ),
+      # Include legend
+      checkboxInput(
+        inputId = ns("legend"),
+        label = "Show Legend",
         # Default value is TRUE
         value = TRUE
         ),
@@ -185,6 +192,14 @@ preview_dimplot_server <-
                     value = preview_plot_settings$label
                   )
                 }
+                
+                if (!is.null(preview_plot_settings$legend)){
+                  updateCheckboxInput(
+                    session = session,
+                    inputId = "legend",
+                    value = preview_plot_settings$legend
+                  )
+                }
               }
             }
         })
@@ -195,7 +210,8 @@ preview_dimplot_server <-
           `split_by` = reactive({input$split_by}),
           `reduction` = reactive({input$reduction}),
           `ncol` = reactive({input$ncol}),
-          `label` = reactive({input$label})
+          `label` = reactive({input$label}),
+          `legend` = reactive({input$legend})
           )
         })
 }

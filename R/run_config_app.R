@@ -149,14 +149,32 @@ run_config <-
     # Load object #### 
     # object_path and config_path are specified using run_config
     print("Loading object...")
-    # Use a separate loading function for HDF5 enabled SingleCellExperiment
-    # objects.
-    object <- 
-      if (!is_HDF5SummarizedExperiment == TRUE){
-        readRDS(object_path) 
+    # Separate loading functions are needed for different object types
+    # SCE objects with DelayedArray assays: path is a directory, not a file 
+    if (is_HDF5SummarizedExperiment == TRUE){
+      # Directory is loaded via loadHDF5SummarizedExperiment
+      object <- HDF5Array::loadHDF5SummarizedExperiment(object_path)
+    } else {
+      # All other formats: choose loading function based on extension
+      extension <- tools::file_ext(object_path)
+      
+      if (extension == "rds"){
+        object <- readRDS(object_path)
+      } else if (extension == "h5ad") {
+        # Reticulate should not be loaded unless anndata objects are used
+        # (so users that don't have anndata objects won't need to install it
+        # and set up a Python environment)
+        library(reticulate)
+        library(anndata)
+        object <- anndata::read_h5ad(object_path)
       } else {
-        HDF5Array::loadHDF5SummarizedExperiment(object_path)
+        stop(
+          "Unrecognized file extension (.",
+          extension,
+          "). Currently supported extensions: .rds, and .h5ad.",
+          )
       }
+    }
     
     # Test if the loaded object is of a supported class; if not, return an error
     check_dataset(
@@ -199,17 +217,16 @@ run_config <-
     numeric_cols <- meta_vars[is_numeric]
     non_numeric_cols <- meta_vars[!is_numeric]
     
-    # Assays in object
+    # Assays, reductions in object
     all_assays <-
-      SCUBA::assay_names(
+      scExploreR:::assay_names(
         object
-        )
+      )
     
-    # Reductions in object
     reductions <- 
-      SCUBA::reduction_names(
+      scExploreR:::reduction_names(
         object
-        )
+      )
     
     # Main UI and Server Functions ####
     # 1. Tabs in Main UI ####
@@ -432,7 +449,7 @@ run_config <-
                   optcard_type = "assays"
                 )
               }
-            ),
+            )
             
             # Button to activate warning modal (for testing purposes)
             # actionButton(
@@ -825,7 +842,7 @@ run_config <-
           # Append config app version to list that is printed to file 
           `config_version` = config_version,
           # Record class of object
-          `object_class` = class(object),
+          `object_class` = is(object),
           # Record if a SingleCellExperiment object is HDF5 enabled
           `is_HDF5SummarizedExperiment` = is_HDF5SummarizedExperiment
           )
@@ -957,7 +974,10 @@ run_config <-
             split_by = preview_dimplot_options$split_by(),
             reduction = preview_dimplot_options$reduction(),
             ncol = preview_dimplot_options$ncol(), 
-            show_legend = TRUE,
+            show_legend = 
+              if (!is.null(preview_dimplot_options$legend())){
+                preview_dimplot_options$legend()
+              } else TRUE,
             show_label = 
               if (!is.null(preview_dimplot_options$label())){
                 preview_dimplot_options$label()
@@ -1634,7 +1654,7 @@ run_config <-
           
           # Fetch ADTs in the designated assay (reacts to assay)
           adts <- 
-            SCUBA::features_in_assay(
+            scExploreR:::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -1656,7 +1676,7 @@ run_config <-
         {
           # Fetch features (surface proteins) for the designated ADT assay
           adts <- 
-            SCUBA::features_in_assay(
+            scExploreR:::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -1831,7 +1851,7 @@ run_config <-
           # Reset ADT selection input
           # Get names of all ADTs 
           adts <- 
-            SCUBA::features_in_assay(
+            scExploreR:::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -1900,7 +1920,7 @@ run_config <-
           
           # Update ADT choices to exclude the ADTs currently in the table
           adts <- 
-            SCUBA::features_in_assay(
+            scExploreR:::features_in_assay(
               object,
               assay = ADT_assay()
               )
@@ -2066,7 +2086,7 @@ run_config <-
               # list of available ADTs, by updating the select input with all
               # ADTs not in the new table
               adts <- 
-                SCUBA::features_in_assay(
+                scExploreR:::features_in_assay(
                   object,
                   assay = ADT_assay()
                   )

@@ -525,16 +525,13 @@ corr_tab_server <- function(id,
                            error = function(cnd){
                              # If the user has entered an advanced subsetting
                              # string, log what was entered
-                             log_info("Error in corr tab subsetting.")
-                             if (
-                               !is.null(subset_selections$user_string())
-                             ){
-                               log_info("Advanced subsetting: TRUE.")
-                               log_info("String entered by user:")
-                               log_info(subset_selections$user_string())
-                             } else {
-                               log_info("Advanced subsetting: FALSE.")
-                             }
+                             log_info(
+                               "Error in corr tab subsetting. ",
+                               "Subset filters entered:"
+                               )
+                             scExploreR:::log_subset(
+                               filter_list = subset_selections$selections()
+                             )
                              
                              # Use error_handler to display notification to user
                              error_handler(
@@ -564,6 +561,12 @@ corr_tab_server <- function(id,
                              } else {
                                # Otherwise, create subset from selections 
                                # and return
+                               
+                               # Log subset created
+                               scExploreR:::log_subset(
+                                 filter_list = subset_selections$selections()
+                                 )
+                               
                                return(
                                  make_subset(
                                    object = object(),

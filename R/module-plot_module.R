@@ -401,7 +401,7 @@ plot_module_ui <- function(id,
           inputId = ns("legend_options_panel"),
           label = "Legend Options",
           active = TRUE,
-          content_background_color = "#D1D1D1",
+          class = "legend-options-panel",
           checkboxInput(
             inputId = ns("legend"),
             label = "Include Legend",
@@ -810,26 +810,31 @@ plot_module_ui <- function(id,
 #'
 #' @noRd
 plot_module_server <- function(id,
-                               plot_type, #Non-reactive
-                               plot_label, #Non-reactive
-                               object, #Reactive
-                               plot_switch, #Reactive
-                               n_cells_original, #Reactive
-                               features_entered = NULL, #Reactive 
-                               manual_dimensions = TRUE, #Non-reactive
-                               valid_features = NULL, #Reactive
-                               lim_orig = lim_orig, #Reactive
-                               palette = NULL, #Reactive
+                               plot_type,
+                               plot_label,
+                               object,
+                               plot_switch,
+                               n_cells_original,
+                               plots_tab_spinner = NULL,
+                               features_entered = NULL,
+                               manual_dimensions = TRUE,
+                               valid_features = NULL, 
+                               lim_orig = lim_orig, 
+                               palette = NULL, 
                                metadata_config = NULL,
                                assay_config = NULL,
                                patient_colname = NULL,
-                               separate_features_server = FALSE, #Non-reactive
+                               separate_features_server = FALSE,
                                blend_palettes = NULL
                                ){
   moduleServer(id,
                function(input,output,session){
                  # Server namespace function: for dynamic UI
                  ns <- session$ns
+                 
+                 # Reactive trigger to restore scroll position of plots tab 
+                 # when the plots tab interface is hidden and shown again
+                 scroll_restore <- scExploreR:::makeReactiveTrigger()
                  
                  # Return error notification if the plot type is not in the list
                  # of supported types
@@ -3265,7 +3270,7 @@ plot_module_server <- function(id,
                          })
                    
                  } else if (plot_type == "violin") {
-                   ### 11.2.3 Violin Plot ####
+                   ### 11.2.3. Violin Plot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -3501,10 +3506,88 @@ plot_module_server <- function(id,
                          )
                        }
                      
+                     if (!is.null(plots_tab_spinner)){
+                       # Show spinner over main window in plots tab,
+                       # unless the spinner has already been shown
+                       isolate({
+                         if (session$userData$plots_tab_spinner$shown == FALSE){
+                           plots_tab_spinner$show() 
+                           
+                           # Record the scroll position of the plots tab window to
+                           # Restore the position after the window is hidden and 
+                           # re-shown
+                           shinyjs::js$getTopScroll(
+                             # First parameter: target ID to get scroll position
+                             session$userData$plots_tab_main_panel_id,
+                             # Second parameter: input ID to record scroll position
+                             # This is currently recorded outside of this module
+                             # since there should only be one value for the 
+                             # scroll position, and if the value was defined in
+                             # the context of this module there would be 
+                             # multiple copies of the same value.
+                             
+                             # This is not best shiny practice however, and may
+                             # need to be revisited.
+                             "plots-topscroll"
+                           )
+                         }
+                       })
+                       
+                       # Hide container to keep user from being able to scroll
+                       # underneath the spinner
+                       # jQuery selector for the container to hide
+                       plots_tab_container = '[id$="plot_output_ui"]'
+                       
+                       shinyjs::hide(
+                         selector = plots_tab_container
+                         )
+                       
+                       session$userData$plots_tab_spinner$shown <- TRUE
+                       
+                       onFlush(
+                         fun = 
+                           function(){
+                             # Hide spinner
+                             plots_tab_spinner$hide()
+                             
+                             # Restore plots tab container
+                             plots_tab_container = '[id$="plot_output_ui"]'
+                             
+                             shinyjs::show(
+                               selector = plots_tab_container
+                               )
+                             
+                             session$userData$plots_tab_spinner$shown <- FALSE
+                             
+                             # Trigger restore of container scroll position
+                             scroll_restore$trigger()
+                             },
+                         session = session
+                         )
+                     }
+                     
                      plot()
                    })
                  
-                 # 12. Custom x-axis limits server (ridge plots) ---------------
+                 # 12. Restore scroll position of plot tab window --------------
+                 observe(
+                   label = glue("{id}: Restore scroll position"),
+                   {
+                     scroll_restore$depend()
+                     
+                     shinyjs::js$setTopScroll(
+                       # First parameter: target ID to get scroll position
+                       session$userData$plots_tab_main_panel_id,
+                       # Second parameter: input ID to retrieve scroll position 
+                       # from. This fetches the input value via Javascript 
+                       # instead of via `input` in Shiny, and uses an input ID
+                       # defined outside of a module. This may need to be 
+                       # revisited if it causes bugs.
+                       "plots-topscroll"
+                     )
+                     })
+                 
+                 # 13. Custom x-axis limits server (ridge plots) ---------------
                  # Server recieves plot in 9. and outputs the chosen limits
                  if (plot_type == "ridge"){
                    custom_xlim <-
@@ -3514,7 +3597,7 @@ plot_module_server <- function(id,
                      )
                  }
                  
-                 # 13. Download handler ----------------------------------------
+                 # 14. Download handler ----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 

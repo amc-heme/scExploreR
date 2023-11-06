@@ -69,7 +69,7 @@ check_dataset.Seurat <-
     path = NULL,
     return_error = FALSE
   ){
-    # Do nothing for supported object classes
+    # Do nothing (object passes)
   }
 
 #' @describeIn check_dataset SingleCellExperiment objects
@@ -81,5 +81,17 @@ check_dataset.SingleCellExperiment <-
     path = NULL,
     return_error = FALSE
   ){
-    # Do nothing for supported object classes
+    # Do nothing (object passes)
+  }
+
+#' @describeIn check_dataset Anndata objects
+#' @export
+#' @noRd
+check_dataset.AnnDataR6 <-
+  function(
+    object,
+    path = NULL,
+    return_error = FALSE
+  ){
+    # Do nothing (object passes)
   }
