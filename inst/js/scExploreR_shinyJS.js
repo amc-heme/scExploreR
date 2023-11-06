@@ -24,16 +24,18 @@ shinyjs.setTopScroll = function(params){
     var defaultParams = {
         // Element to set scroll value
         targetId : null,
-        // Scroll position to set (numeric)
-        scrollPos : 0
+        // Input Id used to restore scroll value
+        restoreId : null,
     };
 
     params = shinyjs.getParams(params, defaultParams);
+
+    var restoreVal = Shiny.shinyapp.$inputValues[params.restoreId]
 
     // select element via jQuery
     var elem = $("#" + params.targetId);
 
     // Set scroll position by calling the scrollTop
     // method with the position value
-    elem.scrollTop(scrollPos);
+    elem.scrollTop(restoreVal);
 }

@@ -788,6 +788,10 @@ plots_tab_server <- function(id,
                  session$userData$plots_tab_main_panel_id <-
                     ns("plots_tab_main")
                  
+                 # ReactiveValues object to record state of plots tab spinner
+                 session$userData$plots_tab_spinner <- 
+                    reactiveValues(`shown` = FALSE)
+                 
                  # Feature choices for text entry 
                  observeEvent(
                    # Reactive - updates in response to change in dataset

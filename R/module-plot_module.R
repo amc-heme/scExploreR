@@ -3507,27 +3507,42 @@ plot_module_server <- function(id,
                        }
                      
                      if (!is.null(plots_tab_spinner)){
-                       # Show spinner over main window in plots tab
-                       plots_tab_spinner$show()
+                       # Show spinner over main window in plots tab,
+                       # unless the spinner has already been shown
+                       isolate({
+                         if (session$userData$plots_tab_spinner$shown == FALSE){
+                           plots_tab_spinner$show() 
+                           
+                           # Record the scroll position of the plots tab window to
+                           # Restore the position after the window is hidden and 
+                           # re-shown
+                           shinyjs::js$getTopScroll(
+                             # First parameter: target ID to get scroll position
+                             session$userData$plots_tab_main_panel_id,
+                             # Second parameter: input ID to record scroll position
+                             # This is currently recorded outside of this module
+                             # since there should only be one value for the 
+                             # scroll position, and if the value was defined in
+                             # the context of this module there would be 
+                             # multiple copies of the same value.
+                             
+                             # This is not best shiny practice however, and may
+                             # need to be revisited.
+                             "plots-topscroll"
+                           )
+                         }
+                       })
                        
                        # Hide container to keep user from being able to scroll
                        # underneath the spinner
                        # jQuery selector for the container to hide
                        plots_tab_container = '[id$="plot_output_ui"]'
                        
-                       # Record the scroll position of the plots tab window to
-                       # Restore the position after the window is hidden and 
-                       # re-shown
-                       shinyjs::js$getTopScroll(
-                         # First parameter: target ID to get scroll position
-                         session$userData$plots_tab_main_panel_id,
-                         # Second parameter: input ID to record scroll position
-                         ns("topscroll")
-                         )
-                       
                        shinyjs::hide(
                          selector = plots_tab_container
                          )
+                       
+                       session$userData$plots_tab_spinner$shown <- TRUE
                        
                        onFlush(
                          fun = 
@@ -3542,12 +3557,10 @@ plot_module_server <- function(id,
                                selector = plots_tab_container
                                )
                              
+                             session$userData$plots_tab_spinner$shown <- FALSE
+                             
                              # Trigger restore of container scroll position
                              scroll_restore$trigger()
-                             
-                             # Restore the scroll position recorded when the 
-                             # plots tab container was hidden
-                             
                              },
                          session = session
                          )
@@ -3565,9 +3578,12 @@ plot_module_server <- function(id,
                      shinyjs::js$setTopScroll(
                        # First parameter: target ID to get scroll position
                        session$userData$plots_tab_main_panel_id,
-                       # Second parameter: recorded scroll position
-                       # to set
-                       isolate({input$topscroll})
+                       # Second parameter: input ID to retrieve scroll position 
+                       # from. This fetches the input value via Javascript 
+                       # instead of via `input` in Shiny, and uses an input ID
+                       # defined outside of a module. This may need to be 
+                       # revisited if it causes bugs.
+                       "plots-topscroll"
                      )
                      })
                  
