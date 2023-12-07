@@ -88,6 +88,10 @@ run_scExploreR <-
         "www/Auto_Dictionary.Rmd",
         package = "scExploreR"
         )
+    #Copying to temp file in order to comply with Posit Connect security rules
+    temp_markdown_path <- tempfile(fileext = ".Rmd")
+    file.copy(auto_dictionary_markdown_path, temp_markdown_path, overwrite = TRUE)
+    auto_dictionary_markdown_path <- temp_markdown_path
     
     # Path to string subsetting documentation (passed to subset 
     # selections module)
