@@ -800,39 +800,33 @@ dge_tab_server <- function(id,
                   return(NULL)
                   },
                 {
+                  # Note: designated genes assay is no longer used
                   dge_table <-
-                    # Run presto on the subset, using the group by category
-                    # Uses internal S3 method
-                    run_presto(
-                      subset(),
-                      designated_genes_assay = designated_genes_assay(), 
-                      assay_config = assay_config(), 
-                      metaclusters_present = metaclusters_present(), 
-                      thresholding_present = thresholding_present(), 
-                      group_by_category = group_by_category()
-                      ) %>%
-                    # Explicitly coerce to tibble
-                    as_tibble() %>%
-                    # remove stat and auc from the output table
-                    dplyr::select(-c(statistic, pval)) %>%
-                    # Using magrittr pipes here because the following
-                    # statement doesn't work with base R pipes
-                    # remove negative logFCs if box is checked
-                    {if (input$pos) dplyr::filter(., logFC > 0) else .} %>%
-                    # Arrange in ascending order for padj, pval (lower
-                    # values are more "significant"). Ascending order is
-                    # used for the log fold-change
-                    arrange(padj, desc(abs(logFC)))
-                  
-                  # Change "logFC" column to log-2 fold change 
-                  # (default output uses a natural log)
-                  dge_table$logFC <- 
-                    to_log2(dge_table$logFC)
-                  
-                  # Rename column to explicitly specify log-2 fold change
-                  dge_table <-
-                    dge_table |>
-                    dplyr::rename(Log2FC = logFC)
+                    # Use DGE generic to determine test to run
+                    scDE::run_dge(
+                      object = subset(),
+                      group_by = 
+                        if (metaclusters_present()){
+                          "metacluster"
+                        } else if (thresholding_present()){
+                          "simple_expr_threshold"
+                        } else {
+                          group_by_category()
+                        },
+                      # Seurat assay: designated genes assay, or the first
+                      # assay if undefined.
+                      # This is only used for Seurat objects
+                      seurat_assay =
+                        if (isTruthy(designated_genes_assay())){
+                          designated_genes_assay()
+                        } else names(assay_config())[[1]],
+                      # Positive genes only: based on user input
+                      positive_only = input$pos,
+                      # Report results using a log2 fold change
+                      lfc_format = "log2",
+                      # Show only adjusted p-value column
+                      remove_raw_pval = TRUE
+                      )
                   
                   log_session(session)
                   log_info("DGE Tab: Completed Presto")
@@ -855,6 +849,9 @@ dge_tab_server <- function(id,
                  
                   return(dge_table)
                 })
+            
+            print("DGE table colnanes")
+            print(colnames(dge_table))
 
             dge_table
           })
@@ -903,6 +900,18 @@ dge_tab_server <- function(id,
             names(table)[names(table) == "pct_out"] <-
               pct_out_rename
             
+            # Rename feature, AUC, avg exp., adjusted p-value columns, if 
+            # they exist in the DGE table
+            # Renaming vector (new_name = old_name)
+            rename_cols <- 
+              c(`Feature` = "feature",
+                `Average Expression` = "avgExpr", 
+                `AUC` = "auc",
+                `Adjusted p-value` = "pval_adj"
+                )
+            
+            table <- dplyr::rename(table, any_of(rename_cols))
+            
             datatable(
               table,
               # DT classes applied
@@ -915,17 +924,19 @@ dge_tab_server <- function(id,
               # Remove rownames
               rownames = FALSE,
               # Set escape to FALSE to render the HTML for GeneCards links 
-              escape = FALSE,
-              # Rename columns (new_name = old_name)
-              colnames = 
-                c("Feature" = "feature", 
-                  "Average Expression" = "avgExpr", 
-                  "AUC" = "auc",
-                  "Adjusted p-value" = "padj"
-                  )
+              escape = FALSE
               ) %>%
-              # Use 5 sig figs (3 or more is sufficient)
-              formatSignif(3:8, 5)
+              # Format numeric columns
+              formatSignif(
+                # Apply format to numeric columns (format is applied to columns
+                # where the boolean vector generated below is TRUE)
+                sapply(
+                  colnames(table), 
+                  function(col) is.numeric(table[[col]])
+                  ),
+                # Use 5 sig figs (3 or more is sufficient)
+                5
+              )
           })
       
       ## 3.11. UMAP of DE Selected Groups ####
@@ -974,11 +985,11 @@ dge_tab_server <- function(id,
               ncol = 4
               }
 
-            # Create DimPlot of subsetted object
-            DimPlot(
-              subset(),
+            # Create DimPlot of subsetted object, showing the groups tested
+            SCUBA::plot_reduction(
+              object = subset(),
               # Split by groups or marker classes used for DGE
-              split.by =
+              split_by = 
                 if (metaclusters_present()){
                   # Use "metacluster" when metaclusers present
                   "metacluster"
@@ -989,10 +1000,10 @@ dge_tab_server <- function(id,
                   # Standard DGE: split by the group by category
                   group_by_category()
                 },
-              #Group by variable set in UMAP options panel
-              group.by = input$umap_group_by,
+              # Group by variable set in UMAP options panel
+              group_by = input$umap_group_by,
               ncol = ncol
-              )
+            )
           })
       
       ## 3.12. Title for Main Panel ####

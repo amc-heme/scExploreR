@@ -497,8 +497,10 @@ run_scExploreR <-
                 )
             })
       } else {
-        # All other object classes: load based on file extension
-        extension <- tools::file_ext(object_path)
+        # All other objects: load based on file extension
+        path <- datasets[[data_key]]$object
+        
+        extension <- tools::file_ext(path)
         
         if (extension == "rds") {
           datasets[[data_key]]$object <- 
@@ -1918,26 +1920,18 @@ run_scExploreR <-
         })
       
       # 6. Enable/Disable Tabs -------------------------------------------------
-      ## 6.1. DGE Tab, based on object type ####
+      ## 6.1. DGE Tab ####
       # Disable the DGE tab (for now) if the object is an SCE object with
-      # DelayedArray (HDF5-enabled) matrices, or an anndata object
+      # DelayedArray (HDF5-enabled) matrices
       observe(
         label = "Enable/Disable DGE tab, SCE Objects",
         {
-          # jQuery selectors for the DGE, corr tab navbar buttons
+          # jQuery selector for the DGE navbar button
           dge_tab_button <- "nav [data-value = 'dge']"
-          corr_tab_button <- "nav [data-value = 'corr']"
           
-          if (isTruthy(is_HDF5SummarizedExperiment())|
-              isTruthy(is_anndata())
-              ){
+          if (isTruthy(is_HDF5SummarizedExperiment())){
             shinyjs::addClass(
               selector = dge_tab_button, 
-              class = "navbar-hide" 
-              )
-            
-            shinyjs::addClass(
-              selector = corr_tab_button, 
               class = "navbar-hide" 
             )
           } else {
@@ -1945,7 +1939,26 @@ run_scExploreR <-
               selector = dge_tab_button,
               class = "navbar-hide"
             )
-            
+          }
+        })
+      
+      ## 6.2. Correlations Tab ####
+      # The correlations tab will be hidden for anndata and 
+      # SingleCellExperiment objects
+      observe(
+        label = "Enable/Disable Corr tab, SCE/Anndata Objects",
+        {
+          # jQuery selectors for the corr navbar button
+          corr_tab_button <- "nav [data-value = 'corr']"
+          
+          if (isTruthy(is_HDF5SummarizedExperiment())|
+              isTruthy(is_anndata())
+          ){
+            shinyjs::addClass(
+              selector = corr_tab_button, 
+              class = "navbar-hide" 
+            )
+          } else {
             shinyjs::removeClass(
               selector = corr_tab_button,
               class = "navbar-hide"
