@@ -36,17 +36,18 @@ shiny_scatter <- function(object,
   # The number of colors is equal to the number of unique values in 
   # the group.by category
   n_colors <- 
-    object@meta.data[[group_by]] |>
-    unique() |> 
-    length()
+    scExploreR:::n_unique(
+      object,
+      meta_var = group_by
+      )
   
   # Plot: uses FeatureScatter
   plot <- 
-    FeatureScatter(
+    SCUBA::plot_scatter(
       object, 
-      feature1 = feature_1,
-      feature2 = feature_2,
-      group.by = group_by,
+      feature_1 = feature_1,
+      feature_2 = feature_2,
+      group_by = group_by,
       # Cols: use user defined palette, or the defaults if palette() == NULL 
       cols = 
         if (!is.null(palette)){
@@ -82,21 +83,10 @@ shiny_scatter <- function(object,
     # c() will combine lists of elements into a single list
     # (use of individual lists works best with conditional framework)
     c(
-      # Legend position: "right" if a legend is desired, 
-      # and "none" if not
-      # list(
-      #   theme(
-      #     legend.position = 
-      #       if (show_legend == TRUE) {
-      #         "right"
-      #       } else "none"
-      #     )
-      # ), # End list()
-      
+      # Elements A-C: theme() elements
       list(
         do.call(
           theme,
-          # List of arguments to call with theme
           args = 
             c(
               list(
@@ -130,7 +120,7 @@ shiny_scatter <- function(object,
         )
       ),
       
-      # Elements specified with guides()
+      # Elements D-E: specified with guides()
       list(
         guides(
           # Guide for scatterplot is "color"

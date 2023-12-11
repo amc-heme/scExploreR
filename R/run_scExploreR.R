@@ -25,6 +25,8 @@ run_scExploreR <-
     library(shiny)
     library(Seurat, quietly = TRUE, warn.conflicts = FALSE)
     
+    #library(SCUBA, quietly = TRUE, warn.conflicts = FALSE)
+    
     # Shiny add-ons 
     library(shinyWidgets, quietly = TRUE, warn.conflicts = FALSE)
     library(rintrojs, quietly = TRUE, warn.conflicts = FALSE)
@@ -199,7 +201,7 @@ run_scExploreR <-
     }
     
     
-    # Non-reactive Global Variables ------------------------------------------------
+    # Non-reactive Global Variables --------------------------------------------
     
     # Non-zero proportion threshold: if the proportion of cells for a 
     # gene is below this threshold, return a warning to the user.
@@ -291,7 +293,7 @@ run_scExploreR <-
         "DkPuDkRd" = c("lightgrey", "#7A2180", "#9E2525")
       )
     
-    # Error Handling: define possible errors ---------------------------------------
+    # Error Handling: define possible errors -----------------------------------
     # Errors are defined in a list using the functions in "./R/error_handling.R". 
     # The error_handler() function is executed in a tryCatch() statement and checks
     # the error message returned against a list of errors.
@@ -437,10 +439,7 @@ run_scExploreR <-
     # path to the dataset, and the corresponding "object" element in the R list will
     # be replaced with the dataset itself.
     for (data_key in names(datasets)){
-      datasets[[data_key]]$object <- 
-        readRDS(datasets[[data_key]]$object)
-      
-      # Also load the config file into memory
+      # Load config files first
       path <- datasets[[data_key]]$config
       
       # Add informative error message when a non-yaml config file is loaded
@@ -448,7 +447,7 @@ run_scExploreR <-
         stop("Only .yaml config files are supported as of version v0.5.0. 
          Existing .rds config files can be converted to .yaml files by 
          loading them into config_app.R and then re-saving as a .yaml file.")
-      }
+        }
       
       # Load config YAML using defined path (file is converted to an R list)
       config_r <- read_yaml(path)
@@ -461,8 +460,133 @@ run_scExploreR <-
           as_tibble(config_r$adt_thresholds)
       }
       
+      # Determine if the object in the config file is a SingleCellExperiment 
+      # object saved using the HDF5Array package (different loading code is
+      # required in this case)
+      is_HDF5SummarizedExperiment <-
+        # Fetch is_HDF5SummarizedExperiment from the selected object's 
+        # config entry
+       config_r$is_HDF5SummarizedExperiment
+      
       # Store config file in datasets
       datasets[[data_key]]$config <- config_r
+      
+      # Load object: different loading code for SingleCellExperiment objects
+      # saved via HDF5 storage
+      if (isTruthy(is_HDF5SummarizedExperiment)){
+        datasets[[data_key]]$object <- 
+          tryCatch(
+            error = 
+              function(cnd){
+                stop(
+                  "There was an error loading the object at path\n",
+                  datasets[[data_key]]$object, 
+                  "\nLoading was attempted via `HDF5Array::loadHDF5SummarizedExperiment`.\n",
+                  "Please check that the config file for the object corresponds \n",
+                  "to the object.",
+                  "\n",
+                  "For HDF5-enabled SingleCellExperiment objects, the object\n",
+                  "path should be set to the folder containing the assays.h5 \n",
+                  "and the se.rds file. This is the same folder that was created\n",
+                  "when the object was saved via `HDF5Array::saveHDF5SummarizedExperiment()`\n.",
+                  "\n",
+                  "If this object is not an HDF5-enabled SingleCellExperiment\n",
+                  "object, please ensure that is_HDF5SummarizedExperiment is set\n",
+                  "to `FALSE` when run_config_app() is called."
+                  )
+              },
+            {
+              HDF5Array::loadHDF5SummarizedExperiment(
+                datasets[[data_key]]$object
+                )
+            })
+      } else {
+        # All other objects: load based on file extension
+        path <- datasets[[data_key]]$object
+        
+        extension <- tools::file_ext(path)
+        
+        if (extension == "rds") {
+          datasets[[data_key]]$object <- 
+            tryCatch(
+              error = 
+                function(cnd){
+                  stop(
+                    "There was an error loading the object at path \n",
+                    datasets[[data_key]]$object, 
+                    "\nLoading was attempted via `readRDS()`. Please check that\n",
+                    "the config file for the object corresponds to the object,\n",
+                    "and that the object path points to a .rds file.\n",
+                    "\n",
+                    "If an object is an HDF5-enabled SingleCellExperiment\n",
+                    "object, the config file must specify this. This is done\n", 
+                    "automatically for files produced using scExploreR version\n",
+                    "0.7.0. and later. To update an older config file, call\n",
+                    "run_config_app() using the object and the config file,\n",
+                    "with `isHDF5SummarizedExperiment` set to `TRUE`. Load the\n",
+                    "config file in the config app, and then save the file."
+                  )
+                },
+              {
+                # Define path and load object
+                path <- datasets[[data_key]]$object
+                
+                object <- 
+                  readRDS(
+                    path
+                  )
+                
+                # Check object for valid classes
+                check_dataset(
+                  object,
+                  path = path
+                )
+                
+                # Return object from TryCatch statement
+                object
+              })
+        } else if (extension == "h5ad") {
+          # .h5ad anndata::read_h5ad
+          datasets[[data_key]]$object <- 
+            tryCatch(
+              error = 
+                function(cnd){
+                  stop(
+                    "There was an error loading the object at path \n",
+                    datasets[[data_key]]$object, 
+                    "\nLoading was attempted via `anndata::read_h5ad()`."
+                  )
+                },
+              {
+                # Define path and load object
+                path <- datasets[[data_key]]$object
+                
+                object <- 
+                  anndata::read_h5ad(
+                    path
+                  )
+                
+                # Check object for valid classes
+                check_dataset(
+                  object,
+                  path = path
+                )
+                
+                # Return object from TryCatch statement
+                object
+              })
+        } else {
+          # Unrecognized file extensions
+          stop(
+            "File extension (.", 
+            extension,
+            "not recognized. Currently supported extensions:\n",
+            ".rds, and .h5ad."
+            )
+        }
+      }
+      
+     
     }
     
     # Tests for location of general dataset info ####
@@ -524,6 +648,17 @@ run_scExploreR <-
       useWaiter(),
       # Shinyjs: a Shiny JavaScript extension
       useShinyjs(),
+      # Import custom ShinyJS functions from js folder
+      shinyjs::extendShinyjs(
+        script = 
+          system.file(
+            "js/scExploreR_shinyJS.js", 
+            package = "scExploreR"
+            ),
+        functions = 
+          c("getTopScroll", 
+            "setTopScroll")
+      ),
       # CSS and JS for collapsible panel
       navbarPage("Shiny scExplorer",
                  windowTitle = "Shiny scExplorer",
@@ -532,18 +667,21 @@ run_scExploreR <-
                  lang = "en",
                  tabPanel(
                    "Plots",
+                   value = "plots",
                    uiOutput(
                      outputId = "plots_dynamic_ui"
                    )
                  ),
                  tabPanel(
                    "Differential Expression",
+                   value = "dge",
                    uiOutput(
                      outputId = "dge_dynamic_ui"
                    )
                  ),
                  tabPanel(
                    "Gene Correlations",
+                   value = "corr",
                    uiOutput(
                      outputId = "corr_dynamic_ui"
                    )
@@ -733,7 +871,7 @@ run_scExploreR <-
         )
       ###
       
-      # 1. Reactively load object and config file ----------------------------------
+      # 1. Reactively load object and config file ------------------------------
       cat("\n")
       log_info(
         glue("New Connection \n(session ID: {session$token})")
@@ -864,8 +1002,8 @@ run_scExploreR <-
         ignoreNULL = FALSE,
         {
           app_spinner$show()
-          # Fetch Seurat object from datasets list defined at startup and set 
-          # "object" reactiveVal to the result
+          # Fetch object from datasets list defined at startup and store 
+          # in "object" reactiveVal
           object(datasets[[selected_key()]]$object)
           
           app_spinner$hide()
@@ -873,7 +1011,8 @@ run_scExploreR <-
       
       ## 1.5. Config file
       ### 1.5.1. Load/update config file ####
-      # Update config file with the one from the selected dataset, if it has changed
+      # Update config file with the one from the selected dataset, 
+      # if it has changed
       observeEvent( 
         dataset_change$depend(),
         label = "Load/Update Config File",
@@ -891,7 +1030,7 @@ run_scExploreR <-
       #     
       #   })
       
-      ### 1.5.3. Copy ADT assay for thresholding ####
+      ### 1.5.3. Apply thresholds to ADT Assay ####
       # If thresholding information is provided, copy the ADT assay to a new 
       # assay, and save the new assay to the object
       observeEvent(
@@ -926,43 +1065,53 @@ run_scExploreR <-
             # designate multiple in app, but file could be modified to do so)
             if (!is.null(designated_ADT_assay)){
               if (length(designated_ADT_assay) == 1){
-                # Fetch copy of object
-                object_copy <- object()
+                adt_threshold_assay(
+                  object(),
+                  threshold_table = 
+                    config()$adt_thresholds,
+                  designated_adt_assay = 
+                    designated_ADT_assay
+                  ) |> 
+                  # Update object with output of adt_threshold_assay
+                  object()
                 
-                # Copy ADT assay
-                object_copy[["ADT_threshold"]] <- 
-                  object_copy[[designated_ADT_assay]]
-                
-                # Clamp assays to thresholds in config app
-                # Subset assay to features for which threshold information exists
-                #  to conserve memory
-                object_copy[["ADT_threshold"]] <- 
-                  subset(
-                    object_copy[["ADT_threshold"]], 
-                    features = config()$adt_thresholds$adt
-                  )
-                
-                for (i in 1:nrow(config()$adt_thresholds)){
-                  # Fetch ith ADT and threshold value
-                  ADT <- config()$adt_thresholds$adt[i]
-                  threshold <- config()$adt_thresholds$value[i]
-                  
-                  # Subtract threshold
-                  object_copy@assays$ADT_threshold@data[ADT,] <-
-                    object_copy@assays$ADT_threshold@data[ADT,] - threshold 
-                  
-                  # "Clamp" expression values for ADT to zero
-                  object_copy@assays$ADT_threshold@data[ADT,] <- 
-                    sapply(
-                      object_copy@assays$ADT_threshold@data[ADT,],
-                      function(value){
-                        if (value < 0) 0 else value
-                      }
-                    )
-                }
+                # # Fetch copy of object
+                # object_copy <- object()
+                # 
+                # # Copy ADT assay
+                # object_copy[["ADT_threshold"]] <- 
+                #   object_copy[[designated_ADT_assay]]
+                # 
+                # # Clamp assays to thresholds in config app
+                # # Subset assay to features for which threshold information exists
+                # #  to conserve memory
+                # object_copy[["ADT_threshold"]] <- 
+                #   subset(
+                #     object_copy[["ADT_threshold"]], 
+                #     features = config()$adt_thresholds$adt
+                #   )
+                # 
+                # for (i in 1:nrow(config()$adt_thresholds)){
+                #   # Fetch ith ADT and threshold value
+                #   ADT <- config()$adt_thresholds$adt[i]
+                #   threshold <- config()$adt_thresholds$value[i]
+                #   
+                #   # Subtract threshold
+                #   object_copy@assays$ADT_threshold@data[ADT,] <-
+                #     object_copy@assays$ADT_threshold@data[ADT,] - threshold 
+                #   
+                #   # "Clamp" expression values for ADT to zero
+                #   object_copy@assays$ADT_threshold@data[ADT,] <- 
+                #     sapply(
+                #       object_copy@assays$ADT_threshold@data[ADT,],
+                #       function(value){
+                #         if (value < 0) 0 else value
+                #       }
+                #     )
+                #}
                 
                 # Save object with new assay
-                object(object_copy)
+                #object(object_copy)
               }
             }
           }
@@ -994,11 +1143,14 @@ run_scExploreR <-
           ignoreNULL = FALSE,
           {
             if (!is.null(input$data_key)){
-              # Record value of input$data_key
+              # Log and record value of input$data_key
+              rlog::log_info(paste0("Dataset selected: ", input$data_key))
+              
               input$data_key
             } else {
               # If input$data_key is NULL, the key has not yet been defined.
               # in this case, use the default data key (the first one)
+              rlog::log_info(paste0("Dataset selected: ", names(datasets)[1]))
               names(datasets)[1]
             }
           })
@@ -1056,7 +1208,7 @@ run_scExploreR <-
       
       ## 2.3. Valid features Expressions ####
       # Create a list of valid features using the assays defined above
-      ### 2.3.1 Determine whether to include numeric metadata in feature list ####
+      ### 2.3.1. Determine whether to include numeric metadata in feature list ####
       # Determination depends on the value of `include_numeric_metadata` 
       # in the config file. 
       include_numeric_metadata <- 
@@ -1080,7 +1232,7 @@ run_scExploreR <-
       # May be set in the config app in the future
       numeric_metadata_title <- "Metadata Features"
       
-      ### 2.3.2 valid_features ####
+      ### 2.3.2. valid_features ####
       valid_features <-
         eventReactive(
           c(assay_config(), object()),
@@ -1089,24 +1241,24 @@ run_scExploreR <-
           {
             valid_features <- 
               feature_list_all(
-                object = object,
-                assay_config = assay_config,
+                object = object(),
+                assay_config = assay_config(),
                 # include_numeric_metadata: a boolean variable 
                 # that is hard-coded for now and will be 
                 # defined in the config file
                 numeric_metadata = include_numeric_metadata(), 
                 # The same is true for numeric_metadata_title
                 numeric_metadata_title = numeric_metadata_title,
-                # ADT thresholds: add to list if the ADT_threshold assay has been
-                # created in the object
+                # ADT thresholds: add to list if the ADT_threshold assay 
+                # has been created in the object
                 adt_threshold_features = 
-                  if ("ADT_threshold" %in% names(object()@assays)){
+                  if ("adtThreshold" %in% scExploreR:::assay_names(object())){
                     TRUE
                   } else {
                     FALSE
                   },
-                # Display name for threshold features (can be set in the browser 
-                # config file)
+                # Display name for threshold features (can be set in the 
+                # browser config file)
                 adt_threshold_title = 
                   if (!is.null(adt_threshold_dropdown_title)){
                     adt_threshold_dropdown_title
@@ -1114,7 +1266,7 @@ run_scExploreR <-
                     # Supply default if the value is undefined
                     "ADT Values (Threshold Applied)"
                   }
-              )
+                )
             
             valid_features
           })
@@ -1174,29 +1326,33 @@ run_scExploreR <-
             meta_choices
           })
       
-      ## 2.7. Unique values for each metadata category ####
+      ## 2.7. Unique values for each metadata variable ####
       unique_metadata <- 
         eventReactive(
           metadata_config(),
           label = "unique_metadata",
           ignoreNULL = FALSE,
           {
-            # The unique values for each metadata category listed in the config 
+            # The unique values for each metadata variable listed in the config 
             # file will be stored as vectors in a list 
             unique_metadata <- list()
             
-            # Store unique values for each metadata category entered
-            for (category in names(metadata_config())){
+            # Store unique values for each metadata variable entered
+            for (meta_var in names(metadata_config())){
               # Use sobj@meta.data[[category]] instead of object()[[category]] 
               # to return a vector (sobj[[category]] returns a dataframe)
-              unique_metadata[[category]] <- 
-                unique(object()@meta.data[[category]])
-              # If the metadata category is a factor, convert to a vector with 
+              unique_metadata[[meta_var]] <- 
+                SCUBA::unique_values(
+                  object = object(), 
+                  var = meta_var
+                  )
+              
+              # If the metadata variable is a factor, convert to a vector with 
               # levels to avoid integers appearing in place of the 
               # unique values themselves
-              if (class(unique_metadata[[category]]) == "factor"){
-                unique_metadata[[category]] <- 
-                  levels(unique_metadata[[category]])
+              if (class(unique_metadata[[meta_var]]) == "factor"){
+                unique_metadata[[meta_var]] <- 
+                  levels(unique_metadata[[meta_var]])
               }
             }
             
@@ -1237,7 +1393,7 @@ run_scExploreR <-
           } else {
             # Otherwise, get reductions in object, and use the default
             # (UMAP is placed first, if it exists)
-            reductions <- names(object()@reductions)
+            reductions <- scExploreR:::reduction_names(object()) 
             
             if ("umap" %in% reductions){
               reductions <-
@@ -1272,12 +1428,18 @@ run_scExploreR <-
                 reductions(),
                 function(reduction, object){
                   # limits calculation: uses cell embeddings
-                  # Same as default method in FeaturePlotWrapper.R
-                  # `object` does not require parentheses if called with them below
-                  xmin <- min(object@reductions[[reduction]]@cell.embeddings[,1])
-                  xmax <- max(object@reductions[[reduction]]@cell.embeddings[,1])
-                  ymin <- min(object@reductions[[reduction]]@cell.embeddings[,2])
-                  ymax <- max(object@reductions[[reduction]]@cell.embeddings[,2]) 
+                  # Fetch coordinates, then determine min/max values
+                  reduction_coords <- 
+                    SCUBA::fetch_reduction(
+                      object = object(), 
+                      reduction = reduction, 
+                      dims = c(1, 2)
+                      )
+                  
+                  xmin <- min(reduction_coords[,1])
+                  xmax <- max(reduction_coords[,1])
+                  ymin <- min(reduction_coords[,2])
+                  ymax <- max(reduction_coords[,2]) 
                   
                   return(
                     list(
@@ -1322,7 +1484,7 @@ run_scExploreR <-
             list(
               object = object(),
               valid_features = valid_features()
-            )
+              )
           
           # PANDOC: path to pandoc needs to be defined in browser mode, on a 
           # Linux server
@@ -1346,8 +1508,8 @@ run_scExploreR <-
                 ),
             # pass parameters to report
             params = params,
-            # Set up a new environment that is the child of the global environment
-            # (isolates document environment from app)
+            # Set up a new environment that is the child of the global
+            # environment (isolates document environment from app)
             envir = new.env(parent = globalenv()),
             # Do not print rendering messages to console
             quiet = TRUE
@@ -1360,6 +1522,30 @@ run_scExploreR <-
           # Extract category name from "other_metadata_options" 
           # section of the config file 
           config()$other_metadata_options$patient_colname
+        })
+      
+      ## 2.13. Whether object is a SCE object with HDF5 Storage ####
+      is_HDF5SummarizedExperiment <-
+        reactive({
+          req(config())
+          
+          isTruthy(config()$is_HDF5SummarizedExperiment)
+        })
+      
+      ## 2.14. Object is an anndata/mudata object ####
+      is_anndata <-
+        reactive({
+          req(config())
+          
+          if (!is.null(config()$object_class)){
+            if (config()$object_class %in% c("AnnDataR6")){
+              TRUE
+            } else {
+              FALSE
+            }
+          } else {
+            FALSE
+          }
         })
       
       # 3. Initialize Modules --------------------------------------------------
@@ -1407,7 +1593,9 @@ run_scExploreR <-
       dge_tab_ui_dynamic <-
         eventReactive(
           # UI should only update when the object and config files are switched
-          c(object(), config()),
+          c(config(),
+            object()
+            ),
           label = "DGE Tab Dynamic UI",
           ignoreNULL = FALSE,
           {
@@ -1426,7 +1614,9 @@ run_scExploreR <-
       corr_tab_ui_dynamic <-
         eventReactive(
           # UI should only update when the object and config files are switched
-          c(object(), config()),
+          c(config(),
+            object()
+            ),
           label = "Correlations Tab Dynamic UI",
           ignoreNULL = FALSE,
           {
@@ -1733,8 +1923,56 @@ run_scExploreR <-
           )
         })
       
-      # 6. Callbacks -----------------------------------------------------------
-      ## 6.1. Code to run when the user disconnects ####
+      # 6. Enable/Disable Tabs -------------------------------------------------
+      ## 6.1. DGE Tab ####
+      # Disable the DGE tab (for now) if the object is an SCE object with
+      # DelayedArray (HDF5-enabled) matrices
+      observe(
+        label = "Enable/Disable DGE tab, SCE Objects",
+        {
+          # jQuery selector for the DGE navbar button
+          dge_tab_button <- "nav [data-value = 'dge']"
+          
+          if (isTruthy(is_HDF5SummarizedExperiment())){
+            shinyjs::addClass(
+              selector = dge_tab_button, 
+              class = "navbar-hide" 
+            )
+          } else {
+            shinyjs::removeClass(
+              selector = dge_tab_button,
+              class = "navbar-hide"
+            )
+          }
+        })
+      
+      ## 6.2. Correlations Tab ####
+      # The correlations tab will be hidden for anndata and 
+      # SingleCellExperiment objects
+      observe(
+        label = "Enable/Disable Corr tab, SCE/Anndata Objects",
+        {
+          # jQuery selectors for the corr navbar button
+          corr_tab_button <- "nav [data-value = 'corr']"
+          
+          if (isTruthy(is_HDF5SummarizedExperiment())|
+              isTruthy(is_anndata())
+          ){
+            shinyjs::addClass(
+              selector = corr_tab_button, 
+              class = "navbar-hide" 
+            )
+          } else {
+            shinyjs::removeClass(
+              selector = corr_tab_button,
+              class = "navbar-hide"
+            )
+          }
+        })
+      
+      
+      # 7. Callbacks -----------------------------------------------------------
+      ## 7.1. Code to run when the user disconnects ####
       onSessionEnded(
         function(){
           log_info(glue("Session {session$token} disconnected."))

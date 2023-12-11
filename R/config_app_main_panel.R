@@ -6,7 +6,7 @@
 #' @param class CSS classes to apply to the main panel.
 #'
 #' @noRd
-applet_main_panel <- 
+config_app_main_panel <- 
   function(
     ...,
     class=NULL
@@ -16,12 +16,12 @@ applet_main_panel <-
       class <- ""
       }
     
-    # Use width=0 to define column widths using Bootstrap classes
+    # Use width = 0 to define column widths using Bootstrap classes
     mainPanel(
-      width=0,
+      width = 0,
       class = 
         paste0(
-          "shinysc-main-panel col-sm-6 col-md-7 col-lg-8 ",
+          "shinysc-main-panel col-sm-4 col-md-5 col-lg-6 ",
           class
         ),
       #Pass content to mainPanel 

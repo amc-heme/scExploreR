@@ -101,13 +101,13 @@ margin-left: -1.3em;
 }
 
 /* Use different text color for transparent class */
-button.transparent::before {
+button.collapsible.transparent::before {
 	color: #000000 !important;
 }
 
 /* Symbol which apppears at left hand side of panel header when
 	 the tab is opened */
-button.active:before {
+button.collapsible.active:before {
 content: '\25BC'; /* Down arrow*/
 color: white;
 float: left;

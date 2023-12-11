@@ -93,10 +93,15 @@ subset_summary_server <- function(id,
                     )
                   )
                   
-                  # Store unique values for category in full object and subset
-                  # Uses unique_values() in-house function 
-                  subset_values <- unique_values(object, category)
-                  original_values <- isolate(unique_metadata())[[category]]
+                  # Store unique values for category (variable) in full object 
+                  # and subset
+                  subset_values <- 
+                    SCUBA::unique_values(
+                      object(), 
+                      category
+                      )
+                  original_values <- 
+                    isolate(unique_metadata())[[category]]
                   
                   if (setequal(subset_values, original_values)){
                     # If the unique values for the subset match the unique

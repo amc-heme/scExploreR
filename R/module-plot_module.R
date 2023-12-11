@@ -344,7 +344,8 @@ plot_module_ui <- function(id,
       
       ## Refactor groups (dot, violin plots) ####
       if (sort_groups_menu == TRUE){
-        tagList(
+        div(
+          id = ns("sort_groups_menu"),
           selectInput(
             inputId = ns("sort_groups"),
             label = "Order of Groups on plot",
@@ -400,7 +401,7 @@ plot_module_ui <- function(id,
           inputId = ns("legend_options_panel"),
           label = "Legend Options",
           active = TRUE,
-          content_background_color = "#D1D1D1",
+          class = "legend-options-panel",
           checkboxInput(
             inputId = ns("legend"),
             label = "Include Legend",
@@ -809,26 +810,31 @@ plot_module_ui <- function(id,
 #'
 #' @noRd
 plot_module_server <- function(id,
-                               plot_type, #Non-reactive
-                               plot_label, #Non-reactive
-                               object, #Reactive
-                               plot_switch, #Reactive
-                               n_cells_original, #Reactive
-                               features_entered = NULL, #Reactive 
-                               manual_dimensions = TRUE, #Non-reactive
-                               valid_features = NULL, #Reactive
-                               lim_orig = lim_orig, #Reactive
-                               palette = NULL, #Reactive
+                               plot_type,
+                               plot_label,
+                               object,
+                               plot_switch,
+                               n_cells_original,
+                               plots_tab_spinner = NULL,
+                               features_entered = NULL,
+                               manual_dimensions = TRUE,
+                               valid_features = NULL, 
+                               lim_orig = lim_orig, 
+                               palette = NULL, 
                                metadata_config = NULL,
                                assay_config = NULL,
                                patient_colname = NULL,
-                               separate_features_server = FALSE, #Non-reactive
+                               separate_features_server = FALSE,
                                blend_palettes = NULL
                                ){
   moduleServer(id,
                function(input,output,session){
                  # Server namespace function: for dynamic UI
                  ns <- session$ns
+                 
+                 # Reactive trigger to restore scroll position of plots tab 
+                 # when the plots tab interface is hidden and shown again
+                 scroll_restore <- scExploreR:::makeReactiveTrigger()
                  
                  # Return error notification if the plot type is not in the list
                  # of supported types
@@ -1207,9 +1213,10 @@ plot_module_server <- function(id,
                                req(plot_selections$split_by())
                                
                                default_titles <-
-                                 object()@meta.data[[
-                                   plot_selections$split_by()]] |> 
-                                 unique() |> 
+                                 SCUBA::unique_values(
+                                   object = object(),
+                                   var = plot_selections$split_by()
+                                   ) |> 
                                  str_sort(numeric = TRUE)
                                
                                return(default_titles)
@@ -2402,15 +2409,13 @@ plot_module_server <- function(id,
                          )
 
                        # Compute number of cells in subset
-                       n_cells_subset <-
-                         object() |>
-                         Cells() |>
-                         length()
+                       n_cells_test <- 
+                         scExploreR:::n_cells(object())
   
                        # Test if the number of cells in the subset differs from
                        # the number of cells in the original object. If this
                        # conditional is TRUE, then the object read is a subset
-                       n_cells_original() != n_cells_subset
+                       n_cells_original() != n_cells_test
                    })
                  
                  # 8. Conditional UI -------------------------------------------
@@ -2756,8 +2761,8 @@ plot_module_server <- function(id,
                      # group by variable
                      refactor_sortable <-
                        eventReactive(
-                         c(object(), 
-                           plot_selections$group_by(),
+                         c(plot_selections$group_by(),
+                           object(),
                            plot_switch()
                            ),
                          {
@@ -2765,6 +2770,14 @@ plot_module_server <- function(id,
                            # variable, but only runs when the group by variable is
                            # defined
                            req(plot_selections$group_by())
+                           
+                           # For ridge plots, the group_by variable can also be 
+                           # "none", which will cause errors. The UI should not 
+                           # compute in this case
+                           if (plot_type == "ridge"){
+                             req(plot_selections$group_by() != "none")
+                           }
+                           
                            # Also only runs when the plot is enabled
                            req(plot_switch())
                            
@@ -2772,7 +2785,11 @@ plot_module_server <- function(id,
                            # Based on unique values or levels of current group by 
                            # category
                            group_by_metadata <- 
-                             object()@meta.data[[plot_selections$group_by()]]
+                             SCUBA::fetch_metadata(
+                               object = object(),
+                               vars = plot_selections$group_by(), 
+                               return_class = "vector"
+                               )
                            
                            # Test if the current group by category is a factor
                            if (is.factor(group_by_metadata)){
@@ -2815,8 +2832,8 @@ plot_module_server <- function(id,
                      # Proportion plots: refactoring affects split by variable
                      refactor_sortable <-
                        eventReactive(
-                         c(object(), 
-                           plot_selections$split_by(),
+                         c(plot_selections$split_by(),
+                           object(),
                            plot_switch()
                            ),
                          {
@@ -2831,7 +2848,11 @@ plot_module_server <- function(id,
                            # Based on unique values or levels of current group by 
                            # category
                            split_by_metadata <- 
-                             object()@meta.data[[plot_selections$split_by()]]
+                             SCUBA::fetch_metadata(
+                               object(),
+                               vars = plot_selections$split_by(),
+                               return_class = "vector"
+                              )
                            
                            # Test if the current group by category is a factor
                            if (is.factor(split_by_metadata)){
@@ -2893,6 +2914,31 @@ plot_module_server <- function(id,
                        }
                      }
                    })
+                   
+                   ### 8.4.3. Special case: Show/hide entire group sorting UI ####
+                   # For ridge plots, the group_by selection may be "none", which
+                   # will result in the plotting of a single group, "All Cells".
+                   # The entire sorting interface is not useful and should be 
+                   # hidden in this case
+                   if (plot_type == "ridge"){
+                     observe({
+                       req(plot_selections$group_by())
+                       
+                       target_id <- "sort_groups_menu"
+                       
+                       if (plot_selections$group_by() == "none"){
+                         hideElement(
+                           id = target_id,
+                           anim = TRUE
+                         )
+                       } else {
+                         showElement(
+                           id = target_id,
+                           anim = TRUE
+                         )
+                       }
+                     })
+                   }
                  }
                  
                  ## 8.5. Render Dynamic UI ####
@@ -3224,7 +3270,7 @@ plot_module_server <- function(id,
                          })
                    
                  } else if (plot_type == "violin") {
-                   ### 11.2.3 Violin Plot ####
+                   ### 11.2.3. Violin Plot ####
                    plot <- 
                      reactive(
                        label = glue("{plot_label}: Create Plot"),
@@ -3364,7 +3410,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
                          
-                         shiny_stacked_bar(
+                         SCUBA:::shiny_stacked_bar(
                            object = object(),
                            group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
@@ -3406,7 +3452,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
                          
-                         shiny_pie(
+                         SCUBA:::shiny_pie(
                            object = object(),
                            patient_colname = patient_colname(),
                            group_by = plot_selections$group_by(),
@@ -3460,10 +3506,88 @@ plot_module_server <- function(id,
                          )
                        }
                      
+                     if (!is.null(plots_tab_spinner)){
+                       # Show spinner over main window in plots tab,
+                       # unless the spinner has already been shown
+                       isolate({
+                         if (session$userData$plots_tab_spinner$shown == FALSE){
+                           plots_tab_spinner$show() 
+                           
+                           # Record the scroll position of the plots tab window to
+                           # Restore the position after the window is hidden and 
+                           # re-shown
+                           shinyjs::js$getTopScroll(
+                             # First parameter: target ID to get scroll position
+                             session$userData$plots_tab_main_panel_id,
+                             # Second parameter: input ID to record scroll position
+                             # This is currently recorded outside of this module
+                             # since there should only be one value for the 
+                             # scroll position, and if the value was defined in
+                             # the context of this module there would be 
+                             # multiple copies of the same value.
+                             
+                             # This is not best shiny practice however, and may
+                             # need to be revisited.
+                             "plots-topscroll"
+                           )
+                         }
+                       })
+                       
+                       # Hide container to keep user from being able to scroll
+                       # underneath the spinner
+                       # jQuery selector for the container to hide
+                       plots_tab_container = '[id$="plot_output_ui"]'
+                       
+                       shinyjs::hide(
+                         selector = plots_tab_container
+                         )
+                       
+                       session$userData$plots_tab_spinner$shown <- TRUE
+                       
+                       onFlush(
+                         fun = 
+                           function(){
+                             # Hide spinner
+                             plots_tab_spinner$hide()
+                             
+                             # Restore plots tab container
+                             plots_tab_container = '[id$="plot_output_ui"]'
+                             
+                             shinyjs::show(
+                               selector = plots_tab_container
+                               )
+                             
+                             session$userData$plots_tab_spinner$shown <- FALSE
+                             
+                             # Trigger restore of container scroll position
+                             scroll_restore$trigger()
+                             },
+                         session = session
+                         )
+                     }
+                     
                      plot()
                    })
                  
-                 # 12. Custom x-axis limits server (ridge plots) ---------------
+                 # 12. Restore scroll position of plot tab window --------------
+                 observe(
+                   label = glue("{id}: Restore scroll position"),
+                   {
+                     scroll_restore$depend()
+                     
+                     shinyjs::js$setTopScroll(
+                       # First parameter: target ID to get scroll position
+                       session$userData$plots_tab_main_panel_id,
+                       # Second parameter: input ID to retrieve scroll position 
+                       # from. This fetches the input value via Javascript 
+                       # instead of via `input` in Shiny, and uses an input ID
+                       # defined outside of a module. This may need to be 
+                       # revisited if it causes bugs.
+                       "plots-topscroll"
+                     )
+                     })
+                 
+                 # 13. Custom x-axis limits server (ridge plots) ---------------
                  # Server recieves plot in 9. and outputs the chosen limits
                  if (plot_type == "ridge"){
                    custom_xlim <-
@@ -3473,7 +3597,7 @@ plot_module_server <- function(id,
                      )
                  }
                  
-                 # 13. Download handler ----------------------------------------
+                 # 14. Download handler ----------------------------------------
                  output$confirm_download <- 
                    downloadHandler(
                      # Filename: takes the label and replaces 

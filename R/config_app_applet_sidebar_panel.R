@@ -7,7 +7,7 @@
 #' @param class CSS classes to apply to the sidebar panel.
 #'
 #' @noRd
-applet_sidebar_panel <- 
+config_app_sidebar_panel <- 
   function(
     ...,
     class = NULL
@@ -21,11 +21,11 @@ applet_sidebar_panel <-
       # The use of width=0 allows the width to be specified for different window 
       # sizes using the class argument (using the width argument will apply the 
       # style for all screens with at least a "medium" size viewport)
-      width=0,
+      width = 0,
       # Column width specifications vary based on viewport size and are given using 
       # Bootstrap classes (R Studio creates a "small" window by default on a MacBook
       # pro) https://getbootstrap.com/docs/3.3/css/#responsive-utilities
-      class = paste0("shinysc-sidebar-panel col-sm-6 col-md-5 col-lg-4 ",class),
+      class = paste0("shinysc-sidebar-panel col-sm-8 col-md-7 col-lg-6 ",class),
       # Pass content to sidebarPanel
       tagList(...)
     )

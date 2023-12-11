@@ -10,6 +10,11 @@
 #' loaded when the user selects "load config file" in the config app. This 
 #' should be a YAML file, though .rds files from versions 0.4.0 and earlier will
 #' also be accepted.
+#' @param is_HDF5SummarizedExperiment Set this to TRUE to load an HDF5-enabled 
+#' SingleCellExperiment object saved via saveHDF5SummarizedExperiment. When 
+#' loading an HDF5-enabled object, set the object_path to the directory of the
+#' HDF5-enabled object, created when saving the object via
+#' HDF5Array:saveHDF5SummarizedExperiment.
 #' @param dev_mode Used only for development. If TRUE, the server values for each option chosen by the user will be printed at the bottom of the "general" tab.
 #'
 #' @usage 
@@ -21,6 +26,7 @@ run_config <-
   function(
     object_path,
     config_path = NULL,
+    is_HDF5SummarizedExperiment = FALSE,
     dev_mode = FALSE
   ){
     # Initialize libraries ####
@@ -142,13 +148,40 @@ run_config <-
     
     # Load object #### 
     # object_path and config_path are specified using run_config
-    print("Loading Seurat object...")
-    object <- readRDS(object_path) 
-    
-    # Test if the loaded object is a Seurat object
-    if (!class(object) == "Seurat"){
-      stop("`object_path` is not a Seurat object.")
+    print("Loading object...")
+    # Separate loading functions are needed for different object types
+    # SCE objects with DelayedArray assays: path is a directory, not a file 
+    if (is_HDF5SummarizedExperiment == TRUE){
+      # Directory is loaded via loadHDF5SummarizedExperiment
+      object <- HDF5Array::loadHDF5SummarizedExperiment(object_path)
+    } else {
+      # All other formats: choose loading function based on extension
+      extension <- tools::file_ext(object_path)
+      
+      if (extension == "rds"){
+        object <- readRDS(object_path)
+      } else if (extension == "h5ad") {
+        # Reticulate should not be loaded unless anndata objects are used
+        # (so users that don't have anndata objects won't need to install it
+        # and set up a Python environment)
+        library(reticulate)
+        library(anndata)
+        object <- anndata::read_h5ad(object_path)
+      } else {
+        stop(
+          "Unrecognized file extension (.",
+          extension,
+          "). Currently supported extensions: .rds, and .h5ad.",
+          )
+      }
     }
+    
+    # Test if the loaded object is of a supported class; if not, return an error
+    check_dataset(
+      object,
+      path = object_path,
+      return_error = TRUE
+      )
     
     # Define Config file path for loading ####
     config_filename <- config_path
@@ -156,26 +189,44 @@ run_config <-
     # Version of config app #### 
     # Printed in config file. Will be used to alert user if they are using a 
     # config file that is not compatible with the current version of the main app
-    config_version <- "0.5.0"
+    config_version <- 
+      packageVersion("scExploreR") |> 
+      as.character()
     
-    # Numeric Metadata Columns
-    meta_columns <- names(object@meta.data)
+    # Identify numeric metadata variables
+    # Pull full metadata table first, then test the class of each variable
+    meta_table <- 
+      SCUBA::fetch_metadata(
+        object,
+        full_table = TRUE
+        )
+    # Identify variables in table
+    meta_vars <- colnames(meta_table)
     
-    # is_numeric: a vector of boolean values used to subset meta_columns for 
-    # numeric metadata
+    # is_numeric: a vector of boolean values used to subset meta_columns 
+    # for numeric metadata
     is_numeric <- 
       sapply(
-        meta_columns,
+        meta_vars,
         function(x, object){
-          class(object@meta.data[[x]]) %in% c("numeric", "integer")
+          class(meta_table[[x]]) %in% c("numeric", "integer")
         },
         object
-      )
-    numeric_cols <- meta_columns[is_numeric]
-    non_numeric_cols <- meta_columns[!is_numeric]
+        )
     
-    # Reductions in object
-    reductions <- names(object@reductions)
+    numeric_cols <- meta_vars[is_numeric]
+    non_numeric_cols <- meta_vars[!is_numeric]
+    
+    # Assays, reductions in object
+    all_assays <-
+      scExploreR:::assay_names(
+        object
+      )
+    
+    reductions <- 
+      scExploreR:::reduction_names(
+        object
+      )
     
     # Main UI and Server Functions ####
     # 1. Tabs in Main UI ####
@@ -319,7 +370,7 @@ run_config <-
     # (not the assay options module)
     assay_tab <- function(){
       sidebarLayout(
-        applet_sidebar_panel(
+        config_app_sidebar_panel(
           # input-no-margin class: removes margin of input containers within div
           tagList(
             div(
@@ -328,7 +379,7 @@ run_config <-
                 inputId = "assays_selected",
                 label = "Choose assays to include:",
                 width = "100%",
-                choices = names(object@assays),
+                choices = all_assays,
                 options = 
                   list(
                     enable_search = FALSE,
@@ -351,7 +402,7 @@ run_config <-
           
         ),
         
-        applet_main_panel(
+        config_app_main_panel(
           # A "card" with assay-specific options is displayed for each 
           # selected assay
           tagList(
@@ -390,7 +441,7 @@ run_config <-
             # shown when their corresponding assay is selected by the user. The 
             # "id" argument in lapply is the name of the assay.
             lapply(
-              names(object@assays),
+              all_assays,
               function(assay){
                 options_ui(
                   id = assay,
@@ -398,7 +449,7 @@ run_config <-
                   optcard_type = "assays"
                 )
               }
-            ),
+            )
             
             # Button to activate warning modal (for testing purposes)
             # actionButton(
@@ -417,7 +468,7 @@ run_config <-
     metadata_tab <- 
       function(){
         sidebarLayout(
-          applet_sidebar_panel(
+          config_app_sidebar_panel(
             div(
               class = "input-no-margin",
               uiOutput(
@@ -432,7 +483,7 @@ run_config <-
               )
             }
           ),
-          applet_main_panel(
+          config_app_main_panel(
             tagList(
               # Card for generic metadata options 
               div(
@@ -488,7 +539,7 @@ run_config <-
     reductions_tab <- 
       function(){
         sidebarLayout(
-          applet_sidebar_panel(
+          config_app_sidebar_panel(
             div(
               class = "input-no-margin",
               uiOutput(
@@ -496,7 +547,7 @@ run_config <-
               )
             )
           ),
-          applet_main_panel(
+          config_app_main_panel(
             tagList(
               # Card for generic options (taken from metadata tab; unused) 
               # div(
@@ -600,7 +651,7 @@ run_config <-
                 ),
                 # Buttons to accept or discard threshold
                 div(
-                  class = "show-on-add show-on-edit space-top",
+                  class = "show-on-add show-on-edit half-space-top",
                   # Accept button: disabled at first; enabled when a feature 
                   # threshold has been selected using the interactive ridge plot
                   disabled(
@@ -638,7 +689,7 @@ run_config <-
               
               # Button to add a new threshold
               div(
-                class = "space-top",
+                class = "half-space-top",
                 actionButton(
                   inputId = "add_threshold",
                   label = "New Threshold",
@@ -789,8 +840,12 @@ run_config <-
       config_data <- 
         list(
           # Append config app version to list that is printed to file 
-          `config_version` = config_version
-        )
+          `config_version` = config_version,
+          # Record class of object
+          `object_class` = is(object),
+          # Record if a SingleCellExperiment object is HDF5 enabled
+          `is_HDF5SummarizedExperiment` = is_HDF5SummarizedExperiment
+          )
       
       # module_data: reactiveValues object for storing data specific 
       # to this module
@@ -919,7 +974,10 @@ run_config <-
             split_by = preview_dimplot_options$split_by(),
             reduction = preview_dimplot_options$reduction(),
             ncol = preview_dimplot_options$ncol(), 
-            show_legend = TRUE,
+            show_legend = 
+              if (!is.null(preview_dimplot_options$legend())){
+                preview_dimplot_options$legend()
+              } else TRUE,
             show_label = 
               if (!is.null(preview_dimplot_options$label())){
                 preview_dimplot_options$label()
@@ -1053,13 +1111,14 @@ run_config <-
       all_assay_options <- list()
       
       # Create an assay options module for each assay in the object 
-      for (id in names(object@assays)){
+      for (id in all_assays){
         server_output <- 
           options_server(
             id = id,
             object = object,
             categories_selected = assays_selected,
-            options_type = "assays"
+            options_type = "assays",
+            dev_mode = dev_mode
             )
         
         all_assay_options[[id]] <- server_output
@@ -1070,7 +1129,8 @@ run_config <-
       # reactive object, which is added to the config_data list. 
       config_data$assays <- 
         reactive({
-          #Options list is only processed when metadata columns have been selected
+          # Options list is only processed when metadata columns 
+          # have been selected
           if (!is.null(input$assays_selected)){
             #Extracts each reactive module output and stores them in a list
             list <- lapply(all_assay_options, function(x) x())
@@ -1213,22 +1273,28 @@ run_config <-
       # One server instance is created for each metadata category in the object
       all_metadata_options <- list()
       
-      for (id in names(object@meta.data)){
+      for (var in meta_vars){
         server_output <- 
           options_server(
-            id = id,
+            id = var,
             object = object,
             categories_selected = metadata_selected,
-            options_type = "metadata"
+            options_type = "metadata",
+            dev_mode = dev_mode
             )
         
-        all_metadata_options[[id]] <- server_output
+        all_metadata_options[[var]] <- server_output
       }
       
       ### 3.3.4. RECORD: metadata options in config data ####
       #### 3.3.4.1. Category-specific options ####
       config_data$metadata <- 
         reactive({
+          if (dev_mode == TRUE){
+            print("metadata selected")
+            print(input$metadata_selected)
+          }
+          
           # Options list is only processed when metadata columns 
           # have been selected
           if (isTruthy(input$metadata_selected)){
@@ -1241,6 +1307,11 @@ run_config <-
             # Sort list according to the order specified by the user in the drag
             # and drop menu
             options_list <- options_list[input$metadata_selected]
+            if (dev_mode == TRUE){
+              print("Options list")
+              print(options_list)
+            }
+            
             return(options_list)
           } else {
             # Return NULL if no columns are selected
@@ -1538,8 +1609,9 @@ run_config <-
             id = reduction,
             object = object,
             categories_selected = reductions_selected,
-            options_type = "reductions"
-          )
+            options_type = "reductions",
+            dev_mode = dev_mode
+            )
         
         all_reductions_options[[reduction]] <- server_output
       }
@@ -1574,15 +1646,18 @@ run_config <-
       
       ### 3.5.1. Define/update available ADTs ####
       # Reactive variable will be used for updating the selection menu with
-      # ADTs in the designated assay that have not already been added to the table
+      # ADTs in the designated assay that have not already been added to the
+      # table
       available_adts <-
         reactive({
           req(ADT_assay())
           
           # Fetch ADTs in the designated assay (reacts to assay)
           adts <- 
-            object[[ADT_assay()]] |> 
-            rownames()
+            scExploreR:::features_in_assay(
+              object,
+              assay = ADT_assay()
+              )
           
           # return adts that are not included in the table of defined thresholds
           # (also reacts to changes in the table)
@@ -1601,8 +1676,10 @@ run_config <-
         {
           # Fetch features (surface proteins) for the designated ADT assay
           adts <- 
-            object[[ADT_assay()]] |> 
-            rownames()
+            scExploreR:::features_in_assay(
+              object,
+              assay = ADT_assay()
+              )
           
           # Populate select input with ADT choices 
           updateSelectizeInput(
@@ -1632,8 +1709,15 @@ run_config <-
             # When adding a new threshold, use the adt selected by the user in
             # the search window
             # Add assay key to ADT (threshold server expects this)
+            # paste0(
+            #   Key(object[[isolate({ADT_assay()})]]),
+            #   input$selected_adt
+            # )
             paste0(
-              Key(object[[isolate({ADT_assay()})]]),
+              scExploreR:::make_key(
+                object,
+                assay = isolate({ADT_assay()})
+                ),
               input$selected_adt
             )
           } else if (module_data$threshold_menu_state == "edit") {
@@ -1641,7 +1725,10 @@ run_config <-
             # (this is set using a reactiveValues object)
             paste0(
               # Add assay key
-              Key(object[[isolate({ADT_assay()})]]),
+              scExploreR:::make_key(
+                object,
+                assay = isolate({ADT_assay()})
+                ),
               editing_data$adt_target
             )
           } 
@@ -1673,7 +1760,7 @@ run_config <-
         ignoreInit = TRUE,
         {
           module_data$threshold_menu_state <- "add"
-        })
+          })
       
       #### 3.5.4.2. Disable button while adding or editing a feature ####
       # Prevents user from adding a new feature while editing the current one
@@ -1764,8 +1851,10 @@ run_config <-
           # Reset ADT selection input
           # Get names of all ADTs 
           adts <- 
-            object[[ADT_assay()]] |> 
-            rownames()
+            scExploreR:::features_in_assay(
+              object,
+              assay = ADT_assay()
+              )
           
           updateSelectizeInput(
             session = session,
@@ -1790,11 +1879,11 @@ run_config <-
         if (!is.null(threshold_value())){
           enable(
             id = "accept_threshold"
-          )
+            )
         } else {
           disable(
             id = "accept_threshold"
-          )
+            )
         }
       })
       
@@ -1831,8 +1920,10 @@ run_config <-
           
           # Update ADT choices to exclude the ADTs currently in the table
           adts <- 
-            object[[ADT_assay()]] |> 
-            rownames()
+            scExploreR:::features_in_assay(
+              object,
+              assay = ADT_assay()
+              )
           
           updateSelectizeInput(
             session = session,
@@ -1915,7 +2006,7 @@ run_config <-
               Shiny.onInputChange('lastClickId', this.id);
               Shiny.onInputChange('lastClick', Math.random())
               });
-          "
+              "
             )
           }
         })
@@ -1995,8 +2086,10 @@ run_config <-
               # list of available ADTs, by updating the select input with all
               # ADTs not in the new table
               adts <- 
-                object[[ADT_assay()]] |> 
-                rownames()
+                scExploreR:::features_in_assay(
+                  object,
+                  assay = ADT_assay()
+                  )
               
               updateSelectizeInput(
                 session = session,
@@ -2156,6 +2249,9 @@ run_config <-
             )
           } else {
             # Trigger to proceed with loading without showing a modal
+            if (dev_mode == TRUE){
+              print("Triggered loading of config file")
+            }
             load_trigger$trigger()
           }
         })
@@ -2179,6 +2275,9 @@ run_config <-
         {
           removeModal()
           
+          if (dev_mode == TRUE){
+            print("Triggered loading of config file")
+          }
           load_trigger$trigger()
         })
       
@@ -2191,6 +2290,9 @@ run_config <-
           ignoreNULL = FALSE,
           ignoreInit = TRUE,
           {
+            if (dev_mode == TRUE){
+              print("Loading config file")
+            }
             # config_filename: for now, use a path from config_init.yaml
             # May soon be chosen with a select input
             if (isTruthy(config_filename)){
@@ -2225,6 +2327,15 @@ run_config <-
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            if (isTruthy(session$userData$config())){
+              print("Config file loaded.")
+              
+              print("Contents")
+              print(session$userData$config())
+            }
+          }
+          
           # In the future, may notify user which fields exist and which do not
           showNotification(
             ui =
@@ -2249,11 +2360,17 @@ run_config <-
         session$userData$config(),
         {
           if (isTruthy(session$userData$config()$label)){
+            if (dev_mode == TRUE){
+              print("Update label")
+            }
             updateTextInput(
               session = session,
               inputId = "dataset_label",
               value = session$userData$config()$label
             )
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2262,11 +2379,19 @@ run_config <-
         session$userData$config(),
         {
           if (isTruthy(session$userData$config()$description)){
+            if (dev_mode == TRUE){
+              print("Update description")
+            }
+            
             updateTextInput(
               session = session,
               inputId = "dataset_description",
               value = session$userData$config()$description,
             )
+            
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2280,11 +2405,19 @@ run_config <-
           # fileInputs create temporary files when the user selects a file, and
           # this can't be re-created from a config file
           if (isTruthy(preview_type)){
+            if (dev_mode == TRUE){
+              print("Update preview type")
+            }
+            
             updateSelectInput(
               session = session,
               inputId = "preview_type",
-              selected = preview_type,
+              selected = preview_type
             )
+            
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2311,6 +2444,10 @@ run_config <-
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            print("Update assays selected")
+          }
+          
           updateMultiInput(
             session,
             inputId = "assays_selected",
@@ -2321,17 +2458,29 @@ run_config <-
                 session$userData$config()$assays
               )
           )
+          
+          if (dev_mode == TRUE){
+            print("Complete")
+          }
         })
       
       ##### 3.7.4.2.2. Include numeric metadata ####
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            print("Update include numeric metadata checkbox")
+          }
+          
           updateAwesomeCheckbox(
             session = session,
             inputId = "include_numeric_metadata",
             value = session$userData$config()$include_numeric_metadata
             )
+          
+          if (dev_mode == TRUE){
+            print("Complete")
+          }
         })
       
       ##### 3.7.4.2.3. Designated Genes assay ####
@@ -2342,12 +2491,20 @@ run_config <-
           config <- session$userData$config()
           
           if (isTruthy(config$other_assay_options)){
+            if (dev_mode == TRUE){
+              print("Update designated genes assay")
+            }
+            
             updateSelectInput(
               session = session,
               inputId = "genes_assay",
-              choices = names(object@assays),
+              choices = all_assays,
               selected = config$other_assay_options$gene_assay
             )
+            
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2367,7 +2524,7 @@ run_config <-
             updateSelectInput(
               session = session,
               inputId = "adt_assay",
-              choices = names(object@assays),
+              choices = all_assays,
               selected = config$other_assay_options$adt_assay
             )
           } else {
@@ -2381,7 +2538,7 @@ run_config <-
                 updateSelectInput(
                   session = session,
                   inputId = "adt_assay",
-                  choices = c("none", names(object@assays)),
+                  choices = c("none", all_assays),
                   selected = assay
                 )
 
@@ -2397,6 +2554,10 @@ run_config <-
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            print("Update selected metadata")
+          }
+          
           # Set selected vs. not selected metadata variables using the
           # information in the loaded file.
           # sortable inputs will update when the values below change.
@@ -2420,6 +2581,10 @@ run_config <-
           # module_data$metadata_sortable_not_selected do not change
           # in this case).
           update_metadata_sortable$trigger()
+          
+          if (dev_mode == TRUE){
+            print("Complete")
+            }
         })
       
       ##### 3.7.4.3.2 Patient level meteadata variable ####
@@ -2433,11 +2598,19 @@ run_config <-
           
           # Update menu with variable in config file, if it exists
           if (isTruthy(sample_var)){
+            if (dev_mode == TRUE){
+              print("Update patient/sample level metadata variable")
+            }
+            
             updateSelectInput(
               session = session,
               inputId = "patient_colname",
               selected = sample_var
               )
+            
+            if (dev_mode == TRUE){
+              print("Complete")
+            }
           }
         })
       
@@ -2445,6 +2618,10 @@ run_config <-
       observeEvent(
         session$userData$config(),
         {
+          if (dev_mode == TRUE){
+            print("Update selected reductions")
+          }
+          
           # Set selected vs. not selected reductions using the information
           # in the loaded file. Also sets the order of reductions selected.
           module_data$reductions_sortable_selected <- 
@@ -2463,6 +2640,10 @@ run_config <-
           # module_data$reductions_sortable_not_selected do not change
           # in this case).
           update_reductions_sortable$trigger()
+          
+          if (dev_mode == TRUE){
+            print("Complete")
+            }
           })
       
       #### 3.7.4.5 ADT threshold table ####

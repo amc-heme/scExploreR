@@ -241,7 +241,8 @@ dge_tab_server <- function(id,
                            meta_choices,
                            valid_features,
                            object_trigger,
-                           error_list
+                           error_list,
+                           is_HDF5SummarizedExperiment
                            ){
   moduleServer(
     id,
@@ -282,6 +283,7 @@ dge_tab_server <- function(id,
           object = object,
           unique_metadata = unique_metadata,
           metadata_config = metadata_config,
+          assay_config = assay_config,
           meta_choices = meta_choices,
           valid_features = valid_features
           )
@@ -329,6 +331,7 @@ dge_tab_server <- function(id,
           object = object,
           unique_metadata = unique_metadata,
           metadata_config = metadata_config,
+          assay_config = assay_config,
           meta_categories = meta_categories,
           valid_features = valid_features,
           hide_menu = hidden_category
@@ -466,7 +469,8 @@ dge_tab_server <- function(id,
             } else {
               # Standard behavior 
               
-              # Chosen groups/classes from the category to include in the subset
+              # Append chosen groups/classes from the group by variable to the
+              # subset filters
               if (test_selections()$dge_mode == "mode_dge"){
                 choices <-
                   c(test_selections()$group_1, 
@@ -484,7 +488,15 @@ dge_tab_server <- function(id,
               subset_criteria <- subset_selections$selections()
               # Add group by metadata category with 
               # classes/groups to subset instructions
-              subset_criteria[[group_by_category()]] <- choices
+              subset_criteria[[length(subset_criteria) + 1]] <- 
+                list(
+                  `type` = "categorical",
+                  `mode` = NULL,
+                  `var` = test_selections()$group_by,
+                  # Add display name of variable for filter criteria display
+                  `label` = metadata_config()[[test_selections()$group_by]]$label,
+                  `value` = choices
+                )
             }
             
             # Return subset criteria
@@ -531,18 +543,14 @@ dge_tab_server <- function(id,
             subset <- 
               tryCatch(
                 error = function(cnd){
-                  # If the user has entered an advanced subsetting
-                  # string, log what was entered
-                  log_info("Error in dge tab subsetting.")
-                  if (
-                    !is.null(subset_selections$user_string())
-                  ){
-                    log_info("Advanced subsetting: TRUE.")
-                    log_info("String entered by user:")
-                    log_info(subset_selections$user_string())
-                  } else {
-                    log_info("Advanced subsetting: FALSE.")
-                  }
+                  # Log interpreted subset filters in the event of an error
+                  log_info(
+                    "Error in dge tab subsetting. ",
+                    "Subset filters entered:"
+                    )
+                  scExploreR:::log_subset(
+                    filter_list = subset_selections$selections()
+                    )
                   
                   # Use error_handler to display notification to user
                   error_handler(
@@ -571,9 +579,13 @@ dge_tab_server <- function(id,
                     subset <- 
                       make_subset(
                         object = object(),
-                        criteria_list = dge_subset_criteria(),
-                        user_string = subset_selections$user_string()
+                        filter_list = dge_subset_criteria()
                         )
+                    
+                    # Log subset created
+                    scExploreR:::log_subset(
+                      filter_list = subset_selections$selections()
+                    )
                     
                     # Modification of subset
                     # Metacluster Creation (if applicable)
@@ -583,19 +595,36 @@ dge_tab_server <- function(id,
                       group_1 <- test_selections()$group_1
                       group_2 <- test_selections()$group_2
                       
+                      # Create metacluster metadata
+                      # For object class-agnostic code, the metadata table 
+                      # must be pulled via an S3 method, edited as a table, and
+                      # then saved to the object via another S3 method.
+                      meta_table <- 
+                        SCUBA::fetch_metadata(
+                          subset,
+                          full_table = TRUE
+                        )
+                      
                       # Use case_when to create metacluster 
-                      subset@meta.data$metacluster <- 
+                      meta_table$metacluster <- 
                         case_when(
                           # If the cell has a value for the group by category, 
                           # assign a group name to it based on the members of the
                           # group (for example, a group with "R" and "S" will be
                           # renamed ("R and S"))
-                          subset@meta.data[[metadata_column]] %in% group_1 ~
+                          meta_table[[metadata_column]] %in% group_1 ~
                             vector_to_text(group_1),
-                          subset@meta.data[[metadata_column]] %in% group_2 ~
+                          meta_table[[metadata_column]] %in% group_2 ~
                             vector_to_text(group_2),
                           TRUE ~ "Unspecified"
                           )
+                      
+                      # Save new metadata table to subset
+                      subset <-
+                        scExploreR:::update_object_metadata(
+                          subset,
+                          table = meta_table
+                        )
                     } # End if (metaclusters_present())
                     
                     # Groups based on feature expression thresholds
@@ -634,8 +663,18 @@ dge_tab_server <- function(id,
                         print(head(expr_data >= threshold))
                         }
                       
+                      # Pull metadata table from subset
+                      # For object class-agnostic code, the metadata table 
+                      # must be pulled via an S3 method, edited as a table, and
+                      # then saved to the object via another S3 method.
+                      meta_table <- 
+                        SCUBA::fetch_metadata(
+                          subset,
+                          full_table = TRUE
+                          )
+                      
                       # Create metadata column based on simple threshold
-                      subset@meta.data$simple_expr_threshold <-
+                      meta_table$simple_expr_threshold <-
                         case_when(
                           # Avoiding "+" and "-" declarations for now
                           # "High" when expresssion value is greater than
@@ -643,6 +682,13 @@ dge_tab_server <- function(id,
                           expr_data >= threshold ~ glue("{feature} High"),
                           expr_data < threshold ~ glue("{feature} Low"),
                           TRUE ~ "error"
+                        )
+                      
+                      # Save metadata table with expression threshold column
+                      subset <- 
+                        scExploreR:::update_object_metadata(
+                          subset,
+                          meta_table
                         )
                       }
                     
@@ -754,19 +800,11 @@ dge_tab_server <- function(id,
                   return(NULL)
                   },
                 {
+                  # Note: designated genes assay is no longer used
                   dge_table <-
-                    # Run presto on the subset, using the group by category
-                    wilcoxauc(
-                      subset(), 
-                      # Assay: fixed to the designated gene assay for now
-                      seurat_assay =
-                        if (isTruthy(designated_genes_assay())){
-                          designated_genes_assay()
-                          # If designated assay is undefined, use the first
-                          # assay included in the config file.
-                        } else names(assay_config())[[1]],
-                      # If metaclusters are requested, use 
-                      # "metaclusters" for dge groups
+                    # Use DGE generic to determine test to run
+                    scDE::run_dge(
+                      object = subset(),
                       group_by = 
                         if (metaclusters_present()){
                           "metacluster"
@@ -774,30 +812,21 @@ dge_tab_server <- function(id,
                           "simple_expr_threshold"
                         } else {
                           group_by_category()
-                        }
-                    ) %>%
-                    # Explicitly coerce to tibble
-                    as_tibble() %>%
-                    # remove stat and auc from the output table
-                    dplyr::select(-c(statistic, pval)) %>%
-                    # Using magrittr pipes here because the following
-                    # statement doesn't work with base R pipes
-                    # remove negative logFCs if box is checked
-                    {if (input$pos) dplyr::filter(., logFC > 0) else .} %>%
-                    # Arrange in ascending order for padj, pval (lower
-                    # values are more "significant"). Ascending order is
-                    # used for the log fold-change
-                    arrange(padj, desc(abs(logFC)))
-                  
-                  # Change "logFC" column to log-2 fold change 
-                  # (default output uses a natural log)
-                  dge_table$logFC <- 
-                    to_log2(dge_table$logFC)
-                  
-                  # Rename column to explicitly specify log-2 fold change
-                  dge_table <-
-                    dge_table |>
-                    dplyr::rename(Log2FC = logFC)
+                        },
+                      # Seurat assay: designated genes assay, or the first
+                      # assay if undefined.
+                      # This is only used for Seurat objects
+                      seurat_assay =
+                        if (isTruthy(designated_genes_assay())){
+                          designated_genes_assay()
+                        } else names(assay_config())[[1]],
+                      # Positive genes only: based on user input
+                      positive_only = input$pos,
+                      # Report results using a log2 fold change
+                      lfc_format = "log2",
+                      # Show only adjusted p-value column
+                      remove_raw_pval = TRUE
+                      )
                   
                   log_session(session)
                   log_info("DGE Tab: Completed Presto")
@@ -820,6 +849,9 @@ dge_tab_server <- function(id,
                  
                   return(dge_table)
                 })
+            
+            print("DGE table colnanes")
+            print(colnames(dge_table))
 
             dge_table
           })
@@ -868,6 +900,18 @@ dge_tab_server <- function(id,
             names(table)[names(table) == "pct_out"] <-
               pct_out_rename
             
+            # Rename feature, AUC, avg exp., adjusted p-value columns, if 
+            # they exist in the DGE table
+            # Renaming vector (new_name = old_name)
+            rename_cols <- 
+              c(`Feature` = "feature",
+                `Average Expression` = "avgExpr", 
+                `AUC` = "auc",
+                `Adjusted p-value` = "pval_adj"
+                )
+            
+            table <- dplyr::rename(table, any_of(rename_cols))
+            
             datatable(
               table,
               # DT classes applied
@@ -880,17 +924,19 @@ dge_tab_server <- function(id,
               # Remove rownames
               rownames = FALSE,
               # Set escape to FALSE to render the HTML for GeneCards links 
-              escape = FALSE,
-              # Rename columns (new_name = old_name)
-              colnames = 
-                c("Feature" = "feature", 
-                  "Average Expression" = "avgExpr", 
-                  "AUC" = "auc",
-                  "Adjusted p-value" = "padj"
-                  )
+              escape = FALSE
               ) %>%
-              # Use 5 sig figs (3 or more is sufficient)
-              formatSignif(3:8, 5)
+              # Format numeric columns
+              formatSignif(
+                # Apply format to numeric columns (format is applied to columns
+                # where the boolean vector generated below is TRUE)
+                sapply(
+                  colnames(table), 
+                  function(col) is.numeric(table[[col]])
+                  ),
+                # Use 5 sig figs (3 or more is sufficient)
+                5
+              )
           })
       
       ## 3.11. UMAP of DE Selected Groups ####
@@ -920,7 +966,7 @@ dge_tab_server <- function(id,
             n_panel <-
               n_unique(
                 object = subset(),
-                metadata_column = metadata_column
+                meta_var = metadata_column
                 )
 
             #Set ncol to number of panels if less than four
@@ -939,11 +985,11 @@ dge_tab_server <- function(id,
               ncol = 4
               }
 
-            # Create DimPlot of subsetted object
-            DimPlot(
-              subset(),
+            # Create DimPlot of subsetted object, showing the groups tested
+            SCUBA::plot_reduction(
+              object = subset(),
               # Split by groups or marker classes used for DGE
-              split.by =
+              split_by = 
                 if (metaclusters_present()){
                   # Use "metacluster" when metaclusers present
                   "metacluster"
@@ -954,10 +1000,10 @@ dge_tab_server <- function(id,
                   # Standard DGE: split by the group by category
                   group_by_category()
                 },
-              #Group by variable set in UMAP options panel
-              group.by = input$umap_group_by,
+              # Group by variable set in UMAP options panel
+              group_by = input$umap_group_by,
               ncol = ncol
-              )
+            )
           })
       
       ## 3.12. Title for Main Panel ####
@@ -1078,20 +1124,6 @@ dge_tab_server <- function(id,
             dge_umap()
             })
           )
-      
-      #During development: render outputs of reactive variables in tab
-      # output$test_selection_output <- renderPrint({
-      #   test_selections()
-      # })
-      # output$subset_selection_output <- renderPrint({
-      #   subset_selections()
-      # })
-      # output$subset_info_output <- renderPrint({
-      #   subset()
-      # })
-      # output$subset_stats_output<- renderPrint({
-      #   subset_stats()
-      # })
       
       # 5. Download Handler for DGE Table --------------------------------------
       output$download_table <- 

@@ -106,7 +106,7 @@ plots_tab_ui <- function(id,
            ),# End div
            # Right column
            div(
-             class="two_column",
+             class = "two_column",
              # Switch for violin plot
              materialSwitch(
                inputId = ns("make_vln"),
@@ -288,16 +288,16 @@ plots_tab_ui <- function(id,
              div(
                id = ns("subset_stats"),
                # Header for subset summary
-               tags$strong(
-                 "Metadata in Displayed Subset",
-                 id = ns("subset_header")
-               ),
+               # tags$strong(
+               #   "Metadata in Displayed Subset",
+               #   id = ns("subset_header")
+               # ),
                # subset_summary module: prints the unique values for each
                # metadata category in the current subset/object
-               subset_summary_ui(
-                 id = ns("subset_summary"),
-                 category_labels = category_labels
-                 )
+               # subset_summary_ui(
+               #   id = ns("subset_summary"),
+               #   category_labels = category_labels
+               #   )
                ), # End subset_stats div
 
              # 1.5.2. Subset selection menus
@@ -312,7 +312,9 @@ plots_tab_ui <- function(id,
              # 1.5.3. Submit button for subset
              actionButton(
                inputId = ns("subset_submit"),
-               label="Apply Subset"
+               label = "Apply Subset",
+               class = "button-ghost center",
+               style = "width: 100%;"
                )
              ) # End subset_panel div
          ), # End 1.5
@@ -614,65 +616,66 @@ plots_tab_ui <- function(id,
        
        # 2. Main panel for displaying plot output ------------------------------
        mainPanel(
+         id = ns("plots_tab_main"),
          # div added to contain Waiter spinner (forces the spinner to cover 
          # the full main panel)
          div(
-           id = ns("main_panel"), 
-           class = "spinner-container-main",
-           # Panels for plots: display if checkboxes corresponding to 
-           # each type are checked
-           ## 2.1. DimPlot plot panel
-           plot_module_ui(
-             id = ns("dimplot"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.2. Panel for feature plot 
-           # Will be a message or a plot, depending on whether features have 
-           # been entered
-           plot_module_ui(
-             id = ns("feature"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.3. Panel for violin plot
-           # UI displayed will vary based on the entry into the feature text box
-           plot_module_ui(
-             id = ns("violin"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.4. Dot plot panel
-           plot_module_ui(
-             id = ns("dot"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.5. Scatterplot panel
-           plot_module_ui(
-             id = ns("scatter"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.6. Ridge plot panel
-           plot_module_ui(
-             id = ns("ridge"),
-             ui_component = "plot"
-             ),
-           
-           ## 2.7. Cell proportion stacked bar plot panel
-           plot_module_ui(
-             id = ns("proportion"),
-             ui_component = "plot"
-           ),
-           
-           ## 2.8. Metadata pie chart panel
-           if (!is.null(patient_colname())){
-             plot_module_ui(
-               id = ns("pie"),
+            id = ns("main_panel"), 
+            class = "spinner-container-main",
+            # Panels for plots: display if checkboxes corresponding to 
+            # each type are checked
+            ## 2.1. DimPlot plot panel
+            plot_module_ui(
+               id = ns("dimplot"),
                ui_component = "plot"
-             )
-           }
+            ),
+            
+            ## 2.2. Panel for feature plot 
+            # Will be a message or a plot, depending on whether features have 
+            # been entered
+            plot_module_ui(
+               id = ns("feature"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.3. Panel for violin plot
+            # UI displayed will vary based on the entry into the feature text box
+            plot_module_ui(
+               id = ns("violin"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.4. Dot plot panel
+            plot_module_ui(
+               id = ns("dot"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.5. Scatterplot panel
+            plot_module_ui(
+               id = ns("scatter"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.6. Ridge plot panel
+            plot_module_ui(
+               id = ns("ridge"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.7. Cell proportion stacked bar plot panel
+            plot_module_ui(
+               id = ns("proportion"),
+               ui_component = "plot"
+            ),
+            
+            ## 2.8. Metadata pie chart panel
+            if (!is.null(patient_colname())){
+               plot_module_ui(
+                  id = ns("pie"),
+                  ui_component = "plot"
+               )
+            }
          ) # End div
        ) # End 2.
      ) # End sidebarLayout() 
@@ -779,6 +782,16 @@ plots_tab_server <- function(id,
                      hide_on_render = FALSE
                    )
                  
+                 # Store the id of the mainPanel element for the plots tab
+                 # (used to reset scroll position when the spinner is shown 
+                 # and then removed)
+                 session$userData$plots_tab_main_panel_id <-
+                    ns("plots_tab_main")
+                 
+                 # ReactiveValues object to record state of plots tab spinner
+                 session$userData$plots_tab_spinner <- 
+                    reactiveValues(`shown` = FALSE)
+                 
                  # Feature choices for text entry 
                  observeEvent(
                    # Reactive - updates in response to change in dataset
@@ -870,7 +883,8 @@ plots_tab_server <- function(id,
                    # plot_switch: uses the input$make_dimplot switch
                    plot_switch = reactive({input$make_dimplot}),
                    plot_label = "DimPlot",
-                   n_cells_original = n_cells_original, # Non-reactive
+                   n_cells_original = n_cells_original,
+                   plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "dimplot",
                    lim_orig = lim_orig,
@@ -889,6 +903,7 @@ plots_tab_server <- function(id,
                    features_entered = reactive({input$text_features}),
                    plot_label = "Feature Plot",
                    n_cells_original = n_cells_original, 
+                   plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "feature",
                    assay_config = assay_config,
@@ -912,6 +927,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_vln}),
                    plot_label = "Violin Plot",
                    features_entered = reactive({input$text_features}),
+                   plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "violin",
                    assay_config = assay_config,
@@ -926,6 +942,7 @@ plots_tab_server <- function(id,
                    # plot_switch: uses the input$make_dot switch
                    plot_switch = reactive({input$make_dot}),
                    features_entered = reactive({input$text_features}),
+                   plots_tab_spinner = main_spinner,
                    plot_label = "Dot Plot", 
                    # Instructs server on which plot function to run
                    plot_type = "dot",
@@ -942,6 +959,7 @@ plots_tab_server <- function(id,
                    object = subset, 
                    # plot_switch: uses the input$make_scatter switch
                    plot_switch = reactive({input$make_scatter}),
+                   plots_tab_spinner = main_spinner,
                    plot_label = "Scatterplot",
                    # Instructs server on which plot function to run
                    plot_type = "scatter",
@@ -958,6 +976,7 @@ plots_tab_server <- function(id,
                    object = subset, 
                    # plot_switch: uses the input$make_ridge switch
                    plot_switch = reactive({input$make_ridge}),
+                   plots_tab_spinner = main_spinner,
                    plot_label = "Ridge Plot", 
                    # Relies on feature text entry
                    features_entered = reactive({input$text_features}),
@@ -974,6 +993,7 @@ plots_tab_server <- function(id,
                    object = subset,
                    # plot_switch: uses the input$make_proportion switch
                    plot_switch = reactive({input$make_proportion}),
+                   plots_tab_spinner = main_spinner,
                    plot_label = "Cell Proportion Plot", 
                    # Instructs server on which plot function to run
                    plot_type = "proportion",
@@ -992,6 +1012,7 @@ plots_tab_server <- function(id,
                      object = subset,
                      # plot_switch: uses the input$make_pie switch
                      plot_switch = reactive({input$make_pie}),
+                     plots_tab_spinner = main_spinner,
                      plot_label = "Metadata Pie Chart", 
                      # Instructs server on which plot function to run
                      plot_type = "pie",
@@ -1043,40 +1064,50 @@ plots_tab_server <- function(id,
                      object = object,
                      unique_metadata = unique_metadata,
                      metadata_config = metadata_config,
+                     assay_config = assay_config,
                      meta_categories = meta_categories,
                      valid_features = valid_features
                      )
                  
+                 ## 4.2. Enable/Disable "Apply Subset" button ####
+                 # When filters are being edited, the apply subset button must
+                 # be disabled to prevent the subset from computing while the
+                 # user is still choosing a filter.
+                 observe(
+                    label = glue("{id}: enable/disable apply subset button"),
+                    {
+                       target_id = "subset_submit"
+                       
+                       if (isTruthy(subset_selections$edit_mode())){
+                          shinyjs::disable(
+                             id = target_id
+                             )
+                          
+                          shinyjs::addClass(
+                             id = target_id,
+                             class = "disabled"
+                             )
+                       } else {
+                          shinyjs::enable(
+                             id = target_id
+                             )
+                          
+                          shinyjs::removeClass(
+                             id = target_id,
+                             class = "disabled"
+                             )
+                       }
+                    })
+                 
                  ## 4.2. Make Subset ####
-                 # object_init: a reactive value set to TRUE when a new object 
-                 # is loaded. When object_init is TRUE it signals the 
-                 # plots_subset eventReactive to return the full object
-                 # instead of a subset the first time a new dataset is loaded.
-                 object_init <- reactiveVal(FALSE)
-                 
-                 # Create a reactive trigger 
-                 object_trigger <- makeReactiveTrigger()
-                 
-                 # Set object_init to TRUE when an object is loaded, 
-                 # and trigger the plots_subset eventReactive to run
-                 observeEvent(
-                   # Respond to downstream variable (results in less lag time 
-                   # between removal of loading screen and rendering of DimPlot)
-                   metadata_config(),
-                   label = "Plots: object_init(TRUE)",
-                   {
-                     object_init(TRUE)
-                     object_trigger$trigger()
-                   })
-                 
                  subset <-
                    eventReactive(
                      # Also reacts to the object. All downstream functions in 
                      # the plots tab respond to the "subset" object, so the 
                      # subset must be created each time a new object is loaded 
                      # to avoid downstream errors. 
-                     c(input$subset_submit, object_trigger$depend()),
-                     ignoreNULL=FALSE,
+                     c(input$subset_submit, object()),
+                     ignoreNULL = FALSE,
                      label = "Plots Subset",
                      {
                        # Display spinner over main window while the
@@ -1099,14 +1130,13 @@ plots_tab_server <- function(id,
 
                              # If the user has entered an advanced subsetting
                              # string, log what was entered
-                             log_info("Error in plots tab subsetting.")
-                             if (!is.null(subset_selections$user_string())){
-                               log_info("Advanced subsetting: TRUE.")
-                               log_info("String entered by user:")
-                               log_info(subset_selections$user_string())
-                             } else {
-                               log_info("Advanced subsetting: FALSE.")
-                             }
+                             log_info(
+                                "Error in plots tab subsetting. ",
+                                "Subset filters entered:"
+                                )
+                              scExploreR:::log_subset(
+                                 filter_list = subset_selections$selections()
+                                 )
 
                              error_handler(
                                session,
@@ -1116,33 +1146,28 @@ plots_tab_server <- function(id,
                                error_list = error_list$subset_errors
                                )
 
-                             # Return "NULL" for subset when an
+                             # Return NULL for subset when an
                              # error has occurred
                              plots_s_sub <- NULL
                              return(plots_s_sub)
                              }, # End tryCatch error function
                            # Begin tryCatch code
                            {
-                             if (object_init() == TRUE){
-                               # if object_init is TRUE, return the full object
-                               # instead of subsetting. Also set object_init
-                               # back to FALSE.
-                               object_init(FALSE)
-                               plots_s_sub <- object()
-                             } else {
-                               # Use subsetting function with the output of the
-                               # subset selections module as `criteria_list`.
-                               plots_s_sub <-
+                              # Log the subset selected by the user
+                              scExploreR:::log_subset(
+                                 filter_list = subset_selections$selections()
+                              )
+                              
+                              # Use subsetting function with the output of the
+                              # subset selections module as `criteria_list`.
+                              plots_s_sub <-
                                  make_subset(
-                                   object(),
-                                   criteria_list =
-                                     subset_selections$selections(),
-                                   user_string =
-                                     subset_selections$user_string()
-                                   )
-                               }
-                             }
-                           )#End tryCatch
+                                    object(),
+                                    filter_list =
+                                       subset_selections$selections()
+                                    )
+                              }
+                           ) # End tryCatch
 
                        # Hide the spinners
                        main_spinner$hide()
@@ -1161,7 +1186,7 @@ plots_tab_server <- function(id,
                    {
                      if (!is.null(subset())){
                        # Error A: Subset Only Contains one Cell
-                       if (length(Cells(subset())) == 1){
+                       if (n_cells(subset()) == 1){
                          showNotification(
                            ui = 
                              icon_notification_ui(
@@ -1195,11 +1220,26 @@ plots_tab_server <- function(id,
                    ignoreNULL = FALSE,
                    label = "Post-subset Memory Query",
                    {
-                     log_session(session)
-                     log_info(
-                       glue("Memory used after creating subset in plots tab: {to_GB(mem_used())}")
-                       )
-                   })
+                      log_session(session)
+                      # Show message with memory used after either creating a
+                      # subset, or loading the full object.
+                      if (length(subset_selections$selections()) == 0){
+                         # Full object if no subset filters are selected
+                         log_info(
+                            glue(
+                               "Memory used after loading full object in ",
+                               "plots tab: {to_GB(mem_used())}"
+                               )
+                            )
+                      } else {
+                         log_info(
+                            glue(
+                               "Memory used after creating subset in plots ",
+                               "tab: {to_GB(mem_used())}"
+                               )
+                            )
+                         }
+                      })
                  
                })
   }

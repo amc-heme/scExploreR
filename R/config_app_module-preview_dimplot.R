@@ -10,7 +10,6 @@
 #' excluded from the choices of variables for group.by and split.by. 
 #' 
 #' @noRd
-#'
 preview_dimplot_ui <- 
   function(
     id,
@@ -44,12 +43,22 @@ preview_dimplot_ui <-
       selectInput(
         inputId = ns("reduction"),
         label = "Choose Reduction",
-        choices = names(object@reductions)
+        choices = 
+          scExploreR:::reduction_names(
+            object
+          )
         ),
       # Label groups
       checkboxInput(
         inputId = ns("label"),
         label = "Label Groups",
+        # Default value is TRUE
+        value = TRUE
+        ),
+      # Include legend
+      checkboxInput(
+        inputId = ns("legend"),
+        label = "Show Legend",
         # Default value is TRUE
         value = TRUE
         ),
@@ -156,7 +165,7 @@ preview_dimplot_server <-
                   )
                 }
                 
-                if (isTruthy(preview_plot_settings$split_by)){
+                if (preview_plot_settings$split_by != "none"){
                   # ncol slider
                   # Must also fill min/max slider settings
                   ncol_settings <-
@@ -165,9 +174,7 @@ preview_dimplot_server <-
                       rule = "split_by",
                       split_by = preview_plot_settings$split_by
                     )
-                }
-                
-                if (isTruthy(preview_plot_settings$ncol)){
+                  
                   updateSliderInput(
                     session = session,
                     inputId = "ncol",
@@ -175,7 +182,7 @@ preview_dimplot_server <-
                     value = preview_plot_settings$ncol,
                     max = as.numeric(ncol_settings[2]),
                     step = 1
-                  )
+                    )
                 }
                 
                 if (!is.null(preview_plot_settings$label)){
@@ -183,6 +190,14 @@ preview_dimplot_server <-
                     session = session,
                     inputId = "label",
                     value = preview_plot_settings$label
+                  )
+                }
+                
+                if (!is.null(preview_plot_settings$legend)){
+                  updateCheckboxInput(
+                    session = session,
+                    inputId = "legend",
+                    value = preview_plot_settings$legend
                   )
                 }
               }
@@ -195,7 +210,8 @@ preview_dimplot_server <-
           `split_by` = reactive({input$split_by}),
           `reduction` = reactive({input$reduction}),
           `ncol` = reactive({input$ncol}),
-          `label` = reactive({input$label})
+          `label` = reactive({input$label}),
+          `legend` = reactive({input$legend})
           )
         })
 }

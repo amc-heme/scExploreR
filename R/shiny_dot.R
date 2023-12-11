@@ -34,16 +34,24 @@ shiny_dot <-
     if (length(features_entered) > 0){
       # Ordering of groups in group_by category
       # Plot groups in ascending or descending order by group name
-      object@meta.data[[group_by]] <-
+      
+      # Pull metadata table, then modify levels in factor for group_by data
+      meta_table <- 
+        SCUBA::fetch_metadata(
+          object,
+          full_table = TRUE
+          )
+      
+      meta_table[[group_by]] <-
         # factor() creates a factor if the metadata category is not a factor
         # already, and re-orders a factor if it already exists.
         factor(
-          object@meta.data[[group_by]],
+          meta_table[[group_by]],
           levels = 
             # If sort_groups is "ascending" or "descending", re-factor based on
             # an alphanumeric order
             if (sort_groups %in% c("ascending", "descending")){
-              object@meta.data[[group_by]] |> 
+              meta_table[[group_by]] |> 
                 unique() |> 
                 str_sort(
                   numeric = TRUE,
@@ -74,13 +82,20 @@ shiny_dot <-
             }
           )
       
+      # Save refactored metadata table to object
+      object <- 
+        scExploreR:::update_object_metadata(
+          object,
+          table = meta_table
+          )
+      
       #Create plot if at least one feature is passed to shiny_dot()
       plot <- 
-        DotPlot(
+        SCUBA::plot_dot(
           # Seurat object or subset 
           object, 
           features = features_entered,
-          group.by = group_by
+          group_by = group_by
           ) + 
         RotatedAxis() +
         #Legend position: "right" if a legend is desired, and "none" if not
