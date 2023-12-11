@@ -45,6 +45,9 @@ Imports:
     viridisLite,
     waiter (>= 0.2.5),
     yaml
+Remotes: 
+    github::immunogenomics/presto,
+    github::amc-heme/SCUBA
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 Depends: 
