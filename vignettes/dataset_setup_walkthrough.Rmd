@@ -5,6 +5,8 @@ output:
     theme:
       bslib: true
       version: 5
+pkgdown:
+  as_is: true
 #date: "2023-11-16"
 ---
 
