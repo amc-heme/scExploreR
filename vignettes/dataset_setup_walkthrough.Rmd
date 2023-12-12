@@ -5,7 +5,7 @@ output:
     theme:
       bslib: true
       version: 5
-date: "2023-11-16"
+#date: "2023-11-16"
 ---
 
 ```{scss document_css, echo = FALSE}

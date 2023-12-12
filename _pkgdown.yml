@@ -15,29 +15,27 @@ home:
     - community
     - authors
     - dev
-navbar: ~
-structure:
-  left:
-  - articles
-  - reference
-  right: github
-components:
-  articles:
-    text: Articles
-    menu:
-    - text: "Help and Tutorials"
-    - text: App Setup Walkthrough
-      href: articles/dataset_setup_walkthrough.html
-    - text: Exploring your Data
-      href: articles/tutorial.html
-    - text: Guide to scRNA-Seq Plots
-      href: articles/scRNA_Plots_Explained.html
-    - text: String Subsetting Guide
-      href: articles/advanced_subsetting_documentation.html
-    - text: -------
-    - text: "Reference"
-    - text: Full App Manual
-      href: articles/full_documentation.html
-    - text: Config App Documentation
-      href: articles/config_documentation.html
+navbar: 
+  structure:
+    left: [articles, reference]
+    right: github
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: "Help and Tutorials"
+      - text: App Setup Walkthrough
+        href: articles/dataset_setup_walkthrough.html
+      - text: Exploring your Data
+        href: articles/tutorial.html
+      - text: Guide to scRNA-Seq Plots
+        href: articles/scRNA_Plots_Explained.html
+      - text: String Subsetting Guide
+        href: articles/advanced_subsetting_documentation.html
+      - text: -------
+      - text: "Reference"
+      - text: Full App Manual
+        href: articles/full_documentation.html
+      - text: Config App Documentation
+        href: articles/config_documentation.html
 
