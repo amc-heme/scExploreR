@@ -814,7 +814,46 @@ Drag the metadata columns listed below to the **"Selected Metadata"** column, an
 
 ::: {.card-body style="background-color: #E1E1E1;"}
 
-![plot of chunk metadata suggestion table](figure/metadata suggestion table-1.png)
+```{r metadata suggestion table, echo = FALSE, message = FALSE}
+meta_vars <- 
+  c("clusters", "cell_type_fine", "treatment", "tissue", "donor_id", "HTAN_Biospecimen_ID", "self_reported_ethnicity")
+
+meta_labels <- 
+  c( "Clusters", "Cell Type", "Treatment History", "Tissue", "Patient ID",
+     "HTAN Sample ID", "Self-Reported Ethnicity")
+
+library(DT)
+
+suggested_labels <- 
+  data.frame(
+    `Selected Variable` = meta_vars, 
+    `Label` = meta_labels
+    )
+
+DT::datatable(
+  suggested_labels,
+  # Define HTML for table header, and eval with escape = FALSE
+  escape = FALSE,
+  colnames = 
+    c("<b>Selected Variable</b>", 
+      "<b>Label</b>"
+      ),
+  # Remove row index
+  rownames = FALSE,
+    # Disable column filter interface
+  filter = "none",
+  options = 
+    list(
+      # Disables search, entries per page interface
+      `searching` = FALSE,
+      `paging` = FALSE,
+      # Disables number of entries footnote
+      `info` = FALSE,
+      # Disables sorting
+      `ordering` = FALSE
+      )
+  )
+```
 
 :::
 :::
@@ -890,7 +929,45 @@ scExploreR::run_config(
 
 Table of selected variables, with their corresponding labels. The suggested order is the order of the variables on the table.
 
-![plot of chunk sclc metadata labels](figure/sclc metadata labels-1.png)
+```{r sclc_metadata_labels, echo = FALSE, message = FALSE}
+meta_vars <- 
+  c("SCLC_subtype", "treatment_categorized", "donor_id", "tissue", 
+    "clusters", "recurrent_cluster", "self_reported_ethnicity")
+
+meta_labels <- 
+  c("SCLC Subtype", "Treatment", "Patient ID", "Tissue", "Clusters", 
+    "Recurrent Cluster", "Self-Reported Ethnicity")
+
+suggested_labels <- 
+  data.frame(
+    `Selected Variable` = meta_vars, 
+    `Label` = meta_labels
+    )
+
+DT::datatable(
+  suggested_labels,
+  # Define HTML for table header, and eval with escape = FALSE
+  escape = FALSE,
+  colnames = 
+    c("<b>Selected Variable</b>", 
+      "<b>Label</b>"
+      ),
+  # Remove row index
+  rownames = FALSE,
+    # Disable column filter interface
+  filter = "none",
+  options = 
+    list(
+      # Disables search, entries per page interface
+      `searching` = FALSE,
+      `paging` = FALSE,
+      # Disables number of entries footnote
+      `info` = FALSE,
+      # Disables sorting
+      `ordering` = FALSE
+      )
+  )
+```
 
 #### **Reductions Tab**
 
