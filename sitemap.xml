@@ -13,7 +13,13 @@
     <loc>https://amc-heme.github.io/scExploreR/articles/config_documentation.html</loc>
   </url>
   <url>
+    <loc>https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html</loc>
+  </url>
+  <url>
     <loc>https://amc-heme.github.io/scExploreR/articles/full_documentation.html</loc>
+  </url>
+  <url>
+    <loc>https://amc-heme.github.io/scExploreR/articles/hdf5_storage.html</loc>
   </url>
   <url>
     <loc>https://amc-heme.github.io/scExploreR/articles/index.html</loc>
@@ -31,7 +37,19 @@
     <loc>https://amc-heme.github.io/scExploreR/index.html</loc>
   </url>
   <url>
+    <loc>https://amc-heme.github.io/scExploreR/reference/assay_names.html</loc>
+  </url>
+  <url>
+    <loc>https://amc-heme.github.io/scExploreR/reference/features_in_assay.html</loc>
+  </url>
+  <url>
     <loc>https://amc-heme.github.io/scExploreR/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>https://amc-heme.github.io/scExploreR/reference/make_subset.html</loc>
+  </url>
+  <url>
+    <loc>https://amc-heme.github.io/scExploreR/reference/reduction_names.html</loc>
   </url>
   <url>
     <loc>https://amc-heme.github.io/scExploreR/reference/run_config.html</loc>
@@ -40,6 +58,6 @@
     <loc>https://amc-heme.github.io/scExploreR/reference/run_scExploreR.html</loc>
   </url>
   <url>
-    <loc>https://amc-heme.github.io/scExploreR/reference/test_dataset.html</loc>
+    <loc>https://amc-heme.github.io/scExploreR/reference/triana_et_al_condensed.html</loc>
   </url>
 </urlset>

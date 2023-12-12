@@ -4,10 +4,12 @@ pkgdown_sha: ~
 articles:
   advanced_subsetting_documentation: advanced_subsetting_documentation.html
   config_documentation: config_documentation.html
+  dataset_setup_walkthrough: dataset_setup_walkthrough.html
   full_documentation: full_documentation.html
+  hdf5_storage: hdf5_storage.html
   scRNA_Plots_Explained: scRNA_Plots_Explained.html
   tutorial: tutorial.html
-last_built: 2023-12-07T18:20Z
+last_built: 2023-12-12T17:49Z
 urls:
   reference: https://amc-heme.github.io/scExploreR/reference
   article: https://amc-heme.github.io/scExploreR/articles
