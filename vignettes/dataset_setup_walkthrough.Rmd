@@ -34,7 +34,7 @@ pkgdown:
      creating a cresent-like shape*/
   border-left-width: 8px;
   border-radius: 8px;
-  h4 {
+  h4, h5 {
     margin-top: 0;
     margin-bottom: 5px;
   }
@@ -62,7 +62,7 @@ pkgdown:
     border-left-color: $color;
     /* Background: color above, with an alpha hex value of '35'*/
     background-color: #{$color + '35'};
-    h4 {
+    h4, h5 {
       color: $color;
     }
   }
@@ -128,7 +128,7 @@ Chan et al. use all three datasets in their analysis, and the same will be done 
 You may choose either the Anndata or the Seurat formats for download, though we recommend the Anndata format due to improved performance and decreased RAM requirements. This article will cover operations on the Anndata object.
 
 ::: {.callout .callout-info}
-#### Note
+<h4> Note </h4>
 
 While the anndata format is exclusive to python, anndata objects can be explored in R Studio with R-style commands using the [Reticulate](https://rstudio.github.io/reticulate/) package. The example in this vignette uses Reticulate, along with the [anndata](https://anndata.dynverse.org) R package, and SCUBA, which provides utility functions for common exploration/data accession operations in single cell objects.
 :::
@@ -140,7 +140,9 @@ By the end of this example, you will be able to set up an scExploreR instance wi
 
 ::: {.card .mb-3}
 ::: {.card-header style="background-color: #555588;"}
-#### Process to host a dataset in scExploreR {.card-title .center .white-text}
+<h4 class = "card-title center white-text"> 
+  Process to host a dataset in scExploreR 
+</h4>
 :::
 
 ::: {.card-body style="background-color: #E1E1E1;"}
@@ -159,13 +161,13 @@ To understand what aspects to include, it is best to explore the object to ident
 In this section, we will load the "Combined Samples" and "SCLC epithelial cells" objects and explore relevant data to include in the scExploreR instance.
 
 ::: {.callout .callout-info}
-#### Note
+<h4> Note </h4>
 
 The example below is one of many ways this step can be approached. With other objects, the process of understanding relevant data may also involve communicating with staff involved in sequencing of your samples and preprocessing of the data.
 :::
 
 ::: {.callout .callout-info}
-#### Note
+<h4> Note </h4>
 
 For objects that you preprocess, it is good practice to include details on the metadata in your object. This is helpful for when you share your object upon publication, or for sharing your object internally or with collaborators. There are many ways to do this, though anndata formats make this easy using the unstructured (`uns`) data slot. One suggestion is to add a python dictionary to `uns` with relevant variable names as keys, and information on each variable as values.
 :::
@@ -333,7 +335,7 @@ This example will identify relevant metadata following the guiding questions bel
 
 ::: {.card .mb-3}
 ::: {.card-header style="background-color: #555588;"}
-#### Guiding Questions for Metadata Selection {.card-title .center .white-text}
+<h4 class = "card-title center white-text"> Guiding Questions for Metadata Selection </h4>
 :::
 
 ::: {.card-body style="background-color: #E1E1E1;"}
@@ -347,7 +349,7 @@ This example will identify relevant metadata following the guiding questions bel
 :::
 
 ::: {.callout .callout-info}
-#### Note
+<h4> Note </h4>
 
 While Numeric metadata can't be used for subsetting or choices on plots, it may be plotted like features, if allowed via the config app. See the config app section for instructions on how to enable/disable this usage.
 :::
@@ -516,7 +518,7 @@ full_dataset$obsm$X_pca |> dim()
 No alternate modalities are observed in the `obsm` slot for this object. There is only the main modality, gene expression, in the `X` slot.
 
 ::: {.callout .callout-info}
-#### Note
+<h4> Note </h4>
 
 Other datasets may include surface protein (ADT) data, computed gene signatures per cell, or other data. **For anndata objects, alternate modalities must be stored in `obsm` to be accessible to scExploreR** (with the exception of `X`, of course). Seurat and SingleCellExperiment objects have defined slots for modalities: `@assays` in Seurat objects, and "alternate experiments" for SingleCellExperiment objects. For these object types, scExploreR will use these slots to access modality information. As long as feature expression data for each modality is stored using the convention for Seurat and SingleCellExperiment objects, no additional action is needed for scExploreR to find this data.
 :::
@@ -687,7 +689,7 @@ Before loading Anndata objects into the config app, the keys of alternate modali
 Alternate modalities and reductions should be stored in `uns`, under `scExploreR_assays` and `scExploreR_reductions`, respectively. This is done below in python, via reticulate, for both the full object and the SCLC object.
 
 ::: {.callout .callout-info}
-#### Note
+<h4> Note </h4>
 
 This step is not required for Seurat or SingleCellExperiment objects.
 :::
@@ -784,7 +786,7 @@ To include a modality in scExploreR, select it under **"Available Assays"**. Onc
 If you want the name to display in plots, click the checkbox. This is helpful when you have features in multiple modalities with the same name, though in this example there is only one modality, so the box can be left unchecked.
 
 ::: {.callout .callout-info}
-#### Note
+<h4> Note </h4>
 
 When configuring an object with multiple modalities, the checkbox for the "Gene" assay should generally not be checked. Usually most of the features in an object will be genes, so it is not necessary to specify that a feature is a gene. For other modalities, it generally does make sense to add the name of modality to the plot. It is especially helpful to add a label when feature names overlap with names in the gene assay. This can be the case for ADT data, where several surface proteins overlap with human gene symbols (i.e. CD34 and CD36).
 :::
@@ -802,7 +804,6 @@ Drag a metadata variable from the **"Available Metadata"** column to the **"Sele
 ![](dataset_setup_walkthrough-011-Drag_Metadata_Demo.png)
 
 
-
 You can drag the variables in the **"Selected Metadata"** column to change their order. Menus in the app will reflect the order of the variables.
 
 ![](dataset_setup_walkthrough-012-Reorder_Metadata.png)
@@ -811,7 +812,9 @@ Drag the metadata columns listed below to the **"Selected Metadata"** column, an
 
 ::: {.card .mb-3}
 ::: {.card-header style="background-color: #555588;"}
-#### Suggested Metadata Options {.card-title .center .white-text}
+<h4 class = "card-title center white-text"> 
+  Suggested Metadata Options 
+  </h4>
 :::
 
 ::: {.card-body style="background-color: #E1E1E1;"}
@@ -879,7 +882,7 @@ Now that we've filled out all the information in the config file, let's save the
 ![](dataset_setup_walkthrough-016-config_save_file.png)
 
 ::: {.callout .callout-info}
-#### Note
+<h4> Note </h4>
 
 The recommended filename is the the name of your object plus "\_config", though you can use any name you wish.
 :::
@@ -895,15 +898,17 @@ scExploreR::run_config(
 )
 ```
 
-
-
 ::: {.card .mb-3}
 ::: {.card-header style="background-color: #555588;"}
-#### Suggested Settings for Epithelial SCLC Object {.card-title .center .white-text}
+<h4 class = "card-title center white-text"> 
+  Suggested Settings for Epithelial SCLC Object 
+  </h4>
 :::
 
 ::: {.card-body style="background-color: #E1E1E1;"}
-#### **General Tab**
+<h4> 
+  **General Tab**
+</h4>
 
 **Label for dataset:** SCLC Epithelial Cells
 
@@ -1012,23 +1017,9 @@ RSTUDIO_PANDOC: ~
 You can create a config file from R Studio by going to **File** >> **New File** >> **Text File**. After creating the text file, save it in the same directory as the object and config files, and **be sure to add ".yaml" to the filename**. After saving initially, use the structure above and define the paths to the object and config files. 
 
 ::: {.callout .callout-info}
-#### Note
+<h4> Note </h4>
 
 Don't forget the YAML version at the top. Version 1.1 is the latest version supported by the `yaml` package used to read the data into R.
-:::
-
-::: {.callout .callout-info}
-#### Note
-
-If you only have one object, you don't need to make an app config file. You can simply run `run_scExploreR`, using the `object_path` and `config_path` parameters instead of `browser_config`.
-
-
-```r
-scExploreR::run_scExploreR(
-  object_path = "~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad",
-  config_path = "~/datasets/small_cell_lung_cancer/SCLC_Full_config.yaml"
-)
-```
 :::
 
 # Run scExploreR
@@ -1041,4 +1032,18 @@ scExploreR::run_scExploreR(
   browser_config = "~/datasets/small_cell_lung_cancer/sclc_app_config.yaml"
 )
 ```
+
+::: {.callout .callout-info}
+<h4> Note </h4>
+
+If you only have one object, you don't need to make an app config file. You can simply run `run_scExploreR`, using the `object_path` and `config_path` parameters instead of `browser_config`.
+
+
+```r
+scExploreR::run_scExploreR(
+  object_path = "~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad",
+  config_path = "~/datasets/small_cell_lung_cancer/SCLC_Full_config.yaml"
+)
+```
+:::
 
