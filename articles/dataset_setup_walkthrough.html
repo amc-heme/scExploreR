@@ -84,7 +84,7 @@
     
     
 <style type="text/css">
-.center{text-align:center;display:block}.white-text{color:white}.callout{padding:20px;margin:20px 0;border:1px solid #eee;border-left-width:8px;border-radius:8px}.callout h4{margin-top:0;margin-bottom:5px}.callout p:last-child{margin-bottom:0}.callout code{border-radius:3px}.callout+.bs-callout{margin-top:-5px}.callout-default{border-left-color:#777;background-color:#77735}.callout-default h4{color:#777}.callout-primary{border-left-color:#428bca;background-color:#428bca35}.callout-primary h4{color:#428bca}.callout-success{border-left-color:#5cb85c;background-color:#5cb85c35}.callout-success h4{color:#5cb85c}.callout-danger{border-left-color:#d9534f;background-color:#d9534f35}.callout-danger h4{color:#d9534f}.callout-warning{border-left-color:#f0ad4e;background-color:#f0ad4e35}.callout-warning h4{color:#f0ad4e}.callout-info{border-left-color:#5bc0de;background-color:#5bc0de35}.callout-info h4{color:#5bc0de}.callout-bdc{border-left-color:#29527a;background-color:#29527a35}.callout-bdc h4{color:#29527a}.card-header{margin-top:0px}.scroll-80{max-height:80px;overflow-y:auto;background-color:inherit}.scroll-100{max-height:100px;overflow-y:auto;background-color:inherit}.scroll-300{max-height:300px;overflow-y:auto;background-color:inherit}
+.center{text-align:center;display:block}.white-text{color:white}.callout{padding:20px;margin:20px 0;border:1px solid #eee;border-left-width:8px;border-radius:8px}.callout h4,.callout h5{margin-top:0;margin-bottom:5px}.callout p:last-child{margin-bottom:0}.callout code{border-radius:3px}.callout+.bs-callout{margin-top:-5px}.callout-default{border-left-color:#777;background-color:#77735}.callout-default h4,.callout-default h5{color:#777}.callout-primary{border-left-color:#428bca;background-color:#428bca35}.callout-primary h4,.callout-primary h5{color:#428bca}.callout-success{border-left-color:#5cb85c;background-color:#5cb85c35}.callout-success h4,.callout-success h5{color:#5cb85c}.callout-danger{border-left-color:#d9534f;background-color:#d9534f35}.callout-danger h4,.callout-danger h5{color:#d9534f}.callout-warning{border-left-color:#f0ad4e;background-color:#f0ad4e35}.callout-warning h4,.callout-warning h5{color:#f0ad4e}.callout-info{border-left-color:#5bc0de;background-color:#5bc0de35}.callout-info h4,.callout-info h5{color:#5bc0de}.callout-bdc{border-left-color:#29527a;background-color:#29527a35}.callout-bdc h4,.callout-bdc h5{color:#29527a}.card-header{margin-top:0px}.scroll-80{max-height:80px;overflow-y:auto;background-color:inherit}.scroll-100{max-height:100px;overflow-y:auto;background-color:inherit}.scroll-300{max-height:300px;overflow-y:auto;background-color:inherit}
 </style>
 <!-- Load datasets for use in the vignette --><p>This vignette will walk you through the process of setting up a
 dataset in scExploreR. This vignette is based on the Small Cell Lung
@@ -110,9 +110,10 @@ representation.</p>
 though we recommend the Anndata format due to improved performance and
 decreased RAM requirements. This article will cover operations on the
 Anndata object.</p>
-<div class="section level5">
-<h5 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a>
-</h5>
+<div class="callout callout-info">
+<h4>
+Note
+</h4>
 <p>While the anndata format is exclusive to python, anndata objects can
 be explored in R Studio with R-style commands using the <a href="https://rstudio.github.io/reticulate/" class="external-link">Reticulate</a> package. The
 example in this vignette uses Reticulate, along with the <a href="https://anndata.dynverse.org" class="external-link">anndata</a> R package, and SCUBA,
@@ -125,10 +126,10 @@ operations in single cell objects.</p>
 instance with both
 datasets<!--, and you will be able to reproduce some of the figures in the paper using the plots tab. This vignette will also show how to identify differentially expressed genes between groups of cells using a wilcoxon rank sum-->.</p>
 <div class="card mb-3">
-<div class="section level5" style="background-color: #555588;">
-<h5 class="card-title center white-text" id="process-to-host-a-dataset-in-scexplorer">Process to host a dataset in
-scExploreR<a class="anchor" aria-label="anchor" href="#process-to-host-a-dataset-in-scexplorer"></a>
-</h5>
+<div class="card-header" style="background-color: #555588;">
+<h4 class="card-title center white-text">
+Process to host a dataset in scExploreR
+</h4>
 </div>
 <div class="card-body" style="background-color: #E1E1E1;">
 <ol style="list-style-type: decimal">
@@ -154,16 +155,18 @@ enough with the object to skip this step.</p>
 <p>In this section, we will load the “Combined Samples” and “SCLC
 epithelial cells” objects and explore relevant data to include in the
 scExploreR instance.</p>
-<div class="section level5">
-<h5 id="note-1">Note<a class="anchor" aria-label="anchor" href="#note-1"></a>
+<div class="callout callout-info">
+<h5>
+Note
 </h5>
 <p>The example below is one of many ways this step can be approached.
 With other objects, the process of understanding relevant data may also
 involve communicating with staff involved in sequencing of your samples
 and preprocessing of the data.</p>
 </div>
-<div class="section level5">
-<h5 id="note-2">Note<a class="anchor" aria-label="anchor" href="#note-2"></a>
+<div class="callout callout-info">
+<h5>
+Note
 </h5>
 <p>For objects that you preprocess, it is good practice to include
 details on the metadata in your object. This is helpful for when you
@@ -328,9 +331,9 @@ app. Below we identify categorical metadata variables.</p>
 <p>This example will identify relevant metadata following the guiding
 questions below. The questions apply to other objects as well.</p>
 <div class="card mb-3">
-<div class="section level5" style="background-color: #555588;">
-<h5 class="card-title center white-text" id="guiding-questions-for-metadata-selection">Guiding Questions for Metadata
-Selection<a class="anchor" aria-label="anchor" href="#guiding-questions-for-metadata-selection"></a>
+<div class="card-header" style="background-color: #555588;">
+<h5 class="card-title center white-text">
+Guiding Questions for Metadata Selection
 </h5>
 </div>
 <div class="card-body" style="background-color: #E1E1E1;">
@@ -348,8 +351,9 @@ may find interesting?</li>
 </ul>
 </div>
 </div>
-<div class="section level5">
-<h5 id="note-3">Note<a class="anchor" aria-label="anchor" href="#note-3"></a>
+<div class="callout callout-info">
+<h5>
+Note
 </h5>
 <p>While Numeric metadata can’t be used for subsetting or choices on
 plots, it may be plotted like features, if allowed via the config app.
@@ -509,8 +513,9 @@ reduction should be included.</p>
 <p>No alternate modalities are observed in the <code>obsm</code> slot
 for this object. There is only the main modality, gene expression, in
 the <code>X</code> slot.</p>
-<div class="section level5">
-<h5 id="note-4">Note<a class="anchor" aria-label="anchor" href="#note-4"></a>
+<div class="callout callout-info">
+<h5>
+Note
 </h5>
 <p>Other datasets may include surface protein (ADT) data, computed gene
 signatures per cell, or other data. <strong>For anndata objects,
@@ -705,8 +710,9 @@ slot for reductions or modalities in anndata objects.</p>
 <code>scExploreR_reductions</code>, respectively. This is done below in
 python, via reticulate, for both the full object and the SCLC
 object.</p>
-<div class="section level5">
-<h5 id="note-5">Note<a class="anchor" aria-label="anchor" href="#note-5"></a>
+<div class="callout callout-info">
+<h5>
+Note
 </h5>
 <p>This step is not required for Seurat or SingleCellExperiment
 objects.</p>
@@ -808,8 +814,9 @@ a single feature from that assay, so in this case, it should be
 helpful when you have features in multiple modalities with the same
 name, though in this example there is only one modality, so the box can
 be left unchecked.</p>
-<div class="section level5">
-<h5 id="note-6">Note<a class="anchor" aria-label="anchor" href="#note-6"></a>
+<div class="callout callout-info">
+<h5>
+Note
 </h5>
 <p>When configuring an object with multiple modalities, the checkbox for
 the “Gene” assay should generally not be checked. Usually most of the
@@ -842,13 +849,14 @@ reflect the order of the variables.</p>
 <p>Drag the metadata columns listed below to the <strong>“Selected
 Metadata”</strong> column, and add the suggested display names.</p>
 <div class="card mb-3">
-<div class="section level5" style="background-color: #555588;">
-<h5 class="card-title center white-text" id="suggested-metadata-options">Suggested Metadata Options<a class="anchor" aria-label="anchor" href="#suggested-metadata-options"></a>
+<div class="card-header" style="background-color: #555588;">
+<h5 class="card-title center white-text">
+Suggested Metadata Options
 </h5>
 </div>
 <div class="card-body" style="background-color: #E1E1E1;">
-<div class="datatables html-widget html-fill-item" id="htmlwidget-693d87986a81d980350a" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-693d87986a81d980350a">{"x":{"style":"bootstrap5","filter":"none","vertical":false,"data":[["clusters","cell_type_fine","treatment","tissue","donor_id","HTAN_Biospecimen_ID","self_reported_ethnicity"],["Clusters","Cell Type","Treatment History","Tissue","Patient ID","HTAN Sample ID","Self-Reported Ethnicity"]],"container":"<table class=\"table table-striped table-hover row-border order-column display\">\n  <thead>\n    <tr>\n      <th><b>Selected Variable<\/b><\/th>\n      <th><b>Label<\/b><\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"searching":false,"paging":false,"info":false,"ordering":false,"columnDefs":[{"name":"Selected.Variable","targets":0},{"name":"Label","targets":1}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-caf7a26101fe849c26d9" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-caf7a26101fe849c26d9">{"x":{"style":"bootstrap5","filter":"none","vertical":false,"data":[["clusters","cell_type_fine","treatment","tissue","donor_id","HTAN_Biospecimen_ID","self_reported_ethnicity"],["Clusters","Cell Type","Treatment History","Tissue","Patient ID","HTAN Sample ID","Self-Reported Ethnicity"]],"container":"<table class=\"table table-striped table-hover row-border order-column display\">\n  <thead>\n    <tr>\n      <th><b>Selected Variable<\/b><\/th>\n      <th><b>Label<\/b><\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"searching":false,"paging":false,"info":false,"ordering":false,"columnDefs":[{"name":"Selected.Variable","targets":0},{"name":"Label","targets":1}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 </div>
@@ -874,8 +882,9 @@ let’s save the file to disk. To do this, navigate to the orange
 File”</strong>, and use the system prompt that appears to save the file.
 The file will save with a “.yaml” extension.</p>
 <p><img src="dataset_setup_walkthrough-016-config_save_file.png"></p>
-<div class="section level5">
-<h5 id="note-7">Note<a class="anchor" aria-label="anchor" href="#note-7"></a>
+<div class="callout callout-info">
+<h5>
+Note
 </h5>
 <p>The recommended filename is the the name of your object plus
 “_config”, though you can use any name you wish.</p>
@@ -893,15 +902,14 @@ below as a guide.</p>
 <span>  object_path <span class="op">=</span> <span class="st">"~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="card mb-3">
-<div class="section level5" style="background-color: #555588;">
-<h5 class="card-title center white-text" id="suggested-settings-for-epithelial-sclc-object">Suggested Settings for
-Epithelial SCLC Object<a class="anchor" aria-label="anchor" href="#suggested-settings-for-epithelial-sclc-object"></a>
+<div class="card-header" style="background-color: #555588;">
+<h5 class="card-title center white-text">
+Suggested Settings for Epithelial SCLC Object
 </h5>
 </div>
 <div class="card-body" style="background-color: #E1E1E1;">
-<div class="section level5">
-<h5 id="general-tab">
-<strong>General Tab</strong><a class="anchor" aria-label="anchor" href="#general-tab"></a>
+<h5>
+<strong>General Tab</strong>
 </h5>
 <p><strong>Label for dataset:</strong> SCLC Epithelial Cells</p>
 <p><strong>Description:</strong> 54k cells from epithelial tissue,
@@ -917,7 +925,6 @@ al. Cancer Cell 2021.</p>
 <li>Label Groups: Checked</li>
 <li>Show Legend: Checked</li>
 </ul>
-</div>
 <div class="section level5">
 <h5 id="assays-tab">
 <strong>Assays Tab</strong><a class="anchor" aria-label="anchor" href="#assays-tab"></a>
@@ -937,8 +944,8 @@ al. Cancer Cell 2021.</p>
 </h5>
 <p>Table of selected variables, with their corresponding labels. The
 suggested order is the order of the variables on the table.</p>
-<div class="datatables html-widget html-fill-item" id="htmlwidget-394890ed9798905e8447" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-394890ed9798905e8447">{"x":{"style":"bootstrap5","filter":"none","vertical":false,"data":[["SCLC_subtype","treatment_categorized","donor_id","tissue","clusters","recurrent_cluster","self_reported_ethnicity"],["SCLC Subtype","Treatment","Patient ID","Tissue","Clusters","Recurrent Cluster","Self-Reported Ethnicity"]],"container":"<table class=\"table table-striped table-hover row-border order-column display\">\n  <thead>\n    <tr>\n      <th><b>Selected Variable<\/b><\/th>\n      <th><b>Label<\/b><\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"searching":false,"paging":false,"info":false,"ordering":false,"columnDefs":[{"name":"Selected.Variable","targets":0},{"name":"Label","targets":1}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-151ca34e879d8b8a4644" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-151ca34e879d8b8a4644">{"x":{"style":"bootstrap5","filter":"none","vertical":false,"data":[["SCLC_subtype","treatment_categorized","donor_id","tissue","clusters","recurrent_cluster","self_reported_ethnicity"],["SCLC Subtype","Treatment","Patient ID","Tissue","Clusters","Recurrent Cluster","Self-Reported Ethnicity"]],"container":"<table class=\"table table-striped table-hover row-border order-column display\">\n  <thead>\n    <tr>\n      <th><b>Selected Variable<\/b><\/th>\n      <th><b>Label<\/b><\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"searching":false,"paging":false,"info":false,"ordering":false,"columnDefs":[{"name":"Selected.Variable","targets":0},{"name":"Label","targets":1}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 <div class="section level5">
 <h5 id="reductions-tab-1">
@@ -997,25 +1004,13 @@ the path.</p>
 same directory as the object and config files, and <strong>be sure to
 add “.yaml” to the filename</strong>. After saving initially, use the
 structure above and define the paths to the object and config files.</p>
-<div class="section level5">
-<h5 id="note-8">Note<a class="anchor" aria-label="anchor" href="#note-8"></a>
+<div class="callout callout-info">
+<h5>
+Note
 </h5>
 <p>Don’t forget the YAML version at the top. Version 1.1 is the latest
 version supported by the <code>yaml</code> package used to read the data
 into R.</p>
-</div>
-<div class="section level5">
-<h5 id="note-9">Note<a class="anchor" aria-label="anchor" href="#note-9"></a>
-</h5>
-<p>If you only have one object, you don’t need to make an app config
-file. You can simply run <code>run_scExploreR</code>, using the
-<code>object_path</code> and <code>config_path</code> parameters instead
-of <code>browser_config</code>.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">scExploreR</span><span class="fu">::</span><span class="fu"><a href="../reference/run_scExploreR.html">run_scExploreR</a></span><span class="op">(</span></span>
-<span>  object_path <span class="op">=</span> <span class="st">"~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad"</span>,</span>
-<span>  config_path <span class="op">=</span> <span class="st">"~/datasets/small_cell_lung_cancer/SCLC_Full_config.yaml"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -1024,10 +1019,24 @@ of <code>browser_config</code>.</p>
 </h2>
 <p>The app can now be ran by providing the path to the app config file.
 Use the <code>browser_config</code> parameter to specify the path.</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">scExploreR</span><span class="fu">::</span><span class="fu"><a href="../reference/run_scExploreR.html">run_scExploreR</a></span><span class="op">(</span></span>
 <span>  browser_config <span class="op">=</span> <span class="st">"~/datasets/small_cell_lung_cancer/sclc_app_config.yaml"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<div class="callout callout-info">
+<h5>
+Note
+</h5>
+<p>If you only have one object, you don’t need to make an app config
+file. You can simply run <code>run_scExploreR</code>, using the
+<code>object_path</code> and <code>config_path</code> parameters instead
+of <code>browser_config</code>.</p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">scExploreR</span><span class="fu">::</span><span class="fu"><a href="../reference/run_scExploreR.html">run_scExploreR</a></span><span class="op">(</span></span>
+<span>  object_path <span class="op">=</span> <span class="st">"~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad"</span>,</span>
+<span>  config_path <span class="op">=</span> <span class="st">"~/datasets/small_cell_lung_cancer/SCLC_Full_config.yaml"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>
