@@ -5,7 +5,7 @@ Version: 0.9.3
 Author: William Showers, Krysta Engel, Jai Desai, Austin Gillen
 URL: https://github.com/amc-heme/scExploreR,
     https://amc-heme.github.io/scExploreR/
-Maintainer: Heme Informatics Group <heme.informatics@ucdenver.edu>
+Maintainer: Hematology Informatics Group, University of Colorado Anschutz Medical Campus <heme.informatics@ucdenver.edu>
 Description: Shiny app for scRNA-seq visualization and analysis
 License:
 LazyData: FALSE
