@@ -5,8 +5,6 @@ output:
     theme:
       bslib: true
       version: 5
-pkgdown:
-  as_is: true
 #date: "2023-11-16"
 ---
 
@@ -20,6 +18,22 @@ pkgdown:
 
 .white-text{
   color: white;
+}
+
+/* Bootstrap card elements */
+.card-header{
+  background-color: #CFB87C;
+  /* Adds a mrgin-top of 0 to the existing bootstrap class to remove white space
+   that appears when using the card component in an Rmd */
+  margin-top: 0px;
+}
+
+.card-body{
+  background-color: #E1E1E1; 
+  /* The border radius property is not properly inherited from the parent .card
+    element. The reason is unkown, but explicitly defining it here fixes 
+    the issue */
+  border-radius: 0px 0px var(--bs-card-border-radius) var(--bs-card-border-radius);
 }
 
 /* CSS for callouts
@@ -66,12 +80,6 @@ pkgdown:
       color: $color;
     }
   }
-}
-
-/* Adds a mrgin-top of 0 to the existing bootstrap class to remove white space
-   that appears when using the card component in an Rmd */
-.card-header{
-  margin-top: 0px;
 }
 
 /* Applied to output of code chunks. Causes a scrollbar to appear 
@@ -139,13 +147,13 @@ While the anndata format is exclusive to python, anndata objects can be explored
 By the end of this example, you will be able to set up an scExploreR instance with both datasets<!--, and you will be able to reproduce some of the figures in the paper using the plots tab. This vignette will also show how to identify differentially expressed genes between groups of cells using a wilcoxon rank sum-->.
 
 ::: {.card .mb-3}
-::: {.card-header style="background-color: #555588;"}
-<h4 class = "card-title center white-text"> 
+::: {.card-header}
+<h4 class = "card-title center"> 
   Process to host a dataset in scExploreR 
 </h4>
 :::
 
-::: {.card-body style="background-color: #E1E1E1;"}
+::: {.card-body}
 1.  Explore object to determine appropriate data to display in app.
 2.  Use the config app to select relevant data and generate a config file
 3.  Launch scExploreR using the created config file
@@ -334,11 +342,11 @@ sort(var_classes)
 This example will identify relevant metadata following the guiding questions below. The questions apply to other objects as well.
 
 ::: {.card .mb-3}
-::: {.card-header style="background-color: #555588;"}
-<h4 class = "card-title center white-text"> Guiding Questions for Metadata Selection </h4>
+::: {.card-header}
+<h4 class = "card-title center"> Guiding Questions for Metadata Selection </h4>
 :::
 
-::: {.card-body style="background-color: #E1E1E1;"}
+::: {.card-body}
 -   Which variables represent cell type annotation, or clustering?
 -   If there are multiple variables for cell type, which are most relevant to the end user?
 -   Do the different variables reflect resolutions for cell type, and if so, which resolution is most appropriate?
@@ -811,13 +819,13 @@ You can drag the variables in the **"Selected Metadata"** column to change their
 Drag the metadata columns listed below to the **"Selected Metadata"** column, and add the suggested display names.
 
 ::: {.card .mb-3}
-::: {.card-header style="background-color: #555588;"}
-<h4 class = "card-title center white-text"> 
+::: {.card-header}
+<h4 class = "card-title center"> 
   Suggested Metadata Options 
   </h4>
 :::
 
-::: {.card-body style="background-color: #E1E1E1;"}
+::: {.card-body}
 
 ```{r metadata suggestion table, echo = FALSE, message = FALSE}
 meta_vars <- 
@@ -899,13 +907,13 @@ scExploreR::run_config(
 ```
 
 ::: {.card .mb-3}
-::: {.card-header style="background-color: #555588;"}
-<h4 class = "card-title center white-text"> 
+::: {.card-header}
+<h4 class = "card-title center"> 
   Suggested Settings for Epithelial SCLC Object 
   </h4>
 :::
 
-::: {.card-body style="background-color: #E1E1E1;"}
+::: {.card-body}
 <h4> 
   **General Tab**
 </h4>
