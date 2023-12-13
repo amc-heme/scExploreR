@@ -10,6 +10,7 @@
 * A server to host the app. This can be any computer with at that can be left on and be connected to the internet continuously. RAM requirements vary depending on the object type.
 
 If using anndata objects, [reticulate](https://github.com/rstudio/reticulate) must be installed with the following Python packages:
+
 * Numpy
 * Pandas
 * Scipy
