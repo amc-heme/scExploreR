@@ -443,7 +443,7 @@ run_scExploreR <-
       path <- datasets[[data_key]]$config
       
       # Add informative error message when a non-yaml config file is loaded
-      if (!grepl("\\.yaml$", path)){
+      if (!grepl("\\.yaml$", tolower(path))){
         stop("Only .yaml config files are supported as of version v0.5.0. 
          Existing .rds config files can be converted to .yaml files by 
          loading them into config_app.R and then re-saving as a .yaml file.")
@@ -504,7 +504,12 @@ run_scExploreR <-
         # All other objects: load based on file extension
         path <- datasets[[data_key]]$object
         
-        extension <- tools::file_ext(path)
+        # Convert to lowercase to detect different capitalizations of the 
+        # same extension (.Rds or .rds)
+        extension <- 
+          tolower(
+            tools::file_ext(path)
+            )
         
         if (extension == "rds") {
           datasets[[data_key]]$object <- 
