@@ -76,19 +76,24 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="scexplorer">scExploreR<a class="anchor" aria-label="anchor" href="#scexplorer"></a>
 </h1></div>
-<p><br></p>
-<p><em>Welcome to the single cell visualization tool you didn’t know you were looking for!</em> This app is designed to make exploration of highly complex data sets easy for anyone, regardless of informatics background. Whether you’re a researcher looking to make sense of your single cell data, or a bioinformatician looking to present your results interactively, you will find value in this app. scExplorer bridges the gap between domain (disease and clinical) specific knowledge and high level sequencing data, and ultimately makes the best use of these precious data sets to glean molecular and translational insights through democratizing analysis.</p>
+<p><strong>Welcome to the single cell visualization tool you didn’t know you were looking for!</strong> This app is designed to make exploration of highly complex data sets easy for anyone, regardless of informatics background. Whether you’re a researcher looking to make sense of your single cell data, or a bioinformatician looking to present your results interactively, you will find value in this app. scExplorer bridges the gap between domain (disease and clinical) specific knowledge and informatics expertise by providing a no-code platform for biologists to analyze data.</p>
+<p>scExploreR further facilitates analysis through compatability with most common single cell data formats! Seurat, SingleCellExpreiment, or Anndata objects can be used, and Seurat v5 objects with BP Cells assays are also supported.</p>
+<p>Some bioinformatics experience is required to install the app and configure each single-cell dataset, but once set up, the app can be used by anyone.</p>
 <div class="section level2">
 <h2 id="requirements">Requirements<a class="anchor" aria-label="anchor" href="#requirements"></a>
 </h2>
 <ul>
-<li>A pre-processed and finalized single cell object (or a set of finalized objects). scExploreR can except most common single cell data formats! The currently supported formats are Seurat, SingleCellExperiment, and Anndata.</li>
+<li>A pre-processed and finalized single cell object (or objects). Currently supported formats: Seurat, SingleCellExperiment, and Anndata.</li>
 <li>A server to host the app. This can be any computer with at that can be left on and be connected to the internet continuously. RAM requirements vary depending on the object type.</li>
 </ul>
-<p>If using anndata objects, <a href="https://github.com/rstudio/reticulate" class="external-link">reticulate</a> must be installed with the following Python packages: * Numpy * Pandas * Scipy * Anndata</p>
-<!-- Add page on HDF5 storage, and put a link here -->
-<p><!-- For Seurat objects, you need at least as much RAM as the size of the object in memory, but the size of the object can be considerably greater than the available RAM for Anndata and SingleCellExperiment objects using HDF5 storage. --></p>
-<p>Some bioinformatics experience is required to install the app and configure each Seurat object, but once set up, the app can be used by anyone.</p>
+<p>If using anndata objects, <a href="https://github.com/rstudio/reticulate" class="external-link">reticulate</a> must be installed with the following Python packages:</p>
+<ul>
+<li>Numpy</li>
+<li>Pandas</li>
+<li>Scipy</li>
+<li>Anndata</li>
+</ul>
+<!-- Add page on HDF5 storage, and put a link here --><p><!-- For Seurat objects, you need at least as much RAM as the size of the object in memory, but the size of the object can be considerably greater than the available RAM for Anndata and SingleCellExperiment objects using HDF5 storage. --></p>
 </div>
 <div class="section level2">
 <h2 id="installation-and-use">Installation and Use<a class="anchor" aria-label="anchor" href="#installation-and-use"></a>
@@ -97,9 +102,10 @@
 <li>Install from Github via</li>
 </ol>
 <pre><code><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"amc-heme/scExploreR"</span><span class="op">)</span></span></code></pre>
+<p>If this is your first time setting up scExploreR, we reccomend you view the <a href="https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html"><strong>App Setup Walkthrough</strong></a>, which applies the process in steps 3-5 to an example object.</p>
 <ol start="2" style="list-style-type: decimal">
 <li><p>Process or obtain a finalized single cell object.</p></li>
-<li><p>Configure an object for the browser by using the configuration app provided with the package. For more information on the config app, see the <a href="">config app documentation</a>.</p></li>
+<li><p>Configure an object for the browser by using the configuration app provided with the package. For more information on the config app, see the <a href="https://amc-heme.github.io/scExploreR/articles/config_documentation.html"><strong>Full Config App Documentation</strong></a> or the <a href="https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html"><strong>App Setup Walkthrough</strong></a>.</p></li>
 </ol>
 <pre><code><span><span class="fu">scExploreR</span><span class="fu">::</span><span class="fu"><a href="reference/run_config.html">run_config</a></span><span class="op">(</span></span>
 <span>  object_path <span class="op">=</span> <span class="st">"path_to_your_seurat_object.rds"</span>,</span>
@@ -107,30 +113,28 @@
 <span>  config_path <span class="op">=</span> <span class="st">"previously_loaded_config_file"</span></span>
 <span>  <span class="op">)</span></span></code></pre>
 <ol start="4" style="list-style-type: decimal">
-<li><p>To set up a browser for others to use, create a browser config YAML file (If you are using the browser locally for your own use, skip to step 4). The file will contain a list of datasets with the path to the objects and config files for each, along with browser specific settings. See <a href="">browser config setup</a> for more info.</p></li>
+<li><p>To set up a browser for others to use, create a browser config YAML file (If you are using the browser locally for your own use, skip to step 4). The file will contain a list of datasets with the path to the objects and config files for each, along with browser specific settings. <!-- Complete and add --> <!--See [**browser config setup**]() for more info. --></p></li>
 <li><p>Run scExploreR. There are multiple ways to do this:</p></li>
 </ol>
 <ul>
 <li>
-<p>If setting up a browser, use the path to your config file.</p>
+<p>If setting up an app instance, use the path to your config file.</p>
 <pre><code><span>  <span class="fu">scExploreR</span><span class="fu">::</span><span class="fu"><a href="reference/run_scExploreR.html">run_scExploreR</a></span><span class="op">(</span></span>
 <span>    browser_config <span class="op">=</span> <span class="st">"./config.yaml"</span></span>
 <span>    <span class="op">)</span></span></code></pre>
 </li>
 <li>
-<p>If setting up locally, enter the path to your object and object-specific config file. Only one object may be viewed at once using this method.</p>
+<p>If setting up locally, and if you only have one object, you may instead enter the path to your object and object-specific config file.</p>
 <pre><code>  scExploreR::run_scExploreR(
     object_path = "./object.rds"
     config_path = "./config.yaml"
     )</code></pre>
 </li>
 </ul>
-<p><br></p>
 </div>
 <div class="section level2">
 <h2 id="future-goals">Future Goals<a class="anchor" aria-label="anchor" href="#future-goals"></a>
 </h2>
-<p><br></p>
 <!-- As stated above, the current version of the app requires manually fitting each new object to its own specific version of the app. Future versions of the app will be able to accept *any* Seurat object, automatically detect (or user specified) metadata values of interest, and build the app to provide exploration of that object. 
 
 <br>
@@ -139,7 +143,6 @@
 <li>Additional analyses such as GSEA will be added in the future</li>
 <li>Explicit support for single cell data besides CITE-seq will be added.</li>
 </ul>
-<p><br></p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -152,15 +155,19 @@
 
 <div class="license">
 <h2 data-toc-skip>License</h2>
-<ul class="list-unstyled"><li>
-</li></ul>
+<ul class="list-unstyled">
+<li>
+<a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a>
+</li>
+</ul>
 </div>
 
 
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Heme Informatics Group <br><small class="roles"> Maintainer </small>  </li>
+<li>Hematology Informatics Group <br><small class="roles"> Maintainer </small>  </li>
+<li><a href="authors.html">More about authors...</a></li>
 </ul>
 </div>
 
@@ -172,7 +179,7 @@
 
     <footer><div class="pkgdown-footer-left">
   <p></p>
-<p>Developed by Heme Informatics Group.</p>
+<p>Developed by Hematology Informatics Group.</p>
 </div>
 
 <div class="pkgdown-footer-right">
