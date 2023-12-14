@@ -388,16 +388,7 @@ run_config <-
                     "hide_empty_groups" = TRUE
                   )
               )
-            ), # End multiInput
-            
-            # Include numeric metadata for plotting
-            awesomeCheckbox(
-              inputId = "include_numeric_metadata",
-              label = "Include numeric metadata for plotting", 
-              value = TRUE,
-              # Determines style of checkbox (warning is orange)
-              status = "warning"
-            )
+            ) # End multiInput
           )
           
         ),
@@ -503,6 +494,14 @@ run_config <-
                 choices = c("none", non_numeric_cols),
                 selected = NULL,
                 width = "380px"
+                ),
+                # Include numeric metadata for plotting
+                awesomeCheckbox(
+                  inputId = "include_numeric_metadata",
+                  label = "Include numeric metadata for plotting", 
+                  value = TRUE,
+                  # Applies standard Bootstrap classes to style of checkbox
+                  status = "info"
                 )
               ),
               

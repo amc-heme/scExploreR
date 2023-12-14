@@ -5,10 +5,10 @@ Version: 0.9.3
 Author: William Showers, Krysta Engel, Jai Desai, Austin Gillen
 URL: https://github.com/amc-heme/scExploreR,
     https://amc-heme.github.io/scExploreR/
-Maintainer: Heme Informatics Group <heme.informatics@ucdenver.edu>
+Maintainer: Hematology Informatics Group, University of Colorado Anschutz Medical Campus <heme.informatics@ucdenver.edu>
 Description: Shiny app for scRNA-seq visualization and analysis
-License:
-LazyData: FALSE
+License: MIT + file LICENSE
+LazyData: true
 Imports:
     colourpicker,
     cowplot,
@@ -51,7 +51,7 @@ Remotes:
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 Depends: 
-    R (>= 2.10)
+    R (>= 3.5.0)
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

@@ -902,8 +902,15 @@ Next, we'll create the config file for the SCLC object. Run the config app and r
 
 ```r
 scExploreR::run_config(
-  object_path = "~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad"
+  object_path = "~/datasets/small_cell_lung_cancer/Epithelial_SCLC.h5ad"
 )
+```
+
+```{r, include=FALSE, eval=FALSE}
+# Actual path to object for vignette construction
+scExploreR::run_config(
+  object_path = "~/1A_Jordan_Lab/Objects/small_cell_lung_cancer/SCLC_Epithelial_SCLC_lzf.h5ad"
+  )
 ```
 
 ::: {.card .mb-3}
