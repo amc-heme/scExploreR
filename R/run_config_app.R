@@ -490,7 +490,7 @@ run_config <-
                   glue("General Options"),
                   class="large center"
                 ),
-                # Select metadata column to use for patient/sample
+                # Select metadata variable to use for patient/sample
                 # level metadata analysis
                 selectInput(
                   inputId = "patient_colname",
@@ -512,7 +512,7 @@ run_config <-
                 )
               ),
               
-              # Options specific to each metadata column
+              # Options specific to each metadata variable
               # Options for Numeric metadata (Numeric metadata is currently not
               # displayed)
               
