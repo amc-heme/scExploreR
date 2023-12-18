@@ -8,6 +8,8 @@ params:
   object: NA
   config: NA
   valid_features: NA
+editor_options: 
+  chunk_output_type: console
 ---
 
 
@@ -118,7 +120,7 @@ if (!is.null(config$description)){
 
 -->
 
-# Featured Metadata
+# Object Metadata
 
 See below for a summary of each metadata variable in this object.
 
@@ -135,9 +137,28 @@ metadata_config <- dummy_config$metadata
 metadata_card <- 
   function(
     name,
-    description
+    description,
+    class
   ){
     bslib::card(
+      class =
+        if (class == "primary"){
+          "text-bg-primary"
+        } else if (class == "secondary"){
+          "text-bg-secondary"
+        } else if (class == "success"){
+          "text-bg-success"
+        } else if (class == "warning"){
+          "text-bg-warning"
+        } else if (class == "danger"){
+          "text-bg-danger"
+        } else if (class == "info"){
+          "text-bg-info"
+        } else if (class == "light"){
+          "text-bg-light"
+        } else {
+          class
+        },
       #full_screen = TRUE,
       bslib::card_header(tags$h3(name)),
       tags$p(description)
@@ -156,27 +177,47 @@ cards <-
       # Individual card
       metadata_card(
         name = var$label,
-        description = var$description
-      )
-    }
+        description = var$description,
+        # CSS class: assign bootstrap classes by
+        class =
+          if (i %% 6 == 1){
+            "primary"
+          } else if (i %% 6 == 2){
+            "success"
+          } else if (i %% 6 == 3){
+            "danger"
+          } else if (i %% 6 == 4){
+            "warning"
+          } else if (i %% 6 == 5){
+            "info"
+          } else if (i %% 6 == 0){
+            # 0 listed last because the sixth element, and all multiples of 
+            # six, will have a modulus of zero (last in the repeating sequence,
+            # even if the modulus is the lowest)
+            "secondary"
+          }
+        )
+      }
   )
 
 bslib::layout_column_wrap(
   # Example on bslib uses a fraction, which is more useful. Can just use
   # 1/{number of columns}
   width = 1/2,
-  height = 300,
+  #height = 300,
   # Allows cards to have different heights
   #heights_equal = "row",
   # bslib cards generated for each variable
-  cards
+  # "Splices" cards in to resolve column issue that ocurrs when passing
+  # cards as a list
+  # See https://github.com/rstudio/bslib/issues/948
+  !!!cards
 )
 ```
 
+# Extended Metadata
 
-# Full Metadata For object
-
-Below is an extended summary of the metadata in the current object, which includes metadata variables in the object that were hidden by the user setting up this instance of the app. This document is most useful as a guide for the advanced subsetting feature. The ID of the category is shown in bold, and the data class (according to R) is shown beneath the ID.
+The summary below includes metadata variables in the object that were hidden by the user setting up this instance of the app. This document is most useful as a guide for the advanced subsetting feature. The ID of the category is shown in bold, and the data class (according to R) is shown beneath the ID.
 
 Beneath the class, a summary of the metadata category is given. For categorical data types, unique values are displayed, and for numeric data types, summary statistics are shown. This summary is intended to give an overview of the range of values in each category, to aid in subsetting.
 
