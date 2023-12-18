@@ -1,12 +1,15 @@
 ---
-output: html_document
-title: "Data Dictionary"
-# Add Shiny components to document
-#runtime: shiny
+output: 
+  html_document:
+    theme:
+      version: 5
+title: "Dataset Guide"
 params:
   object: NA
+  config: NA
   valid_features: NA
 ---
+
 
 ```{r Summary HTML function, eval = FALSE, include = FALSE, echo = FALSE, message = FALSE, warning = FALSE}
 # Source summary_tags.R if this function is needed in the future
@@ -19,24 +22,29 @@ params:
 # Import libraries
 library(Seurat)
 library(SingleCellExperiment)
-library(shiny)
 library(stats)
-library(shinyWidgets)
 library(SCUBA)
 library(scExploreR)
+
+library(shiny)
+library(bslib)
+library(shinyWidgets)
 
 # Libraries for formatting text
 library(glue)
 library(tools)
+
+
 ```
 
-```{r load parameters, echo = FALSE, message = FALSE, warning = FALSE}
+```{r load_parameters, echo = FALSE, message = FALSE, warning = FALSE}
 # Import parameters from app
 object <- params$object
 valid_features <- params$valid_features
+config <- params$config
 ```
 
-```{css Document CSS, echo = FALSE}
+```{css Document_CSS, echo = FALSE}
 /* Define CSS variables*/
 :root {
   /* Specific blue color used by title text and entry headers */
@@ -45,7 +53,8 @@ valid_features <- params$valid_features
   --even_background: #E1E1E1;
 }
 
-.title {
+/* Bold text and coloring for Title, h1 tags */
+.title, .h1 {
   color: var(--text_accent, blue);
   font-weight: bold;
 }
@@ -78,13 +87,102 @@ valid_features <- params$valid_features
 }
 ```
 
-Below is a summary of each metadata category in the current object. This document is most useful as a guide for the advanced subsetting feature. The ID of the category is shown in bold, and the data class (according to R) is shown beneath the ID.
+See below for details on the current dataset. These settings were determined by the user setting up this app instance. <!-- If contact info is defined, add the following: <<you may contact the user/group using the information below.>>-->
+
+<!--`r if (!is.null(config$app_author_name)) config$app_author_name else "the user setting up the browser"`.-->
+
+<!--
+Info for corresponding author: name plus email
+```{r, echo=FALSE}
+if (!is.null(config$app_author_email)) config$app_author_email else "the individual or group that set up the browser"
+```
+-->
+
+```{r dataset_description, echo = FALSE}
+# Add a section for the dataset description if a description is provided.
+if (!is.null(config$description)){
+  if (config$description != ""){
+    div(
+    tags$h1("Dataset Description"),
+    # Print description, with newline characters removed
+    tags$p(
+      gsub("\n", "", config$description)
+      )
+    )
+  }
+}
+```
+
+<!--
+# Methods
+
+-->
+
+# Featured Metadata
+
+See below for a summary of each metadata variable in this object.
+
+```{r TESTING_ONLY, include=FALSE, eval=FALSE}
+# Load dummy metadata information
+dummy_config <- yaml::read_yaml("~/1A_Jordan_Lab/Objects/Triana_et_al_reference/Triana_et_al_seurat_config+metadata_description.yaml")
+
+metadata_config <- dummy_config$metadata
+```
+
+
+```{r featured_metadata_cards, echo = FALSE}
+# Function to print the name and description of each metadata card in the app
+metadata_card <- 
+  function(
+    name,
+    description
+  ){
+    bslib::card(
+      #full_screen = TRUE,
+      bslib::card_header(tags$h3(name)),
+      tags$p(description)
+      )
+    }
+
+# Create an info card for each metadata variable in the config file
+metadata_config <- config$metadata
+
+cards <-
+  lapply(
+    1:length(metadata_config),
+    function(i){
+      var <- metadata_config[[i]]
+      
+      # Individual card
+      metadata_card(
+        name = var$label,
+        description = var$description
+      )
+    }
+  )
+
+bslib::layout_column_wrap(
+  # Example on bslib uses a fraction, which is more useful. Can just use
+  # 1/{number of columns}
+  width = 1/2,
+  height = 300,
+  # Allows cards to have different heights
+  #heights_equal = "row",
+  # bslib cards generated for each variable
+  cards
+)
+```
+
+
+# Full Metadata For object
+
+Below is an extended summary of the metadata in the current object, which includes metadata variables in the object that were hidden by the user setting up this instance of the app. This document is most useful as a guide for the advanced subsetting feature. The ID of the category is shown in bold, and the data class (according to R) is shown beneath the ID.
 
 Beneath the class, a summary of the metadata category is given. For categorical data types, unique values are displayed, and for numeric data types, summary statistics are shown. This summary is intended to give an overview of the range of values in each category, to aid in subsetting.
 
 To use string subsetting, the metadata categories and their values **must be entered exactly as they display below**. For more information, see the "How to use String subsetting" tab.
 
-```{r Data Dictionary, echo = FALSE, message = FALSE, warning = FALSE}
+```{r Data_Dictionary, echo = FALSE, message = FALSE, warning = FALSE}
 # Extract metadata table as a variable
 meta_table <- 
   SCUBA::fetch_metadata(
@@ -92,33 +190,35 @@ meta_table <-
     full_table = TRUE
     )
 
-# Define searchable metadata categories 
+# Define searchable metadata variables
 all_meta_cols <- 
   colnames(meta_table)
 
 # First iteration: build list with information on each metadata category ##### 
 metadata_properties <-
   lapply(
-    all_meta_cols,
-    function(category){
-      # Form vector of values for current category
-      category_vector <- meta_table[[category]]
+    1:length(all_meta_cols),
+    function(i){
+      variable <- all_meta_cols[i]
+      
+      # Form vector of values for current variable
+      values <- meta_table[[variable]]
 
-      # Class of data in metadata category
-      class <- class(category_vector)
+      # Class of data in metadata variable
+      class <- class(values)
       
       # Summary of metadata for printing: depends on class
       if (class == "character"){
         # Character vectors: use unique()
-        summary <- unique(category_vector)
+        summary <- unique(values)
         
         } else if (class == "factor"){
           # Factors: use levels()
-          summary <- levels(category_vector)
+          summary <- levels(values)
         
         } else if (class %in% c("numeric", "integer")) {
           # For numeric metadata, compute stats
-          summary <- summary(category_vector)
+          summary <- summary(values)
         
         } else if (class %in% c("logical")) {
           # Logical metadata: provide TRUE and FALSE, without quotes
@@ -138,9 +238,6 @@ names(metadata_properties) <- all_meta_cols
 
 # Second iteration: create HTML tags from properties list ########
 
-# Even: a variable used to apply classes to every even entry in lapply
-even <- FALSE
-
 # Create a list of tags
 tagList(
   # Print subtitle first
@@ -155,37 +252,41 @@ tagList(
   #   ""
   #   ),
   lapply(
-    # Iterate through each metadata category
-    all_meta_cols,
-    function(category){
-      #Extract metadata properties for current category
-      metadata_entry <- metadata_properties[[category]]
+    # Iterate through each metadata variable
+    1:length(all_meta_cols),
+    function(i){
+      #variable
+      meta_var <- all_meta_cols[i]
+      
+      #Extract metadata properties for current variable
+      metadata_entry <- metadata_properties[[meta_var]]
     
-      # Define class of metadata category
+      # Define class of metadata variable
       class <- metadata_entry$class
       
-      # List of tags to print for each category
+      # List of tags to print for each variable
       tag <-
         div(
+          # Use separate CSS for odd/even tags
           class = 
-          if (even == FALSE){
-            "category-info"
-          } else {
-            "category-info even"  
-            },
-        # Name of category
+            if (i %% 2 == 1){
+              "category-info"
+            } else {
+              "category-info even"  
+              },
+        # Name of variable
         tags$h4(
           class = 'category-header',
           #style = 'color: #000088;',
-          category
+          meta_var
           ),
-        # Class of category
+        # Class of variable
         tags$p(
           class = "bold-blue",
           # Put class in title case (tools::toTitleCase)
           glue("({toTitleCase(class)})")
         ),
-        # Tags for Discription of values: depends on class of category
+        # Tags for Discription of values: depends on class of variable
         if (class %in% c("character", "factor")){
           # Categorical metadata: collapse unique values into a string
           tags$p(
@@ -235,14 +336,6 @@ tagList(
           )
         }
       )
-      
-      # After defining tag, change value of even to alternate classes between 
-      # entries
-      if (even == TRUE){
-        even <<- FALSE
-      } else {
-        even <<- TRUE
-      }
       
       # Return tag and continue iteration 
       tag
@@ -329,3 +422,16 @@ renderUI({
     )
   })
 ```
+
+
+```{r, include = FALSE, eval = FALSE}
+library(htmltools)
+
+bslib::value_box(
+  title = "Var title",
+  value = "",
+  showcase = bsicons::bs_icon("box-fill"),
+  p("Some description")
+  )
+```
+

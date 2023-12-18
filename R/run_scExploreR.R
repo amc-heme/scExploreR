@@ -1488,6 +1488,7 @@ run_scExploreR <-
           params <-
             list(
               object = object(),
+              config = config(),
               valid_features = valid_features()
               )
           
