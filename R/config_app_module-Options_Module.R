@@ -166,27 +166,45 @@ options_ui <- function(id,
         # Only available for categorical metadata columns
         if (metadata_type == "Categorical"){
           tagList(
-            materialSwitch(
-              inputId =  ns("group_metadata"),
-              label = "Group metadata into categories?",
-              value =
-                if (!is.null(restore_inputs$group_metadata)){
-                  restore_inputs$group_metadata
-                } else {
-                  FALSE
-                },
-              right = TRUE,
-              status = "default"
-              ),
-            tags$p(
-              "(Choices for possible values in the metadata
+            div(
+              id = ns("groups_disable_transparent"),
+              materialSwitch(
+                inputId =  ns("group_metadata"),
+                label = "Group metadata into categories?",
+                value =
+                  if (!is.null(restore_inputs$group_metadata)){
+                    restore_inputs$group_metadata
+                  } else {
+                    FALSE
+                  },
+                right = TRUE,
+                status = "default"
+              )
+            ),
+            div(
+              id = ns("groups_explanation"),
+              #class = "show_if_groups_enabled",
+              tags$p(
+                "(Choices for possible values in the metadata
               variable will appear in the app)",
-              class = "center small"
+                class = "center small"
+              )
+            ),
+            shinyjs::hidden(
+              div(
+                id = ns("disabled_groups_explanation"),
+                #class = "show_if_groups_disabled",
+                tags$p(
+                  "(Grouping not allowed for this variable since the number
+                  of unique values exceeds 250.)",
+                  class = "center small"
+                  )
+              )
             ),
             # Metadata groups interface
             # One instance of the fields UI, with a button to
             # add more fields to the interface
-            hidden(
+            shinyjs::hidden(
               div(
                 id = ns("groups_interface"),
                 # Group fields module
@@ -370,8 +388,31 @@ options_server <-
             ### 2.1.3. Disable switch to enable metadata groups ####
             # Switch is disabled when there are more than 250 values
             if (n_values > 250){
+              group_metadata_id <- "group_metadata"
+              disable_style_target <- "groups_disable_transparent"
+
+              # Diables switch to enable group formation
               shinyjs::disable(
-                id = "group_metadata"
+                id = group_metadata_id
+              )
+
+              # Makes switch and label transparent
+              shinyjs::addClass(
+                id = disable_style_target,
+                class = "disabled-input"
+              )
+
+              # Hide the label that shows beneath the groups switch by
+              # default, and show a label explaining why the groups interface
+              # is disabled
+              shinyjs::hideElement(
+                id = "groups_explanation"
+                #selector = "[class *= 'show_if_groups_enabled']"
+              )
+
+              shinyjs::showElement(
+                id = "disabled_groups_explanation"
+                #selector = "[class *= 'show_if_groups_disabled']"
               )
             }
           }
