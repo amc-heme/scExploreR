@@ -747,7 +747,12 @@ scExploreR::run_config(
   )
 ```
 
-
+```{r, include=FALSE, eval=FALSE}
+# Actual path to object for vignette construction
+scExploreR::run_config(
+  object_path = "~/1A_Jordan_Lab/Objects/small_cell_lung_cancer/SCLC_Full.h5ad"
+  )
+```
 
 Upon loading the config app, you will notice several tabs. The general tab is selected by default. This tab is used to enter basic information on the dataset, which is displayed in the app on the menu that appears when switching between datasets. This is useful when an app is created with multiple datasets, which is the case here.
 
