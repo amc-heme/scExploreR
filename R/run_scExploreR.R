@@ -1492,7 +1492,17 @@ run_scExploreR <-
           if (browser_mode){
             if (any(names(browser_config) == "RSTUDIO_PANDOC")) {
               if (!is.null(browser_config$RSTUDIO_PANDOC)){
-                Sys.setenv(RSTUDIO_PANDOC = browser_config$RSTUDIO_PANDOC)
+                tryCatch(
+                  Sys.setenv(RSTUDIO_PANDOC = browser_config$RSTUDIO_PANDOC),
+                  error = function(error){
+                    stop(
+                      "Error in RSTUDIO_PANDOC in app (browser) config file. ",
+                      "Please check the path to PANDOC. If you already have ",
+                      "pandoc installed, please enter '~' for RSTUDIO_PANDOC ",
+                      "in the app config file."
+                      )
+                  }
+                  )
               }
             }
           }
