@@ -48,7 +48,8 @@ Imports:
     yaml
 Remotes: 
     github::immunogenomics/presto,
-    github::amc-heme/SCUBA
+    github::amc-heme/SCUBA,
+    github::amc-heme/scDE
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 Depends: 
