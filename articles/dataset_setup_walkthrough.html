@@ -74,7 +74,7 @@
 
 
 <script src="dataset_setup_walkthrough_files/htmlwidgets-1.6.4/htmlwidgets.js"></script><link href="dataset_setup_walkthrough_files/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet">
-<script src="dataset_setup_walkthrough_files/datatables-binding-0.31/datatables.js"></script><link href="dataset_setup_walkthrough_files/dt-core-bootstrap5-1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<script src="dataset_setup_walkthrough_files/datatables-binding-0.32/datatables.js"></script><link href="dataset_setup_walkthrough_files/dt-core-bootstrap5-1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 <script src="dataset_setup_walkthrough_files/dt-core-bootstrap5-1.13.6/js/jquery.dataTables.min.js"></script><script src="dataset_setup_walkthrough_files/dt-core-bootstrap5-1.13.6/js/dataTables.bootstrap5.min.js"></script><script src="dataset_setup_walkthrough_files/bs3compat-0.6.1/transition.js"></script><script src="dataset_setup_walkthrough_files/bs3compat-0.6.1/tabs.js"></script><script src="dataset_setup_walkthrough_files/bs3compat-0.6.1/bs3compat.js"></script><link href="dataset_setup_walkthrough_files/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet">
 <script src="dataset_setup_walkthrough_files/crosstalk-1.2.1/js/crosstalk.min.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
@@ -721,21 +721,21 @@ Note
 <p>This step is not required for Seurat or SingleCellExperiment
 objects.</p>
 </div>
-<div class="sourceCode" id="cb27"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># If you are working in RStudio, make sure to replace the `r` in the </span></span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="co"># code chunk with `python`</span></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Full object</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Use `r.` to access the full dataset in python using Reticulate</span></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="co"># No non-RNA modalities</span></span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>r.full_dataset.uns[<span class="st">"scExploreR_assays"</span>] <span class="op">=</span> []</span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>r.full_dataset.uns[<span class="st">"scExploreR_reductions"</span>] <span class="op">=</span> [<span class="st">"X_umap"</span>, <span class="st">"X_pca"</span>]</span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="co"># SCLC object</span></span>
-<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>r.sclc_dataset.uns[<span class="st">"scExploreR_assays"</span>] <span class="op">=</span> []</span>
-<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Indicate that X_diffmap is a reduction, even though it will not be used</span></span>
-<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>r.sclc_dataset.uns[<span class="st">"scExploreR_reductions"</span>] <span class="op">=</span> [<span class="st">"X_umap"</span>, <span class="st">"X_pca"</span>, <span class="st">"X_diffmap"</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># If you are working in RStudio, make sure to replace the `r` in the </span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="co"># code chunk with `python`</span></span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="co"># Full object</span></span>
+<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="co"># Use `r.` to access the full dataset in python using Reticulate</span></span>
+<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="co"># No non-RNA modalities</span></span>
+<span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a>r.full_dataset.uns[<span class="st">"scExploreR_assays"</span>] <span class="op">=</span> []</span>
+<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a>r.full_dataset.uns[<span class="st">"scExploreR_reductions"</span>] <span class="op">=</span> [<span class="st">"X_umap"</span>, <span class="st">"X_pca"</span>]</span>
+<span id="cb27-10"><a href="#cb27-10" tabindex="-1"></a></span>
+<span id="cb27-11"><a href="#cb27-11" tabindex="-1"></a><span class="co"># SCLC object</span></span>
+<span id="cb27-12"><a href="#cb27-12" tabindex="-1"></a>r.sclc_dataset.uns[<span class="st">"scExploreR_assays"</span>] <span class="op">=</span> []</span>
+<span id="cb27-13"><a href="#cb27-13" tabindex="-1"></a></span>
+<span id="cb27-14"><a href="#cb27-14" tabindex="-1"></a><span class="co"># Indicate that X_diffmap is a reduction, even though it will not be used</span></span>
+<span id="cb27-15"><a href="#cb27-15" tabindex="-1"></a>r.sclc_dataset.uns[<span class="st">"scExploreR_reductions"</span>] <span class="op">=</span> [<span class="st">"X_umap"</span>, <span class="st">"X_pca"</span>, <span class="st">"X_diffmap"</span>]</span></code></pre></div>
 <p>After adding the data to <code>uns</code>, make sure to save both
 objects. They can now be loaded into the config app for analysis.</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
@@ -859,8 +859,8 @@ Suggested Metadata Options
 </h5>
 </div>
 <div class="card-body">
-<div class="datatables html-widget html-fill-item" id="htmlwidget-117f83069f6b56599dde" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-117f83069f6b56599dde">{"x":{"style":"bootstrap5","filter":"none","vertical":false,"data":[["clusters","cell_type_fine","treatment","tissue","donor_id","HTAN_Biospecimen_ID","self_reported_ethnicity"],["Clusters","Cell Type","Treatment History","Tissue","Patient ID","HTAN Sample ID","Self-Reported Ethnicity"]],"container":"<table class=\"table table-striped table-hover row-border order-column display\">\n  <thead>\n    <tr>\n      <th><b>Selected Variable<\/b><\/th>\n      <th><b>Label<\/b><\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"searching":false,"paging":false,"info":false,"ordering":false,"columnDefs":[{"name":"Selected.Variable","targets":0},{"name":"Label","targets":1}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-a734f6328c7ad284b53d" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-a734f6328c7ad284b53d">{"x":{"style":"bootstrap5","filter":"none","vertical":false,"data":[["clusters","cell_type_fine","treatment","tissue","donor_id","HTAN_Biospecimen_ID","self_reported_ethnicity"],["Clusters","Cell Type","Treatment History","Tissue","Patient ID","HTAN Sample ID","Self-Reported Ethnicity"]],"container":"<table class=\"table table-striped table-hover row-border order-column display\">\n  <thead>\n    <tr>\n      <th><b>Selected Variable<\/b><\/th>\n      <th><b>Label<\/b><\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"searching":false,"paging":false,"info":false,"ordering":false,"columnDefs":[{"name":"Selected.Variable","targets":0},{"name":"Label","targets":1}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 </div>
@@ -948,8 +948,8 @@ al. Cancer Cell 2021.</p>
 </h5>
 <p>Table of selected variables, with their corresponding labels. The
 suggested order is the order of the variables on the table.</p>
-<div class="datatables html-widget html-fill-item" id="htmlwidget-05a9b9ef2fb331620d98" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-05a9b9ef2fb331620d98">{"x":{"style":"bootstrap5","filter":"none","vertical":false,"data":[["SCLC_subtype","treatment_categorized","donor_id","tissue","clusters","recurrent_cluster","self_reported_ethnicity"],["SCLC Subtype","Treatment","Patient ID","Tissue","Clusters","Recurrent Cluster","Self-Reported Ethnicity"]],"container":"<table class=\"table table-striped table-hover row-border order-column display\">\n  <thead>\n    <tr>\n      <th><b>Selected Variable<\/b><\/th>\n      <th><b>Label<\/b><\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"searching":false,"paging":false,"info":false,"ordering":false,"columnDefs":[{"name":"Selected.Variable","targets":0},{"name":"Label","targets":1}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-df174099310d81fbbd65" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-df174099310d81fbbd65">{"x":{"style":"bootstrap5","filter":"none","vertical":false,"data":[["SCLC_subtype","treatment_categorized","donor_id","tissue","clusters","recurrent_cluster","self_reported_ethnicity"],["SCLC Subtype","Treatment","Patient ID","Tissue","Clusters","Recurrent Cluster","Self-Reported Ethnicity"]],"container":"<table class=\"table table-striped table-hover row-border order-column display\">\n  <thead>\n    <tr>\n      <th><b>Selected Variable<\/b><\/th>\n      <th><b>Label<\/b><\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"searching":false,"paging":false,"info":false,"ordering":false,"columnDefs":[{"name":"Selected.Variable","targets":0},{"name":"Label","targets":1}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 <div class="section level5">
 <h5 id="reductions-tab-1">
@@ -989,19 +989,19 @@ to be specified. In place of a path, enter a YAML <code>NULL</code>
 need to install pandoc manually and provide the path to the
 installation. <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/find_pandoc.html" class="external-link">rmarkdown::find_pandoc()</a></code> may be able to find
 the path.</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># YAML version</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="pp">%YAML 1.1</span></span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="fu">datasets</span><span class="kw">:</span></span>
-<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combined_sclc</span><span class="kw">:</span></span>
-<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="co">        # Replace path with path to object</span></span>
-<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">object</span><span class="kw">:</span><span class="at"> </span><span class="st">"~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad"</span></span>
-<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="co">        # Replace with path to config file</span></span>
-<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">config</span><span class="kw">:</span><span class="at"> </span><span class="st">"~/datasets/small_cell_lung_cancer/SCLC_Full_config.yaml"</span></span>
-<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">epithelial_sclc</span><span class="kw">:</span></span>
-<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">object</span><span class="kw">:</span><span class="at"> </span><span class="st">"~/datasets/small_cell_lung_cancer/Epithelial_SCLC.h5ad"</span></span>
-<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">config</span><span class="kw">:</span><span class="at"> </span><span class="st">"~/datasets/small_cell_lung_cancer/Epithelial_SCLC_config.yaml"</span></span>
-<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a><span class="fu">RSTUDIO_PANDOC</span><span class="kw">:</span><span class="at"> </span><span class="ch">~</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># YAML version</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="pp">%YAML 1.1</span></span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="fu">datasets</span><span class="kw">:</span></span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="at">    </span><span class="fu">combined_sclc</span><span class="kw">:</span></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="co">        # Replace path with path to object</span></span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="at">        </span><span class="fu">object</span><span class="kw">:</span><span class="at"> </span><span class="st">"~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad"</span></span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a><span class="co">        # Replace with path to config file</span></span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a><span class="at">        </span><span class="fu">config</span><span class="kw">:</span><span class="at"> </span><span class="st">"~/datasets/small_cell_lung_cancer/SCLC_Full_config.yaml"</span></span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="at">    </span><span class="fu">epithelial_sclc</span><span class="kw">:</span></span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="at">        </span><span class="fu">object</span><span class="kw">:</span><span class="at"> </span><span class="st">"~/datasets/small_cell_lung_cancer/Epithelial_SCLC.h5ad"</span></span>
+<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a><span class="at">        </span><span class="fu">config</span><span class="kw">:</span><span class="at"> </span><span class="st">"~/datasets/small_cell_lung_cancer/Epithelial_SCLC_config.yaml"</span></span>
+<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="fu">RSTUDIO_PANDOC</span><span class="kw">:</span><span class="at"> </span><span class="ch">~</span></span></code></pre></div>
 <p>You can create a config file from R Studio by going to
 <strong>File</strong> &gt;&gt; <strong>New File</strong> &gt;&gt;
 <strong>Text File</strong>. After creating the text file, save it in the
