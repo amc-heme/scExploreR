@@ -157,23 +157,30 @@ run_config <-
     } else {
       # All other formats: choose loading function based on extension
       extension <- tools::file_ext(object_path)
-
-      if (extension == "rds"){
+      
+      if (tolower(extension) == "rds"){
         object <- readRDS(object_path)
-      } else if (extension == "h5ad") {
+      } else if (tolower(extension) == "h5ad") {
         # Reticulate should not be loaded unless anndata objects are used
         # (so users that don't have anndata objects won't need to install it
         # and set up a Python environment)
         library(reticulate)
         library(anndata)
         object <- anndata::read_h5ad(object_path)
+      } else if (extension == ""){
+        stop(
+          "No file extension detected for object at path",
+          object_path,
+          ". Please provide a path to an object with an extension of ",
+          ".rds or .h5ad."
+          )
       } else {
         stop(
           "Unrecognized file extension (.",
           extension,
-          "). Currently supported extensions: .rds, and .h5ad.",
+          "). Currently supported extensions: .rds, and .h5ad."
           )
-      }
+        }
     }
 
     # Test if the loaded object is of a supported class; if not, return an error
@@ -483,7 +490,7 @@ run_config <-
                   glue("General Options"),
                   class="large center"
                 ),
-                # Select metadata column to use for patient/sample
+                # Select metadata variable to use for patient/sample
                 # level metadata analysis
                 selectInput(
                   inputId = "patient_colname",
@@ -504,8 +511,9 @@ run_config <-
                   status = "info"
                 )
               ),
-
-              # Options specific to each metadata column
+              
+              # Options specific to each metadata variable
+              
               # Options for Numeric metadata (Numeric metadata is currently not
               # displayed)
 

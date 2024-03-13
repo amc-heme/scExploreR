@@ -160,8 +160,24 @@ options_ui <- function(id,
               ""
             }
           ),
-
-        # Option to classify metadata into list (ex. group patients
+        
+        # Description of metadata variable
+        textAreaInput(
+          inputId = ns("var_description"),
+          label = 
+            "Set description for metadata variable",
+          width = "380px",
+          rows = 2,
+          resize = "vertical",
+          value = 
+            if (!is.null(restore_inputs$var_description)) {
+              restore_inputs$var_description
+            } else {
+              ""
+            } 
+        ),
+      
+        # Option to classify metadata into list (ex. group patients 
         # by sample conditions)
         # Only available for categorical metadata columns
         if (metadata_type == "Categorical"){
@@ -558,7 +574,15 @@ options_server <-
                   # Value `label` section of config for variable
                   value = config_individual$label
                 )
-
+                
+                # Metadata variable description
+                updateTextInput(
+                  session,
+                  inputId = "var_description",
+                  # Value `label` section of config for variable
+                  value = config_individual$var_description
+                )
+                
                 # Switch for defining groups (input$group_metadata)
                 # Switch on if `groups` is not NULL
                 updateMaterialSwitch(
@@ -754,7 +778,8 @@ options_server <-
                 list(
                   `meta_colname` = card_name,
                   `label` = input$hr,
-                  # groups: defined if the switch to group metadata is turned on,
+                  `description` = input$var_description,
+                  # groups: defined if the switch to group metadata is turned on, 
                   # and set to NULL otherwise.
                   `groups` =
                     if (isTruthy(input$group_metadata)){
@@ -762,14 +787,16 @@ options_server <-
                     } else NULL
                 )
               })
-
-            # Numeric metadata and other types: group_choices is NULL
+            
           } else {
-            return_list_metadata <-
+            # Numeric metadata and other types: group_choices is NULL
+            # (cards presently don't display for numeric metadata)
+            return_list_metadata <- 
               reactive({
                 list(
                   `meta_colname` = card_name,
                   `label` = input$hr,
+                  `description` = input$var_description,
                   `groups` = NULL
                 )
               })

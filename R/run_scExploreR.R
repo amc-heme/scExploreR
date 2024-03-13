@@ -443,7 +443,7 @@ run_scExploreR <-
       path <- datasets[[data_key]]$config
 
       # Add informative error message when a non-yaml config file is loaded
-      if (!grepl("\\.yaml$", path)){
+      if (!grepl("\\.yaml$", tolower(path))){
         stop("Only .yaml config files are supported as of version v0.5.0.
          Existing .rds config files can be converted to .yaml files by
          loading them into config_app.R and then re-saving as a .yaml file.")
@@ -504,7 +504,12 @@ run_scExploreR <-
         # All other objects: load based on file extension
         path <- datasets[[data_key]]$object
 
-        extension <- tools::file_ext(path)
+        # Convert to lowercase to detect different capitalizations of the
+        # same extension (.Rds or .rds)
+        extension <-
+          tolower(
+            tools::file_ext(path)
+            )
 
         if (extension == "rds") {
           datasets[[data_key]]$object <-
@@ -514,9 +519,11 @@ run_scExploreR <-
                   stop(
                     "There was an error loading the object at path \n",
                     datasets[[data_key]]$object,
-                    "\nLoading was attempted via `readRDS()`. Please check that\n",
-                    "the config file for the object corresponds to the object,\n",
-                    "and that the object path points to a .rds file.\n",
+                    ": \n\n",
+                    cnd,
+                    "\nSuggestions:\nLoading was attempted via `readRDS()`. \n",
+                    "Please check that the config file for the object corresponds \n",
+                    "to the object, and that the object path points to a .rds file.\n",
                     "\n",
                     "If an object is an HDF5-enabled SingleCellExperiment\n",
                     "object, the config file must specify this. This is done\n",
@@ -710,21 +717,28 @@ run_scExploreR <-
               font-size: 1.17em;"
             ),
 
-        # Interpreting scRNA-seq plots
-        tags$a(
-          "Interpereting scRNA-seq Plots",
-          href =
-            file.path(
-              "resources",
-              "scRNA_Plots_Explained.html"
-            ),
-          class = "blue_hover",
-          # Opens link in new tab
-          target = "_blank",
-          # Cybersecurity measure for links that
-          # open in new tab: prevents tabnapping
-          rel = "noopener noreferrer"
-        ),
+          # Link to auto-generated object dictionary
+          # dictionary is created at a temp file, so href must reactively point
+          # to the file
+          uiOutput(
+            outputId = "auto_dictionary_link"
+          ),
+
+          # Interpreting scRNA-seq plots
+          tags$a(
+            "Interpereting scRNA-seq Plots",
+            href =
+              file.path(
+                "resources",
+                "scRNA_Plots_Explained.html"
+              ),
+            class = "blue_hover",
+            # Opens link in new tab
+            target = "_blank",
+            # Cybersecurity measure for links that
+            # open in new tab: prevents tabnapping
+            rel = "noopener noreferrer"
+          ),
 
         # Tutorial Document
         tags$a(
@@ -759,13 +773,6 @@ run_scExploreR <-
           target = "_blank",
           rel = "noopener noreferrer"
         ),
-
-        # Link to auto-generated object dictionary
-        # dictionary is created at a temp file, so href must reactively point
-        # to the file
-        uiOutput(
-          outputId = "auto_dictionary_link"
-          ),
 
         # Link to Genecards
         tags$a(
@@ -1483,6 +1490,7 @@ run_scExploreR <-
           params <-
             list(
               object = object(),
+              config = config(),
               valid_features = valid_features()
               )
 
@@ -1926,7 +1934,7 @@ run_scExploreR <-
       output$auto_dictionary_link <-
         renderUI({
           tags$a(
-            "View All Object Metadata",
+            "Dataset Guide",
             # Temporary file created at start of session
             href = auto_dictionary_path,
             class = "blue_hover",
