@@ -23,6 +23,7 @@ run_scExploreR <-
     # Load Libraries and Data ------------------------------------------------------
     ## Initialize libraries ####
     library(shiny)
+    library(shinymanager)
     library(Seurat, quietly = TRUE, warn.conflicts = FALSE)
 
     #library(SCUBA, quietly = TRUE, warn.conflicts = FALSE)
@@ -640,6 +641,10 @@ run_scExploreR <-
 
     log_info("Datasets successfully loaded.")
 
+    # Read plaintext credentials from config
+    credentials <- data.frame(user = browser_config$auth_users,
+                              password = browser_config$auth_passwords)
+    
     # Table of Contents ------------------------------------------------------------
     # TODO: Add module tree here
 
@@ -804,9 +809,19 @@ run_scExploreR <-
       js_list
     )
 
+    # Sercure Server Wrapper
+    ui <- secure_app(ui)
+    
     # Main Server function ---------------------------------------------------------
     server <- function(input, output, session){
-      # Record whether app is in dev mode (signals modules to display more
+      # Implement rudimentary authentication
+      res_auth <-
+        secure_server(check_credentials = check_credentials(credentials))
+      output$auth_output <- renderPrint({
+        reactiveValuesToList(res_auth)
+      })
+
+      # Record whether app is in dev mode (signals modules to display more 
       # information for testing and development)
       session$userData$dev_mode = dev_mode
 
