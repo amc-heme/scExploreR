@@ -53,6 +53,14 @@ config <- params$config
   --text_accent: #082E6B;
   /* Background color for every second metadata entry */
   --even_background: #E1E1E1;
+  
+  /* Palette for metadata description cards */
+  --metadata-palette-primary: #165168;
+  --metadata-palette-secondary: #708082;
+  --metadata-palette-success: #26692E;
+  --metadata-palette-warning: #E99805;
+  --metadata-palette-danger: #7C0B11;
+  --metadata-palette-info: #217CA1;
 }
 
 /* Bold text and coloring for Title, h1 tags */
@@ -86,6 +94,37 @@ config <- params$config
 
 .large {
   font-size: 1.3em;
+}
+
+/* CSS Styles for bootstrap cards */
+.text-bg-primary{
+    background-color: var(--metadata-palette-primary) !important;
+    /* Primary card text is dark by default: light text should be used 
+      based on the background color */
+    /* color: #FFFFFF; */
+}
+
+.text-bg-secondary{
+    background-color: var(--metadata-palette-secondary) !important;
+}
+
+.text-bg-success{
+    background-color: var(--metadata-palette-success) !important;
+}
+
+.text-bg-warning{
+    background-color: var(--metadata-palette-warning) !important;
+}
+
+.text-bg-danger{
+    background-color: var(--metadata-palette-danger) !important;
+}
+
+.text-bg-info{
+    background-color: var(--metadata-palette-info) !important;
+    /* Info card text is dark by default: light text should be used 
+      based on the background color */
+    color: #FFFFFF !important;
 }
 ```
 
@@ -215,7 +254,7 @@ bslib::layout_column_wrap(
 )
 ```
 
-# Extended Metadata
+# Additional Metadata
 
 The summary below includes metadata variables in the object that were hidden by the user setting up this instance of the app. This document is most useful as a guide for the advanced subsetting feature. The ID of the category is shown in bold, and the data class (according to R) is shown beneath the ID.
 

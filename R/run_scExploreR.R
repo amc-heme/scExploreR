@@ -717,21 +717,28 @@ run_scExploreR <-
               font-size: 1.17em;"
             ),
 
-        # Interpreting scRNA-seq plots
-        tags$a(
-          "Interpereting scRNA-seq Plots",
-          href =
-            file.path(
-              "resources",
-              "scRNA_Plots_Explained.html"
-            ),
-          class = "blue_hover",
-          # Opens link in new tab
-          target = "_blank",
-          # Cybersecurity measure for links that
-          # open in new tab: prevents tabnapping
-          rel = "noopener noreferrer"
-        ),
+          # Link to auto-generated object dictionary
+          # dictionary is created at a temp file, so href must reactively point
+          # to the file
+          uiOutput(
+            outputId = "auto_dictionary_link"
+          ),
+
+          # Interpreting scRNA-seq plots
+          tags$a(
+            "Interpereting scRNA-seq Plots",
+            href =
+              file.path(
+                "resources",
+                "scRNA_Plots_Explained.html"
+              ),
+            class = "blue_hover",
+            # Opens link in new tab
+            target = "_blank",
+            # Cybersecurity measure for links that
+            # open in new tab: prevents tabnapping
+            rel = "noopener noreferrer"
+          ),
 
         # Tutorial Document
         tags$a(
@@ -766,13 +773,6 @@ run_scExploreR <-
           target = "_blank",
           rel = "noopener noreferrer"
         ),
-
-        # Link to auto-generated object dictionary
-        # dictionary is created at a temp file, so href must reactively point
-        # to the file
-        uiOutput(
-          outputId = "auto_dictionary_link"
-          ),
 
         # Link to Genecards
         tags$a(
@@ -1922,7 +1922,7 @@ run_scExploreR <-
       output$auto_dictionary_link <-
         renderUI({
           tags$a(
-            "View All Object Metadata",
+            "Dataset Guide",
             # Temporary file created at start of session
             href = auto_dictionary_path,
             class = "blue_hover",
