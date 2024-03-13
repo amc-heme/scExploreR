@@ -138,6 +138,11 @@ h2, h3 {
   color: #88888888;
 }
 
+/* Reduces alpha of inputs that have been disabled */
+.disabled-input {
+  opacity: 0.5;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Two column classes */
 /* For showing elements side-by-side in a two-column format */

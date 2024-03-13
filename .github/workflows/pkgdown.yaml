@@ -39,6 +39,18 @@ jobs:
         run: install.packages("prettydoc")
         shell: Rscript {0}
 
+      # Some articles are written using SASS
+      # The sass package is installed to properly 
+      # render these articles.
+      - name: Install SASS package
+        run: install.packages("sass")
+        shell: Rscript {0}
+
+      # Install bslib to render vignettes
+      - name: Install bslib
+        run: install.packages("bslib")
+        shell: Rscript {0}
+
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         shell: Rscript {0}
