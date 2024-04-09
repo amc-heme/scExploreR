@@ -1975,19 +1975,19 @@ run_scExploreR <-
           # jQuery selectors for the corr navbar button
           corr_tab_button <- "nav [data-value = 'corr']"
 
-          if (isTruthy(is_HDF5SummarizedExperiment())|
-              isTruthy(is_anndata())
-          ){
+          # if (isTruthy(is_HDF5SummarizedExperiment())|
+          #     isTruthy(is_anndata())
+          # ){
             shinyjs::addClass(
               selector = corr_tab_button,
               class = "navbar-hide"
             )
-          } else {
-            shinyjs::removeClass(
-              selector = corr_tab_button,
-              class = "navbar-hide"
-            )
-          }
+          # } else {
+          #   shinyjs::removeClass(
+          #     selector = corr_tab_button,
+          #     class = "navbar-hide"
+          #   )
+          # }
         })
 
 
