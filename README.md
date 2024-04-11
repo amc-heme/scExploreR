@@ -7,7 +7,7 @@ scExploreR further facilitates analysis through compatability with most common s
 Some bioinformatics experience is required to install the app and configure each single-cell dataset, but once set up, the app can be used by anyone.
 
 ## Requirements
-
+* [Bioconductor](https://bioconductor.org/install/)
 * A pre-processed and finalized single cell object (or objects). Currently supported formats: Seurat, SingleCellExperiment, and Anndata.
 * A server to host the app. This can be any computer with at that can be left on and be connected to the internet continuously. RAM requirements vary depending on the object type.
 
@@ -23,7 +23,7 @@ If using anndata objects, [reticulate](https://github.com/rstudio/reticulate) mu
 
 ## Installation and Use
 
-1. Install from Github via
+1. Install from Github using [Remotes](https://github.com/r-lib/remotes).
 ```
 remotes::install_github("amc-heme/scExploreR")
 ```
