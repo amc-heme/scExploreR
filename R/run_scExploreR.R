@@ -74,7 +74,7 @@ run_scExploreR <-
     # Other packages
     library(yaml, quietly = TRUE, warn.conflicts = FALSE)
     library(rlang, quietly = TRUE, warn.conflicts = FALSE)
-
+    
     # Add inst/www to the resource path so static html can be loaded
     addResourcePath("resources", system.file("www", package = "scExploreR"))
 
@@ -792,7 +792,7 @@ run_scExploreR <-
         right = TRUE,
         label = "",
         size = "sm",
-        icon = icon("ellipsis-h"),
+        icon = icon("file-import"),
         actionLink(
           inputId = "open_dataset_window",
           label = "Choose Dataset",
