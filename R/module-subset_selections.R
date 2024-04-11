@@ -628,7 +628,12 @@ subset_selections_server <- function(id,
           # If choices is a factor, the integer levels will be displayed to the 
           # user instead of the corresponding values. This is corrected here.
           if (is.factor(choices)){
-            choices <- as.character(choices)
+          
+            choices <- levels(choices)
+            
+          } else{
+            
+            choices <- gtools::mixedsort(choices)
           }
           
           # Determine which choices are valid based on the current subset
@@ -646,10 +651,12 @@ subset_selections_server <- function(id,
             
             # If valid choices is a factor, transform to a character vector
             if (is.factor(valid_choices)){
-              valid_choices <- as.character(valid_choices)
+             
+              valid_choices <- levels(valid_choices)
             }
           } else {
-            valid_choices <- choices
+     
+            valid_choices <- gtools::mixedsort(choices)
           }
           
           # Boolean vector of choices to be diabled
@@ -1275,7 +1282,6 @@ subset_selections_server <- function(id,
              if (is.factor(choices)){
                choices <- as.character(choices)
              }
-             
              # Update picker input with choices, selected values
              updatePickerInput(
                session,
