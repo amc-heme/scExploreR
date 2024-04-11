@@ -74,7 +74,7 @@ run_scExploreR <-
     # Other packages
     library(yaml, quietly = TRUE, warn.conflicts = FALSE)
     library(rlang, quietly = TRUE, warn.conflicts = FALSE)
-
+    library(gtools, quietly = TRUE, warn.conflicts = FALSE)
     # Add inst/www to the resource path so static html can be loaded
     addResourcePath("resources", system.file("www", package = "scExploreR"))
 
