@@ -685,14 +685,14 @@ run_scExploreR <-
                    uiOutput(
                      outputId = "dge_dynamic_ui"
                    )
-                 ),
-                 tabPanel(
-                   "Gene Correlations",
-                   value = "corr",
-                   uiOutput(
-                     outputId = "corr_dynamic_ui"
-                   )
-                 )
+                 )#,
+                 # tabPanel(
+                 #   "Gene Correlations",
+                 #   value = "corr",
+                 #   uiOutput(
+                 #     outputId = "corr_dynamic_ui"
+                 #   )
+                 # )
       ), # End navbarPage()
 
       ## Buttons on upper-right hand corner of app ---------------------------------
@@ -1631,27 +1631,27 @@ run_scExploreR <-
           })
 
       ### 3.1.3. Correlations tab UI ####
-      corr_tab_ui_dynamic <-
-        eventReactive(
-          # UI should only update when the object and config files are switched
-          c(config(),
-            object()
-            ),
-          label = "Correlations Tab Dynamic UI",
-          ignoreNULL = FALSE,
-          {
-            ui <- corr_tab_ui(
-              id = glue("{dataset_info$last_object_key}_corr"),
-              unique_metadata = unique_metadata,
-              metadata_config = metadata_config,
-              auto_dictionary_path = auto_dictionary_path,
-              string_subsetting_href = string_subsetting_href
-            )
-
-            update_features$trigger()
-
-            ui
-          })
+      # corr_tab_ui_dynamic <-
+      #   eventReactive(
+      #     # UI should only update when the object and config files are switched
+      #     c(config(),
+      #       object()
+      #       ),
+      #     label = "Correlations Tab Dynamic UI",
+      #     ignoreNULL = FALSE,
+      #     {
+      #       ui <- corr_tab_ui(
+      #         id = glue("{dataset_info$last_object_key}_corr"),
+      #         unique_metadata = unique_metadata,
+      #         metadata_config = metadata_config,
+      #         auto_dictionary_path = auto_dictionary_path,
+      #         string_subsetting_href = string_subsetting_href
+      #       )
+      #
+      #       update_features$trigger()
+      #
+      #       ui
+      #     })
 
       ### 3.1.4. Render Dynamic UI components
       output$plots_dynamic_ui <-
@@ -1664,10 +1664,10 @@ run_scExploreR <-
           dge_tab_ui_dynamic()
         })
 
-      output$corr_dynamic_ui <-
-        renderUI({
-          corr_tab_ui_dynamic()
-        })
+      # output$corr_dynamic_ui <-
+      #   renderUI({
+      #     corr_tab_ui_dynamic()
+      #   })
 
       ## 3.2 Server instances ####
       # A separate module instance is needed for each dataset to avoid namespace
@@ -1737,33 +1737,33 @@ run_scExploreR <-
       })
 
       ### 3.2.3. Correlations Tab Server ####
-      observe({
-        current_key <- dataset_info$last_object_key
-
-        if(!current_key %in% main_server$corr_modules_created){
-          print(glue("New module for correlations tab (key = {current_key})"))
-          corr_tab_server(
-            id = glue("{current_key}_corr"),
-            object = object,
-            metadata_config = metadata_config,
-            assay_config = assay_config,
-            designated_genes_assay = designated_genes_assay,
-            meta_categories = meta_categories,
-            unique_metadata = unique_metadata,
-            n_cells_original = n_cells_original,
-            nonzero_threshold = nonzero_threshold,
-            meta_choices = meta_choices,
-            valid_features = valid_features,
-            error_list = error_list,
-            update_features = update_features,
-            object_trigger = dataset_change
-          )
-
-          # Add current key to list of modules created so module is not re-created
-          main_server$corr_modules_created <-
-            c(main_server$corr_modules_created, current_key)
-        }
-      })
+      # observe({
+      #   current_key <- dataset_info$last_object_key
+      #
+      #   if(!current_key %in% main_server$corr_modules_created){
+      #     print(glue("New module for correlations tab (key = {current_key})"))
+      #     corr_tab_server(
+      #       id = glue("{current_key}_corr"),
+      #       object = object,
+      #       metadata_config = metadata_config,
+      #       assay_config = assay_config,
+      #       designated_genes_assay = designated_genes_assay,
+      #       meta_categories = meta_categories,
+      #       unique_metadata = unique_metadata,
+      #       n_cells_original = n_cells_original,
+      #       nonzero_threshold = nonzero_threshold,
+      #       meta_choices = meta_choices,
+      #       valid_features = valid_features,
+      #       error_list = error_list,
+      #       update_features = update_features,
+      #       object_trigger = dataset_change
+      #     )
+      #
+      #     # Add current key to list of modules created so module is not re-created
+      #     main_server$corr_modules_created <-
+      #       c(main_server$corr_modules_created, current_key)
+      #   }
+      # })
 
       # 4. Dataset preview in modal UI -----------------------------------------
       ## 4.1. Description ####
@@ -1969,26 +1969,26 @@ run_scExploreR <-
       ## 6.2. Correlations Tab ####
       # The correlations tab will be hidden for anndata and
       # SingleCellExperiment objects
-      observe(
-        label = "Enable/Disable Corr tab, SCE/Anndata Objects",
-        {
-          # jQuery selectors for the corr navbar button
-          corr_tab_button <- "nav [data-value = 'corr']"
-
-          # if (isTruthy(is_HDF5SummarizedExperiment())|
-          #     isTruthy(is_anndata())
-          # ){
-            shinyjs::addClass(
-              selector = corr_tab_button,
-              class = "navbar-hide"
-            )
-          # } else {
-          #   shinyjs::removeClass(
-          #     selector = corr_tab_button,
-          #     class = "navbar-hide"
-          #   )
-          # }
-        })
+      # observe(
+      #   label = "Enable/Disable Corr tab, SCE/Anndata Objects",
+      #   {
+      #     # jQuery selectors for the corr navbar button
+      #     corr_tab_button <- "nav [data-value = 'corr']"
+      #
+      #     # if (isTruthy(is_HDF5SummarizedExperiment())|
+      #     #     isTruthy(is_anndata())
+      #     # ){
+      #       shinyjs::addClass(
+      #         selector = corr_tab_button,
+      #         class = "navbar-hide"
+      #       )
+      #     # } else {
+      #     #   shinyjs::removeClass(
+      #     #     selector = corr_tab_button,
+      #     #     class = "navbar-hide"
+      #     #   )
+      #     # }
+      #   })
 
 
       # 7. Callbacks -----------------------------------------------------------
