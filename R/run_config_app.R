@@ -2238,6 +2238,11 @@ run_config <-
             isTruthy(input$dataset_label),
             isTruthy(input$dataset_description),
             input$preview_type != "none",
+            #Special case for when all three fields are empty crashing.
+            all(!isTruthy(input$dataset_label),
+                !isTruthy(input$dataset_description),
+                input$preview_type == "none"
+            ),
             isTruthy(input$assays_selected),
             input$include_numeric_metadata == FALSE,
             input$genes_assay != "none",
