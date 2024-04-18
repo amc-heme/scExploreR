@@ -126,6 +126,12 @@ config <- params$config
       based on the background color */
     color: #FFFFFF !important;
 }
+
+.card-header{
+    background-color: inherit !important;
+    /* card header background color should inherit background color from card 
+    so that text is visible */
+}
 ```
 
 See below for details on the current dataset. These settings were determined by the user setting up this app instance. <!-- If contact info is defined, add the following: <<you may contact the user/group using the information below.>>-->

@@ -157,7 +157,7 @@ options_ui <- function(id,
             if (!is.null(restore_inputs$hr)) {
               restore_inputs$hr
             } else {
-              ""
+              "" 
             }
           ),
         
