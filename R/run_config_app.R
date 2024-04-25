@@ -36,7 +36,7 @@ run_config <-
     # Shiny add-ons
     library(shinyWidgets)
     library(rintrojs)
-    library(shinydashboard)
+    library(bs4Dash)
     library(waiter)
     library(shinycssloaders)
     library(shinyjs)
@@ -250,12 +250,16 @@ run_config <-
           label = "Label for Dataset",
           value = ""
         ),
-        textAreaInput(
-          inputId = "dataset_description",
-          label = "Description of Dataset",
-          width = "100%",
-          rows = 6,
-          resize = "vertical"
+        tooltip(
+          textAreaInput(
+            inputId = "dataset_description",
+            label = "Description of Dataset",
+            width = "100%",
+            rows = 6,
+            resize = "vertical"
+          ),
+          title = "My tooltip",
+          placement = "top"
         ),
         selectInput(
           inputId = "preview_type",
