@@ -802,11 +802,13 @@ run_config <-
           label = "Save Config File",
           class = "orange_hover"
         ),
-        actionLink(
-          inputId = "load_config",
-          label = "Load Config File",
-          class = "orange_hover"
-        )
+        if(!is.null(config_filename)){
+          actionLink(
+            inputId = "load_config",
+            label = "Load Config File",
+            class = "orange_hover"
+          )
+        }
       ),
 
       # Button to create/export config file
@@ -2232,7 +2234,8 @@ run_config <-
           if(is.null(config_filename)){
             showModal(modalDialog(
               title = "Important message",
-              "No config file specified, or saved."
+              "Cannot load. No config file specified (config_path=NULL). 
+              Please specify a config file."
             ))
           }
           else{
