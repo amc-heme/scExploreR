@@ -353,12 +353,19 @@ plot_module_ui <- function(id,
             choices =
               c("Ascending" = "ascending",
                 "Descending" = "descending",
+                "Feature Expression" = "expression",
                 "Custom" = "custom")
             ),
           # Custom refactoring sortable input (shows when custom is chosen above)
           hidden(
             uiOutput(
               outputId = ns("refactor_sortable")
+              )
+            ),
+          # sort by feature expression when feature expression is chosen above
+          hidden(
+            uiOutput(
+              outputId = ns("expr_sort_menu")
               )
             )
           )
@@ -2989,6 +2996,74 @@ plot_module_server <- function(id,
 
                    }
                  }
+                 
+               ## Menu for refactoring by feature expression 
+                 if (plot_type %in% c("violin", "dot", "ridge")){
+
+                   # Violin, dot, ridge plots: refactoring affects
+                   # group by variable
+                   expr_sort_menu <-
+                     eventReactive(
+                       c(plot_selections$group_by(),
+                         object(),
+                         plot_switch()
+                       ),
+                       {
+                         # Responds to both the object and the group by
+                         # variable, but only runs when the group by variable is
+                         # defined
+                       req(plot_selections$group_by())
+
+                       # For ridge plots, the group_by variable can also be
+                       # "none", which will cause errors. The UI should not
+                       # compute in this case
+                       if (plot_type == "ridge"){
+                         req(plot_selections$group_by() != "none")
+                       }
+
+                       # Also only runs when the plot is enabled
+                       req(plot_switch())
+            
+                         
+                         # Menu UI
+                         div(
+                           id = ns("expr_sort_menu"),
+                           class = "compact-options-container",
+                           selectInput(
+                             inputId = ns("sort_expr_feature"),
+                             label = "Choose a feature to sort by:",
+                             choices = features_entered()
+                           ),
+                           selectInput(
+                             inputId = ns("sort_expr_order"),
+                             label = "Order of sorting:",
+                             choices = c("ascending", "descending")
+                             )
+                           )
+                       })
+                 
+                 
+               # hide/show feature sorting container
+                 observe({
+                   # The output container is shown/hidden
+                   target_id <- "expr_sort_menu"
+                   
+                   # Show when "custom" is chosen from the group order menu
+                   if (isTruthy(input$sort_groups)){
+                     if (input$sort_groups == "expression"){
+                       showElement(
+                         id = target_id,
+                         anim = TRUE
+                       )
+                     } else {
+                       hideElement(
+                         id = target_id,
+                         anim = TRUE
+                       )
+                     }
+                   }
+                 })
+                 }
 
                  ## 8.5. Render Dynamic UI ####
                  output$ncol_slider <-
@@ -3024,6 +3099,21 @@ plot_module_server <- function(id,
                      "refactor_sortable",
                      suspendWhenHidden = FALSE
                    )
+                 }
+                 
+                 if (plot_type %in% c("violin", "dot", "ridge")){
+                   output$expr_sort_menu <-
+                     renderUI({
+                       expr_sort_menu()
+                     })
+                   
+                   # The UI should still compute when hidden, so it displays 
+                   # smoothly when the user selects "custom"
+                   # outputOptions(
+                   #   output, 
+                   #   "expr_sort_menu", 
+                   #   suspendWhenHidden = FALSE
+                   # )
                  }
 
                  # 9. Separate Features Entry: Dynamic Update ------------------
