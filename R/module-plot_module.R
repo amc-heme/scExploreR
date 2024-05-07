@@ -353,12 +353,25 @@ plot_module_ui <- function(id,
             choices =
               c("Ascending" = "ascending",
                 "Descending" = "descending",
+                "Feature Expression" = "expression",
                 "Custom" = "custom")
             ),
           # Custom refactoring sortable input (shows when custom is chosen above)
           hidden(
             uiOutput(
               outputId = ns("refactor_sortable")
+              )
+            ),
+          # sort by feature expression when feature expression is chosen above
+          hidden(
+            uiOutput(
+              outputId = ns("sort_expr_feature") 
+              )
+            ),
+            # further sort in descending or ascending order 
+            hidden(
+              uiOutput(
+                outputId = ns("sort_expr_order")
               )
             )
           )
@@ -2940,6 +2953,70 @@ plot_module_server <- function(id,
                      })
                    }
                  }
+                 
+               ## Menu for refactoring by feature expression 
+                 if (plot_type %in% c("violin", "dot", "ridge")){
+
+                   # Violin, dot, ridge plots: refactoring affects
+                   # group by variable
+                   sort_expr_feature <-
+                     eventReactive(
+                       c(plot_selections$group_by(),
+                         object(),
+                         plot_switch()
+                       ),
+                       {
+                         # Responds to both the object and the group by
+                         # variable, but only runs when the group by variable is
+                         # defined
+                       req(plot_selections$group_by())
+
+                       # For ridge plots, the group_by variable can also be
+                       # "none", which will cause errors. The UI should not
+                       # compute in this case
+                       if (plot_type == "ridge"){
+                         req(plot_selections$group_by() != "none")
+                       }
+
+                       # Also only runs when the plot is enabled
+                       req(plot_switch())
+            
+                         
+                         # Menu UI
+                         div(
+                           id = ns("sort_feature"),
+                           class = "compact-options-container",
+                           selectInput(
+                             #inputId = ns("sort_feature"),
+                             label = "Choose a feature to sort by:",
+                             choices = features_entered()
+                           )
+                         )
+                       })
+                 }
+                 
+               # hide/show feature sorting container
+                 observe({
+                   # The output container is shown/hidden
+                   target_id <- "sort_feature"
+                   
+                   # Show when "custom" is chosen from the group order menu
+                   if (isTruthy(input$sort_groups)){
+                     if (input$sort_groups == "expression"){
+                       showElement(
+                         id = target_id,
+                         anim = TRUE
+                       )
+                     } else {
+                       hideElement(
+                         id = target_id,
+                         anim = TRUE
+                       )
+                     }
+                   }
+                 })
+                 
+                 
                  
                  ## 8.5. Render Dynamic UI ####
                  output$ncol_slider <- 
