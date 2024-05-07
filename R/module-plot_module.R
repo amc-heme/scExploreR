@@ -365,13 +365,7 @@ plot_module_ui <- function(id,
           # sort by feature expression when feature expression is chosen above
           hidden(
             uiOutput(
-              outputId = ns("sort_expr_feature") 
-              )
-            ),
-            # further sort in descending or ascending order 
-            hidden(
-              uiOutput(
-                outputId = ns("sort_expr_order")
+              outputId = ns("expr_sort_menu")
               )
             )
           )
@@ -2959,7 +2953,7 @@ plot_module_server <- function(id,
 
                    # Violin, dot, ridge plots: refactoring affects
                    # group by variable
-                   sort_expr_feature <-
+                   expr_sort_menu <-
                      eventReactive(
                        c(plot_selections$group_by(),
                          object(),
@@ -2984,21 +2978,26 @@ plot_module_server <- function(id,
                          
                          # Menu UI
                          div(
-                           id = ns("sort_feature"),
+                           id = ns("expr_sort_menu"),
                            class = "compact-options-container",
                            selectInput(
-                             #inputId = ns("sort_feature"),
+                             inputId = ns("sort_expr_feature"),
                              label = "Choose a feature to sort by:",
                              choices = features_entered()
+                           ),
+                           selectInput(
+                             inputId = ns("sort_expr_order"),
+                             label = "Order of sorting:",
+                             choices = c("ascending", "descending")
+                             )
                            )
-                         )
                        })
-                 }
+                 
                  
                # hide/show feature sorting container
                  observe({
                    # The output container is shown/hidden
-                   target_id <- "sort_feature"
+                   target_id <- "expr_sort_menu"
                    
                    # Show when "custom" is chosen from the group order menu
                    if (isTruthy(input$sort_groups)){
@@ -3015,6 +3014,7 @@ plot_module_server <- function(id,
                      }
                    }
                  })
+                 }
                  
                  
                  
@@ -3052,6 +3052,21 @@ plot_module_server <- function(id,
                      "refactor_sortable", 
                      suspendWhenHidden = FALSE
                    )
+                 }
+                 
+                 if (plot_type %in% c("violin", "dot", "ridge")){
+                   output$expr_sort_menu <-
+                     renderUI({
+                       expr_sort_menu()
+                     })
+                   
+                   # The UI should still compute when hidden, so it displays 
+                   # smoothly when the user selects "custom"
+                   # outputOptions(
+                   #   output, 
+                   #   "expr_sort_menu", 
+                   #   suspendWhenHidden = FALSE
+                   # )
                  }
 
                  # 9. Separate Features Entry: Dynamic Update ------------------
