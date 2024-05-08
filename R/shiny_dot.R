@@ -66,6 +66,10 @@ shiny_dot <-
                     }
                 )
             } else if (sort_groups %in% c("custom", "expression")){
+              # If sort_groups is "custom", use the user-defined levels,
+              # If "expression", the custom levels will be the computed
+              # levels by ascending or descending feature expression
+
               # Error message when custom_factor_levels is not defined (error
               # returned by factor() is too generic)
               if (is.null(custom_factor_levels)){
@@ -78,9 +82,7 @@ shiny_dot <-
                   'plot module.'
                   )
                 }
-              # If sort_groups is "custom", use the user-defined levels,
-              # If "expression", the custom levels will be the computed
-              # levels by ascending or descending feature expression
+
               custom_factor_levels |>
                 # reverse order for dot plots (DotPlot uses the inverse
                 # of the order)
