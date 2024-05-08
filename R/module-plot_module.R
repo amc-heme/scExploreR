@@ -2999,7 +2999,8 @@ plot_module_server <- function(id,
                  
                ## Menu for refactoring by feature expression 
                  if (plot_type %in% c("violin", "dot", "ridge")){
-
+                  
+           
                    # Violin, dot, ridge plots: refactoring affects
                    # group by variable
                    expr_sort_menu <-
@@ -3028,6 +3029,16 @@ plot_module_server <- function(id,
                        # only run if a feature has been chosen
                        req(features_entered())
                          
+                       feature_names <- features_entered()
+                       
+                       for (i in 1:length(feature_names)){
+                         feature_names[i] <-
+                           hr_name(
+                             machine_readable_name = feature_names[i],
+                             assay_config = assay_config(),
+                             use_suffix = FALSE
+                           )
+                       }
                          # Menu UI
                          div(
                            id = ns("expr_sort_menu"),
@@ -3035,7 +3046,7 @@ plot_module_server <- function(id,
                            selectInput(
                              inputId = ns("sort_expr_feature"),
                              label = "Choose a feature to sort by:",
-                             choices = features_entered()
+                             choices = feature_names
                            ),
                            selectInput(
                              inputId = ns("sort_expr_order"),
