@@ -3004,7 +3004,8 @@ plot_module_server <- function(id,
                    # group by variable
                    expr_sort_menu <-
                      eventReactive(
-                       c(plot_selections$group_by(),
+                       c(features_entered(),
+                         plot_selections$group_by(),
                          object(),
                          plot_switch()
                        ),
@@ -3023,7 +3024,9 @@ plot_module_server <- function(id,
 
                        # Also only runs when the plot is enabled
                        req(plot_switch())
-            
+                      
+                       # only run if a feature has been chosen
+                       req(features_entered())
                          
                          # Menu UI
                          div(
