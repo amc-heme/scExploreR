@@ -7,9 +7,9 @@
 #' @param show_legend user choice as to whether a legend should be shown (default is TRUE)
 #' @param palette the color palette to use for the plot (plot uses a continuous color palette)
 #' @param center_x_axis_title if TRUE, the title on the x_axis is centered (default is FALSE).
-#' @param xlim a 2-element character vector giving the lower and upper bounds 
+#' @param xlim a 2-element character vector giving the lower and upper bounds
 #' of the x-axis.
-#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. 
+#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order.
 #' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
 #' @param legend_ncol The number of columns for keys in the legend (uses ggplot2 defaults if NULL).
 #' @param legend_font_size The font size to use for legend keys (uses ggplot2 defaults if NULL).
@@ -18,7 +18,7 @@
 #' @return a ggplot2 object with a ridge plot created according to user specifications.
 #'
 #' @noRd
-shiny_ridge <- 
+shiny_ridge <-
   function(
    object,
    features_entered,
@@ -35,18 +35,18 @@ shiny_ridge <-
    legend_font_size = NULL,
    legend_key_size = NULL
   ){
-    # validate will keep plot code from running if the subset 
+    # validate will keep plot code from running if the subset
     # is NULL (no cells in subset), or if the group by selection and features
     # are not yet defined.
     validate(
       need(
         isTruthy(object) & isTruthy(group_by) & isTruthy(features_entered),
-        # No message displayed (a notification is already 
+        # No message displayed (a notification is already
         # displayed) (*was displayed*)
         message = ""
       )
     )
-    
+
     # If group_by is equal to none, add a dummy metadata column that labels
     # all cells with... "All Cells"
     if (group_by == "none"){
@@ -56,19 +56,19 @@ shiny_ridge <-
           object,
           full_table = TRUE
           )
-      
+
       meta_table$allcells <- "All Cells"
-      
-      object <- 
+
+      object <-
         scExploreR:::update_object_metadata(
           object,
           table = meta_table
           )
     }
-    
+
     # n_colors (equal to number of groups, determines how palette is applied)
     if (group_by != "none"){
-      n_colors <- 
+      n_colors <-
         scExploreR:::n_unique(
           object,
           meta_var = group_by
@@ -77,99 +77,101 @@ shiny_ridge <-
       # Only one group exists when group_by is equal to none
       n_colors <- 1
     }
-    
+
     # Factor/refactor group by metadata, but only if sort_groups is defined,
     # and group by is not "none"
     if (isTruthy(sort_groups) && group_by != "none"){
       # Pull metadata table, then modify levels in factor for group_by data
-      meta_table <- 
+      meta_table <-
         SCUBA::fetch_metadata(
           object,
           full_table = TRUE
           )
-      
+
       meta_table[[group_by]] <-
         # factor() creates a factor if the metadata category is not a factor
         # already, and re-orders a factor if it already exists.
         factor(
           meta_table[[group_by]],
-          levels = 
+          levels =
             # Levels based on ascending or descending order
             if (sort_groups %in% c("ascending", "descending")){
-              meta_table[[group_by]] |> 
-                unique() |> 
+              meta_table[[group_by]] |>
+                unique() |>
                 str_sort(
                   numeric = TRUE,
                   decreasing =
-                    # Order of plotting for ridge plots is inverted from the 
-                    # expected order (decreasing == TRUE will plot in ascending 
+                    # Order of plotting for ridge plots is inverted from the
+                    # expected order (decreasing == TRUE will plot in ascending
                     if (sort_groups == "ascending"){
                       TRUE
                     } else if (sort_groups == "descending"){
                       FALSE
                     }
                 )
-            } else if (sort_groups == "custom"){
-              # If sort_groups is "custom", use the user-defined levels 
-              
-              # Error message when custom_factor_levels is not defined (error 
-              # returned by factor() is too generic) 
+            } else if (sort_groups %in% c("custom", "expression")){
+              # If sort_groups is "custom", use the user-defined levels,
+              # If "expression", the custom levels will be the computed
+              # levels by ascending or descending feature expression
+
+              # Error message when custom_factor_levels is not defined (error
+              # returned by factor() is too generic)
               if (is.null(custom_factor_levels)){
                 stop(
-                  'When `sort_groups` is equal to "custom", 
+                  'When `sort_groups` is equal to "custom",
                   `custom_factor_levels` must be defined.'
                 )
               }
-              
+
               # Must reverse order for ridge plots
-              custom_factor_levels |> 
+              custom_factor_levels |>
                 rev()
             }
         )
-      
+
       # Save modified metadata table to object
-      object <- 
+      object <-
         scExploreR:::update_object_metadata(
           object,
           table = meta_table
         )
     }
-    
+
     # If there is at least one feature entered, create the ridge plot
     if (length(features_entered) > 0){
       plot <-
         SCUBA::plot_ridge(
           object,
-          # cols: uses user-defined categorical palette, 
+          # cols: uses user-defined categorical palette,
           # or default palette if not provided
-          cols = 
+          cols =
             if (!is.null(palette)){
-              # colorRampPalette() extends or contracts the given palette to 
+              # colorRampPalette() extends or contracts the given palette to
               # produce exactly the required number of colors
               colorRampPalette(palette)(n_colors)
               # Use ggplot2 defaults if palette() is unspecified
-              } else NULL, 
-          features = features_entered, 
-          group_by = if (group_by == "none") "allcells" else group_by, 
+              } else NULL,
+          features = features_entered,
+          group_by = if (group_by == "none") "allcells" else group_by,
           # Add toggle for same_y_lims
           #same_y_lims = same_y_lims
-        ) 
-      
+        )
+
       # If group_by is "none", remove y-axis labels (which appear redundant
-      # when there is only one group for all cells) 
+      # when there is only one group for all cells)
       if (group_by == "none"){
         suppressMessages(
           plot <-
-            # Use & in the event multiple plots are drawn 
+            # Use & in the event multiple plots are drawn
             # (when there are two or more features)
             plot &
             theme(
               # Disables "All Cells" on y-axis
-              axis.text.y = element_blank() 
-            ) 
+              axis.text.y = element_blank()
+            )
         )
       }
-      
+
       # Additional layers
       layers <-
         c(
@@ -178,18 +180,18 @@ shiny_ridge <-
             do.call(
               theme,
               # List of arguments to call with theme
-              args = 
+              args =
                 c(
                   # Element A: Toggle legend
                   list(
-                    legend.position = 
+                    legend.position =
                       if (show_legend == TRUE) {
                         "right"
                       } else "none",
                     # Element B: Disables "identity" label on Y-axis
                     axis.title.y = element_blank(),
                     # Element C: Centers title on plot
-                    plot.title = 
+                    plot.title =
                       element_text(
                         hjust = 0.5
                       )
@@ -197,23 +199,23 @@ shiny_ridge <-
                   # Element D: Center X-axis label
                   if (center_x_axis_title == TRUE){
                     list(
-                      axis.title.x = 
+                      axis.title.x =
                         element_text(
                           hjust = 0.5
                         )
                     )
                   },
-                  
-                  # Element E: Legend font size 
+
+                  # Element E: Legend font size
                   if (isTruthy(legend_font_size)){
                     list(
-                      legend.text = 
+                      legend.text =
                         element_text(
                           size = legend_font_size
                         )
                     )
                   },
-                  
+
                   # Element F: Legend key size (passed here as well as in
                   # guides())
                   if (isTruthy(legend_key_size)){
@@ -225,19 +227,19 @@ shiny_ridge <-
                 )
             )
           ),
-          
-          # Element G: Number of columns in legend 
+
+          # Element G: Number of columns in legend
           # Called via guides()
           list(
             guides(
               # Guide for ridgeplot is fill
-              fill = 
+              fill =
                 do.call(
                   guide_legend,
                   # List of arguments to call
                   args =
                     c(
-                      # Empty list: passes no arguments if 
+                      # Empty list: passes no arguments if
                       # below values are NULL
                       list(),
                       # Number of columns in legend
@@ -259,7 +261,7 @@ shiny_ridge <-
                 )
             )
           ),
-          
+
           # Element I: Manually defined x-axis limits
           if (!is.null(xlim)){
             # scale_x_continuous(
@@ -277,7 +279,7 @@ shiny_ridge <-
           plot &
           layers
       )
-      
+
       # Apply custom titles, if provided
       if (!is.null(custom_titles)){
         for (i in 1:length(custom_titles)){
@@ -296,7 +298,7 @@ shiny_ridge <-
                 plot[[i]] +
                 ggtitle(
                   hr_name(
-                    features_entered[i], 
+                    features_entered[i],
                     assay_config,
                     use_suffix = TRUE
                   )
@@ -304,18 +306,18 @@ shiny_ridge <-
               )
           } else {
               warning(
-                "`assay_config` is not defined. The plot will still render, but 
+                "`assay_config` is not defined. The plot will still render, but
                 human-readable titles will not be created."
                 )
             }
           }
         }
-      
+
     } else {
       # Return nothing if no features are entered
       plot <- NULL
     }
-    
+
     # Return plot
     plot
   }
