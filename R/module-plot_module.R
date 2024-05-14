@@ -3051,7 +3051,10 @@ plot_module_server <- function(id,
                            selectInput(
                              inputId = ns("sort_expr_order"),
                              label = "Order of sorting:",
-                             choices = c("ascending", "descending")
+                             choices = 
+                               c("Descending" = "descending",
+                                 "Ascending" = "ascending"
+                                 )
                              )
                            )
                        })
