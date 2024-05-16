@@ -223,7 +223,7 @@ cards <-
       metadata_card(
         
         name = 
-             if(isTruthy(var$label)){
+             if (isTruthy(var$label)){
                var$label
              }else {
                var$meta_colname

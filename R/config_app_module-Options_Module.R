@@ -150,7 +150,7 @@ options_ui <- function(id,
         textInput(
           inputId = ns("hr"),
           label =
-            "Set label for metadata variable(will appear
+            "Set label for metadata variable (will appear
             as entered in app interface)",
           width = "380px",
           value =
