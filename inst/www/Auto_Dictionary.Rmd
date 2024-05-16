@@ -221,7 +221,14 @@ cards <-
       
       # Individual card
       metadata_card(
-        name = var$label,
+        
+        name = 
+             if(isTruthy(var$label)){
+               var$label
+             }else {
+               var$meta_colname
+             },
+        
         description = var$description,
         # CSS class: assign bootstrap classes by
         class =

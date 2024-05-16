@@ -150,14 +150,14 @@ options_ui <- function(id,
         textInput(
           inputId = ns("hr"),
           label =
-            "Set label for metadata variable (will appear
+            "Set label for metadata variable(will appear
             as entered in app interface)",
           width = "380px",
           value =
             if (!is.null(restore_inputs$hr)) {
               restore_inputs$hr
             } else {
-              "" 
+             ""
             }
           ),
         
@@ -571,8 +571,8 @@ options_server <-
                 updateTextInput(
                   session,
                   inputId = "hr",
-                  # Value `label` section of config for variable
-                  value = config_individual$label
+                  # #Value `label` section of config for variable
+                     value = config_individual$label
                 )
                 
                 # Metadata variable description
