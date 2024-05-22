@@ -3524,9 +3524,27 @@ plot_module_server <- function(id,
                            split_by = plot_selections$split_by(),
                            show_legend = plot_selections$legend(),
                            ncol = plot_selections$ncol(),
-                           assay_config = assay_config(),
                            palette = palette(),
                            sort_groups = plot_selections$sort_groups(),
+                           set_title = 
+                             # Set title based on features entered, removing the
+                             # assay key and adding the suffix from the config
+                             # file, unless the user requests it not be added
+                             if (input$features_modality_key == FALSE){
+                               sapply(
+                                 features(),
+                                 function(feature, assay_config){
+                                   hr_name(
+                                     machine_readable_name = feature, 
+                                     assay_config = assay_config,
+                                     use_suffix = TRUE
+                                   )
+                                 },
+                                 assay_config()
+                               )
+                             } else {
+                               features()
+                             },
                            custom_factor_levels =
                              plot_selections$custom_refactoring(),
                            # Number of columns in legend

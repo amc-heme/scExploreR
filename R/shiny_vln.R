@@ -1,23 +1,35 @@
 #' shiny_vln
 #'
-#' Accepts inputs from plots_selections module and outputs a Seurat feature plot from the Seurat object passed to it.
+#' Outputs a violin plot based on inputs defined in the plot_module.
 #'
 #' @param object a Seurat object. This can be either the full object or a subset.
 #' @param features_entered Features to plot.
-#' @param group_by user specified group_by metadata category
-#' @param split_by user specified split_by metadata category
-#' @param show_legend if TRUE, a legend is shown to the right of the plot. If FALSE, the legend is hidden (default is TRUE).
+#' @param group_by the group by metadata variable defined by the user.
+#' @param split_by the split by metadata variable defined by the user.
+#' @param show_legend if TRUE, a legend is shown to the right of the plot. If 
+#' FALSE, the legend is hidden (default is TRUE).
 #' @param ncol number of columns, as specified by user
-#' @param assay_config the assays section of the config file loaded at app startup.
-#' @param palette The palette to use for coloring groups. If the palette passed
-#' to this function is NULL, the default (hue_pal()) is used.
-#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending", "descending", or "custom". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order. If custom, groups will be sorted according to how they appear in `custom_factor_levels`.
-#' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
-#' @param legend_ncol The number of columns for keys in the legend (uses ggplot2 defaults if NULL).
-#' @param legend_font_size The font size to use for legend keys (uses ggplot2 defaults if NULL).
-#' @param legend_key_size The size of the key glpyhs in the legend (uses ggplot2 defaults if NULL).
+#' @param palette The palette to use for coloring groups. If the palette 
+#' passed to this function is NULL, the default (hue_pal()) is used.
+#' @param sort_groups the order with which to sort groups on the dot plot. This 
+#' may be set to "ascending", "descending", or "custom". If ascending, groups 
+#' will be sorted in increasing alphabetical order. If descending, they will 
+#' be sorted in decreasing alphabetical order. If custom, groups will be 
+#' sorted according to how they appear in `custom_factor_levels`.
+#' @param set_title If defined, the titles of each facet on the plot will be
+#' set to the values defined in the character vector passed. If NULL, the 
+#' defaults according to SCUBA::plot_ridge will be used. 
+#' @param custom_factor_levels A character vector giving the order of groups 
+#' if `sort_groups` is set to "custom".
+#' @param legend_ncol The number of columns for keys in the legend (uses 
+#' ggplot2 defaults if NULL).
+#' @param legend_font_size The font size to use for legend keys (uses 
+#' ggplot2 defaults if NULL).
+#' @param legend_key_size The size of the key glpyhs in the legend (uses 
+#' ggplot2 defaults if NULL).
 #'
-#' @return  a ggplot2 object with a violin plot created according to user specifications.
+#' @return a ggplot2 object with a violin plot created according to user 
+#' specifications.
 #'
 #' @noRd
 shiny_vln <-
@@ -28,9 +40,9 @@ shiny_vln <-
     split_by,
     show_legend,
     ncol,
-    assay_config,
     palette,
     sort_groups = NULL,
+    set_title = NULL,
     custom_factor_levels = NULL,
     legend_ncol = NULL,
     legend_font_size = NULL,
@@ -223,16 +235,21 @@ shiny_vln <-
           )
         )
 
-      # Correct titles: change machine-readable name to human-readable name
-      # Determine number of plots created
-      n_patches <- n_patches(vln_plot)
-      # Iterate through each plot, correcting the title
-      vln_plot <- hr_title(vln_plot, n_patches, assay_config)
-
       # Add layers to plot
       vln_plot <-
         vln_plot +
         layers
+      
+      # Apply plot titles, if provided
+      if (!is.null(set_title)){
+        for (i in 1:length(set_title)){
+          suppressMessages(
+            vln_plot[[i]] <-
+              vln_plot[[i]] +
+              ggtitle(set_title[i])
+          )
+        }
+      }
 
       # Return the plot
       vln_plot
