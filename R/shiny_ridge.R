@@ -4,18 +4,32 @@
 #' @param features_entered a character vector giving the features to use in the
 #' plot.
 #' @param group_by user specified group_by metadata variable
-#' @param show_legend user choice as to whether a legend should be shown (default is TRUE)
-#' @param palette the color palette to use for the plot (plot uses a continuous color palette)
-#' @param center_x_axis_title if TRUE, the title on the x_axis is centered (default is FALSE).
+#' @param show_legend user choice as to whether a legend should be shown 
+#' (default is TRUE)
+#' @param palette the color palette to use for the plot (plot uses a continuous 
+#' color palette)
+#' @param center_x_axis_title if TRUE, the title on the x_axis is centered 
+#' (default is FALSE).
 #' @param xlim a 2-element character vector giving the lower and upper bounds
 #' of the x-axis.
-#' @param sort_groups the order with which to sort groups on the dot plot. This may be set to "ascending" or "descending". If ascending, groups will be sorted in increasing alphabetical order. If descending, they will be sorted in decreasing alphabetical order.
-#' @param custom_factor_levels A character vector giving the order of groups if `sort_groups` is set to "custom".
-#' @param legend_ncol The number of columns for keys in the legend (uses ggplot2 defaults if NULL).
-#' @param legend_font_size The font size to use for legend keys (uses ggplot2 defaults if NULL).
-#' @param legend_key_size The size of the key glpyhs in the legend (uses ggplot2 defaults if NULL).
+#' @param sort_groups the order with which to sort groups on the dot plot. This 
+#' may be set to "ascending" or "descending". If ascending, groups will be 
+#' sorted in increasing alphabetical order. If descending, they will be sorted 
+#' in decreasing alphabetical order.
+#' @param custom_factor_levels A character vector giving the order of groups 
+#' if `sort_groups` is set to "custom".
+#' @param set_title If defined, the titles of each facet on the plot will be
+#' set to the values defined in the character vector passed. If NULL, the 
+#' defaults according to SCUBA:::plot_ridge will be used. 
+#' @param legend_ncol The number of columns for keys in the legend (uses 
+#' ggplot2 defaults if NULL).
+#' @param legend_font_size The font size to use for legend keys (uses ggplot2 
+#' defaults if NULL).
+#' @param legend_key_size The size of the key glpyhs in the legend (uses ggplot2 
+#' defaults if NULL).
 #'
-#' @return a ggplot2 object with a ridge plot created according to user specifications.
+#' @return a ggplot2 object with a ridge plot created according to 
+#' user specifications.
 #'
 #' @noRd
 shiny_ridge <-
@@ -29,6 +43,7 @@ shiny_ridge <-
    xlim = NULL,
    sort_groups = NULL,
    custom_factor_levels = NULL,
+   set_title = NULL,
    custom_titles = NULL,
    assay_config = NULL,
    legend_ncol = NULL,
@@ -280,36 +295,14 @@ shiny_ridge <-
           layers
       )
 
-      # Apply custom titles, if provided
-      if (!is.null(custom_titles)){
-        for (i in 1:length(custom_titles)){
+      # Apply plot titles, if provided
+      if (!is.null(set_title)){
+        for (i in 1:length(set_title)){
           suppressMessages(
             plot[[i]] <-
               plot[[i]] +
-              ggtitle(custom_titles[i])
-              )
-          }
-      } else {
-          # Default behavior for titles
-        for (i in 1:length(features_entered)){
-          if (!is.null(assay_config)){
-            suppressMessages(
-              plot[[i]] <-
-                plot[[i]] +
-                ggtitle(
-                  hr_name(
-                    features_entered[i],
-                    assay_config,
-                    use_suffix = TRUE
-                  )
-                )
-              )
-          } else {
-              warning(
-                "`assay_config` is not defined. The plot will still render, but
-                human-readable titles will not be created."
-                )
-            }
+              ggtitle(set_title[i])
+            )
           }
         }
 
