@@ -3595,10 +3595,40 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
 
+                         # Fetch the features to be entered in the plot
+                         feature_1 <- plot_selections$scatter_1()
+                         feature_2 <- plot_selections$scatter_2()
+                         
+                         # Display names for features on plot: either the 
+                         # raw feature name, or the "human-readable" name 
+                         # constructed by removing the modality "key" and 
+                         # adding the suffix for the modality defined in
+                         # the config file 
+                         # User sets whether to display the modality key or 
+                         # not (default is FALSE, to use raw feature names)
+                         if (input$features_modality_key == FALSE){
+                           names(feature_1) <-
+                             hr_name(
+                               machine_readable_name = feature_1, 
+                               assay_config = assay_config(),
+                               use_suffix = TRUE
+                               )
+                           
+                           names(feature_2) <-
+                             hr_name(
+                               machine_readable_name = feature_2, 
+                               assay_config = assay_config(),
+                               use_suffix = TRUE
+                               )
+                         } else {
+                           names(feature_1) <- feature_1
+                           names(feature_2) <- feature_2
+                         }
+                         
                          shiny_scatter(
                            object = object(),
-                           feature_1 = plot_selections$scatter_1(),
-                           feature_2 = plot_selections$scatter_2(),
+                           feature_1 = feature_1,
+                           feature_2 = feature_2,
                            group_by = plot_selections$group_by(),
                            show_legend = plot_selections$legend(),
                            display_coeff = plot_selections$display_coeff(),
