@@ -204,7 +204,15 @@ plots_tab_ui <- function(id,
                  'create'= FALSE
                )
              )
-           )
+           ),
+           
+           # "Raw" feature display
+           # TODO: add tooltip
+           checkboxInput(
+             inputId = ns("raw_feature_names"),
+             label = 'Show "raw" feature names',
+             value = FALSE
+            )
          ),# End 1.2.
          
          
@@ -375,7 +383,6 @@ plots_tab_ui <- function(id,
                # Group_by used for labeling groups
                group_by =                   TRUE,
                split_by =                   TRUE,
-               modality_key_toggle =        TRUE,
                ncol_slider =                TRUE,
                super_title_menu =           TRUE,
                share_scale_checkbox =       TRUE,
@@ -415,7 +422,6 @@ plots_tab_ui <- function(id,
                split_by =              TRUE,
                title_menu =            FALSE,
                sort_groups_menu =      TRUE,
-               modality_key_toggle =   TRUE,
                ncol_slider =           TRUE,
                legend_options =        TRUE,
                order_checkbox =        FALSE,
@@ -446,7 +452,6 @@ plots_tab_ui <- function(id,
                title_menu =            FALSE,
                sort_groups_menu =      TRUE,
                dot_x_labels_menu =     TRUE,
-               modality_key_toggle =   TRUE,
                ncol_slider =           FALSE,
                order_checkbox =        FALSE,
                label_checkbox =        FALSE,
@@ -477,7 +482,6 @@ plots_tab_ui <- function(id,
                split_by =              FALSE,
                ncol_slider =           FALSE,
                legend_options =        TRUE,
-               modality_key_toggle =   TRUE,
                order_checkbox =        FALSE,
                label_checkbox =        FALSE,
                legend_checkbox =       TRUE,
@@ -507,7 +511,6 @@ plots_tab_ui <- function(id,
                split_by =              FALSE,
                title_menu =            TRUE,
                sort_groups_menu =      TRUE,
-               modality_key_toggle =   TRUE,
                ncol_slider =           FALSE,
                legend_options =        TRUE,
                order_checkbox =        FALSE,
@@ -888,6 +891,7 @@ plots_tab_server <- function(id,
                    # plot_switch: uses the input$make_dimplot switch
                    plot_switch = reactive({input$make_dimplot}),
                    plot_label = "DimPlot",
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    n_cells_original = n_cells_original,
                    plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
@@ -907,6 +911,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_feature}),
                    features_entered = reactive({input$text_features}),
                    plot_label = "Feature Plot",
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    n_cells_original = n_cells_original, 
                    plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
@@ -932,6 +937,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_vln}),
                    plot_label = "Violin Plot",
                    features_entered = reactive({input$text_features}),
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "violin",
@@ -947,6 +953,7 @@ plots_tab_server <- function(id,
                    # plot_switch: uses the input$make_dot switch
                    plot_switch = reactive({input$make_dot}),
                    features_entered = reactive({input$text_features}),
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    plots_tab_spinner = main_spinner,
                    plot_label = "Dot Plot", 
                    # Instructs server on which plot function to run
@@ -966,6 +973,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_scatter}),
                    plots_tab_spinner = main_spinner,
                    plot_label = "Scatterplot",
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    # Instructs server on which plot function to run
                    plot_type = "scatter",
                    # Valid features, for displaying choices for x- and y- axes
@@ -983,6 +991,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_ridge}),
                    plots_tab_spinner = main_spinner,
                    plot_label = "Ridge Plot", 
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    # Relies on feature text entry
                    features_entered = reactive({input$text_features}),
                    # Instructs server on which plot function to run
@@ -1002,6 +1011,7 @@ plots_tab_server <- function(id,
                    plot_label = "Cell Proportion Plot", 
                    # Instructs server on which plot function to run
                    plot_type = "proportion",
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    # Use categorical palettes for cell type proportion plot
                    palette = selected_categorical_palette,
                    metadata_config = metadata_config,
@@ -1019,6 +1029,7 @@ plots_tab_server <- function(id,
                      plot_switch = reactive({input$make_pie}),
                      plots_tab_spinner = main_spinner,
                      plot_label = "Metadata Pie Chart", 
+                     raw_feature_names = reactive({input$raw_feature_names}),
                      # Instructs server on which plot function to run
                      plot_type = "pie",
                      # Use categorical palettes for cell type proportion plot

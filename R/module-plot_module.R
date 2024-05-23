@@ -87,7 +87,6 @@ plot_module_ui <- function(id,
                            super_title_menu =                      FALSE,
                            sort_groups_menu =                      FALSE,
                            dot_x_labels_menu =                     FALSE,
-                           modality_key_toggle =                   FALSE,
                            blend_checkbox =                        FALSE,
                            order_checkbox =                        FALSE,
                            label_checkbox =                        FALSE,
@@ -396,16 +395,6 @@ plot_module_ui <- function(id,
             )
           )
       } else NULL,
-      
-      ## Show/hide modality key before features ####
-      # (i.e. adt_CD34 instead of CD34 (Surface Protein)) 
-      if (modality_key_toggle == TRUE){
-        checkboxInput(
-          inputId = ns("features_modality_key"),
-          label = "Show modality key before feature",
-          value = FALSE
-          )
-        } else NULL,
 
       ## Number of columns ####
       if (ncol_slider == TRUE){
@@ -799,6 +788,15 @@ plot_module_ui <- function(id,
 #' in the app
 #' @param n_cells_original The number of cells in the original object. This is
 #' set in the main server function each time a new object is loaded.
+#' @param raw_feature_names This is set in the plots_tab server. If TRUE, the 
+#' display names of the features being plotted will be un-modified, and will 
+#' contain the "key" of the modality of  each feature (i.e. "rna_HOXA10"). If 
+#' FALSE (the default), a "human-readable" display name will be applied to each 
+#' feature, which will remove the modality key, and will add a "suffix" defined 
+#' using the "label" property for the modality (known as the assay) in the 
+#' config file. For example, for a feature from an modality with "(surface 
+#' protein)" as the label and "adt" as the modality key, the display name will 
+#' be "CD4 (Surface Protein)". 
 #' @param features_entered The features entered in the plots tab of the app.
 #' This is currently defined in the plots tab module and passed to this module.
 #' @param manual_dimensions Creates a server instance for specifying manual
@@ -833,6 +831,7 @@ plot_module_server <- function(id,
                                object,
                                plot_switch,
                                n_cells_original,
+                               raw_feature_names,
                                plots_tab_spinner = NULL,
                                features_entered = NULL,
                                manual_dimensions = TRUE,
@@ -1091,8 +1090,12 @@ plot_module_server <- function(id,
                                  } else NULL,
                                assay_config = assay_config(),
                                show_modality_key = 
-                                 if (isTruthy(input$features_modality_key)){
-                                   input$features_modality_key
+                                 # "Raw" feature names setting from plots tab
+                                 # Apply value of checkbox if provided to the 
+                                 # module. If not provided, this is always 
+                                 # FALSE.
+                                 if (!is.null(raw_feature_names)){
+                                   raw_feature_names()
                                  } else FALSE
                              )
 
@@ -1145,9 +1148,9 @@ plot_module_server <- function(id,
                                features_entered()
                                } else NULL,
                            assay_config = assay_config(),
-                           if (isTruthy(input$features_modality_key)){
-                             input$features_modality_key
-                           } else FALSE
+                           show_modality_key = 
+                             # "Raw" feature names setting from plots tab
+                             raw_feature_names()
                          )
 
                        # Update input
@@ -1198,9 +1201,9 @@ plot_module_server <- function(id,
                               metadata_config = metadata_config(),
                               features_entered = features_entered(),
                               assay_config = assay_config(),
-                              if (isTruthy(input$features_modality_key)){
-                                input$features_modality_key
-                                } else FALSE
+                              show_modality_key = 
+                                # "Raw" feature names setting from plots tab
+                                raw_feature_names()
                               )
 
                          if (isTruthy(input$custom_title)){
@@ -1252,11 +1255,13 @@ plot_module_server <- function(id,
                                length(features_entered()) > 1 &
                                plot_selections$split_by() == "none"
                              ){
-                               # Multi-feature plots with no split_by selection:
-                               # return features entered for defaults, with
-                               # assay key removed (unless the user requests 
-                               # it be added)
-                               if (input$features_modality_key == FALSE){
+                               # Multi-feature plots with no split_by selection
+                               
+                               # Set display names for features according to 
+                               # the information in the config file, unless 
+                               # the user requests "raw" feature names with
+                               # the assay key added
+                               if (raw_feature_names() == FALSE){
                                  sapply(
                                    1:length(features_entered()),
                                    function(i){
@@ -1271,9 +1276,6 @@ plot_module_server <- function(id,
                                    }
                                  )
                                } else {
-                                 # If the user requests assay keys be added,
-                                 # report the machine-readable features with 
-                                 # the assay key
                                  features_entered()
                                }
                              }
@@ -1292,7 +1294,7 @@ plot_module_server <- function(id,
 
                            # Remove assay key from title, unless the user 
                            # requests it be added 
-                           if (input$features_modality_key == FALSE){
+                           if (raw_feature_names() == FALSE){
                              sapply(
                                1:length(features_entered()),
                                function(i){
@@ -1400,7 +1402,7 @@ plot_module_server <- function(id,
                            # features entered, and whether the user requests to 
                            # show the modality key in front of features instead
                            # of the suffix defined in the config file.
-                           if (input$features_modality_key == FALSE){
+                           if (raw_feature_names() == FALSE){
                              sapply(
                                features_entered(),
                                function(feature, assay_config){
@@ -1940,7 +1942,7 @@ plot_module_server <- function(id,
                        # Default names: each feature entered, with the assay
                        # key removed, unless the user checks "Show modality 
                        # key before feature"
-                       if (input$features_modality_key == FALSE){
+                       if (raw_feature_names() == FALSE){
                          for (i in 1:length(feature_names)){
                            feature_names[i] <-
                              hr_name(
@@ -1993,7 +1995,7 @@ plot_module_server <- function(id,
                                    # before truncating, unless the user requests
                                    # the assay key be plotted
                                    str =
-                                     if (input$features_modality_key == FALSE){
+                                     if (raw_feature_names() == FALSE){
                                        hr_name(
                                          machine_readable_name = 
                                            feature_names[i],
@@ -2016,7 +2018,7 @@ plot_module_server <- function(id,
                            # be added
                            feature_names <- features()
 
-                           if (input$features_modality_key == FALSE){
+                           if (raw_feature_names() == FALSE){
                              for (i in 1:length(feature_names)){
                                feature_names[i] <-
                                  hr_name(
@@ -3092,7 +3094,7 @@ plot_module_server <- function(id,
                        # assay-based "suffix" from the config file, unless
                        # the user requests the assay key be displayed before
                        # feature names
-                       if (input$features_modality_key == FALSE){
+                       if (raw_feature_names() == FALSE){
                          display_names <-
                            sapply(
                              features_entered(),
@@ -3530,7 +3532,7 @@ plot_module_server <- function(id,
                              # Set title based on features entered, removing the
                              # assay key and adding the suffix from the config
                              # file, unless the user requests it not be added
-                             if (input$features_modality_key == FALSE){
+                             if (raw_feature_names() == FALSE){
                                sapply(
                                  features(),
                                  function(feature, assay_config){
@@ -3606,7 +3608,7 @@ plot_module_server <- function(id,
                          # the config file 
                          # User sets whether to display the modality key or 
                          # not (default is FALSE, to use raw feature names)
-                         if (input$features_modality_key == FALSE){
+                         if (raw_feature_names() == FALSE){
                            names(feature_1) <-
                              hr_name(
                                machine_readable_name = feature_1, 
