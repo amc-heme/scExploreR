@@ -36,7 +36,7 @@ run_config <-
     # Shiny add-ons
     library(shinyWidgets)
     library(rintrojs)
-    library(bs4Dash)
+    library(shinydashboard)
     library(waiter)
     library(shinycssloaders)
     library(shinyjs)
@@ -57,7 +57,6 @@ run_config <-
     library(DT)
 
     library(yaml)
-
     # Load functions in ./R directory ####
     # Get list of files
     # source_files <-
@@ -250,16 +249,12 @@ run_config <-
           label = "Label for Dataset",
           value = ""
         ),
-        tooltip(
-          textAreaInput(
-            inputId = "dataset_description",
-            label = "Description of Dataset",
-            width = "100%",
-            rows = 6,
-            resize = "vertical"
-          ),
-          title = "My tooltip",
-          placement = "top"
+        textAreaInput(
+          inputId = "dataset_description",
+          label = "Description of Dataset",
+          width = "100%",
+          rows = 6,
+          resize = "vertical"
         ),
         selectInput(
           inputId = "preview_type",

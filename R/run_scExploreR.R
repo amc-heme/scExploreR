@@ -35,7 +35,7 @@ run_scExploreR <-
     library(shinycssloaders, quietly = TRUE, warn.conflicts = FALSE)
     library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
     library(sortable, quietly = TRUE, warn.conflicts = FALSE)
-    # library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
+    library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
 
     # Reactlog (for debugging)
     library(reactlog, quietly = TRUE, warn.conflicts = FALSE)

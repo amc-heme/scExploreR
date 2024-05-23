@@ -30,6 +30,7 @@ subset_selections_ui <-
     ns <- NS(id)
     
     div(
+      id = ns("subset_selections_all"),
       style = "margin-bottom: 10px;",
       tags$b(
         "Filters Chosen for Subset:"
@@ -273,7 +274,14 @@ subset_selections_ui <-
             class = "button-primary compact-button"
             )
           )
-        )
+        ),
+      bsTooltip(
+        id = ns("subset_selections_all"), 
+        title = "Use Add Filter to subset based on metadata variables or feature expression. Be sure to Confirm Filter for all filters, then Apply Subset when done.", 
+        placement = "top", 
+        trigger = "hover",
+        options = NULL
+      )
       )
     }
 
