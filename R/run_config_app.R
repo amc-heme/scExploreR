@@ -801,11 +801,13 @@ run_config <-
           label = "Save Config File",
           class = "orange_hover"
         ),
-        actionLink(
-          inputId = "load_config",
-          label = "Load Config File",
-          class = "orange_hover"
-        )
+        if(!is.null(config_filename)){
+          actionLink(
+            inputId = "load_config",
+            label = "Load Config File",
+            class = "orange_hover"
+          )
+        }
       ),
 
       # Button to create/export config file
@@ -829,7 +831,6 @@ run_config <-
       # Apply CSS files (placed last so elements created by scripts can be stylized)
       css_list
     ) # End fluidPage
-
     ## 3. Main Server Function ####
     server <- function(input, output, session) {
       # Hide ADT Threshold Tab at startup: this is shown when the user designates
@@ -2229,38 +2230,48 @@ run_config <-
         ignoreNULL = FALSE,
         ignoreInit = TRUE,
         {
-          # Tests for user input: below values are TRUE when the user has not
-          # changed any settings in the app (as they are based off
-          # default values)
-          if (
-            any(
-            isTruthy(input$dataset_label),
-            isTruthy(input$dataset_description),
-            input$preview_type != "none",
-            isTruthy(input$assays_selected),
-            input$include_numeric_metadata == FALSE,
-            input$genes_assay != "none",
-            input$adt_assay != "none",
-            isTruthy(input$metadata_selected),
-            input$patient_colname != "none",
-            isTruthy(input$reductions_not_selected),
-            isTruthy(module_data$threshold_data$adt)
-            )
-          ){
-            showModal(
-              warning_modal(
-                confirmId = "load_confirm",
-                cancelId = "load_cancel",
-                text =
-                  "Loading a config file will erase any changes made. Continue?"
+          if(is.null(config_filename)){
+            showModal(modalDialog(
+              title = "Important message",
+              "Cannot load. No config file specified (config_path=NULL). 
+              Please specify a config file."
+            ))
+          }
+          else{
+            # Tests for user input: below values are TRUE when the user has not
+            # changed any settings in the app (as they are based off
+            # default values)
+            if (
+              any(
+              isTruthy(input$dataset_label),
+              isTruthy(input$dataset_description),
+              input$preview_type != "none",
+              isTruthy(input$assays_selected),
+              input$include_numeric_metadata == FALSE,
+              input$genes_assay != "none",
+              input$adt_assay != "none",
+              isTruthy(input$metadata_selected),
+              input$patient_colname != "none",
+              isTruthy(input$reductions_not_selected),
+              isTruthy(module_data$threshold_data$adt)
               )
-            )
-          } else {
-            # Trigger to proceed with loading without showing a modal
-            if (dev_mode == TRUE){
-              print("Triggered loading of config file")
+            ){
+              showModal(
+                warning_modal(
+                  confirmId = "load_confirm",
+                  cancelId = "load_cancel",
+                  text =
+                    "Loading a config file will erase any changes made. Continue?"
+                )
+              )
+              
+            } else {
+              # Trigger to proceed with loading without showing a modal
+              if (dev_mode == TRUE){
+                print("Triggered loading of config file")
+              }
+              load_trigger$trigger()
             }
-            load_trigger$trigger()
           }
         })
 

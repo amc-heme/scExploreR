@@ -1,6 +1,6 @@
 #' shiny_vln
-#' 
-#' Accepts inputs from plots_selections module and outputs a Seurat feature plot from the Seurat object passed to it. 
+#'
+#' Accepts inputs from plots_selections module and outputs a Seurat feature plot from the Seurat object passed to it.
 #'
 #' @param object a Seurat object. This can be either the full object or a subset.
 #' @param features_entered Features to plot.
@@ -20,16 +20,16 @@
 #' @return  a ggplot2 object with a violin plot created according to user specifications.
 #'
 #' @noRd
-shiny_vln <- 
+shiny_vln <-
   function(
-    object, 
-    features_entered, 
-    group_by, 
-    split_by, 
-    show_legend, 
-    ncol, 
-    assay_config, 
-    palette, 
+    object,
+    features_entered,
+    group_by,
+    split_by,
+    show_legend,
+    ncol,
+    assay_config,
+    palette,
     sort_groups = NULL,
     custom_factor_levels = NULL,
     legend_ncol = NULL,
@@ -40,109 +40,113 @@ shiny_vln <-
     if (is.null(sort_groups)){
       sort_groups <- "ascending"
     }
-    
+
     # At least one feature must be entered to avoid errors when computing plot
     if (length(features_entered) > 0){
-      
-      # validate will keep plot code from running if the subset 
+
+      # validate will keep plot code from running if the subset
       # is NULL (no cells in subset)
       validate(
         need(
           object,
-          # No message displayed (a notification is already displayed) 
+          # No message displayed (a notification is already displayed)
           # (*was displayed*)
           message = ""
         )
       )
-      
+
       # Pull metadata table, then modify levels in factor for group_by data
-      meta_table <- 
+      meta_table <-
         SCUBA::fetch_metadata(
           object,
           full_table = TRUE
         )
-      
-      # Sort group_by levels by default 
+
+      # Sort group_by levels by default
       # Plot groups in ascending or descending order by group name
       meta_table[[group_by]] <-
         # factor() creates a factor if the metadata category is not a factor
         # already, and re-orders a factor if it already exists.
         factor(
           meta_table[[group_by]],
-          levels = 
+          levels =
             # If sort_groups is "ascending" or "descending", re-factor based on
             # an alphanumeric order
             if (sort_groups %in% c("ascending", "descending")){
               SCUBA::unique_values(
                 object,
                 var = group_by
-                ) |> 
+                ) |>
                 str_sort(
                   numeric = TRUE,
                   # For violin plots, groups plot from left to right in same order
                   # vector levels appear (therefore ascending should use
                   # deceasing = FALSE)
-                  decreasing = 
+                  decreasing =
                     if (sort_groups == "ascending"){
                       FALSE
                     } else if (sort_groups == "descending"){
                       TRUE
                     }
                 )
-            } else if (sort_groups == "custom"){
-              # If sort_groups is custom but custom_factor_levels is not 
+            } else if (sort_groups %in% c("custom", "expression")){
+              # If sort_groups is "custom", use the user-defined levels,
+              # If "expression", the custom levels will be the computed
+              # levels by ascending or descending feature expression
+
+              # If sort_groups is custom but custom_factor_levels is not
               # defined, throw an informative error message (error returned
-              # by by factor() is too generic) 
+              # by by factor() is too generic)
               if (is.null(custom_factor_levels)){
                 stop(
-                  'When `sort_groups` is equal to "custom", 
+                  'When `sort_groups` is equal to "custom",
                     `custom_factor_levels` must be defined.'
                 )
               }
-              
-              # If sort_groups is "custom", use the user-defined levels 
+
+              # If sort_groups is "custom", use the user-defined levels
               custom_factor_levels
             }
         )
-      
+
       # Save modified metadata table to object
-      object <- 
+      object <-
         scExploreR:::update_object_metadata(
           object,
           table = meta_table
         )
-      
+
       # Palette: must determine number of colors to create from provided palette
-      # The number of colors is equal to the number of unique values in 
+      # The number of colors is equal to the number of unique values in
       # the group.by category
-      n_colors <- 
+      n_colors <-
         n_unique(
           object,
           meta_var = group_by
           )
-      
-      vln_plot <- 
+
+      vln_plot <-
         SCUBA::plot_violin(
           # Object or subset
           object,
           features = features_entered,
           group_by = group_by,
-          # Split.by: NULL if user selects "none", otherwise equal 
+          # Split.by: NULL if user selects "none", otherwise equal
           # to user selection
           split_by = if (split_by == "none") NULL else split_by,
-          # Cols: use user defined palette, or the defaults if palette() == NULL 
-          cols = 
+          # Cols: use user defined palette, or the defaults if palette() == NULL
+          cols =
             if (!is.null(palette)){
-              # colorRampPalette() extends or contracts the given palette to 
+              # colorRampPalette() extends or contracts the given palette to
               # produce exactly the required number of colors
               colorRampPalette(palette)(n_colors)
               # Use ggplot2 defaults if palette() is unspecified
-            } else NULL, 
+            } else NULL,
           # ncol: use value of ncol defined in plot_module when more than
           # one feature is entered
           ncol = if (length(features_entered)==1) NULL else ncol
           )
-      
+
       # Additional layers
       # legend font size, key size, and number of columns
       layers <-
@@ -150,7 +154,7 @@ shiny_vln <-
           list(
             guides(
               # Guide for violin plot is fill
-              fill = 
+              fill =
                 do.call(
                   guide_legend,
                   # List of arguments to call
@@ -177,36 +181,36 @@ shiny_vln <-
                 )
             )
           ),
-          
+
           list(
             do.call(
               theme,
               # List of arguments to call with theme
-              args = 
-                # Arguments are included in list conditionally. If no elements 
-                # are included, the list() call will return an empty list 
+              args =
+                # Arguments are included in list conditionally. If no elements
+                # are included, the list() call will return an empty list
                 # instead of NULL (NULL will cause errors with do.call)
                 c(
                   list(),
                   # Element C: Show/hide legend
-                  # Legend position: "right" if a legend is desired, 
+                  # Legend position: "right" if a legend is desired,
                   # and "none" if not
                   list(
-                    legend.position = 
+                    legend.position =
                       if (show_legend == TRUE) {
                         "right"
                       } else "none"
                   ),
-                  # Element D: Legend font size 
+                  # Element D: Legend font size
                   if (isTruthy(legend_font_size)){
                     list(
-                      legend.text = 
+                      legend.text =
                         element_text(
                           size = legend_font_size
                         )
                     )
                   },
-                  
+
                   # Element E: Legend key size (passed here as well as guides())
                   if (isTruthy(legend_key_size)){
                     list(
@@ -218,18 +222,18 @@ shiny_vln <-
             )
           )
         )
-      
+
       # Correct titles: change machine-readable name to human-readable name
       # Determine number of plots created
       n_patches <- n_patches(vln_plot)
       # Iterate through each plot, correcting the title
       vln_plot <- hr_title(vln_plot, n_patches, assay_config)
-      
+
       # Add layers to plot
-      vln_plot <- 
+      vln_plot <-
         vln_plot +
         layers
-      
+
       # Return the plot
       vln_plot
     }
