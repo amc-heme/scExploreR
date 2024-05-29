@@ -214,49 +214,68 @@ plots_tab_ui <- function(id,
            label = "Palettes",
            active = TRUE,
            ### 1.3.1 Categorical data ####
-           pickerInput(
-             inputId = ns("categorical_palette"),
-             label = "Palette (Categorical Data)",
-             # Use the names of the palettes for choices (names will be
-             # server values of selections)
-             choices = names(categorical_palettes),
-             selected = "default",
-             choicesOpt =
-               list(
-                 content =
-                   # Define HTML to display for each choice
-                   sapply(
-                     categorical_palettes,
-                     function(palette){
-                       palette_html(palette, n = 8, output_html = TRUE)
-                     }
-                   )
-               )
+           div(
+             id = ns("categorical_palette_div"),
+             pickerInput(
+               inputId = ns("categorical_palette"),
+               label = "Palette (Categorical Data)",
+               # Use the names of the palettes for choices (names will be
+               # server values of selections)
+               choices = names(categorical_palettes),
+               selected = "default",
+               choicesOpt =
+                 list(
+                   content =
+                     # Define HTML to display for each choice
+                     sapply(
+                       categorical_palettes,
+                       function(palette){
+                         palette_html(palette, n = 8, output_html = TRUE)
+                       }
+                     )
+                 )
+             ),
+             bsTooltip(
+               id = ns("categorical_palette_div"),
+               title = "Categorical palette applies to DimPlot, Scatterplot, Cell Proportion Plot, Violin Plot and Ridge Plot.", 
+               placement = "top", 
+               trigger = "hover",
+               options = NULL
+             )
            ),
-           
-           ### 1.3.2. Continuous Data ####
-           pickerInput(
-             inputId = ns("continuous_palette"),
-             label = "Palette (Continuous Data)",
-             # Use the names of the palettes for choices (names will be
-             # server values of selections)
-             choices = names(continuous_palettes),
-             selected = "default",
-             choicesOpt =
-               list(
-                 content =
-                   # Define HTML to display for each choice
-                   sapply(
-                     continuous_palettes,
-                     function(palette){
-                       palette_html(
-                         palette,
-                         type = "continuous",
-                         output_html = TRUE
-                         )
-                     }
-                   )
-               )
+           div(
+             id = ns("continuous_palette_div"),
+             ### 1.3.2. Continuous Data ####
+             pickerInput(
+               inputId = ns("continuous_palette"),
+               label = "Palette (Continuous Data)",
+               # Use the names of the palettes for choices (names will be
+               # server values of selections)
+               choices = names(continuous_palettes),
+               selected = "default",
+               choicesOpt =
+                 list(
+                   content =
+                     # Define HTML to display for each choice
+                     sapply(
+                       continuous_palettes,
+                       function(palette){
+                         palette_html(
+                           palette,
+                           type = "continuous",
+                           output_html = TRUE
+                           )
+                       }
+                     )
+                 )
+             ),
+             bsTooltip(
+               id = ns("continuous_palette_div"),
+               title = "Continous palette applies to Dot Plot and Feature plot.",
+               placement = "top",
+               trigger = "hover",
+               options = NULL
+             )
            )
          ),
          
