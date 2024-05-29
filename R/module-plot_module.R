@@ -418,7 +418,7 @@ plot_module_ui <- function(id,
         id = ns("sort_groups_info_icon"), 
         title = 
           paste0(
-            'Use "ascending" or "descending" to sort by group name in ',
+            'Use "Ascending" or "Descending" to sort by group name in ',
             'ascending or descending alphanumeric order, respectively. Use ',
             '"Feature Expression" to sort by average expression in each group, ',
             'and "custom" to define a custom order.'
