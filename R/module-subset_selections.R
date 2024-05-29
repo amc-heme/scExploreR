@@ -277,7 +277,12 @@ subset_selections_ui <-
         ),
       bsTooltip(
         id = ns("subset_selections_all"), 
-        title = "Use Add Filter to subset based on metadata variables or feature expression. Be sure to Confirm Filter for all filters, then Apply Subset when done.", 
+        title = 
+          paste0(
+            'Use "Add Filter" to subset based on metadata or ',
+            'feature expression. Be sure to select "Confirm Filter" for all ',
+            'filters, and "Apply Subset" when done.'
+          ),
         placement = "top", 
         trigger = "hover",
         options = NULL

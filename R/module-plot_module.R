@@ -316,7 +316,11 @@ plot_module_ui <- function(id,
           ),
           bsTooltip(
             id = ns("title_settings_info_icon"), 
-            title = "Adjust plot title.",
+            title = 
+              paste0(
+                'Select "custom" to set a custom title, ',
+                'and "None" to remove the title.'
+                ),
             placement = "top", 
             trigger = "hover",
             options = NULL
@@ -412,7 +416,13 @@ plot_module_ui <- function(id,
       
       bsTooltip(
         id = ns("sort_groups_info_icon"), 
-        title = "Adjust order of groups on plot.",
+        title = 
+          paste0(
+            'Use "ascending" or "descending" to sort by group name in ',
+            'ascending or descending alphanumeric order, respectively. Use ',
+            '"Feature Expression" to sort by average expression in each group, ',
+            'and "custom" to define a custom order.'
+            ),
         placement = "top", 
         trigger = "hover",
         options = NULL
@@ -468,13 +478,25 @@ plot_module_ui <- function(id,
             id = ns("default_legend_ncol_div"),
             checkboxInput(
               inputId = ns("default_legend_ncol"),
-              label = "Use default",
+              label = 
+                tagList(
+                  "Use default",
+                  a(
+                    id = ns("default_legend_ncol_info_icon"),
+                    icon("info-circle"), 
+                    href = 
+                      paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                             "full_documentation.html"
+                             ),  
+                    target = "_blank"
+                    )
+                ),
               value = TRUE
             )
           ),
           bsTooltip(
-            id = ns("default_legend_ncol_div"), 
-            title = "Uncheck this to set number of columns", 
+            id = ns("default_legend_ncol_info_icon"), 
+            title = "Uncheck this to set the number of columns in the legend.", 
             placement = "top", 
             trigger = "hover",
             options = NULL
@@ -662,7 +684,11 @@ plot_module_ui <- function(id,
       ),
       bsTooltip(
         id = ns("label_div"), 
-        title = "Print values of the group_by variable on plot", 
+        title = 
+          paste0("Label cells by metadata on plot. If checked, a menu will ",
+                 "appear to select a variable for grouping cells. Labels will ",
+                 "display in the center of each group in the chosen metadata ",
+                 "variable."), 
         placement = "top", 
         trigger = "hover",
         options = NULL
@@ -690,7 +716,7 @@ plot_module_ui <- function(id,
       ),
       bsTooltip(
         id = ns("display_coeff_div"), 
-        title = "Show correlation coefficient in plot title.", 
+        title = "Display correlation coefficient as the plot title.", 
         placement = "top", 
         trigger = "hover",
         options = NULL

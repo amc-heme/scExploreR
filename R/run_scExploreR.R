@@ -792,7 +792,7 @@ run_scExploreR <-
         right = TRUE,
         label = "",
         size = "sm",
-        icon = icon("file-import"),
+        icon = icon("ellipsis-h"),
         actionLink(
           inputId = "open_dataset_window",
           label = "Choose Dataset",
