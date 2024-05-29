@@ -57,7 +57,6 @@ run_config <-
     library(DT)
 
     library(yaml)
-
     # Load functions in ./R directory ####
     # Get list of files
     # source_files <-

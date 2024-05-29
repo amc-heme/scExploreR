@@ -185,13 +185,19 @@ plot_module_ui <- function(id,
 
         # If TRUE, add element
         selectInput(
-          inputId = ns("group_by"),
-          label =
+          inputId = ns("group_by"), 
+          label = tagList(
             if (!is.null(group_by_label)){
               group_by_label
             } else {
               "Metadata to Group By"
             },
+            a(id = ns("group_by_info_icon"),
+              icon("info-circle"), 
+              href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                          "full_documentation.html"),  
+              target="_blank")
+            ),
           # Can select all options except "none"
           choices = group_by_choices,
           # First option selected by default, unless a default choice is
@@ -205,6 +211,13 @@ plot_module_ui <- function(id,
           )
         # Do not add element if FALSE
       } else NULL,
+      bsTooltip(
+        id = ns("group_by_info_icon"), 
+        title = "Select variable to group cells by.",
+        placement = "top", 
+        trigger = "hover",
+        options = NULL
+      ),
 
       ## Split by menu ####
       if (split_by == TRUE){
@@ -219,13 +232,19 @@ plot_module_ui <- function(id,
           }
 
         selectInput(
-          inputId = ns("split_by"),
-          label =
+          inputId = ns("split_by"), 
+          label = tagList(
             if (!is.null(split_by_label)){
               split_by_label
             } else {
               "Metadata to Split By"
             },
+            a(id = ns("split_by_info_icon"),
+              icon("info-circle"), 
+              href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                          "full_documentation.html"),  
+              target="_blank")
+          ),
           # Use vector of included metadata category names from the config file
           choices = split_by_choices,
           # Default value: use split by default if provided
@@ -242,6 +261,14 @@ plot_module_ui <- function(id,
             }
          )
       } else NULL,
+      
+      bsTooltip(
+        id = ns("split_by_info_icon"), 
+        title = "Select variable to split cells into separate plots.",
+        placement = "bottom", 
+        trigger = "hover",
+        options = NULL
+      ),
 
       ## Reductions menu ####
       if (reductions_menu == TRUE){
@@ -274,13 +301,32 @@ plot_module_ui <- function(id,
         tagList(
           selectInput(
             inputId = ns("title_settings"),
-            label = "Title options",
-            # A third choice, "custom", is added server-side if it is
+            label = tagList(
+              "Title options",
+              a(id = ns("title_settings_info_icon"),
+                icon("info-circle"), 
+                href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                            "full_documentation.html"),  
+                target="_blank")
+            ),
+              
+            # A third choice, "custom", is added server-side if it is 
             # valid based on the plot type
             choices =
               c("Default" = "default",
                 "None" = "none"),
             selected = "default"
+          ),
+          bsTooltip(
+            id = ns("title_settings_info_icon"), 
+            title = 
+              paste0(
+                'Select "custom" to set a custom title, ',
+                'and "None" to remove the title.'
+                ),
+            placement = "top", 
+            trigger = "hover",
+            options = NULL
           ),
           # Input for a single custom title
           # UI is hidden with shinyjs and made visible when "custom" is selected
@@ -348,7 +394,14 @@ plot_module_ui <- function(id,
           id = ns("sort_groups_menu"),
           selectInput(
             inputId = ns("sort_groups"),
-            label = "Order of Groups on plot",
+            label = tagList(
+              "Order of Groups on plot",
+              a(id = ns("sort_groups_info_icon"),
+                icon("info-circle"), 
+                href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                            "full_documentation.html"),  
+                target="_blank")
+            ),
             # Can select all options except "none"
             choices =
               c("Ascending" = "ascending",
@@ -370,6 +423,20 @@ plot_module_ui <- function(id,
             )
           )
         } else NULL,
+
+      bsTooltip(
+        id = ns("sort_groups_info_icon"), 
+        title = 
+          paste0(
+            'Use "Ascending" or "Descending" to sort by group name in ',
+            'ascending or descending alphanumeric order, respectively. Use ',
+            '"Feature Expression" to sort by average expression in each group, ',
+            'and "custom" to define a custom order.'
+            ),
+        placement = "top", 
+        trigger = "hover",
+        options = NULL
+      ),
 
       ## Dot plots: rename features on x-axis labels ####
       if (dot_x_labels_menu == TRUE){
@@ -417,10 +484,32 @@ plot_module_ui <- function(id,
           # Number of columns in legend
           tags$b("Number of Columns in Legend"),
           # If this check box is enabled, the default is used
-          checkboxInput(
-            inputId = ns("default_legend_ncol"),
-            label = "Use default",
-            value = TRUE
+          div(
+            id = ns("default_legend_ncol_div"),
+            checkboxInput(
+              inputId = ns("default_legend_ncol"),
+              label = 
+                tagList(
+                  "Use default",
+                  a(
+                    id = ns("default_legend_ncol_info_icon"),
+                    icon("info-circle"), 
+                    href = 
+                      paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                             "full_documentation.html"
+                             ),  
+                    target = "_blank"
+                    )
+                ),
+              value = TRUE
+            )
+          ),
+          bsTooltip(
+            id = ns("default_legend_ncol_info_icon"), 
+            title = "Uncheck this to set the number of columns in the legend.", 
+            placement = "top", 
+            trigger = "hover",
+            options = NULL
           ),
           # Slider shows when *not* using the default
           hidden(
@@ -572,25 +661,49 @@ plot_module_ui <- function(id,
         } else NULL,
 
       ## Order cells by expression (feature plots only) ####
-      if (order_checkbox == TRUE){
-        checkboxInput(
-          inputId = ns("order"),
-          label = "Order Cells by Expression",
-          # Order should be FALSE by default
-          value = FALSE
+      div(
+        id = ns("order_div"),
+        if (order_checkbox == TRUE){
+          checkboxInput(
+            inputId = ns("order"),
+            label = "Order Cells by Expression",
+            # Order should be FALSE by default
+            value = FALSE
           )
-      } else NULL,
-
+        } else NULL
+      ),
+      bsTooltip(
+        id = ns("order_div"), 
+        title = "Plot cells with higher expression first (this may distort results).", 
+        placement = "top", 
+        trigger = "hover",
+        options = NULL
+      ),
+        
       ## Add/remove labels ####
-      if (label_checkbox == TRUE){
-        checkboxInput(
-          inputId = ns("label"),
-          label = "Label Groups",
-          # Default value is TRUE
-          value = label_default
+      div( 
+        id = ns("label_div"),
+        if (label_checkbox == TRUE){
+          checkboxInput(
+            inputId = ns("label"),
+            label = "Label Groups",
+            # Default value is TRUE
+            value = label_default
           )
-      } else NULL,
-
+        } else NULL
+      ),
+      bsTooltip(
+        id = ns("label_div"), 
+        title = 
+          paste0("Label cells by metadata on plot. If checked, a menu will ",
+                 "appear to select a variable for grouping cells. Labels will ",
+                 "display in the center of each group in the chosen metadata ",
+                 "variable."), 
+        placement = "top", 
+        trigger = "hover",
+        options = NULL
+      ),
+      
       ## Add or remove Legend ####
       if (legend_checkbox == TRUE){
         checkboxInput(
@@ -601,14 +714,24 @@ plot_module_ui <- function(id,
       } else NULL,
 
       ## Checkbox to remove title from plot ####
-      if (display_coeff == TRUE){
-        checkboxInput(
-          inputId = ns("display_coeff"),
-          label = "Show Pearson Coefficient",
-          value = TRUE
-          )
-      } else NULL,
-
+      div(
+        id = ns("display_coeff_div"),
+        if (display_coeff == TRUE){
+          checkboxInput(
+            inputId = ns("display_coeff"),
+            label = "Show Pearson Coefficient",
+            value = TRUE
+            )
+        } else NULL
+      ),
+      bsTooltip(
+        id = ns("display_coeff_div"), 
+        title = "Display correlation coefficient as the plot title.", 
+        placement = "top", 
+        trigger = "hover",
+        options = NULL
+      ),
+      
       ## Checkbox to specify original axes limits ####
       if (limits_checkbox == TRUE){
         # Dynamic UI: displays when a subset is selected

@@ -34,6 +34,7 @@ Imports:
     scDE,
     Seurat (>= 3.0.0),
     shiny (>= 1.6.1),
+    shinyBS (>= 0.61.1),
     shinycssloaders (>= 1.0.0),
     shinydashboard (>= 0.7.2),
     shinyjs (>= 2.0.0),
