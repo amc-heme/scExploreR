@@ -207,12 +207,34 @@ plots_tab_ui <- function(id,
            ),
            
            # "Raw" feature display
-           # TODO: add tooltip
            checkboxInput(
              inputId = ns("raw_feature_names"),
-             label = 'Show "raw" feature names',
+             label = 
+               tagList(
+                 'Show "raw" feature names',
+                 a(id = ns("raw_feature_names_help"),
+                   icon("info-circle"), 
+                   href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                               "full_documentation.html"),  
+                   target="_blank")
+                 ),
              value = FALSE
-            )
+            ),
+           bsTooltip(
+             id = ns("raw_feature_names_help"), 
+             title = 
+               paste0(
+                 'Check to show "raw" feature names on all plots, which ',
+                 'include the modality "key" of the feature, instead of using ',
+                 'the display name of the modality after the feature name. ',
+                 'For example, for a feature from an assay/modality named ',
+                 '"protein" will display as "protein_CD4" instead of ',
+                 '"CD4 (Surface Protein)".'
+                 ),
+             placement = "bottom", 
+             trigger = "hover",
+             options = NULL
+           )
          ),# End 1.2.
          
          
