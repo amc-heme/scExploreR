@@ -1,5 +1,5 @@
 ---
-title: "How to Use String Subseting"
+title: "How to Use String Subsetting"
 output:
   html_document:
     toc: true
