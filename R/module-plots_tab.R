@@ -204,6 +204,36 @@ plots_tab_ui <- function(id,
                  'create'= FALSE
                )
              )
+           ),
+           
+           # "Raw" feature display
+           checkboxInput(
+             inputId = ns("raw_feature_names"),
+             label = 
+               tagList(
+                 'Show "raw" feature names',
+                 a(id = ns("raw_feature_names_help"),
+                   icon("info-circle"), 
+                   href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                               "full_documentation.html"),  
+                   target="_blank")
+                 ),
+             value = FALSE
+            ),
+           bsTooltip(
+             id = ns("raw_feature_names_help"), 
+             title = 
+               paste0(
+                 'Check to show "raw" feature names on all plots, which ',
+                 'include the modality "key" of the feature, instead of using ',
+                 'the display name of the modality after the feature name. ',
+                 'For example, for a feature from an assay/modality named ',
+                 '"protein" will display as "protein_CD4" instead of ',
+                 '"CD4 (Surface Protein)".'
+                 ),
+             placement = "bottom", 
+             trigger = "hover",
+             options = NULL
            )
          ),# End 1.2.
          
@@ -902,6 +932,7 @@ plots_tab_server <- function(id,
                    # plot_switch: uses the input$make_dimplot switch
                    plot_switch = reactive({input$make_dimplot}),
                    plot_label = "DimPlot",
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    n_cells_original = n_cells_original,
                    plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
@@ -921,6 +952,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_feature}),
                    features_entered = reactive({input$text_features}),
                    plot_label = "Feature Plot",
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    n_cells_original = n_cells_original, 
                    plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
@@ -946,6 +978,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_vln}),
                    plot_label = "Violin Plot",
                    features_entered = reactive({input$text_features}),
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "violin",
@@ -961,6 +994,7 @@ plots_tab_server <- function(id,
                    # plot_switch: uses the input$make_dot switch
                    plot_switch = reactive({input$make_dot}),
                    features_entered = reactive({input$text_features}),
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    plots_tab_spinner = main_spinner,
                    plot_label = "Dot Plot", 
                    # Instructs server on which plot function to run
@@ -980,6 +1014,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_scatter}),
                    plots_tab_spinner = main_spinner,
                    plot_label = "Scatterplot",
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    # Instructs server on which plot function to run
                    plot_type = "scatter",
                    # Valid features, for displaying choices for x- and y- axes
@@ -997,6 +1032,7 @@ plots_tab_server <- function(id,
                    plot_switch = reactive({input$make_ridge}),
                    plots_tab_spinner = main_spinner,
                    plot_label = "Ridge Plot", 
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    # Relies on feature text entry
                    features_entered = reactive({input$text_features}),
                    # Instructs server on which plot function to run
@@ -1016,6 +1052,7 @@ plots_tab_server <- function(id,
                    plot_label = "Cell Proportion Plot", 
                    # Instructs server on which plot function to run
                    plot_type = "proportion",
+                   raw_feature_names = reactive({input$raw_feature_names}),
                    # Use categorical palettes for cell type proportion plot
                    palette = selected_categorical_palette,
                    metadata_config = metadata_config,
@@ -1033,6 +1070,7 @@ plots_tab_server <- function(id,
                      plot_switch = reactive({input$make_pie}),
                      plots_tab_spinner = main_spinner,
                      plot_label = "Metadata Pie Chart", 
+                     raw_feature_names = reactive({input$raw_feature_names}),
                      # Instructs server on which plot function to run
                      plot_type = "pie",
                      # Use categorical palettes for cell type proportion plot

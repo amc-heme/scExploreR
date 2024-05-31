@@ -911,6 +911,15 @@ plot_module_ui <- function(id,
 #' in the app
 #' @param n_cells_original The number of cells in the original object. This is
 #' set in the main server function each time a new object is loaded.
+#' @param raw_feature_names This is set in the plots_tab server. If TRUE, the 
+#' display names of the features being plotted will be un-modified, and will 
+#' contain the "key" of the modality of  each feature (i.e. "rna_HOXA10"). If 
+#' FALSE (the default), a "human-readable" display name will be applied to each 
+#' feature, which will remove the modality key, and will add a "suffix" defined 
+#' using the "label" property for the modality (known as the assay) in the 
+#' config file. For example, for a feature from an modality with "(surface 
+#' protein)" as the label and "adt" as the modality key, the display name will 
+#' be "CD4 (Surface Protein)". 
 #' @param features_entered The features entered in the plots tab of the app.
 #' This is currently defined in the plots tab module and passed to this module.
 #' @param manual_dimensions Creates a server instance for specifying manual
@@ -945,6 +954,7 @@ plot_module_server <- function(id,
                                object,
                                plot_switch,
                                n_cells_original,
+                               raw_feature_names,
                                plots_tab_spinner = NULL,
                                features_entered = NULL,
                                manual_dimensions = TRUE,
@@ -1201,7 +1211,15 @@ plot_module_server <- function(id,
                                  if (plot_type %in% c("feature", "ridge")){
                                    features_entered()
                                  } else NULL,
-                               assay_config = assay_config()
+                               assay_config = assay_config(),
+                               show_modality_key = 
+                                 # "Raw" feature names setting from plots tab
+                                 # Apply value of checkbox if provided to the 
+                                 # module. If not provided, this is always 
+                                 # FALSE.
+                                 if (!is.null(raw_feature_names)){
+                                   raw_feature_names()
+                                 } else FALSE
                              )
 
                            # Update input with initial value
@@ -1252,7 +1270,10 @@ plot_module_server <- function(id,
                              if (plot_type %in% c("feature", "ridge")){
                                features_entered()
                                } else NULL,
-                           assay_config = assay_config()
+                           assay_config = assay_config(),
+                           show_modality_key = 
+                             # "Raw" feature names setting from plots tab
+                             raw_feature_names()
                          )
 
                        # Update input
@@ -1302,7 +1323,10 @@ plot_module_server <- function(id,
                               group_by = plot_selections$group_by(),
                               metadata_config = metadata_config(),
                               features_entered = features_entered(),
-                              assay_config = assay_config()
+                              assay_config = assay_config(),
+                              show_modality_key = 
+                                # "Raw" feature names setting from plots tab
+                                raw_feature_names()
                               )
 
                          if (isTruthy(input$custom_title)){
@@ -1354,22 +1378,29 @@ plot_module_server <- function(id,
                                length(features_entered()) > 1 &
                                plot_selections$split_by() == "none"
                              ){
-                               # Multi-feature plots with no split_by selection:
-                               # return features entered for defaults, with
-                               # assay key removed
-                               sapply(
-                                 1:length(features_entered()),
-                                 function(i){
-                                   hr_name(
-                                     machine_readable_name =
-                                       features_entered()[i],
-                                     assay_config = assay_config(),
-                                     # Do use the assay label if provided in
-                                     # config app
-                                     use_suffix = TRUE
-                                   )
-                                 }
-                               )
+                               # Multi-feature plots with no split_by selection
+                               
+                               # Set display names for features according to 
+                               # the information in the config file, unless 
+                               # the user requests "raw" feature names with
+                               # the assay key added
+                               if (raw_feature_names() == FALSE){
+                                 sapply(
+                                   1:length(features_entered()),
+                                   function(i){
+                                     hr_name(
+                                       machine_readable_name =
+                                         features_entered()[i],
+                                       assay_config = assay_config(),
+                                       # Do use the assay label if provided in
+                                       # config app
+                                       use_suffix = TRUE
+                                     )
+                                   }
+                                 )
+                               } else {
+                                 features_entered()
+                               }
                              }
                            }
                          })
@@ -1384,19 +1415,28 @@ plot_module_server <- function(id,
                            req(plot_switch())
                            req(features_entered())
 
-                           sapply(
-                             1:length(features_entered()),
-                             function(i){
-                               hr_name(
-                                 machine_readable_name =
-                                   features_entered()[i],
-                                 assay_config = assay_config(),
-                                 # Do use the assay label if provided in
-                                 # config app
-                                 use_suffix = TRUE
-                                 )
-                               }
-                             )
+                           # Remove assay key from title, unless the user 
+                           # requests it be added 
+                           if (raw_feature_names() == FALSE){
+                             sapply(
+                               1:length(features_entered()),
+                               function(i){
+                                 hr_name(
+                                   machine_readable_name =
+                                     features_entered()[i],
+                                   assay_config = assay_config(),
+                                   # Do use the assay label if provided in
+                                   # config app
+                                   use_suffix = TRUE
+                                   )
+                                 }
+                               )
+                             } else {
+                               # If the user requests assay keys be added,
+                               # report the machine-readable features with 
+                               # the assay key
+                               features_entered()
+                             }
                            })
                      }
 
@@ -1481,9 +1521,26 @@ plot_module_server <- function(id,
                              custom_vector()
                            }
                          } else {
-                           # Pass NULL if custom titles are not specified
-                           NULL
-                         }
+                           # Otherwise, define a default title based on the 
+                           # features entered, and whether the user requests to 
+                           # show the modality key in front of features instead
+                           # of the suffix defined in the config file.
+                           if (raw_feature_names() == FALSE){
+                             sapply(
+                               features_entered(),
+                               function(feature, assay_config){
+                                 hr_name(
+                                   machine_readable_name = feature, 
+                                   assay_config = assay_config,
+                                   use_suffix = TRUE
+                                 )
+                               },
+                               assay_config()
+                             )
+                             } else {
+                             features_entered()
+                             }
+                           }
                        })
                    }
 
@@ -2006,15 +2063,18 @@ plot_module_server <- function(id,
                        feature_names <- features()
 
                        # Default names: each feature entered, with the assay
-                       # key removed
-                       for (i in 1:length(feature_names)){
-                         feature_names[i] <-
-                           hr_name(
-                             machine_readable_name = feature_names[i],
-                             assay_config = assay_config(),
-                             use_suffix = FALSE
+                       # key removed, unless the user checks "Show modality 
+                       # key before feature"
+                       if (raw_feature_names() == FALSE){
+                         for (i in 1:length(feature_names)){
+                           feature_names[i] <-
+                             hr_name(
+                               machine_readable_name = feature_names[i],
+                               assay_config = assay_config(),
+                               use_suffix = TRUE
                              )
                          }
+                       }
 
                        feature_names
                        })
@@ -2055,13 +2115,19 @@ plot_module_server <- function(id,
                                c(truncated_feature_names,
                                  truncate_str(
                                    # Remove assay key prefix from feature name
-                                   # before truncating
+                                   # before truncating, unless the user requests
+                                   # the assay key be plotted
                                    str =
-                                     hr_name(
-                                       machine_readable_name = feature_names[i],
-                                       assay_config = assay_config(),
-                                       use_suffix = FALSE
-                                       ),
+                                     if (raw_feature_names() == FALSE){
+                                       hr_name(
+                                         machine_readable_name = 
+                                           feature_names[i],
+                                         assay_config = assay_config(),
+                                         use_suffix = TRUE
+                                       )
+                                     } else {
+                                       feature_names[i]
+                                     },
                                    max_length = 20
                                    )
                                  )
@@ -2071,16 +2137,19 @@ plot_module_server <- function(id,
                            truncated_feature_names
                          } else if (input$dot_x_labels == "full"){
                            # For "full", remove assay keys from labels
-                           # without truncating
+                           # without truncating, unless the user requests they
+                           # be added
                            feature_names <- features()
 
-                           for (i in 1:length(feature_names)){
-                             feature_names[i] <-
-                               hr_name(
-                                 machine_readable_name = feature_names[i],
-                                 assay_config = assay_config(),
-                                 use_suffix = FALSE
-                               )
+                           if (raw_feature_names() == FALSE){
+                             for (i in 1:length(feature_names)){
+                               feature_names[i] <-
+                                 hr_name(
+                                   machine_readable_name = feature_names[i],
+                                   assay_config = assay_config(),
+                                   use_suffix = TRUE
+                                 )
+                             } 
                            }
 
                            # Return full feature names
@@ -3120,23 +3189,15 @@ plot_module_server <- function(id,
                    }
                  }
                  
-               ## Menu for refactoring by feature expression 
+                 ## Menu for refactoring by feature expression 
                  if (plot_type %in% c("violin", "dot", "ridge")){
-                  
-           
                    # Violin, dot, ridge plots: refactoring affects
                    # group by variable
                    expr_sort_menu <-
-                     eventReactive(
-                       c(features_entered(),
-                         plot_selections$group_by(),
-                         object(),
-                         plot_switch()
-                       ),
-                       {
-                         # Responds to both the object and the group by
-                         # variable, but only runs when the group by variable is
-                         # defined
+                     reactive({
+                       # Responds to both the object and the group by
+                       # variable, but only runs when the group by variable is
+                       # defined
                        req(plot_selections$group_by())
 
                        # For ridge plots, the group_by variable can also be
@@ -3146,64 +3207,87 @@ plot_module_server <- function(id,
                          req(plot_selections$group_by() != "none")
                        }
 
-                       # Also only runs when the plot is enabled
+                       # Also only runs when the plot is enabled, and if a 
+                       # feature has been chosen
                        req(plot_switch())
-                      
-                       # only run if a feature has been chosen
                        req(features_entered())
-                         
-                       feature_names <- features_entered()
-                       
-                       for (i in 1:length(feature_names)){
-                         feature_names[i] <-
-                           hr_name(
-                             machine_readable_name = feature_names[i],
-                             assay_config = assay_config(),
-                             use_suffix = FALSE
+                     
+                       # Define display names for features
+                       # Remove the assay key from features and add the 
+                       # assay-based "suffix" from the config file, unless
+                       # the user requests the assay key be displayed before
+                       # feature names
+                       if (raw_feature_names() == FALSE){
+                         display_names <-
+                           sapply(
+                             features_entered(),
+                             function(feature_i, assay_config){
+                               hr_name(
+                                 machine_readable_name = feature_i,
+                                 assay_config = assay_config,
+                                 use_suffix = TRUE
+                               )
+                             },
+                             assay_config()
                            )
+                       } else {
+                         # If the user checks "Show modality key before 
+                         # feature", display the machine-readable feature 
+                         # names with the assay key added
+                         display_names <- features_entered()
                        }
-                         # Menu UI
-                         div(
-                           id = ns("expr_sort_menu"),
-                           class = "compact-options-container",
-                           selectInput(
-                             inputId = ns("sort_expr_feature"),
-                             label = "Choose a feature to sort by:",
-                             choices = feature_names
-                           ),
-                           selectInput(
-                             inputId = ns("sort_expr_order"),
-                             label = "Order of sorting:",
-                             choices = 
-                               c("Descending" = "descending",
-                                 "Ascending" = "ascending"
-                                 )
-                             )
+                       
+                       
+                       # Set up choices vector: values are machine-readable 
+                       # feature names from features_entered(), and names are 
+                       # the display 
+                       feature_choices <- features_entered()
+                       names(feature_choices) <- display_names
+                       
+                       # Menu UI
+                       div(
+                         id = ns("expr_sort_menu"),
+                         class = "compact-options-container",
+                         selectInput(
+                           inputId = ns("sort_expr_feature"),
+                           label = "Choose a feature to sort by:",
+                           choices = feature_choices,
+                           # Explicitly set the selected value to the first 
+                           # feature to avoid the menu being blank
+                           selected = feature_choices[1]
+                         ),
+                         selectInput(
+                           inputId = ns("sort_expr_order"),
+                           label = "Order of sorting:",
+                           choices = 
+                             c("Descending" = "descending",
+                               "Ascending" = "ascending"
+                               )
                            )
+                         )
                        })
-                 
-                 
-               # hide/show feature sorting container
-                 observe({
-                   # The output container is shown/hidden
-                   target_id <- "expr_sort_menu"
                    
-                   # Show when "custom" is chosen from the group order menu
-                   if (isTruthy(input$sort_groups)){
-                     if (input$sort_groups == "expression"){
-                       showElement(
-                         id = target_id,
-                         anim = TRUE
-                       )
-                     } else {
-                       hideElement(
-                         id = target_id,
-                         anim = TRUE
-                       )
+                   # hide/show feature sorting container
+                   observe({
+                     # The output container is shown/hidden
+                     target_id <- "expr_sort_menu"
+                     
+                     # Show when "custom" is chosen from the group order menu
+                     if (isTruthy(input$sort_groups)){
+                       if (input$sort_groups == "expression"){
+                         showElement(
+                           id = target_id,
+                           anim = TRUE
+                         )
+                       } else {
+                         hideElement(
+                           id = target_id,
+                           anim = TRUE
+                         )
+                       }
                      }
+                   })
                    }
-                 })
-                 }
 
                  ## 8.5. Render Dynamic UI ####
                  output$ncol_slider <-
@@ -3565,9 +3649,27 @@ plot_module_server <- function(id,
                            split_by = plot_selections$split_by(),
                            show_legend = plot_selections$legend(),
                            ncol = plot_selections$ncol(),
-                           assay_config = assay_config(),
                            palette = palette(),
                            sort_groups = plot_selections$sort_groups(),
+                           set_title = 
+                             # Set title based on features entered, removing the
+                             # assay key and adding the suffix from the config
+                             # file, unless the user requests it not be added
+                             if (raw_feature_names() == FALSE){
+                               sapply(
+                                 features(),
+                                 function(feature, assay_config){
+                                   hr_name(
+                                     machine_readable_name = feature, 
+                                     assay_config = assay_config,
+                                     use_suffix = TRUE
+                                   )
+                                 },
+                                 assay_config()
+                               )
+                             } else {
+                               features()
+                             },
                            custom_factor_levels =
                              plot_selections$custom_refactoring(),
                            # Number of columns in legend
@@ -3618,10 +3720,40 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
 
+                         # Fetch the features to be entered in the plot
+                         feature_1 <- plot_selections$scatter_1()
+                         feature_2 <- plot_selections$scatter_2()
+                         
+                         # Display names for features on plot: either the 
+                         # raw feature name, or the "human-readable" name 
+                         # constructed by removing the modality "key" and 
+                         # adding the suffix for the modality defined in
+                         # the config file 
+                         # User sets whether to display the modality key or 
+                         # not (default is FALSE, to use raw feature names)
+                         if (raw_feature_names() == FALSE){
+                           names(feature_1) <-
+                             hr_name(
+                               machine_readable_name = feature_1, 
+                               assay_config = assay_config(),
+                               use_suffix = TRUE
+                               )
+                           
+                           names(feature_2) <-
+                             hr_name(
+                               machine_readable_name = feature_2, 
+                               assay_config = assay_config(),
+                               use_suffix = TRUE
+                               )
+                         } else {
+                           names(feature_1) <- feature_1
+                           names(feature_2) <- feature_2
+                         }
+                         
                          shiny_scatter(
                            object = object(),
-                           feature_1 = plot_selections$scatter_1(),
-                           feature_2 = plot_selections$scatter_2(),
+                           feature_1 = feature_1,
+                           feature_2 = feature_2,
                            group_by = plot_selections$group_by(),
                            show_legend = plot_selections$legend(),
                            display_coeff = plot_selections$display_coeff(),
@@ -3664,7 +3796,7 @@ plot_module_server <- function(id,
                              sort_groups = plot_selections$sort_groups(),
                              custom_factor_levels =
                                plot_selections$custom_refactoring(),
-                             custom_titles = variable_length_custom_title(),
+                             set_title = variable_length_custom_title(),
                              assay_config = assay_config(),
                              # Number of columns in legend
                              legend_ncol = plot_selections$legend_ncol(),
