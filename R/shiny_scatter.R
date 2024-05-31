@@ -5,17 +5,24 @@
 #'
 #' @param object A Seurat object. May be the full object or a subset. This is 
 #' a reactive-agnostic parameter (can be either reactive or non-reactive).
-#' @param feature_1 (Reactive) the feature to plot on the x-axis.
-#' @param feature_2 (Reactive) the feature to plot on the y-axis.
-#' @param group_by (Reactive) metadata category to be passed to the group.by 
-#' argument (affecting how cells are colored on the plot).
-#' @param display_coeff (Reactive) if TRUE, show the correlation coefficient 
+#' @param feature_1 The feature to plot on the x-axis. This should be a 
+#' single-length character vector. If a named vector, the name will be used as 
+#' the display name of the feature on the plot.
+#' @param feature_2 The feature to plot on the y-axis. This should be a 
+#' single-length character vector. If a named vector, the name will be used as 
+#' the display name of the feature on the plot.
+#' @param group_by Metadata category to be passed to the group_by argument 
+#' (affecting how cells are colored on the plot).
+#' @param display_coeff If TRUE, show the correlation coefficient 
 #' as the title of the plot (default behavior).
 #' @param assay_config the assays section of the config file, loaded at app 
 #' startup and upon changing datasets.
-#' @param legend_ncol The number of columns for keys in the legend (uses ggplot2 defaults if NULL).
-#' @param legend_font_size The font size to use for legend keys (uses ggplot2 defaults if NULL).
-#' @param legend_key_size The size of the key glpyhs in the legend (uses ggplot2 defaults if NULL).
+#' @param legend_ncol The number of columns for keys in the legend 
+#' (uses ggplot2 defaults if NULL).
+#' @param legend_font_size The font size to use for legend keys 
+#' (uses ggplot2 defaults if NULL).
+#' @param legend_key_size The size of the key glpyhs in the legend 
+#' (uses ggplot2 defaults if NULL).
 #'
 #' @return a ggplot2 object with a scatterplot created from the Seurat object according to user specifications.
 #' 
@@ -58,25 +65,20 @@ shiny_scatter <- function(object,
         } else NULL, 
       )
   
-  # Use human-readable names on axes (remove assay key from features)
-  plot <- 
-    plot +
-    xlab(
-      # Remove assay key from feature name
-      hr_name(
-        machine_readable_name = feature_1,
-        assay_config = assay_config,
-        use_suffix = TRUE
-      )
-    ) +
-    ylab(
-      # Remove assay key from feature name
-      hr_name(
-        machine_readable_name = feature_2,
-        assay_config = assay_config,
-        use_suffix = TRUE
-      )
-    )
+  # Display names for features on plot 
+  # Set display names if feature_1 and feature_2 are named. If not, the raw 
+  # feature name with the key of the associated modality will be used
+  if (!is.null(names(feature_1))){
+    plot <- 
+      plot +
+      xlab(names(feature_1))
+    }
+  
+  if (!is.null(names(feature_2))){
+    plot <- 
+      plot +
+      ylab(names(feature_2))
+    }
   
   # List of layers to be applied to plot after creation
   layers <- 

@@ -36,7 +36,7 @@ run_scExploreR <-
     library(shinycssloaders, quietly = TRUE, warn.conflicts = FALSE)
     library(shinyjs, quietly = TRUE, warn.conflicts = FALSE)
     library(sortable, quietly = TRUE, warn.conflicts = FALSE)
-    # library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
+    library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
 
     # Reactlog (for debugging)
     library(reactlog, quietly = TRUE, warn.conflicts = FALSE)
@@ -76,6 +76,7 @@ run_scExploreR <-
     library(yaml, quietly = TRUE, warn.conflicts = FALSE)
     library(rlang, quietly = TRUE, warn.conflicts = FALSE)
     library(gtools, quietly = TRUE, warn.conflicts = FALSE)
+
     # Add inst/www to the resource path so static html can be loaded
     addResourcePath("resources", system.file("www", package = "scExploreR"))
 

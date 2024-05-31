@@ -188,7 +188,7 @@ shiny_feature <- function(object,
           split_by = if (split_by != "none") split_by else NULL,
           # Use the group_by variable for labeling
           label_by = group_by,
-          # ncol: valid when split.by is not defined
+          # ncol: valid when split_by is not defined
           ncol = ncol,
           # Order: whether to plot cells in order by expression
           # Set to FALSE if undefined
@@ -203,7 +203,7 @@ shiny_feature <- function(object,
       #+
       # Clean up title: this changes the feature names on each plot
       # to a human-readable format
-      # (used when split.by == NULL)
+      # (used when split_by == NULL)
       # Determine number of plots created
       #n_patches <- n_patches(feature_plot)
       # Iterate through each plot, correcting the title
@@ -284,10 +284,10 @@ shiny_feature <- function(object,
         features = features_entered,
         cols = blend_palette,
         blend = blend,
-        split.by = if (split_by != "none") split_by else NULL,
+        split_by = if (split_by != "none") split_by else NULL,
         # Use the group_by variable for labeling groups
         label_by = group_by,
-        # ncol: valid when split.by is not defined
+        # ncol: valid when split_by is not defined
         ncol = ncol,
         # Order: whether to plot cells in order by expression
         # Set to FALSE if undefined

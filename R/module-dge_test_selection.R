@@ -209,7 +209,14 @@ dge_test_selections_ui <-
               # a time to keep menu from being cut off
               "actions-box"=TRUE
               )
-          ) # End pickerInput
+          ), # End pickerInput
+          shinyBS::bsTooltip(
+            id = ns("marker_classes_ui"), 
+            title = "Please choose at least 3 groups. To compare 2 groups, use Differential Expression.", 
+            placement = "top", 
+            trigger = "hover",
+            options = NULL
+          ),
         )
         
       )
