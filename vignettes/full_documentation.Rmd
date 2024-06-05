@@ -84,7 +84,7 @@ download_button <-
 
 The plots tab is used to explore and summarize the data using several plot types. All plots may be created from either the full dataset or a subset of cells based on metadata. For more, see the subsetting section.
 
-## Plot Switches {#plot-switches}
+## Plot Switches
 
 At the top of the options panel you will see several switches, one for each plot type. To show/hide each plot, click the switch. The available plot types are described briefly below, and each is described in more detail in their respective sections.
 
@@ -118,7 +118,7 @@ Use the "Subset Options" menu to filter cells in the dataset based on specified 
 
 Filter menus will appear for each categorical metadata variable in the dataset enabled by the user setting up the browser. Use each menu to select values for the metadata variable to include in the subset; the "select all" and "remove filter" button can be used to add and remove all values in the variable, respectively. Criteria defined by each menu are combined using `AND` syntax, meaning that only cells with metadata selected in one menu, and metadata selected in a second menu will be returned upon subsetting. Menus for the other variables will update based on possible combinations made in the current menu, and invalid combinations will appear in gray. To select a value that is currently invalid, clear selections made in other filter menus, and select a different combination. Press "Apply Subset" to create the subset from the current selection.
 
-### Advanced (String) Subsetting {#advanced-string-subsetting}
+### Advanced (String) Subsetting
 
 If the "String subsetting (advanced mode)" checkbox is enabled, a text entry will appear where subset criteria may be defined via R code. This interface allows for the entry of additional types of criteria, such as:
 
@@ -134,11 +134,11 @@ For more information, see the [documentation for string subsetting](advanced_sub
 
 Dimensional reduction plots are used to summarize overall gene expression in the sample (for more, see [Interpereting scRNA-seq plots](scRNA_Plots_Explained.html)). Cells with similar expression profiles tend to cluster next to each other, but quantitative connections can't necessarily be made between distance on the plot and similarity in gene expression (i.e. a cell that is 16 units away from another cell is not twice as dissimilar from a cell that is 8 units away).
 
-### Metadata to Group By {#DimPlots-group-by}
+### Metadata to Group By
 
 This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right.
 
-### Metadata to Split By {#DimPlots-split-by}
+### Metadata to Split By
 
 This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side. One panel will be created for each value in the split by variable, and cells will display on the panel corresponding to the metadata value for that cell.
 
@@ -146,27 +146,27 @@ This menu is useful for comparing projections between different metadata. For ex
 
 When a variable is selected, a slider to choose the number of columns will appear under the "Title options menu" (see [Choose number of columns](#choose-number-of-columns) for more info).
 
-### Choose Projection {#DimPlots-choose-projection}
+### Choose Projection
 
 This menu is used to switch between different methods of dimensional reduction: cells are plotted according to the coordinates selected in the current projection method. Projection methods are added by the user setting up the browser, and the default projection is chosen by that user. Common projections include UMAP and t-SNE. For more information on each projection included with the current dataset, contact the user or organization that set up the browser.
 
-### Title Options {#DimPlots-title-options}
+### Title Options
 
 The title options menu is used to change or remove the title of the dimensional reduction plot. When set to "Default" the title shown is the name of the selected group by metadata variable. When set to "None", no title is shown. When set to "Custom", an interface will appear beneath the menu to enter a custom title. Press "Update" to apply changes to the title, and "Reset" to revert the title to the default.
 
 ![](full_documentation-custom_title_menu.png){.centered-image style="display: block; margin-left: auto; margin-right: auto;" width="336"}
 
-### Choose Number of Columns {#DimPlots-choose-number-of-columns}
+### Choose Number of Columns {#choose-number-of-columns}
 
 This setting applies to split plots only, and remains hidden until a selection is made in the "Choose Metadata to Split by" menu. Drag the slider to specify the number of columns to use when displaying the panels of a split plot. Possible values may be anywhere from 1 to the number of panels created by the current split by variable.
 
 ![](full_documentation-number_of_columns.png){.centered-image width="460"}
 
-### Label Groups {#DimPlots-label-groups}
+### Label Groups
 
 When checked, labels will display above each cluster of cells according to the currently selected group by variable.
 
-### Include Legend {#DimPlots-include-legend}
+### Include Legend
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
 
@@ -187,25 +187,25 @@ For feature plots, the group by selection menu controls the metadata to use for 
 
 This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right. -->
 ```
-### Metadata to Split By {#feature-plots-split-by}
+### Metadata to Split By
 
 This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side. One panel will be created for each value in the split by variable. If a single feature is entered in the [feature selection](#feature-selection) menu, the number of columns used for the panels may be adjusted. If two or more features are entered, however, the layout is fixed to place features by row and split by groups by column.
 
-### Choose Projection {feature-plots-choose-projection}
+### Choose Projection
 
 This menu is used to switch between different methods of dimensional reduction: cells are plotted according to the coordinates selected in the current projection method. Projection methods are added by the user setting up the browser, and the default projection is chosen by that user. Common projections include UMAP and t-SNE. For more information on each projection included with the current dataset, contact the user or organization that set up the browser.
 
-### Title Options {#feature-plots-title-options}
+### Title Options
 
 The title options menu is used to change or remove the titles appearing above each panel of the feature plot. When set to "default", the titles shown are equal to the feature (if one feature or multiple features are entered without a split by variable), or to the values in the split by metadata variable when one feature is entered with a split by variable. When set to "none", no titles are shown.
 
 The "Custom" option is available in all settings except for when multiple features are entered and a split by variable is chosen. When set to "custom", an interface will appear to customize titles for every panel displayed on the screen. Enter values and press "Update" to apply changes to the title. The `r icon("redo-alt")` buttons to the right of each title entry will revert that individual title to the default. Pressing "Reset" will revert the titles for all panels to the default.
 
-### Display Options for Legend Title {#feature-plots-display-legend-title}
+### Display Options for Legend Title
 
 Used to control the title that displays above the legend to the right. When set to "Feature Name" (the default), the feature name will display above the legend. When set to "Expression", the legend will be set to "Expression". If "No Title" is selected, the title will be removed. This menu is hidden when multiple features are entered and a split by variable is chosen. In this case, no title will display above the legend.
 
-### Choose Number of Columns {#feature-plots-choose-number-of-columns}
+### Choose Number of Columns
 
 This setting is available when one feature is selected with a split by variable, or when multiple features are chosen without a split by variable.
 
@@ -215,23 +215,23 @@ Drag the slider to specify the number of columns to distribute the panels across
 
 If multiple features and a split by metadata variable are entered, the output plot will be fixed in a layout of n splits by m features. If you wish to have a custom layout for these plots, it is recommended to create a separate plot for each feature with the desired layout, download each plot, and then combine them using graphic design software.
 
-### Share Scale Between Features {#feature-plots-share-scale}
+### Share Scale Between Features
 
 This setting is available when multiple features are entered with no split by variable. When enabled, all features will be plotted using the same scale. When disabled, each feature is plotted using a scale defined by the minimum and maximum expression values for that feature. This setting must be enabled to properly compare expression between different features.
 
-### Display Feature Name Above Panels {#feature-plots-display-name}
+### Display Feature Name Above Panels
 
 This setting is available when one feature is entered and split by metadata is provided. When enabled, the feature name will display centered above the panels created from the split by variable.
 
-### Order Cells by Expression {#feature-plots-order-cells}
+### Order Cells by Expression
 
 When checked, cells with the highest expression values will be plotted on top of the cells with lower expression values. When unchecked (the default), cells will be plotted in random order. Enabling this setting can help with features that are expressed in only a few cells in the sample, but when used with features that are expressed in many cells but with a low average expression, the extent of expression in the sample may be exaggerated. To avoid this, we recommend that feature plots be used alongside other means of visualization for expression, such as [violin plots](#violin-plots), [dot plots](#dot-plots), and [ridge plots](#ridge-plots).
 
-### Label Groups {#feature-plots-label-groups}
+### Label Groups
 
 When checked, labels will display above each cluster of cells according to the currently selected group by variable.
 
-### Include Legend {#feature-plots-include-legend}
+### Include Legend
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
 
@@ -245,21 +245,21 @@ download_button(plot_type = "Feature Plot")
 
 `# TODO: General description`
 
-### Metadata for Primary Groups {#violin-plots-metadata-for-primary-groups}
+### Metadata for Primary Groups
 
 The categorical metadata variable chosen here will determine how cells are grouped. One violin plot will be drawn for each unique value in the chosen metadata variable.
 
-### Metadata for Secondary Grouping {#violin-plots-metadata-for-secondary-grouping}
+### Metadata for Secondary Grouping
 
 A second categorical variable may be supplied for more in-depth comparison of groups. When specified, violins for each combination between the values of the primary and secondary metadata variable will be drawn. Violins will be colored according to the secondary variable, and split according to the primary variable (see example below). In general, the plot can be used to compare distributions for each value of the primary variable between each value of the secondary variable.
 
 [ADD IMAGE]
 
-### Order of Groups on Plot {#violin-plots-order-of-groups}
+### Order of Groups on Plot
 
 Sets the order groups specified by the primary metadata selection appear on the plot. When set to "ascending", values in the primary metadata variable will display in alphanumeric order, from A to Z. When set to "descending", values will display in reverse alphanumeric order. When set to "custom", an interface will appear that will allow you to arrange values in any order. To change the order of a value, drag-and-drop the value in the interface.
 
-### Number of Columns {#violin-plots-number-of-columns}
+### Number of Columns
 
 This setting is available when multiple features have been entered.
 
@@ -267,7 +267,7 @@ Drag the slider to specify the number of columns to distribute the panels across
 
 ![](full_documentation-number_of_columns.png){.centered-image width="460"}
 
-### Include Legend {#violin-plots-include-legend}
+### Include Legend
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
 
@@ -283,23 +283,23 @@ download_button(plot_type = "Violin Plot")
 # TODO: General description
 ```
 
-### Metadata to group by {#dot-plots-metatdata-group-by}
+### Metadata to group by
 
 Specifies the categorical metadata variable used to group cells. One dot per feature will be created for each value of the selected variable.
 
-### Order of Groups on Plot {#dot-plots-order-of-groups}
+### Order of Groups on Plot
 
 Sets the order groups appear on the plot. When set to "ascending", values in the group by metadata variable will display in ascending alphanumeric order, from top to bottom. When set to "descending", values will display in descending alphanumeric order. When set to "custom", an interface will appear that will allow you to arrange values in any order. To change the order of a value, drag-and-drop the value in the interface.
 
-### Include Legend {#dot-plots-include-legend}
+### Include Legend
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
 
-### Manually Adjust Plot Dimensions {#dot-plots-manually-adjust-plot-dimensions}
+### Manually Adjust Plot Dimensions
 
 When enabled, an interface appears allowing the user to change the height and width of the plot. The height and width are entered in pixels, and may be chosen using the slider or the text box. When entering a value in the text box, press return to update the plot with the value. Downloaded plots will have the dimensions defined here, if "manually adjust plot dimensions" is checked.
 
-### Use Separate Features for Dot Plot {#dot-plots-use-separate-features}
+### Use Separate Features for Dot Plot
 
 When checked, an interface will appear to enter additional features, or to remove features that were entered in the [feature selection](#feature-selection) menu. Features added or removed in this interface will apply only to the dot plot.
 
@@ -311,15 +311,15 @@ download_button(plot_type = "Dot Plot")
 
 Scatterplots are useful for viewing co-expression of two features. All cells are plotted according to the expression of each feature, and are useful for quallitative assessments of correlation.
 
-### Feature for x-axis {#scatterplots-feature-for-x-axis}
+### Feature for x-axis
 
 A feature to plot on the x-axis. All features that can be entered in the [feature selection](#feature-selection) menu may be entered here.
 
-### Feature for y-axis {#scatterplots-feature-for-y-axis}
+### Feature for y-axis
 
 A feature to plot on the y-axis. All features that can be entered in the [feature selection](#feature-selection) menu may be entered here.
 
-### Metadata to Group By {#scatterplots-metadata-group-by}
+### Metadata to Group By
 
 This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right.
 
@@ -329,7 +329,7 @@ This menu is used to select a categorical metadata variable to be used to colori
 include_legend()
 ```
 
-### Show Pearson Coefficient (#scatterplots-show-pearson-coefficient)
+### Show Pearson Coefficient
 
 When checked, a pearson correlation coefficient is computed between the two features entered and displayed as the plot title. This is checked by default.
 
@@ -341,7 +341,7 @@ download_button(plot_type = "Scatterplot")
 
 ## Ridge Plots {#ridge-plots}
 
-### Metadata to Group by {ridge-plots-metadata-group-by}
+### Metadata to Group by
 
 Used to choose a categorical variable for splitting ridge plots into groups. One ridge plot will be drawn for each value in the chosen metadata variable. If set to "None", a single ridge plot for all cells will be plotted
 
@@ -351,7 +351,7 @@ Used to choose a categorical variable for splitting ridge plots into groups. One
 include_legend()
 ```
 
-### Define Custom X-axis Limits {#ridge-plots-define-custom-x-axis-limits}
+### Define Custom X-axis Limits
 
 When checked, an interface will appear to change the X-axis limits. To specify new limits, enter them in the text boxes for "Lower Bound" and "Upper Bound" and press the "`r icon("sync")` Update" button to apply the new limits. To revert to the default limits, press "`r icon("redo")` Reset".
 
@@ -363,21 +363,21 @@ download_button(plot_type = "Ridge Plot")
 
 ## Cell Proportion Plot {#cell-proportion-plot}
 
-### Choose Metadata for Proportions {#cell-proportion-plot-choose-metadata- proportions}
+### Choose Metadata for Proportions
 
 Used to choose the metadata to use for displaying cell type proportions. The proportions illustrated by the stacked bar plots will be relative to the number of cells matching each value in the chosen metadata variable.
 
-### Choose Metadata for Proportion Comparison {#cell-proportion-plot-choose-metadata-proportion-comparison}
+### Choose Metadata for Proportion Comparison
 
 Used to choose a categorical metadata variable used for comparing cell type proportions. One bar will be plotted for each value of the chosen metadata variable.
 
-### Title Options {#cell-proportion-plot-title-options}
+### Title Options
 
 The title options menu is used to change or remove the title of the plot. When set to "Default" the title shown is the name of the selected metadata variable for proportions. When set to "None", no title is shown. When set to "Custom", an interface will appear beneath the menu to enter a custom title. Press "Update" to apply changes to the title, and "Reset" to revert the title to the default.
 
 ![](full_documentation-custom_title_menu.png){.centered-image style="display: block; margin-left: auto; margin-right: auto;" width="336"}
 
-### Order of Groups on Plot {#cell-proportion-plot-order-groups}
+### Order of Groups on Plot
 
 Sets the order bars created by the proportion comparison metadata variable appear on the plot. When set to "ascending", values in the metadata variable will display in ascending alphanumeric order, from left to right. When set to "descending", values will display in descending alphanumeric order. When set to "custom", an interface will appear that will allow you to arrange values in any order. To change the order of a value, drag-and-drop the value in the interface.
 
@@ -393,11 +393,11 @@ download_button(plot_type = "Cell Proportion Plot")
 
 Metadata pie charts show metadata on the sample level rather than the cell level, and is useful for summarizing the current dataset or subset in this regard. Sample-level metadata is compiled based on a metadata variable used as the sample (i.e., the metadata corresponding to "sample ID", "specimen", "patient ID", etc.), and is chosen by the user setting up the browser.
 
-### View Number of Patients by Menu {#metadata-pie-chart-number-of-patients-by-menu}
+### View Number of Patients by Menu
 
 Sets a categorical metadata variable to use for displaying the sample composition of the dataset. The size of each slice of the pie will be determined by the number of samples matching the corresponding value of a metadata variable provided to "View Number of Patients By". If samples match multiple values of the chosen metadata variable (for example, if cell type is chosen and one sample has multiple cell types), the total value of all slices will be greater than the total number of patients.
 
-### Title Options {#metadata-pie-chart-title-options}
+### Title Options
 
 The title options menu is used to change or remove the title of the pie chart. When set to "Default" the title shown is the name of the metadata variable in the "View Number of Patients by" menu. When set to "None", no title is shown. When set to "Custom", an interface will appear beneath the menu to enter a custom title. Press "Update" to apply changes to the title, and "Reset" to revert the title to the default.
 
@@ -417,7 +417,7 @@ manual_dimensions()
 download_button(plot_type = "Metadata Pie Chart")
 ```
 
-# Differential Gene Expression Tab {#differential-expression-tab}
+# Differential Gene Expression Tab {#dge-tab}
 
 Differential gene expression (DGE) analysis compares groups of cells based on their metadata, and returns a table of genes that differ in expression between the groups. scExploreR uses [presto](https://www.biorxiv.org/content/10.1101/653253v1.full) for DGE analysis, which performs a Wilcoxon Rank Sum and an area under the receiver operator curve (auROC) analysis on the expression data.
 
@@ -439,7 +439,7 @@ To run a DGE analysis, follow the process below. This process is described in gr
 
 The categorical metadata variable chosen here will be used as the basis for determining groups for marker identification. The choices available in "choose classes to include in marker computation" will update based on the variable selected in this menu.
 
-### Choose classes to include in marker computation {#choose-marker-computation-classes}
+### Choose classes to include in marker computation
 
 Specific categories from the metadata variable chosen in "choose metadata to use for marker identification" may be included/excluded in the analysis using this menu. The analysis will compute markers for each of the categories selected in this menu. Groups (marker classes) are defined in the context of the full dataset or a subset, depending on selections made in the "[subset options](#dge-subset-options)" menu.
 
@@ -447,11 +447,11 @@ Specific categories from the metadata variable chosen in "choose metadata to use
 
 The two groups defined in differential gene expression may be defined in one of two ways: via categorical metadata, or via feature expression. To define groups via feature expression, check **"use feature expression to define groups"**. The groups are defined within the context of the full dataset or a subset, depending on selections made in the "[subset options](#dge-subset-options)" menu.
 
-### Groups Defined by Categorical Metadata {#categorical-metadata-groups}
+### Groups Defined by Categorical Metadata
 
 To define groups based on a categorical metadata variable, select a variable in the **"choose metadata to use for differential gene expression"**, and then choose a category to use for **"group 1"** and **"group 2"**.
 
-### Groups Defined by Feature Expression {#feature-expression-groups}
+### Groups Defined by Feature Expression
 
 ![](full_documentation-DGE_expr_threshold_widget.gif){style="float: right; margin-left: 15px;" width="195"}
 
@@ -461,7 +461,7 @@ When a feature is entered, an interface will appear with a plot of the expressio
 
 To aid in the selection of a threshold, an interface will display below the plot with statistics on the chosen threshold. The interface will display with the value of the chosen threshold, and the percentage of cells above and below the threshold.
 
-## Subset Options {#subset-options}
+## Subset Options
 
 The subset options menu is used to choose the context in which a differential expression test is performed. If filter criteria are entered in this interface, the test chosen in the menus above will be performed only in cells that meet the chosen criteria.
 
@@ -469,13 +469,13 @@ For example, if a test based on feature expression is chosen, and a specific sam
 
 The interface for entering criteria is the same as in the plots tab. See ["forming subsets"](#Subsets) for more info.
 
-## Other DGE Settings {#other-differential-expression-settings}
+## Other DGE Settings
 
-### Positive Markers Only {#positive-markers-only}
+### Positive Markers Only
 
 When checked, the table returned will only show genes that are upregulated in each group/marker class. Disabling this option will also show downregulated genes, but this information is redundant since genes downregulated in a group will always show as being upregulated in another group (i.e. in differential expression mode, a gene that is expressed twice as much in group 1 compared to group 2 will be half as expressed in group 2 relative to group 1).
 
-## Interpreting DGE Results {#interpreting-differential-expression-results}
+## Interpreting DGE Results
 
 After selecting a test and a subset, press update to run DGE on the chosen groups. Depending on the size of the dataset and the performance of the server, this may take up to two minutes to run, but usually completes in under 30 seconds. When the test is complete, a report will display in the main window.
 
@@ -505,7 +505,7 @@ If either of the percent expression values are very low, or if there is a large 
 
 -   Additional info: a link to the [GeneCards](https://www.genecards.org/) for each gene is displayed here.
 
-### DGE DimPlot {#differential-expression-DimPlot}
+### DGE DimPlot
 
 To visually identify and verify the groups/marker classes being compared in the selected test, a dimensional reduction plot will display beneath the table. After the plot is displayed, a menu ("DimPlot options") will appear in the options panel on the left. The reduction and the color by metadata can be changed here.
 
@@ -513,15 +513,15 @@ To visually identify and verify the groups/marker classes being compared in the 
 
 This tab is used to compute the correlation between a gene entered and all other genes in the dataaset. The correlations analysis uses a pearson correlation coefficient. Only genes may be used for computing correlation at this time: other feature types will be available in the future.
 
-## Running a correlation analysis (#run-correlation-analysis)
+## Running a correlation analysis
 
 To run an analysis, select a gene from the **"Gene Selection"** menu. All pearson coefficients returned will be for the genes relative to the selected gene. To view correlation results in a subset of cells rather than the full dataset, select categories for metadata variables in the **"Subset Options"** panel. The interface for entering subset criteria is the same as in the plots tab, and string subsetting may be performed for advanced subset selection. See ["forming subsets"](#Subsets) for more info. Press the **"submit"** button to run the analysis.
 
-## Interpreting Correlation Results {#interpret-correlation-results}
+## Interpreting Correlation Results
 
 The **"Subset Summary and Quality Statistics"** section will display the metadata included in the selected subset, along with quality statistics for the analysis. The number of cells in the selected subset will be displayed, along with the number and precentage of cells with non-zero reads for the currently selected gene. If either of these numbers are very low (less than 250 cells or so in the subset and less than 5% of cells with non-zero reads), caution should be taken when drawing conclusions from the results.
 
-### Correlation table {#correslation-table}
+### Correlation table
 
 The columns of the correlation table are as below. The table may be downloaded via the "`r icon("table")` download table" button.
 
@@ -531,10 +531,10 @@ The columns of the correlation table are as below. The table may be downloaded v
 
 -   **Correlation coefficient (subset):** if a subset is entered in the options menu to the left, the pearson correlation coefficient of correlation in the chosen subset will display in this column. A column for both the full data and a subset will display.
 
-### Correlation Scatterplots {#correlation-scatterplots}
+### Correlation Scatterplots
 
 Click any gene on the correlation table to view a scatterplot of expression for the gene entered vs. the selected gene (for more information on scatterplots, see the [scatterplots](#scatterplots) section). If a subset is selected, two plots will display, one for the full data and the other for the selected subset. The metadata variable used for coloring the plot may be selected using the **"choose metadata to group by"** menu. To download either of the plots, press the "`r icon("poll")` download scatterplot" button corresponding to the desired plot.
 
-# Changing Datasets {#changing-datasets}
+# Changing Datasets
 
 To change the dataset, press the `r icon("elipsis-h")` button in the upper right hand corner of the app window, and select **"Choose Dataset"**. A window will appear with the datasets that have been added to the browser, with a description of each. Select a dataset and press "confirm selection" to load the dataset. The dataset can be changed from any tab, and the loaded dataset will affect all three tabs.
