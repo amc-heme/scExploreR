@@ -134,11 +134,11 @@ For more information, see the [documentation for string subsetting](advanced_sub
 
 Dimensional reduction plots are used to summarize overall gene expression in the sample (for more, see [Interpereting scRNA-seq plots](scRNA_Plots_Explained.html)). Cells with similar expression profiles tend to cluster next to each other, but quantitative connections can't necessarily be made between distance on the plot and similarity in gene expression (i.e. a cell that is 16 units away from another cell is not twice as dissimilar from a cell that is 8 units away).
 
-### Metadata to Group By
+### Metadata to Group By {#DimPlots-group-by}
 
 This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right.
 
-### Metadata to Split By
+### Metadata to Split By {#DimPlots-split-by}
 
 This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side. One panel will be created for each value in the split by variable, and cells will display on the panel corresponding to the metadata value for that cell.
 
@@ -150,7 +150,7 @@ When a variable is selected, a slider to choose the number of columns will appea
 
 This menu is used to switch between different methods of dimensional reduction: cells are plotted according to the coordinates selected in the current projection method. Projection methods are added by the user setting up the browser, and the default projection is chosen by that user. Common projections include UMAP and t-SNE. For more information on each projection included with the current dataset, contact the user or organization that set up the browser.
 
-### Title Options
+### Title Options {#DimPlots-title-options}
 
 The title options menu is used to change or remove the title of the dimensional reduction plot. When set to "Default" the title shown is the name of the selected group by metadata variable. When set to "None", no title is shown. When set to "Custom", an interface will appear beneath the menu to enter a custom title. Press "Update" to apply changes to the title, and "Reset" to revert the title to the default.
 
@@ -166,7 +166,7 @@ This setting applies to split plots only, and remains hidden until a selection i
 
 When checked, labels will display above each cluster of cells according to the currently selected group by variable.
 
-### Include Legend
+### Include Legend {#DimPlots-include-legend}
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
 
@@ -187,7 +187,7 @@ For feature plots, the group by selection menu controls the metadata to use for 
 
 This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right. -->
 ```
-### Metadata to Split By
+### Metadata to Split By {#Feature-plots-split-by}
 
 This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side. One panel will be created for each value in the split by variable. If a single feature is entered in the [feature selection](#feature-selection) menu, the number of columns used for the panels may be adjusted. If two or more features are entered, however, the layout is fixed to place features by row and split by groups by column.
 
@@ -195,7 +195,7 @@ This menu sets a categorical metadata variable used to "split" cells into separa
 
 This menu is used to switch between different methods of dimensional reduction: cells are plotted according to the coordinates selected in the current projection method. Projection methods are added by the user setting up the browser, and the default projection is chosen by that user. Common projections include UMAP and t-SNE. For more information on each projection included with the current dataset, contact the user or organization that set up the browser.
 
-### Title Options
+### Title Options {#Feature-plots-title-options}
 
 The title options menu is used to change or remove the titles appearing above each panel of the feature plot. When set to "default", the titles shown are equal to the feature (if one feature or multiple features are entered without a split by variable), or to the values in the split by metadata variable when one feature is entered with a split by variable. When set to "none", no titles are shown.
 
@@ -231,7 +231,7 @@ When checked, cells with the highest expression values will be plotted on top of
 
 When checked, labels will display above each cluster of cells according to the currently selected group by variable.
 
-### Include Legend
+### Include Legend {#feature-plots-include-legend}
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
 
@@ -255,7 +255,7 @@ A second categorical variable may be supplied for more in-depth comparison of gr
 
 [ADD IMAGE]
 
-### Order of Groups on Plot
+### Order of Groups on Plot {#violin-plots-group-order}
 
 Sets the order groups specified by the primary metadata selection appear on the plot. When set to "ascending", values in the primary metadata variable will display in alphanumeric order, from A to Z. When set to "descending", values will display in reverse alphanumeric order. When set to "custom", an interface will appear that will allow you to arrange values in any order. To change the order of a value, drag-and-drop the value in the interface.
 
@@ -267,7 +267,7 @@ Drag the slider to specify the number of columns to distribute the panels across
 
 ![](full_documentation-number_of_columns.png){.centered-image width="460"}
 
-### Include Legend
+### Include Legend {#violin-plots-include-legend}
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
 
@@ -283,15 +283,15 @@ download_button(plot_type = "Violin Plot")
 # TODO: General description
 ```
 
-### Metadata to group by
+### Metadata to group by {#dot-plots-group-by}
 
 Specifies the categorical metadata variable used to group cells. One dot per feature will be created for each value of the selected variable.
 
-### Order of Groups on Plot
+### Order of Groups on Plot {#dot-plots-group-order}
 
 Sets the order groups appear on the plot. When set to "ascending", values in the group by metadata variable will display in ascending alphanumeric order, from top to bottom. When set to "descending", values will display in descending alphanumeric order. When set to "custom", an interface will appear that will allow you to arrange values in any order. To change the order of a value, drag-and-drop the value in the interface.
 
-### Include Legend
+### Include Legend {#dot-plots-include-legend}
 
 When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
 
@@ -319,7 +319,7 @@ A feature to plot on the x-axis. All features that can be entered in the [featur
 
 A feature to plot on the y-axis. All features that can be entered in the [feature selection](#feature-selection) menu may be entered here.
 
-### Metadata to Group By
+### Metadata to Group By {#scatterplots-group-by}
 
 This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right.
 
@@ -341,7 +341,7 @@ download_button(plot_type = "Scatterplot")
 
 ## Ridge Plots {#ridge-plots}
 
-### Metadata to Group by
+### Metadata to Group by {#ridge-plots-group-by}
 
 Used to choose a categorical variable for splitting ridge plots into groups. One ridge plot will be drawn for each value in the chosen metadata variable. If set to "None", a single ridge plot for all cells will be plotted
 
@@ -363,21 +363,21 @@ download_button(plot_type = "Ridge Plot")
 
 ## Cell Proportion Plot {#cell-proportion-plot}
 
-### Choose Metadata for Proportions
+### Choose Metadata for Proportions {#cell-proportion-plot-proportion-metadata}
 
 Used to choose the metadata to use for displaying cell type proportions. The proportions illustrated by the stacked bar plots will be relative to the number of cells matching each value in the chosen metadata variable.
 
-### Choose Metadata for Proportion Comparison
+### Choose Metadata for Proportion Comparison {#cell-proportion-plot-comparison-metadata}
 
 Used to choose a categorical metadata variable used for comparing cell type proportions. One bar will be plotted for each value of the chosen metadata variable.
 
-### Title Options
+### Title Options {#cell-proportion-plot-title-options}
 
 The title options menu is used to change or remove the title of the plot. When set to "Default" the title shown is the name of the selected metadata variable for proportions. When set to "None", no title is shown. When set to "Custom", an interface will appear beneath the menu to enter a custom title. Press "Update" to apply changes to the title, and "Reset" to revert the title to the default.
 
 ![](full_documentation-custom_title_menu.png){.centered-image style="display: block; margin-left: auto; margin-right: auto;" width="336"}
 
-### Order of Groups on Plot
+### Order of Groups on Plot {#cell-proportion-plot-group-order}
 
 Sets the order bars created by the proportion comparison metadata variable appear on the plot. When set to "ascending", values in the metadata variable will display in ascending alphanumeric order, from left to right. When set to "descending", values will display in descending alphanumeric order. When set to "custom", an interface will appear that will allow you to arrange values in any order. To change the order of a value, drag-and-drop the value in the interface.
 
