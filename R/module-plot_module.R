@@ -116,7 +116,48 @@ plot_module_ui <- function(id,
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules
   ns <- NS(id)
+  
+  ## Plot Info Anchor List ####
+  plot_to_anchor <- if(group_by) {
+    list(
+      scatterplot = "scatterplots-group-by",
+      dimplot = "DimPlots-group-by",
+      dot = "dot-plots-group-by",
+      scatter = "scatterplots-group-by",
+      ridge = "ridge-plots-group-by"
+    )
+  } else if(split_by) {
+    list(
+      scatterplot = "scatterplots-group-by",
+      dimplot = "DimPlots-split-by",
+      feature = "Feature-plots-split-by"
+    )
+  } else if(title_menu){
+    list(
+      dimplot = "DimPlots-title-options",
+      feature = "Feature-plots-title-options",
+      proportion = "cell-proportion-plot-title-options",
+      pie = "metadata-pie-chart-title-options"
+    )
+  } else if(sort_groups_menu){
+    list(
+      violin = "violin-plots-group-order",
+      dot = "dot-plots-group-order",
+      proportion = "cell-proportion-plot-group-order"
+    )
+  } else if(default_legend_ncol_div){
+    list(
+      dimplot = "choose-number-of-columns",
+      feature = "feature-choose-ncol",
+      violin = "violin-choose-ncol"
+    )
+  } else{
+    list()
+  }
 
+  anchor <- plot_to_anchor[[id]]
+
+  
   # Disable the "include legend" checkbox if legend_options_menu is TRUE
   if (legend_options_menu == TRUE){
     legend_checkbox <- FALSE
@@ -128,6 +169,7 @@ plot_module_ui <- function(id,
     # Attempted to use ifelse() for this; ifelse() did not print Shiny tags
     # properly and was unable to process NULL
     tagList(
+      
       # Add menus if their corresponding arguments are TRUE
       # Two-feature entry menu specific to scatterplot
       ## Scatterplot Features ####
@@ -164,11 +206,14 @@ plot_module_ui <- function(id,
             )
           )
       } else NULL,
-
+      
+    
       ## Group by menu ####
       if (group_by == TRUE){
         # Choices for group by selection: should exclude "none" unless
         # explicitly included using group_by_include_none == TRUE
+      
+        
         group_by_choices <-
           if (group_by_include_none == FALSE){
             meta_choices()[!meta_choices() %in% "none"]
@@ -194,8 +239,8 @@ plot_module_ui <- function(id,
             },
             a(id = ns("group_by_info_icon"),
               icon("info-circle"), 
-              href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                          "full_documentation.html"),  
+              href=paste0("https://amc-heme.github.io/scExploreR/articles/"
+                          "full_documentation.html#",anchor),  
               target="_blank")
             ),
           # Can select all options except "none"
@@ -242,7 +287,7 @@ plot_module_ui <- function(id,
             a(id = ns("split_by_info_icon"),
               icon("info-circle"), 
               href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                          "full_documentation.html"),  
+                          "full_documentation.html#", anchor),  
               target="_blank")
           ),
           # Use vector of included metadata category names from the config file
@@ -306,7 +351,7 @@ plot_module_ui <- function(id,
               a(id = ns("title_settings_info_icon"),
                 icon("info-circle"), 
                 href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                            "full_documentation.html"),  
+                            "full_documentation.html#", anchor),  
                 target="_blank")
             ),
               
@@ -399,7 +444,7 @@ plot_module_ui <- function(id,
               a(id = ns("sort_groups_info_icon"),
                 icon("info-circle"), 
                 href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                            "full_documentation.html"),  
+                            "full_documentation.html#", anchor),  
                 target="_blank")
             ),
             # Can select all options except "none"
@@ -496,7 +541,7 @@ plot_module_ui <- function(id,
                     icon("info-circle"), 
                     href = 
                       paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                             "full_documentation.html"
+                             "full_documentation.html#", anchor
                              ),  
                     target = "_blank"
                     )
