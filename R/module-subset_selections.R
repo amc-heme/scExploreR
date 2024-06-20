@@ -710,7 +710,7 @@ subset_selections_server <- function(id,
         # Responds to loading of update and creation of UI (to ensure
         # feature updating is always performed after the input is 
         # created)
-        valid_features(),
+        c(input$add_filter, valid_features()),
         label = glue("{id}: Render choices for feature selection"),
         {
           updateSelectizeInput(
@@ -720,8 +720,8 @@ subset_selections_server <- function(id,
             selected = character(0),
             server = TRUE
             )
-          })
-      
+        })
+  
       ## 7.2. Hide Buttons for choosing filter mode ####
       # Hide buttons until a feature is entered
       observe({
