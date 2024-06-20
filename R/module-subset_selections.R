@@ -29,9 +29,6 @@ subset_selections_ui <-
     # Namespace function: prevents conflicts with IDs defined in other modules 
     ns <- NS(id)
     
-    print(paste0("making UI for", ns(id)))
-  
-    
     div(
       style = "margin-bottom: 10px;",
       tags$b(
@@ -703,10 +700,6 @@ subset_selections_server <- function(id,
         c(input$add_filter, valid_features()),
         label = glue("{id}: Render choices for feature selection"),
         {
-          print(paste0("valid_features", ns(id)))
-          print(class(valid_features()))
-          print("length, valid features:")
-          print(length(valid_features()))
           updateSelectizeInput(
             session,
             inputId = "numeric_feature",
@@ -714,8 +707,7 @@ subset_selections_server <- function(id,
             selected = character(0),
             server = TRUE
             )
-          
-          })
+        })
   
       ## 7.2. Hide Buttons for choosing filter mode ####
       # Hide buttons until a feature is entered

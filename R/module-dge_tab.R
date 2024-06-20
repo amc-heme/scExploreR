@@ -336,10 +336,6 @@ dge_tab_server <- function(id,
           valid_features = valid_features,
           hide_menu = hidden_category
           )
-observe({
-  print("dge_valid_features:")
-  print(class(valid_features()))
-})
       # 3. Calculations ran after submit button is pressed ----------
       # Includes table, stats, and UMAP
       # Subset criteria (3.1) processed first,
