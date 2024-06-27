@@ -8,7 +8,6 @@
 #' a prefix (for example, RNA features use the '_rna' key)
 #' @param assay_config the assays section of the config file, loaded in the 
 #' main app
-#' @param adt_threshold_key
 #' @param use_suffix if TRUE, add the human readable suffix defined in 
 #' assay_config in parentheses (for example, if the label is "Surface Protein",
 #' this will be added to the end of the title returned.)
