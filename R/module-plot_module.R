@@ -116,54 +116,63 @@ plot_module_ui <- function(id,
                            ){
   # Namespace function: prevents conflicts with IDs defined in other modules
   ns <- NS(id)
-  
-  ## Plot Info Anchor List ####
-  plot_to_anchor <- if(group_by) {
-    list(
-      scatterplot = "scatterplots-group-by",
-      dimplot = "DimPlots-group-by",
-      dot = "dot-plots-group-by",
-      scatter = "scatterplots-group-by",
-      ridge = "ridge-plots-group-by"
-    )
-  } else if(split_by) {
-    list(
-      scatterplot = "scatterplots-group-by",
-      dimplot = "DimPlots-split-by",
-      feature = "Feature-plots-split-by"
-    )
-  } else if(title_menu){
-    list(
-      dimplot = "DimPlots-title-options",
-      feature = "Feature-plots-title-options",
-      proportion = "cell-proportion-plot-title-options",
-      pie = "metadata-pie-chart-title-options"
-    )
-  } else if(sort_groups_menu){
-    list(
-      violin = "violin-plots-group-order",
-      dot = "dot-plots-group-order",
-      proportion = "cell-proportion-plot-group-order"
-    )
-  } else if(default_legend_ncol_div){
-    list(
-      dimplot = "choose-number-of-columns",
-      feature = "feature-choose-ncol",
-      violin = "violin-choose-ncol"
-    )
-  } else{
-    list()
-  }
 
-  anchor <- plot_to_anchor[[id]]
-
-  
   # Disable the "include legend" checkbox if legend_options_menu is TRUE
   if (legend_options_menu == TRUE){
     legend_checkbox <- FALSE
   }
 
   if (ui_component == "options"){
+    
+    ## Plot Info Anchor List ####
+    plot_to_anchor <- if(group_by) {
+      list(
+        "DimPlot" = "DimPlots-group-by",
+        "Dot Plot" = "dot-plots-group-by",
+        "Scatterplot" = "scatterplots-group-by",
+        "Ridge" = "ridge-plots-group-by",
+        "Cell Proportion" = "cell-proportion-plot-proportion-metadata",
+        "Violin Plot" = "violin-plots-group-by"
+      )
+    } else if(split_by) {
+      list(
+        "Scatterplot" = "scatterplots-group-by",
+        "DimPlot" = "DimPlots-split-by",
+        "Feature Plot" = "Feature-plots-split-by",
+        "Cell Proportion" = "cell-proportion-plot-comparison-metadata",
+        "Violin Plot" = "violin-plots-split-by"
+      )
+    } else if(title_menu){
+      list(
+        "DimPlot" = "DimPlots-title-options",
+        "Feature Plot" = "Feature-plots-title-options",
+        "Cell Proportion" = "cell-proportion-plot-title-options",
+        "Ridge" = "ridge-title-options"
+      )
+    } else if(sort_groups_menu){
+      list(
+        "Violin Plot" = "violin-plots-group-order",
+        "Dot Plot" = "dot-plots-group-order",
+        "Cell Proportion" = "cell-proportion-plot-group-order"
+      )
+    } else if(legend_options_menu){
+      list(
+        "DimPlot" = "choose-number-of-columns",
+        "Feature Plot" = "feature-choose-ncol", 
+        "Violin Plot" = "violin-choose-ncol"
+      )
+    } else{
+      list()
+    }
+    
+    anchor <- plot_to_anchor[[plot_label]]
+    print("plot id")
+    print(id)
+    print("plot_type")
+    print(plot_label)
+    print("anchor")
+    print(anchor)
+    
     # UI for plot options ####
     # Elements are added to tagList if specified when calling the module ui
     # Attempted to use ifelse() for this; ifelse() did not print Shiny tags
@@ -207,7 +216,7 @@ plot_module_ui <- function(id,
           )
       } else NULL,
       
-    
+      
       ## Group by menu ####
       if (group_by == TRUE){
         # Choices for group by selection: should exclude "none" unless
@@ -238,9 +247,9 @@ plot_module_ui <- function(id,
               "Metadata to Group By"
             },
             a(id = ns("group_by_info_icon"),
-              icon("info-circle"), 
-              href=paste0("https://amc-heme.github.io/scExploreR/articles/"
-                          "full_documentation.html#",anchor),  
+              icon("info-circle"),
+              href=paste0("https://amc-heme.github.io/scExploreR/articles/",
+                          "full_documentation.html#", anchor),
               target="_blank")
             ),
           # Can select all options except "none"
@@ -257,7 +266,7 @@ plot_module_ui <- function(id,
         # Do not add element if FALSE
       } else NULL,
       bsTooltip(
-        id = ns("group_by_info_icon"), 
+        id = ns("plot_info_icon"), 
         title = "Select variable to group cells by.",
         placement = "top", 
         trigger = "hover",
@@ -285,9 +294,9 @@ plot_module_ui <- function(id,
               "Metadata to Split By"
             },
             a(id = ns("split_by_info_icon"),
-              icon("info-circle"), 
-              href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                          "full_documentation.html#", anchor),  
+              icon("info-circle"),
+              href=paste0("https://amc-heme.github.io/scExploreR/articles/",
+                          "full_documentation.html#", anchor),
               target="_blank")
           ),
           # Use vector of included metadata category names from the config file
@@ -349,9 +358,9 @@ plot_module_ui <- function(id,
             label = tagList(
               "Title options",
               a(id = ns("title_settings_info_icon"),
-                icon("info-circle"), 
-                href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                            "full_documentation.html#", anchor),  
+                icon("info-circle"),
+                href=paste0("https://amc-heme.github.io/scExploreR/articles/",
+                            "full_documentation.html#", anchor),
                 target="_blank")
             ),
               
@@ -442,9 +451,9 @@ plot_module_ui <- function(id,
             label = tagList(
               "Order of Groups on plot",
               a(id = ns("sort_groups_info_icon"),
-                icon("info-circle"), 
-                href=paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                            "full_documentation.html#", anchor),  
+                icon("info-circle"),
+                href=paste0("https://amc-heme.github.io/scExploreR/articles/",
+                            "full_documentation.html#", anchor),
                 target="_blank")
             ),
             # Can select all options except "none"
@@ -538,11 +547,11 @@ plot_module_ui <- function(id,
                   "Use default",
                   a(
                     id = ns("default_legend_ncol_info_icon"),
-                    icon("info-circle"), 
-                    href = 
-                      paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                    icon("info-circle"),
+                    href =
+                      paste0("https://amc-heme.github.io/scExploreR/articles/",
                              "full_documentation.html#", anchor
-                             ),  
+                             ),
                     target = "_blank"
                     )
                 ),
@@ -3333,8 +3342,81 @@ plot_module_server <- function(id,
                      }
                    })
                    }
-
-                 ## 8.5. Render Dynamic UI ####
+                ## 8.5 HTML Anchor links ####
+                 # observe({
+                 #   print("plot anchor")
+                 #   print(plot_to_anchor())
+                 # })
+                 # plot_to_anchor <- reactive({
+                 #   req(plot_switch())
+                 #   
+                 #   switch(plot_type,
+                 #          "scatterplot" = {
+                 #            if(group_by) {
+                 #              "scatterplots-group-by"
+                 #            } else if(split_by) {
+                 #              "scatterplots-split-by"
+                 #            }
+                 #          },
+                 #          "dimplot" = {
+                 #            if(group_by) {
+                 #              "DimPlots-group-by"
+                 #            } else if(split_by) {
+                 #              "DimPlots-split-by"
+                 #            } else if(title_menu) {
+                 #              "DimPlots-title-options"
+                 #            } else if(legend_options_menu) {
+                 #              "choose-number-of-columns"
+                 #            }
+                 #          },
+                 #          "dot" = {
+                 #            if(group_by) {
+                 #              "dot-plots-group-by"
+                 #            } else if(sort_groups_menu) {
+                 #              "dot-plots-group-order"
+                 #            }
+                 #          },
+                 #          "proportion" = {
+                 #            if(title_menu) {
+                 #              "cell-proportion-plot-title-options"
+                 #            } else if(sort_groups_menu) {
+                 #              "cell-proportion-plot-group-order"
+                 #            }
+                 #          },
+                 #          "feature" = {
+                 #            if(split_by) {
+                 #              "Feature-plots-split-by"
+                 #            } else if(title_menu) {
+                 #              "Feature-plots-title-options"
+                 #            } else if(legend_options_menu) {
+                 #              "feature-choose-ncol"
+                 #            }
+                 #          },
+                 #          "ridge" = {
+                 #            if(group_by){
+                 #              "ridge-plots-group-by"
+                 #            } 
+                 #          },
+                 #          "violin" = {
+                 #            if(sort_groups_menu) {
+                 #              "violin-plots-group-order"
+                 #            } else if(legend_options_menu){
+                 #              "violin-choose-ncol"
+                 #            }
+                 #          },
+                 #          "pie" = {
+                 #            if(title_menu){
+                 #              "metadata-pie-chart-title-options"
+                 #            }
+                 #          }
+                 #      )
+                 # })
+                 # 
+              # observe({
+              #   print("anchor:")
+              #   print(plot_to_anchor())
+              # })
+                 ## 8.6. Render Dynamic UI ####
                  output$ncol_slider <-
                    renderUI({
                      ncol_slider()
@@ -3384,7 +3466,20 @@ plot_module_server <- function(id,
                    #   suspendWhenHidden = FALSE
                    # )
                  }
-
+                 
+                 #render UI for help icon html anchors to full documentation 
+                 # output$plot_tab_anchor <- renderUI({
+                 #     a(
+                 #       id = ns("plot_info_icon"),
+                 #       icon("info-circle"),
+                 #       href = paste0(
+                 #         "https://amc-heme.github.io/scExploreR/articles/",
+                 #         "full_documentation.html#",
+                 #         plot_to_anchor()),
+                 #         target = "_blank"
+                 #       )
+                 # })
+                 #  
                  # 9. Separate Features Entry: Dynamic Update ------------------
                  # Observers for separate features only update for server
                  # instances where features_entered
