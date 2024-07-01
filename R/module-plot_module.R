@@ -123,62 +123,11 @@ plot_module_ui <- function(id,
   }
 
   if (ui_component == "options"){
-    
-    ## Plot Info Anchor List ####
-    plot_to_anchor <- if(group_by) {
-      list(
-        "DimPlot" = "DimPlots-group-by",
-        "Dot Plot" = "dot-plots-group-by",
-        "Scatterplot" = "scatterplots-group-by",
-        "Ridge" = "ridge-plots-group-by",
-        "Cell Proportion" = "cell-proportion-plot-proportion-metadata",
-        "Violin Plot" = "violin-plots-group-by"
-      )
-    } else if(split_by) {
-      list(
-        "Scatterplot" = "scatterplots-group-by",
-        "DimPlot" = "DimPlots-split-by",
-        "Feature Plot" = "Feature-plots-split-by",
-        "Cell Proportion" = "cell-proportion-plot-comparison-metadata",
-        "Violin Plot" = "violin-plots-split-by"
-      )
-    } else if(title_menu){
-      list(
-        "DimPlot" = "DimPlots-title-options",
-        "Feature Plot" = "Feature-plots-title-options",
-        "Cell Proportion" = "cell-proportion-plot-title-options",
-        "Ridge" = "ridge-title-options"
-      )
-    } else if(sort_groups_menu){
-      list(
-        "Violin Plot" = "violin-plots-group-order",
-        "Dot Plot" = "dot-plots-group-order",
-        "Cell Proportion" = "cell-proportion-plot-group-order"
-      )
-    } else if(legend_options_menu){
-      list(
-        "DimPlot" = "choose-number-of-columns",
-        "Feature Plot" = "feature-choose-ncol", 
-        "Violin Plot" = "violin-choose-ncol"
-      )
-    } else{
-      list()
-    }
-    
-    anchor <- plot_to_anchor[[plot_label]]
-    print("plot id")
-    print(id)
-    print("plot_type")
-    print(plot_label)
-    print("anchor")
-    print(anchor)
-    
     # UI for plot options ####
     # Elements are added to tagList if specified when calling the module ui
     # Attempted to use ifelse() for this; ifelse() did not print Shiny tags
     # properly and was unable to process NULL
     tagList(
-      
       # Add menus if their corresponding arguments are TRUE
       # Two-feature entry menu specific to scatterplot
       ## Scatterplot Features ####
@@ -221,8 +170,19 @@ plot_module_ui <- function(id,
       if (group_by == TRUE){
         # Choices for group by selection: should exclude "none" unless
         # explicitly included using group_by_include_none == TRUE
-      
         
+        #html anchors pointing to relevant section in full documentation based on plot type
+        plot_to_anchor <- 
+          list(
+            "DimPlot" = "DimPlots-group-by",
+            "Dot Plot" = "dot-plots-group-by",
+            "Scatterplot" = "scatterplots-group-by",
+            "Ridge" = "ridge-plots-group-by",
+            "Cell Proportion" = "cell-proportion-plot-proportion-metadata",
+            "Violin Plot" = "violin-plots-group-by"
+          )
+        #assign anchor based on plot_label
+        anchor <- plot_to_anchor[[plot_label]]
         group_by_choices <-
           if (group_by_include_none == FALSE){
             meta_choices()[!meta_choices() %in% "none"]
@@ -236,7 +196,7 @@ plot_module_ui <- function(id,
           group_by_choices <-
             group_by_choices[!group_by_choices %in% patient_colname()]
         }
-
+       
         # If TRUE, add element
         selectInput(
           inputId = ns("group_by"), 
@@ -275,6 +235,17 @@ plot_module_ui <- function(id,
 
       ## Split by menu ####
       if (split_by == TRUE){
+        #html anchors pointing to relevant section in full documentation based on plot type
+        plot_to_anchor <-
+          list(
+            "Scatterplot" = "scatterplots-group-by",
+            "DimPlot" = "DimPlots-split-by",
+            "Feature Plot" = "Feature-plots-split-by",
+            "Cell Proportion" = "cell-proportion-plot-comparison-metadata",
+            "Violin Plot" = "violin-plots-split-by"
+          )
+        #assign anchor based on plot_label
+        anchor <- plot_to_anchor[[plot_label]]
         # Define choices for split by menu
         # Exclude "none" if split_by_include_none == FALSE
         # Default behavior is not to exclude "none"
@@ -352,6 +323,16 @@ plot_module_ui <- function(id,
       # or none.
       # Available options are updated server-side
       if (title_menu == TRUE){
+        #html anchors pointing to relevant section in full documentation based on plot type
+        plot_to_anchor <-
+        list(
+          "DimPlot" = "DimPlots-title-options",
+          "Feature Plot" = "Feature-plots-title-options",
+          "Cell Proportion" = "cell-proportion-plot-title-options",
+          "Ridge" = "ridge-title-options"
+        )
+        #assign anchor based on plot_label
+        anchor <- plot_to_anchor[[plot_label]]
         tagList(
           selectInput(
             inputId = ns("title_settings"),
@@ -444,6 +425,15 @@ plot_module_ui <- function(id,
 
       ## Refactor groups (dot, violin plots) ####
       if (sort_groups_menu == TRUE){
+        #html anchors pointing to relevant section in full documentation based on plot type
+        plot_to_anchor <- 
+        list(
+          "Violin Plot" = "violin-plots-group-order",
+          "Dot Plot" = "dot-plots-group-order",
+          "Cell Proportion" = "cell-proportion-plot-group-order"
+        )
+        #assign anchor based on plot_label
+        anchor <- plot_to_anchor[[plot_label]]
         div(
           id = ns("sort_groups_menu"),
           selectInput(
@@ -525,6 +515,16 @@ plot_module_ui <- function(id,
 
       ## Legend options menu ####
       if (legend_options_menu == TRUE){
+        #html anchors pointing to relevant section in full documentation based on plot type
+        plot_to_anchor <-
+        list(
+          "DimPlot" = "choose-number-of-columns",
+          "Feature Plot" = "feature-choose-ncol", 
+          "Violin Plot" = "violin-choose-ncol"
+        )
+        #assign anchor based on plot_label
+        anchor <- plot_to_anchor[[plot_label]]
+        
         collapsible_panel(
           inputId = ns("legend_options_panel"),
           label = "Legend Options",
