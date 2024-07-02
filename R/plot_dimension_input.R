@@ -18,7 +18,6 @@
 plot_dimension_input <- 
   function(
     slider_input_id,
-    box_input_id,
     label = NULL,
     slider_min = 200,
     slider_max = 2000,
@@ -50,25 +49,6 @@ plot_dimension_input <-
           #Append 'px' to values on slider
           post = " px"
         )
-      ),
-      
-      #Text box
-      span(
-        style=
-          "display: inline-block; width: 60px; margin-bottom:0px; margin-left:5px;",
-        #Serach input: takes text as input, but does not update value until 
-        #user presses enter
-        searchInput(
-          inputId = box_input_id,
-          value = initial_value,
-          label=NULL
-        )
-      ),
-      
-      #px suffix after text box
-      span(
-        style = "display: inline-block;",
-        "px"
       )
     )
   }
