@@ -61,7 +61,7 @@ reduction_names.SingleCellExperiment <-
 #' Anndata objects do not have an exclusive structure for reductions. Reductions
 #' are stored in obsm, but matrices that are not reductions may exist in this
 #' slot. To use reduction_names with Anndata objects, a vector of reductions
-#' (python list) must be stored in `object.uns["SCUBA_reductions"]`. This method
+#' (python list) must be stored in `object.uns["scExploreR_reductions"]`. This method
 #' will return an error if this data is not present in the object.
 #'
 #' @export
@@ -74,8 +74,8 @@ reduction_names.AnnDataR6 <-
       c(object$uns[["scExploreR_reductions"]])
     } else {
       stop("For anndata objects, the obsm_keys that correspond to reductions ",
-           "must be defined in `uns$SCUBA_reductions`. If no reductions are ",
-           "present in obsm, uns$SCUBA_reductions should be NULL/None.")
+           "must be defined in `uns$scExploreR_reductions`. If no reductions are ",
+           "present in obsm, uns$scExploreR_reductions should be NULL/None.")
     }
   }
 

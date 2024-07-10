@@ -336,7 +336,6 @@ dge_tab_server <- function(id,
           valid_features = valid_features,
           hide_menu = hidden_category
           )
-
       # 3. Calculations ran after submit button is pressed ----------
       # Includes table, stats, and UMAP
       # Subset criteria (3.1) processed first,

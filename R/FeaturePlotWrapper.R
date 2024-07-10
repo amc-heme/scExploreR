@@ -43,7 +43,7 @@
 #' startup and upon changing datasets.
 #' @param ... A list of arguments to pass to FeaturePlot
 #'
-#' @example
+#' @examples
 #' FeaturePlotSingle(
 #'      object = prim.mono, 
 #'      feature = "XIST", 

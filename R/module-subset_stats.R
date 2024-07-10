@@ -14,8 +14,6 @@
 #' @param gene_selected In the correlation tab, the gene selected by the user 
 #' for computation.
 #'
-#' @return
-#'
 #' @noRd
 subset_stats_ui <- function(id,
                             tab = c("dge", "corr"),
@@ -181,8 +179,6 @@ subset_stats_ui <- function(id,
 #' @param thresholding_present only used in the DGE tab. If TRUE, the number of cells above and below the chosen expression threshold will be displayed.
 #' @param dge_simple_threshold only used in the DGE tab. If thresholding is 
 #' being used, the value of the threshold chosen is passed here to be displayed.
-#'
-#' @return
 #'
 #' @noRd
 subset_stats_server <- 
