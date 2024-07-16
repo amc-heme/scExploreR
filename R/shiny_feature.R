@@ -115,9 +115,6 @@ shiny_feature <- function(object,
   if (length(features_entered) == 1){
     # Single-feature plots ####
     # Use FeaturePlotSingle.R 
-    print("Super title value")
-    print(super_title)
-    
     feature_plot <-
       FeaturePlotSingle(
         object,
