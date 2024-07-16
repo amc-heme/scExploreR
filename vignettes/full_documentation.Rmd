@@ -33,15 +33,13 @@ library(glue)
 ```{r text_snippets, include = FALSE}
 # Functions to write repeating units of documentation
 include_legend_description <- 
-  "When checked, the legend will display to the right-hand side of the plot. 
-  when unchecked, the legend will be removed."
+  "Adds or removes legend displayed on the right side of the plot."
 
 manual_dimensions_description <- 'When enabled, an interface appears allowing 
-the user to change the height and width of the plot. The height and width are 
-entered in pixels, and may be chosen using the slider or the text box. When 
+the user to change the height and width of the plot in pixels using either a slider bar or text entry. When 
 entering a value in the text box, press return to update the plot with the 
-value. Downloaded plots will have the dimensions defined here, if "manually 
-adjust plot dimensions" is checked.'
+value. Downloaded plots will have the dimensions defined here if "manually 
+adjust plot dimensions" is checked. Otherwise defaults are...?'
 
 include_legend <- 
   function(){
@@ -63,14 +61,10 @@ download_button <-
   function(plot_type){
     text <- 
       glue(
-        'To download plots, press the download button at the bottom left hand 
+        'Plots are downloaded by clicking the download button at the bottom left 
          side of the "{plot_type} Specific Options" menu. A menu will appear 
-         with an option to choose whether to download a .png or .svg file, and 
-         a download button will appear beneath that button. Downloads in the 
-         .svg format can be edited with Adobe Illustrator or a similar program 
-         to add additional labels or modify the text or colors of the plot. 
-         All graphical elements added to the plot can be edited individually 
-         in an .svg editor.'
+         with an option to choose whether to download a .png or .svg file. Downloads in the 
+         .svg format can be edited with Adobe Illustrator or a similar program.'
         )
     
     tagList(
@@ -164,11 +158,11 @@ This setting applies to split plots only, and remains hidden until a selection i
 
 ### Label Groups
 
-When checked, labels will display above each cluster of cells according to the currently selected group by variable.
+Toggles on and off labels displayed above each cluster of cells according to the currently selected group by variable.
 
 ### Include Legend
 
-When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
+Adds or removes legend displayed on the right side of the plot.
 
 ```{r DimPlot Manual Dimensions and Download Button, echo = FALSE}
 manual_dimensions()
@@ -178,12 +172,12 @@ download_button(plot_type = "DimPlot")
 
 ## Feature Plots {#Feature-plots}
 
-Feature plots are dimensional reduction plots that are colored according to feature expression instead of categorical metadata. Among other things, feature plots can be used to see which cell types are expressing a feature and to what extent, or to visualize differences in expression between treatment groups when a split by metadata variable is selected.
+Feature plots are dimensional reduction plots that are colored according to feature values instead of categorical metadata. Among other things, feature plots can be used to see which cell types are expressing a feature and to what extent, or to visualize differences in expression between treatment groups when a split by metadata variable is selected.
 
 ```{=html}
 <!-- ### Metadata to Group By
 
-For feature plots, the group by selection menu controls the metadata to use for labeling cells, if
+For feature plots, the group by selection menu controls the metadata to use for labeling cells, if ...?
 
 This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right. -->
 ```
@@ -193,17 +187,17 @@ This menu sets a categorical metadata variable used to "split" cells into separa
 
 ### Choose Projection
 
-This menu is used to switch between different methods of dimensional reduction: cells are plotted according to the coordinates selected in the current projection method. Projection methods are added by the user setting up the browser, and the default projection is chosen by that user. Common projections include UMAP and t-SNE. For more information on each projection included with the current dataset, contact the user or organization that set up the browser.
+This menu is used to switch between visualizing different methods of dimensional reduction: cells are plotted according to the coordinates selected in the current projection method. Projection methods are calculated during dataset processing and added by the browser admin. Common projections include UMAP and t-SNE. For more information on each projection included with the current dataset, contact the user or organization that set up the browser.
 
 ### Title Options
 
-The title options menu is used to change or remove the titles appearing above each panel of the feature plot. When set to "default", the titles shown are equal to the feature (if one feature or multiple features are entered without a split by variable), or to the values in the split by metadata variable when one feature is entered with a split by variable. When set to "none", no titles are shown.
+The title options menu is used to change or remove the titles appearing above each panel of the feature plot. When set to "default", the titles shown are equal to the feature if one or multiple features are entered without a split by variable, or to the values in the split by metadata variable when one feature is entered with a split by variable. When set to "none", no titles are shown.
 
 The "Custom" option is available in all settings except for when multiple features are entered and a split by variable is chosen. When set to "custom", an interface will appear to customize titles for every panel displayed on the screen. Enter values and press "Update" to apply changes to the title. The `r icon("redo-alt")` buttons to the right of each title entry will revert that individual title to the default. Pressing "Reset" will revert the titles for all panels to the default.
 
 ### Display Options for Legend Title
 
-Used to control the title that displays above the legend to the right. When set to "Feature Name" (the default), the feature name will display above the legend. When set to "Expression", the legend will be set to "Expression". If "No Title" is selected, the title will be removed. This menu is hidden when multiple features are entered and a split by variable is chosen. In this case, no title will display above the legend.
+Used to control the title that displays above the legend. When set to "Feature Name" (the default), the feature name will display above the legend. When set to "Expression", the legend will be set to "Expression". If "No Title" is selected, the title will be removed. This menu is hidden when multiple features are entered and a split by variable is chosen. In this case, no title will display above the legend.
 
 ### Choose Number of Columns
 
@@ -213,11 +207,11 @@ Drag the slider to specify the number of columns to distribute the panels across
 
 ![](full_documentation-number_of_columns.png){.centered-image width="460"}
 
-If multiple features and a split by metadata variable are entered, the output plot will be fixed in a layout of n splits by m features. If you wish to have a custom layout for these plots, it is recommended to create a separate plot for each feature with the desired layout, download each plot, and then combine them using graphic design software.
+If multiple features and a split by metadata variable are entered, the output plot will be fixed in a layout of n splits by m features. If you wish to have a custom layout for these plots, it is recommended to create a separate plot for each feature with the desired layout, download each plot, and then combine them using graphic design software. A caveat of this approach is that the value scales may be different for each plot.
 
 ### Share Scale Between Features
 
-This setting is available when multiple features are entered with no split by variable. When enabled, all features will be plotted using the same scale. When disabled, each feature is plotted using a scale defined by the minimum and maximum expression values for that feature. This setting must be enabled to properly compare expression between different features.
+This setting is available when multiple features are entered with no split by variable. When enabled, all features will be plotted using the same scale. When disabled, each feature is plotted using a scale defined by the minimum and maximum values for that feature. This setting must be enabled to properly compare values between different features using a color scale.
 
 ### Display Feature Name Above Panels
 
@@ -225,15 +219,15 @@ This setting is available when one feature is entered and split by metadata is p
 
 ### Order Cells by Expression
 
-When checked, cells with the highest expression values will be plotted on top of the cells with lower expression values. When unchecked (the default), cells will be plotted in random order. Enabling this setting can help with features that are expressed in only a few cells in the sample, but when used with features that are expressed in many cells but with a low average expression, the extent of expression in the sample may be exaggerated. To avoid this, we recommend that feature plots be used alongside other means of visualization for expression, such as [violin plots](#violin-plots), [dot plots](#dot-plots), and [ridge plots](#ridge-plots).
+When checked, cells with the highest values will be plotted on top of the cells with lower expression values- essentially masking them. When unchecked (the default), cells will be plotted in random order giving no preference to either high or low value containing cells to be seen. Enabling this setting can help with features that are expressed in only a few cells in the dataset. Caution should be taken when visualizing features with detectable values in many cells but low average values. In these scenarios the values in the dataset may be exaggerated. To avoid this, we recommend that feature plots be used alongside other means of visualization, such as [violin plots](#violin-plots), [dot plots](#dot-plots), and [ridge plots](#ridge-plots).
 
 ### Label Groups
 
-When checked, labels will display above each cluster of cells according to the currently selected group by variable.
+Toggles group by variable labels above each set of cells on and off.
 
 ### Include Legend
 
-When checked, the legend will display to the right-hand side of the plot. when unchecked, the legend will be removed.
+Toggles appearance of a legend to the right side of the plot on and off.
 
 ```{r Feature Plot Manual Dimensions and Download Button, echo = FALSE}
 manual_dimensions()
