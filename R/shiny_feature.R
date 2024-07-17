@@ -161,7 +161,7 @@ shiny_feature <- function(object,
       # For the plotting package, we should consider setting the super_title to
       # a value instead of TRUE/FALSE, so the overall title can be modified.
       if (raw_feature_names == FALSE){
-        feature_title <-
+        feature_display_name <-
           hr_name(
             machine_readable_name = features_entered,
             assay_config = assay_config,
@@ -171,7 +171,7 @@ shiny_feature <- function(object,
         feature_plot <-
           feature_plot +
           plot_annotation(
-            title = feature_title
+            title = feature_display_name
             )
       } else {
         # Do nothing if raw_feature_names is TRUE
@@ -241,7 +241,7 @@ shiny_feature <- function(object,
           # Reduction: uses the input for reduction if it exists, otherwise
           # it is set to NULL and will use default settings.
           reduction = if (!is.null(reduction)) reduction else NULL
-        )
+          )
       
       #+
       # Clean up title: this changes the feature names on each plot
@@ -349,7 +349,7 @@ shiny_feature <- function(object,
     # There is no legend on blended feature plots, so legend position element 
     # is not shown
     
-    # A. Axis limits: use limits from full dataset if specified.
+    ## A. Axis limits: use limits from full dataset if specified. ####
     # Test if subset is present and if the corresponding original_limits 
     # reactive is truthy (i.e. both present and checked).
     if (is_subset & isTruthy(original_limits)){
@@ -362,7 +362,7 @@ shiny_feature <- function(object,
         )
     }
     
-    # B. split plot Layout: 2x2 or the Seurat default (4 column layout)
+    ## B. split plot Layout: 2x2 or the Seurat default (4 column layout) ####
     if (isTruthy(blend_layout)){
       if (blend_layout == "2col"){
         # Design: bounds of first three panels and legend
@@ -376,17 +376,46 @@ shiny_feature <- function(object,
       # For a four column layout, no change is necessary.
     }
     
-    # C. Default titles for blended feature plots
+    ## C. Default titles for blended feature plots ####
+    # Feature title formula for the four facets created: 
+    # first feature, second feature, "coexpression", and "coexpression scale"
+    
+    # Form display names for features based on whether 
+    # raw_feature_names is selected
+    # feature_display_names <-
+    #   if (raw_feature_names == FALSE){
+    #     
+    #   } else {
+    #     features_entered
+    #   }
+    
+    feature_display_names <-
+      sapply(
+        1:length(features_entered),
+        function(i){
+          if (raw_feature_names == FALSE){
+            hr_name(
+              machine_readable_name =
+                features_entered[i],
+              assay_config = assay_config,
+              # Use the assay label if provided in
+              # config app
+              use_suffix = TRUE
+            )
+          } else {
+            features_entered[i]
+          }
+        }
+      )
+    
+    # Apply titles 
     for (i in 1:4){
       if (i < 3){
         # Panel 1, 2: features entered (human-readable name)
         feature_plot[[i]] <-
           feature_plot[[i]] +
           ggtitle(
-            hr_name(
-              features_entered[i],
-              assay_config = assay_config
-            )
+            feature_display_names[i]
           )
       } else if (i == 3){
         # Panel 3: blend panel
@@ -401,18 +430,10 @@ shiny_feature <- function(object,
           ggtitle("Coexpression Scale") +
           labs(subtitle = "(Blend threshold: 0.5)") +
           xlab(
-            hr_name(
-              features_entered[1],
-              assay_config = assay_config,
-              use_suffix = FALSE
-              )
+            feature_display_names[1]
             ) +
           ylab(
-            hr_name(
-              features_entered[2],
-              assay_config = assay_config,
-              use_suffix = FALSE
-            )
+            feature_display_names[2]
           ) +
           theme(
             plot.title = 
