@@ -736,7 +736,7 @@ plot_module_ui <- function(id,
         
       ## Add/remove labels ####
       div( 
-        id = ns("label_div"),
+        id = ns("label_tooltip"),
         if (label_checkbox == TRUE){
           checkboxInput(
             inputId = ns("label"),
@@ -746,14 +746,15 @@ plot_module_ui <- function(id,
           )
         } else NULL
       ),
+      
       bsTooltip(
-        id = ns("label_div"), 
-        title = 
+        id = ns("label_tooltip"),
+        title =
           paste0("Label cells by metadata on plot. If checked, a menu will ",
                  "appear to select a variable for grouping cells. Labels will ",
                  "display in the center of each group in the chosen metadata ",
-                 "variable."), 
-        placement = "top", 
+                 "variable."),
+        placement = "top",
         trigger = "hover",
         options = NULL
       ),
@@ -2100,6 +2101,70 @@ plot_module_server <- function(id,
                    }
                  })
 
+                 ## 4.10. Disable label groups checkbox when group_by == split_by ####
+                 if (plot_type == "dimplot"){
+                   observe({
+                     req(plot_selections$group_by())
+                     req(plot_selections$split_by())
+                     
+                     if (plot_selections$group_by() == 
+                         plot_selections$split_by()){
+                       # Disable checkbox
+                       shinyjs::disable(
+                         id = "label"
+                         )
+                       
+                       # Change the tootip over the label checkbox
+                       # Remove existing tooptip, add a new one explaining why
+                       # the checkbox was disabled.
+                       # shinyBS::removeTooltip(
+                       #   session,
+                       #   id = ns("label_tooltip")
+                       #   )
+                       # shinyBS::addTooltip(
+                       #   session,
+                       #   id = ns("label_tooltip"),
+                       #   title = 
+                       #     paste0("Can't label cells when the group by and ",
+                       #            "split by selections are equal. To use ",
+                       #            "labels, please change either selection."),
+                       #   placement = "top", 
+                       #   trigger = "hover",
+                       #   options = NULL
+                       # )
+                     } else {
+                       shinyjs::enable(
+                         id = "label"
+                         )
+                       
+                       # Restore the default tooltip on the label checkbox
+                       # shinyBS::removeTooltip(
+                       #   session,
+                       #   id = ns("label_tooltip")
+                       #   )
+                       # shinyBS::addTooltip(
+                       #   session,
+                       #   id = ns("label_tooltip"),
+                       #   title = 
+                       #     paste0(
+                       #       "Label cells by metadata on plot. If checked, a ",
+                       #       "menu will appear to select a variable for ",
+                       #       "grouping cells. Labels will display in the ",
+                       #       "center of each group in the chosen metadata ",
+                       #       "variable."
+                       #     ), 
+                       #   placement = "top", 
+                       #   trigger = "hover",
+                       #   options = NULL
+                       #   )
+                       
+                       # Do not modify the value of the checkbox in other cases
+                       # (otherwise the checkbox would be set to TRUE each time
+                       # the user chages group_by and split_by)
+                     }
+                   })
+                 }
+                 
                  # 5. Process x-axis labels for dot plots----
                  if (plot_type == "dot"){
                    ## 5.1. Define default labels to show in menu ####
@@ -3629,7 +3694,13 @@ plot_module_server <- function(id,
                            object = object(),
                            group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
-                           show_label = plot_selections$label(),
+                           show_label = 
+                             if (plot_selections$group_by() == 
+                                 plot_selections$split_by()){
+                               FALSE
+                             } else {
+                               plot_selections$label()
+                             },
                            show_legend = plot_selections$legend(),
                            ncol = plot_selections$ncol(),
                            is_subset = is_subset(),
@@ -4033,7 +4104,14 @@ plot_module_server <- function(id,
                      # Only runs when the plot is enabled
                      req(plot_switch())
 
-                     if (plot_type %in% c("dimplot", "violin", "proportion")){
+                     # Violin and proportion plots: plots behave very strangely
+                     # when the group by and split by variables are the same.
+                     # Instead of displaying the plots, an error message is 
+                     # shown. This used to also apply to DimPlots, but doing so
+                     # wasn't warrented, and the issues cause with DimPlots 
+                     # ended up being due to `label` being TRUE on plots with 
+                     # identical group by and split by selections (issue #309)
+                     if (plot_type %in% c("violin", "proportion")){
                        validate(
                          need(
                            input$group_by != input$split_by,
@@ -4047,11 +4125,11 @@ plot_module_server <- function(id,
                                # For cell type proportion plots, group by and
                                # split by are renamed "proportions" and
                                # "proportion comparison", respectively.
-                                 glue(
-                                   'Invalid selections for {plot_label}:
-                                   "Proportions" and "Proportion Comparison"
-                                   must be different.'
-                                   )
+                               glue(
+                                 'Invalid selections for {plot_label}:
+                                 "Proportions" and "Proportion Comparison"
+                                 must be different.'
+                                 )
                                }
                            )
                          )

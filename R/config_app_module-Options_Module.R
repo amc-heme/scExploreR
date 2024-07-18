@@ -9,7 +9,9 @@
 #' of the assay, metadata variable, or reduction represented by the current
 #' options card.
 #' @param object the Seurat object for which config settings are being defined.
-#' @param optcard_type
+#' @param optcard_type the type of options card to create. Currently, cards can 
+#' be created for "assays", "metadata", or "reductions", with a different UI 
+#' for each. 
 #' @param card_name the name of the current assay/metadata variable/reduction,
 #' etc., represented by the current options card. This defaults to the id.
 #' @param restore_inputs a list of input values, used for restoring inputs
@@ -286,8 +288,6 @@ options_ui <- function(id,
 #' the module applies to. This is the id by default, and can be changed.
 #' @param dev_mode When TRUE, additional logs are printed to the console while
 #' the app runs. Set using run_config_app().
-#'
-#' @return
 #'
 #' @noRd
 options_server <-
