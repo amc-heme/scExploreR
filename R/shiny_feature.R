@@ -9,6 +9,11 @@
 #' @param assay_config the assays section of the config file, loaded at app 
 #' startup and upon changing datasets.
 #' @param split_by user-specified metadata variable for splitting plots.
+#' @param raw_feature_names a reactive variable indicating whether to remove 
+#' the modality key in the config file from feature names. When FALSE, the 
+#' modality key is removed, and when TRUE, it is retained. For example, a 
+#' feature from an assay/modality named "protein" will display as "protein_CD4" 
+#' instead of "CD4 (Surface Protein)" when raw_feature_names is TRUE.
 #' @param group_by the metadata column to use for showing labels on the plot, 
 #' if labels are enabled.
 #' @param blend Whether to use blended feature plots for feature co-expression. 
@@ -56,6 +61,7 @@ shiny_feature <- function(object,
                           features_entered, 
                           assay_config, 
                           split_by, 
+                          raw_feature_names,
                           group_by = NULL,
                           blend = FALSE, 
                           order = FALSE, 
@@ -107,47 +113,83 @@ shiny_feature <- function(object,
   )
   
   if (length(features_entered) == 1){
-    # Use FeaturePlotSingle.R for single-feature plots
-    FeaturePlotSingle(
-      object,
-      feature = features_entered,
-      split_by = if (split_by != "none") split_by else NULL,
-      # Labels for groups: passed to plot_feature
-      label_by = group_by,
-      # Colors: set to colors passed in the palette. 
-      # If NULL, Seurat defaults are used
-      colors = if (!is.null(palette)) palette,
-      show_title = show_title,
-      # Use custom titles if defined
-      custom_titles = if (!is.null(custom_titles)) custom_titles else NULL,
-      legend_title = legend_title,
-      super_title = super_title,
-      ncol = ncol,
-      reduction = 
-        if (!is.null(reduction)) reduction else NULL,
-      xlim = 
-        if (isTruthy(original_limits)){
-          xlim_orig
-        } else NULL,
-      ylim = 
-        if (isTruthy(original_limits)){
-          ylim_orig
-        } else NULL,
-      show_legend = show_legend,
-      # `...` arguments passed to plot_feature
-      label = show_label,
-      order = order,
-      assay_config = assay_config
-      )
+    # Single-feature plots ####
+    # Use FeaturePlotSingle.R 
+    feature_plot <-
+      FeaturePlotSingle(
+        object,
+        feature = features_entered,
+        split_by = if (split_by != "none") split_by else NULL,
+        # Labels for groups: passed to plot_feature
+        label_by = group_by,
+        # Colors: set to colors passed in the palette. 
+        # If NULL, Seurat defaults are used
+        colors = if (!is.null(palette)) palette,
+        show_title = show_title,
+        # Use custom titles if defined
+        custom_titles = if (!is.null(custom_titles)) custom_titles else NULL,
+        legend_title = legend_title,
+        super_title = super_title,
+        ncol = ncol,
+        reduction = 
+          if (!is.null(reduction)) reduction else NULL,
+        xlim = 
+          if (isTruthy(original_limits)){
+            xlim_orig
+          } else NULL,
+        ylim = 
+          if (isTruthy(original_limits)){
+            ylim_orig
+          } else NULL,
+        show_legend = show_legend,
+        # `...` arguments passed to plot_feature
+        label = show_label,
+        order = order,
+        assay_config = assay_config
+        )
+    
+    # scExplorer-specific modification of ggtitle for single feature plots
+    # with a split-by variable 
+    # *** DO NOT MOVE THIS TO scPLOTS ***
+    if (split_by != "none" & super_title == TRUE){
+      # In the case where a split-by variable is defined, custom_titles modifies
+      # the facet labels for the split-by levels, not the overall title with the
+      # feature name (super_title). If displayed, the overall title is currently 
+      # always set to the "raw" feature name with the modality key. The modality 
+      # key must be removed if raw_feature_names is FALSE.
+      
+      # For the plotting package, we should consider setting the super_title to
+      # a value instead of TRUE/FALSE, so the overall title can be modified.
+      if (raw_feature_names == FALSE){
+        feature_display_name <-
+          hr_name(
+            machine_readable_name = features_entered,
+            assay_config = assay_config,
+            use_suffix = TRUE
+            )
+        
+        feature_plot <-
+          feature_plot +
+          plot_annotation(
+            title = feature_display_name
+            )
+      } else {
+        # Do nothing if raw_feature_names is TRUE
+      }
+    }
+    
+    # Return single-feature feature plot
+    feature_plot
   } else if (
-    # Multi-feature plots without blend enabled
+    # Multi-feature plots ####
+    # (when there are multiple features, or 2 with blend not enabled)
     (length(features_entered) == 2 & !isTruthy(blend))|
     (length(features_entered) > 2)
-    ) {
+    ){
     # Function used for plot depends on split_by choice
     if (split_by == "none"){
-      # Use feature plot wrapper for multiple feature plots with 
-      # no split_by category 
+      ## Multi-feature plots, no split by variable ####
+      # Use MultiFeatureSimple from featurePlotWrapper.R
       MultiFeatureSimple(
         object,
         features = features_entered,
@@ -179,7 +221,8 @@ shiny_feature <- function(object,
         assay_config = assay_config
       )
     } else {
-      # If a split_by category is defined, use Seurat FeaturePlot function
+      ## Multi-feature plots, with split_by variable ####
+      # Use FeaturePlot function (SCUBA/scPlots)
       feature_plot <-
         SCUBA::plot_feature(
           # Object or subset
@@ -197,8 +240,8 @@ shiny_feature <- function(object,
           label = show_label,
           # Reduction: uses the input for reduction if it exists, otherwise
           # it is set to NULL and will use default settings.
-          reduction = if(!is.null(reduction)) reduction else NULL
-        )
+          reduction = if (!is.null(reduction)) reduction else NULL
+          )
       
       #+
       # Clean up title: this changes the feature names on each plot
@@ -268,7 +311,7 @@ shiny_feature <- function(object,
       feature_plot
     }
   } else if (length(features_entered) == 2 & isTruthy(blend)){
-    # Blended feature plot
+    # Blended feature plot ####
     
     # Palette for blending: fill to red and blue if NULL
     # "lightgrey" is the Seurat default color used when neither feature is expressed 
@@ -306,7 +349,7 @@ shiny_feature <- function(object,
     # There is no legend on blended feature plots, so legend position element 
     # is not shown
     
-    # A. Axis limits: use limits from full dataset if specified.
+    ## A. Axis limits: use limits from full dataset if specified. ####
     # Test if subset is present and if the corresponding original_limits 
     # reactive is truthy (i.e. both present and checked).
     if (is_subset & isTruthy(original_limits)){
@@ -319,7 +362,7 @@ shiny_feature <- function(object,
         )
     }
     
-    # B. split plot Layout: 2x2 or the Seurat default (4 column layout)
+    ## B. split plot Layout: 2x2 or the Seurat default (4 column layout) ####
     if (isTruthy(blend_layout)){
       if (blend_layout == "2col"){
         # Design: bounds of first three panels and legend
@@ -333,17 +376,46 @@ shiny_feature <- function(object,
       # For a four column layout, no change is necessary.
     }
     
-    # C. Default titles for blended feature plots
+    ## C. Default titles for blended feature plots ####
+    # Feature title formula for the four facets created: 
+    # first feature, second feature, "coexpression", and "coexpression scale"
+    
+    # Form display names for features based on whether 
+    # raw_feature_names is selected
+    # feature_display_names <-
+    #   if (raw_feature_names == FALSE){
+    #     
+    #   } else {
+    #     features_entered
+    #   }
+    
+    feature_display_names <-
+      sapply(
+        1:length(features_entered),
+        function(i){
+          if (raw_feature_names == FALSE){
+            hr_name(
+              machine_readable_name =
+                features_entered[i],
+              assay_config = assay_config,
+              # Use the assay label if provided in
+              # config app
+              use_suffix = TRUE
+            )
+          } else {
+            features_entered[i]
+          }
+        }
+      )
+    
+    # Apply titles 
     for (i in 1:4){
       if (i < 3){
         # Panel 1, 2: features entered (human-readable name)
         feature_plot[[i]] <-
           feature_plot[[i]] +
           ggtitle(
-            hr_name(
-              features_entered[i],
-              assay_config = assay_config
-            )
+            feature_display_names[i]
           )
       } else if (i == 3){
         # Panel 3: blend panel
@@ -358,18 +430,10 @@ shiny_feature <- function(object,
           ggtitle("Coexpression Scale") +
           labs(subtitle = "(Blend threshold: 0.5)") +
           xlab(
-            hr_name(
-              features_entered[1],
-              assay_config = assay_config,
-              use_suffix = FALSE
-              )
+            feature_display_names[1]
             ) +
           ylab(
-            hr_name(
-              features_entered[2],
-              assay_config = assay_config,
-              use_suffix = FALSE
-            )
+            feature_display_names[2]
           ) +
           theme(
             plot.title = 

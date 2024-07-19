@@ -1508,7 +1508,7 @@ plot_module_server <- function(id,
                          # Only continue if menu_type is not NULL (when custom
                          # titles is selected)
                          req(menu_type())
-
+                         
                          if (input$title_settings == "custom"){
                            # Determine current menu structure
                            if (menu_type() == "single"){
@@ -1522,25 +1522,56 @@ plot_module_server <- function(id,
                              custom_vector()
                            }
                          } else {
-                           # Otherwise, define a default title based on the 
-                           # features entered, and whether the user requests to 
-                           # show the modality key in front of features instead
-                           # of the suffix defined in the config file.
-                           if (raw_feature_names() == FALSE){
-                             sapply(
-                               features_entered(),
-                               function(feature, assay_config){
-                                 hr_name(
-                                   machine_readable_name = feature, 
-                                   assay_config = assay_config,
-                                   use_suffix = TRUE
-                                 )
-                               },
-                               assay_config()
-                             )
+                           # If custom titles is FALSE, additional logic is 
+                           # used to set a default title. If the title involves
+                           # the names of features entered, additional 
+                           # transformations are involved.
+                           
+                           # Determine if the default title involves the use
+                           # of feature names. feature_based_title is used to 
+                           # determine operations to peform based on the 
+                           # results of the previous conditionals
+                           if (plot_type == "feature"){
+                             if (plot_selections$split_by() != "none"){
+                               # When split_by is enabled, the title is based 
+                               # on the split by groups, not the feature name
+                               feature_based_title <- FALSE
                              } else {
-                             features_entered()
+                               # Otherwise, the title is based on the feature
+                               # name
+                               feature_based_title <- TRUE
                              }
+                           } else {
+                             feature_based_title <- TRUE
+                           }
+                           
+                           # For defaults that involve the use of feature 
+                           # names, the assay keys will be removed. In other
+                           # cases, NULL is returned, which will prompt 
+                           # plotting functions to use their defaults.
+                           if (feature_based_title == TRUE){
+                             if (raw_feature_names() == FALSE){
+                               # For feature based default titles, the 
+                               # feature names are modified to remove the 
+                               # assay key, unless the "raw" feature names 
+                               # checkbox is TRUE.
+                               sapply(
+                                 features_entered(),
+                                 function(feature, assay_config){
+                                   hr_name(
+                                     machine_readable_name = feature,
+                                     assay_config = assay_config,
+                                     use_suffix = TRUE
+                                   )
+                                 },
+                                 assay_config()
+                               )
+                               } else {
+                               features_entered()
+                               }
+                           } else {
+                             NULL
+                           }
                            }
                        })
                    }
@@ -3638,6 +3669,7 @@ plot_module_server <- function(id,
                            object = object(),
                            features_entered = features(),
                            assay_config = assay_config(),
+                           raw_feature_names = raw_feature_names(),
                            # Group by: influences label placement
                            group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
