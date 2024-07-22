@@ -191,7 +191,7 @@ FeaturePlotSingle<-
     }
   
   # If a split.by (metadata) column is defined, create a plot for each group 
-  ps <- list()
+  plots <- list()
   
   if (length(groups) > 1){
     # Fetch metadata table for referencing split_by groups
@@ -208,7 +208,7 @@ FeaturePlotSingle<-
       subset_indx <- meta_table[, split_by] == group
       subset_cells <- all_cells[subset_indx]
       
-      p <- 
+      plot <- 
         SCUBA::plot_feature(
           object, 
           features = feature, 
@@ -232,30 +232,30 @@ FeaturePlotSingle<-
         # If show_title is TRUE, use either default or custom titles
         if (is.null(custom_titles)){
           # custom_titles is NULL: use default behavior (group names)
-          p <-
-            p +
+          plot <-
+            plot +
             ggtitle(group)
         } else {
           # custom_titles is not NULL: use custom titles 
           # (custom titles should be a character vector)
-          p <-
-            p +
+          plot <-
+            plot +
             ggtitle(custom_titles[i])
         }
       } else {
         # If show_title is FALSE, remove titles
-        p <-
-          p +
+        plot <-
+          plot +
           ggtitle(NULL)
       }
 
-      ps[[group]] <- p
+      plots[[group]] <- plot
       
     }
     
     plot <- 
       wrap_plots(
-        ps, 
+        plots, 
         ncol = ncol, 
         guides = "collect"
         ) 
@@ -300,7 +300,7 @@ FeaturePlotSingle<-
     # Metadata column is not defined:
     # If only one group or if split_by is undefined, create one plot 
     # for the object provided.
-    p <- 
+    plot <- 
       suppressMessages(
         SCUBA::plot_feature(
           object, 
@@ -332,8 +332,8 @@ FeaturePlotSingle<-
       if (is.null(custom_titles)){
         # custom_titles is NULL: use default behavior
         # Default behavior for single-group plots: use feature title
-        p <-
-          p +
+        plot <-
+          plot +
           ggtitle(
             hr_name(
               machine_readable_name = feature,
@@ -343,14 +343,14 @@ FeaturePlotSingle<-
       } else {
         # custom_titles is not NULL: use custom titles
         # Custom titles should be a single-element character vector in this case
-        p <-
-          p +
+        plot <-
+          plot +
           ggtitle(custom_titles)
       }
     } else {
       # If show_title is FALSE, remove titles
-      p <-
-        p +
+      plot <-
+        plot +
         ggtitle(NULL)
     }
     
@@ -358,14 +358,14 @@ FeaturePlotSingle<-
     
     
     # Apply title theme  
-    p <-
-      p +
+    plot <-
+      plot +
       theme(
         plot.title = 
           element_text(size = 14, face = "bold")
       )
     
-    return(p)
+    return(plot)
       
   }
   
@@ -535,7 +535,7 @@ MultiFeatureSimple <-
     }
     
     # Create one plot for each group (feature)
-    ps <- list()
+    plots <- list()
     
     # 3. Determine legend limits -----------------------------------------------
     # If scales are the same across plots, gather unified legend limits
@@ -609,7 +609,7 @@ MultiFeatureSimple <-
         } 
       
       # 4.2. Create plot 
-      p <- 
+      plot <- 
         SCUBA::plot_feature(
           object, 
           features = group, 
@@ -630,8 +630,8 @@ MultiFeatureSimple <-
       # Legend scale: applied to each plot in all cases (as opposed to being
       # applied to all plots after Patchwork object is created)
       suppressMessages(
-        p <-
-          p +
+        plot <-
+          plot +
           scale_color_gradientn(
             plot_legend_title, 
             # colors: use `colors` argument, or the ith color of the 
@@ -655,8 +655,8 @@ MultiFeatureSimple <-
         # If show_title is TRUE, use either default or custom titles
         if (is.null(custom_titles)){
           # custom_titles is NULL: use default behavior (group names)
-          p <-
-            p +
+          plot <-
+            plot +
             ggtitle(
               # Remove assay key from feature name
               hr_name(
@@ -668,23 +668,23 @@ MultiFeatureSimple <-
         } else {
           # custom_titles is not NULL: use custom titles 
           # (custom titles should be a character vector)
-          p <-
-            p +
+          plot <-
+            plot +
             ggtitle(custom_titles[i])
         }
       } else {
         # If show_title is FALSE, remove titles
-        p <-
-          p +
+        plot <-
+          plot +
           ggtitle(NULL)
       }
       
-      ps[[group]] <- p
+      plots[[group]] <- plot
     }
     
     plot <- 
       wrap_plots(
-        ps, 
+        plots, 
         ncol = ncol, 
         # `guides`:
         # collect: gather scales from all plots. 
