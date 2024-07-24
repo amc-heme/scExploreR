@@ -95,9 +95,10 @@ dge_tab_ui <- function(id,
               )
             ),
           
-          # uiOutput(
-          #   outputId = ns("umap_options")
-          #   ),
+          # Panel used for further filtering of DGE table
+          dge_table_filtering_ui(
+            id = ns("dge_table_filtering")
+            ),
           
           # Checkbox to return positive markers only (shown for both modes)
           checkboxInput(
@@ -176,7 +177,11 @@ dge_tab_ui <- function(id,
               plotOutput(
                 outputId = ns("umap"),
                 height = "600px"
-              )
+              ),
+              
+              verbatimTextOutput(
+                outputId = ns("dge_filter_status")
+                )
               
               # # TEMP: display reactive variables used in this tab while developing
               # "Test Selection Output",
@@ -848,12 +853,17 @@ dge_tab_server <- function(id,
                  
                   return(dge_table)
                 })
-            
-            print("DGE table colnanes")
-            print(colnames(dge_table))
 
             dge_table
           })
+      
+      ## 3.10.a. Table filtering interface ####
+      dge_table_filters <-
+        dge_table_filtering_server(
+          id = "dge_table_filtering",
+          # Uses table from 3.9 to populate interface
+          dge_table = dge_table_content
+          )
       
       ## 3.10. DGE table, as DT for viewing ####
       dge_DT_content <-
@@ -1157,6 +1167,18 @@ dge_tab_server <- function(id,
             },
           contentType = "text/csv"
           ) # End downloadHandler
+      
+      # Dev mode: status of filter table values
+      if (session$userData$dev_mode == TRUE){
+        output$dge_filter_status <-
+          renderPrint({
+            lapply(
+              dge_table_filters,
+              # Unpack all reactive values in the list
+              function(x){x()}
+            )
+          })
+      }
       
       # 6. Testing: export raw DGE table ---------------------------------------
       exportTestValues(
