@@ -12,140 +12,169 @@ dge_table_filtering_ui <- function(id){
         inputId = ns("filter_ui_panel"),
         label = "Filter Table",
         active = TRUE,
+        
         # Filter by group
-        # VituralSelectInput: like PickerInput, but with a more pleasant 
+        # Use a transparent collapsible panel to cut down on clutter in filter
         # interface
-        # https://sa-si-dev.github.io/virtual-select/#/?id=get-started
-        # Use zIndex to ensure the dropdown displays above other inputs
-        # https://github.com/dreamRs/shinyWidgets/issues/701
-        shinyWidgets::virtualSelectInput(
-          inputId = ns("group"),
-          label = "Filter by Group",
-          # Choices are populated in the server
-          choices = NULL, 
-          selected = character(0),
-          multiple = TRUE,
-          search = TRUE,
-          optionsCount = 5,
-          zIndex = 4
+        collapsible_panel(
+          inputId = ns("group_header"),
+          label = "Filter by Group/Class",
+          transparent = TRUE,
+          size = "s",
+          # VituralSelectInput: like PickerInput, but with a more pleasant 
+          # interface
+          # https://sa-si-dev.github.io/virtual-select/#/?id=get-started
+          # Use zIndex to ensure the dropdown displays above other inputs
+          # https://github.com/dreamRs/shinyWidgets/issues/701
+          shinyWidgets::virtualSelectInput(
+            inputId = ns("group"),
+            label = NULL,
+            # Choices are populated in the server
+            choices = NULL, 
+            selected = character(0),
+            multiple = TRUE,
+            search = TRUE,
+            optionsCount = 5,
+            zIndex = 4
+            )
           ),
         
         # By feature
-        shiny::selectizeInput(
-          inputId = ns("feature"),
-          multiple = TRUE,
+        collapsible_panel(
+          inputId = ns("feature_header"),
           label = "Filter by Feature:",
-          choices = NULL,
-          selected = NULL,
-          # Add remove button to inputs
-          options = list(
-            'plugins' = list('remove_button'),
-            # Do not allow user to input features not
-            # in the list of options
-            'create'= FALSE
+          transparent = TRUE,
+          size = "s",
+          shiny::selectizeInput(
+            inputId = ns("feature"),
+            multiple = TRUE,
+            label = NULL,
+            choices = NULL,
+            selected = NULL,
+            # Add remove button to inputs
+            options = list(
+              'plugins' = list('remove_button'),
+              # Do not allow user to input features not
+              # in the list of options
+              'create'= FALSE
+            )
           )
         ),
         
         # Average Expression filter interface
+        # Collapsible panel is within a container to show/hide the whole
+        # interface based on the presence/absence of the average expression column
         div(
           id = ns("expr_ui"),
-          # Expression range slider
-          shiny::sliderInput(
-            inputId = ns("expr"),
+          collapsible_panel(
+            inputId = ns("expr_header"),
             label = "Filter by Average Expression:",
-            # Values are updated in the server function based on the table
-            min = 0,
-            max = 1,
-            value = c(0, 1),
-            round = 4
+            transparent = TRUE,
+            size = "s",
+            # Expression range slider
+            shiny::sliderInput(
+              inputId = ns("expr"),
+              label = NULL,
+              # Values are updated in the server function based on the table
+              min = 0,
+              max = 1,
+              value = c(0, 1),
+              round = 4
             ),
-          
-          # Text entry for range
-          # Displays if checkbox below is enabled
-          shinyWidgets::awesomeCheckbox(
-            inputId = ns("expr_manual_enable"),
-            label = "Manually Enter Range:",
-            status = "primary"
+            
+            # Text entry for range
+            # Displays if checkbox below is enabled
+            shinyWidgets::awesomeCheckbox(
+              inputId = ns("expr_manual_enable"),
+              label = "Manually Enter Range:",
+              status = "primary"
             ),
-          
-          # Display a min and max checkbox side-by-side
-          hidden(
-            tags$div(
-              id = ns("expr_manual_ui"),
-              class = "compact-options-container",
-              style = 'display: inline-block;',
-              div(
-                # Use column() to display inputs side-by-side
-                # column() uses bootstrap layouts for placing components
-                shiny::column(
-                  width = 6,
-                  style = "padding: 0px 5px;",
-                  shinyWidgets::searchInput(
-                    inputId = ns("expr_min_text"),
-                    label = "Min Expr"
-                  )
-                ),
-                shiny::column(
-                  width = 6,
-                  style = "padding: 0px 5px;",
-                  shinyWidgets::searchInput(
-                    inputId = ns("expr_max_text"),
-                    label = "Max Expr"
+            
+            # Display a min and max checkbox side-by-side
+            hidden(
+              tags$div(
+                id = ns("expr_manual_ui"),
+                class = "compact-options-container",
+                style = 'display: inline-block;',
+                div(
+                  # Use column() to display inputs side-by-side
+                  # column() uses bootstrap layouts for placing components
+                  shiny::column(
+                    width = 6,
+                    style = "padding: 0px 5px;",
+                    shinyWidgets::searchInput(
+                      inputId = ns("expr_min_text"),
+                      label = "Min Expr"
+                    )
+                  ),
+                  shiny::column(
+                    width = 6,
+                    style = "padding: 0px 5px;",
+                    shinyWidgets::searchInput(
+                      inputId = ns("expr_max_text"),
+                      label = "Max Expr"
                     )
                   )
                 )
               )
             )
-          ),
+          )
+        ),
         
         # LFC filter interface
         div(
           id = ns("lfc_ui"),
-          # LFC range slider
-          shiny::sliderInput(
-            inputId = ns("lfc"),
+          collapsible_panel(
+            inputId = ns("lfc_header"),
             label = "Filter by Log-2 Fold Change Value:",
-            # Values are updated in the server function based on the table
-            min = 0,
-            max = 1,
-            value = c(0, 1),
-            round = 4,
-            # Ticks are often unhelpful due to the non-integer range of 
-            # the slider (ticks will appear in non-intuitive decimal increments)
-            ticks = FALSE
-          ),
-          
-          # Text entry of LFC range
-          # Displays if checkbox below is enabled
-          shinyWidgets::awesomeCheckbox(
-            inputId = ns("lfc_manual_enable"),
-            label = "Manually Enter Range:",
-            status = "primary"
-          ),
-          
-          # Display a min and max checkbox side-by-side
-          hidden(
-            tags$div(
-              id = ns("lfc_manual_ui"),
-              class = "compact-options-container",
-              style = 'display: inline-block;',
-              div(
-                # Use column() to display inputs side-by-side
-                # column() uses bootstrap layouts for placing components
-                shiny::column(
-                  width = 6,
-                  style = "padding: 0px 5px;",
-                  shinyWidgets::searchInput(
-                    inputId = ns("lfc_min_text"),
-                    label = "Min LFC"
-                  )
-                ),
-                shiny::column(
-                  width = 6,
-                  style = "padding: 0px 5px;",
-                  shinyWidgets::searchInput(
-                    inputId = ns("lfc_max_text"),
-                    label = "Max LFC"
+            transparent = TRUE,
+            size = "s",
+            # LFC range slider
+            shiny::sliderInput(
+              inputId = ns("lfc"),
+              label = NULL,
+              # Values are updated in the server function based on the table
+              min = 0,
+              max = 1,
+              value = c(0, 1),
+              round = 4,
+              # Ticks are often unhelpful due to the non-integer range of 
+              # the slider (ticks will appear in non-intuitive decimal increments)
+              ticks = FALSE
+              ),
+            
+            # Text entry of LFC range
+            # Displays if checkbox below is enabled
+            shinyWidgets::awesomeCheckbox(
+              inputId = ns("lfc_manual_enable"),
+              label = "Manually Enter Range:",
+              status = "primary"
+              ),
+            
+            # Display a min and max checkbox side-by-side
+            hidden(
+              tags$div(
+                id = ns("lfc_manual_ui"),
+                class = "compact-options-container",
+                style = 'display: inline-block;',
+                div(
+                  # Use column() to display inputs side-by-side
+                  # column() uses bootstrap layouts for placing components
+                  shiny::column(
+                    width = 6,
+                    style = "padding: 0px 5px;",
+                    shinyWidgets::searchInput(
+                      inputId = ns("lfc_min_text"),
+                      label = "Min LFC"
+                    )
+                  ),
+                  shiny::column(
+                    width = 6,
+                    style = "padding: 0px 5px;",
+                    shinyWidgets::searchInput(
+                      inputId = ns("lfc_max_text"),
+                      label = "Max LFC"
+                      )
                     )
                   )
                 )
@@ -154,80 +183,77 @@ dge_table_filtering_ui <- function(id){
           ),
         
         # AUC slider
-        shiny::sliderInput(
-          inputId = ns("auc"),
+        collapsible_panel(
+          inputId = ns("auc_header"),
           label = "Filter by AUC Value:",
-          # Values are updated in the server function based on the table
-          min = 0,
-          max = 1,
-          value = c(0,1),
-          step = 0.05,
-          round = 2
-        ),
+          transparent = TRUE,
+          size = "s",
+          shiny::sliderInput(
+            inputId = ns("auc"),
+            label = NULL,
+            # Values are updated in the server function based on the table
+            min = 0,
+            max = 1,
+            value = c(0,1),
+            step = 0.05,
+            round = 2
+            )
+          ),
         
-        # Pval threshold 
-        shiny::selectInput(
-          inputId = ns("pval"),
-          label = "p-value Threshold:",
-          choices = 
-            c(1, 
-              0.05, 
-              0.01, 
-              0.001, 
-              1e-04, 
-              1e-05, 
-              1e-06,
-              1e-07,
-              1e-08,
-              1e-09,
-              1e-10, 
-              1e-20, 
-              1e-50, 
-              1e-100),
-          selected = 1
-        ),
-        
-        # Adjusted p-value
-        shiny::selectInput(
-          inputId = ns("pval_adj"),
-          label = "Adjusted p-value Threshold:",
-          choices = 
-            c(1, 
-              0.05, 
-              0.01, 
-              0.001, 
-              1e-04, 
-              1e-05, 
-              1e-06,
-              1e-07,
-              1e-08,
-              1e-09,
-              1e-10, 
-              1e-20, 
-              1e-50, 
-              1e-100),
-          selected = 1
-        ),
+        # Filter by p-value
+        collapsible_panel(
+          inputId = ns("pval_header"),
+          label = "Filter by Adjusted p-value:",
+          transparent = TRUE,
+          size = "s",
+          # Adjusted p-value
+          shiny::selectInput(
+            inputId = ns("pval_adj"),
+            label = "Choose a p-value Threshold:",
+            choices = 
+              c(1,
+                0.05, 
+                0.01, 
+                0.001, 
+                1e-04, 
+                1e-05, 
+                1e-06,
+                1e-07,
+                1e-08,
+                1e-09,
+                1e-10, 
+                1e-20, 
+                1e-50, 
+                1e-100),
+            selected = 1
+            )
+          ),
         
         # Percent in group slider
-        shiny::sliderInput(
-          inputId = ns("pct_in"),
-          label = "Filter by Percentage in Group:",
-          min = 0,
-          max = 100,
-          value = c(0, 100),
-          step = 5,
-          post = " %"
-        ),
-        
-        shiny::sliderInput(
-          inputId = ns("pct_out"),
-          label = "Filter by Percentage Outside Group:",
-          min = 0,
-          max = 100,
-          value = c(0, 100),
-          step = 5,
-          post = " %"
+        collapsible_panel(
+          inputId = ns("pct_header"),
+          label = "Filter by Percentage Within/Outside Group/Class:",
+          transparent = TRUE,
+          size = "s",
+          shiny::sliderInput(
+            inputId = ns("pct_in"),
+            label = "Filter by Percentage in Group/Class:",
+            min = 0,
+            max = 100,
+            value = c(0, 100),
+            step = 5,
+            post = " %"
+            ),
+          
+          shiny::sliderInput(
+            inputId = ns("pct_out"),
+            label = "Filter by Percentage Outside Group/Class:",
+            min = 0,
+            max = 100,
+            value = c(0, 100),
+            step = 5,
+            post = " %"
+            )
           )
         )
       )
@@ -382,7 +408,7 @@ dge_table_filtering_server <-
               session = session,
               inputId = "group",
               choices = all_groups,
-              selected = all_groups
+              selected = character(0)
               )
           }
           
@@ -453,10 +479,12 @@ dge_table_filtering_server <-
         # 5. Conditional processing of inputs ####
         # `expr_value` is Named to avoid namespace collisions with 
         # expr(), expression()
-        ## 5.1. Average expression ####
+        ## 5.1. Average expression return value ####
         expr_value <- 
           reactive({
             req(dge_table())
+            
+            print("avgExpr Input processing")
             
             # Conditional values 
             if ("avgExpr" %in% colnames(dge_table())){
@@ -466,6 +494,11 @@ dge_table_filtering_server <-
                 # Manual (text) entry: return values of max and min, using 
                 # NULL for undefined entries (NULL will result in no filtering
                 # being applied)
+                print("input$expr_min_text")
+                print(input$expr_min_text)
+                print("input$expr_max_text")
+                print(input$expr_max_text)
+                
                 min <- 
                   if (isTruthy(input$expr_min_text)){
                     as.numeric(input$expr_min_text)
@@ -525,7 +558,7 @@ dge_table_filtering_server <-
               }
           })
         
-        ## 5.2. LFC ####
+        ## 5.2. LFC return value ####
         lfc_value <- 
           reactive({
             req(dge_table())
@@ -585,6 +618,7 @@ dge_table_filtering_server <-
                 )
               }
             } else {
+              print("lfc not in table. Returning NULL/NULL for lfc")
               # If the average expression column is not in the table, 
               # return NULL for both the min and the max.
               list(
@@ -602,8 +636,7 @@ dge_table_filtering_server <-
             `expression` = expr_value,
             `lfc` = lfc_value,
             `auc` = reactive({input$auc}),
-            # Pval, pval_Adj sliders must be converted to numeric before return
-            `pval` = reactive({as.numeric(input$pval)}),
+            # pval_adj selection must be converted to numeric before returning
             `pval_adj` = reactive({as.numeric(input$pval_adj)}),
             `pct_in` = reactive({input$pct_in}),
             `pct_out` = reactive({input$pct_out})

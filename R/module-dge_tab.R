@@ -857,7 +857,7 @@ dge_tab_server <- function(id,
             dge_table
           })
       
-      ## 3.10.a. Table filtering interface ####
+      ## 3.10a. Table filtering interface ####
       dge_table_filters <-
         dge_table_filtering_server(
           id = "dge_table_filtering",
@@ -865,16 +865,144 @@ dge_tab_server <- function(id,
           dge_table = dge_table_content
           )
       
+      ## 3.10b. Filter dge table based on filtering inputs ####
+      filtered_dge_table <-
+        reactive(
+          label = "DGE: Filter DGE Table",
+          {
+          # Runs only if a DGE test has completed
+          req(dge_table_content())
+          # Store the current state of the dge table
+          # If none of the filter operations below run, the table will be 
+          # returned from the function unchanged.
+          dge_table <- dge_table_content()
+          
+          # Filter by group
+          if (isTruthy(dge_table_filters$group())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                group %in% dge_table_filters$group()
+              )
+          }
+          
+          # Filter by feature
+          if (isTruthy(dge_table_filters$feature())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                feature %in% dge_table_filters$feature()
+              )
+          }
+          
+          # Filter based on average expression within group
+          if (isTruthy(dge_table_filters$expression())){
+            if (!is.null(dge_table_filters$expression()$min) & 
+                !is.null(dge_table_filters$expression()$max)){
+              print("dge_table_filters$expression()")
+              print(dge_table_filters$expression())
+              
+              # If both values are defined, filter based on both values
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(avgExpr >= dge_table_filters$expression()$min &
+                                avgExpr <= dge_table_filters$expression()$max)
+            } else if (!is.null(dge_table_filters$expression()$min) & 
+                       is.null(dge_table_filters$expression()$max)){
+              # Min is defined but not the max
+              # filter based on the min
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(avgExpr >= dge_table_filters$expression()$min)
+            } else if (is.null(dge_table_filters$expression()$min) & 
+                       !is.null(dge_table_filters$expression()$max)){
+              # Max is defined but not the min 
+              # filter based on the max
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(avgExpr <= dge_table_filters$expression()$max)
+            }
+          }
+          
+          # Filter based on lfc values
+          if (isTruthy(dge_table_filters$lfc())){
+            if (!is.null(dge_table_filters$lfc()$min) & 
+                !is.null(dge_table_filters$lfc()$max)){
+              print("dge_table_filters$lfc()")
+              print(dge_table_filters$lfc())
+              
+              # If both values are defined, filter based on both values
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(log2FC >= dge_table_filters$lfc()$min &
+                                log2FC <= dge_table_filters$lfc()$max)
+            } else if (!is.null(dge_table_filters$lfc()$min) & 
+                       is.null(dge_table_filters$lfc()$max)){
+              # Min is defined but not the max
+              # filter based on the min
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(log2FC >= dge_table_filters$lfc()$min)
+            } else if (is.null(dge_table_filters$lfc()$min) & 
+                       !is.null(dge_table_filters$lfc()$max)){
+              # Max is defined but not the min 
+              # filter based on the max
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(log2FC <= dge_table_filters$lfc()$max)
+            }
+          }
+          
+          # Filter based on AUC value
+          if (isTruthy(dge_table_filters$auc())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(auc >= dge_table_filters$auc()[1] &
+                              auc <= dge_table_filters$auc()[2])
+          }
+          
+          # Filter by adjusted p-value
+          if (isTruthy(dge_table_filters$pval_adj())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                pval_adj <= dge_table_filters$pval_adj()
+              )
+          }
+          
+          # Filter based on percent expression within group/class
+          if (isTruthy(dge_table_filters$pct_in())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                pct_in >= dge_table_filters$pct_in()[1] &
+                  pct_in <= dge_table_filters$pct_in()[2]
+              )
+          }
+          
+          # Filter based on percent expression outside group/class
+          if (isTruthy(dge_table_filters$pct_out())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                pct_out >= dge_table_filters$pct_out()[1] &
+                  pct_out <= dge_table_filters$pct_out()[2]
+              )
+          }
+          
+          dge_table
+        })
+      
       ## 3.10. DGE table, as DT for viewing ####
       dge_DT_content <-
         eventReactive(
-          dge_table_content(),
+          filtered_dge_table(),
           label = "DGE: DT Generation",
           {
-            print("DGE 3.10: DGE table")
+            print("DGE DT table")
             
             # Add Genecards link for each gene
-            table <- dge_table_content()
+            table <- filtered_dge_table()
             # Vector of feature names to pass to links
             features <- table$feature 
             
@@ -956,7 +1084,7 @@ dge_tab_server <- function(id,
           ignoreNULL = FALSE,
           label = "DGE: UMAP",
           {
-            print("DGE 3.11: UMAP")
+            print("DGE: UMAP")
 
             # Determine value of ncol
             # ncol depends on number of panels.
@@ -1019,9 +1147,9 @@ dge_tab_server <- function(id,
       main_panel_title <-
         eventReactive(
           dge_umap(),
-          label = "DGE 3.12: Main Panel Title",
+          label = "DGE: Main Panel Title",
           {
-            print("DGE 3.12: Main Panel Title")
+            print("DGE: Main Panel Title")
             
             if (thresholding_present()){
               print("Conditional: thresholding present")
@@ -1054,9 +1182,9 @@ dge_tab_server <- function(id,
       umap_title <-
         eventReactive(
           main_panel_title(),
-          label = "DGE 3.13: UMAP Title",
+          label = "DGE: UMAP Title",
           {
-            print("DGE 3.13: UMAP Title")
+            print("DGE: UMAP Title")
             # UI returned depends on DGE mode
             if (test_selections()$dge_mode == "mode_dge"){
               # DGE Title
@@ -1083,7 +1211,7 @@ dge_tab_server <- function(id,
       ## 3.14. Hide Spinners ####
       observeEvent(
         umap_title(),
-        label = "DGE 3.14: Hide Spinner",
+        label = "DGE: Hide Spinner",
         {
           # Show UI (do not namespace ID for showElement)
           showElement(
@@ -1160,7 +1288,7 @@ dge_tab_server <- function(id,
             },
           content = function(file) {
             write.csv(
-              dge_table_content(),
+              filtered_dge_table(),
               file = file,
               row.names = FALSE
               )
@@ -1180,9 +1308,12 @@ dge_tab_server <- function(id,
           })
       }
       
-      # 6. Testing: export raw DGE table ---------------------------------------
+      # 6. Testing -------------------------------------------------------------
       exportTestValues(
-        dge_table = dge_table_content()
+        # Raw DGE table produced by scDE
+        dge_table = dge_table_content(),
+        # Filtered DGE table
+        filtered_dge_table = filtered_dge_table()
       )
       
       }
