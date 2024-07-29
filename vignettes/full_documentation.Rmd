@@ -110,9 +110,12 @@ Allows for the selection of color palettes for categorical and continuous data. 
 
 Use the "Subset Options" menu to filter cells in the dataset based on specified criteria, selection of which in these menus will include, not exclude, cells defined by the criteria. These selections will be inherited by all plots.
 
-Each categorical metadata variable can be used to filter the dataset. This selection is controlled for each variable independently, including with the use of the "select all" and "remove filter" button. Criteria defined by each menu are combined using `AND` syntax, meaning that only cells simultaneously meeting all filter criteria will be returned upon subsetting. Menus for the other variables will update based on possible combinations made in the current menu, and invalid combinations will appear in gray. Press "Apply Subset" to create the subset from the current selection.
+The dataset can be filtered by categorical metadata, feature expression, or advanced subsetting (see [Advanced (String) Subsetting](#advanced-subsetting)). Select the "add filter" button to access the filter type menu. When choosing categorical filter, any metadata variable can be chosen along with a single value or combination of values. Select  "select all" to include all values in a filter, and select "deselect all" to clear all choices. Once a filter has been chosen, the "confirm filter" button must be selected before moving back to the filter menu. 
+When choosing a feature expression filter, the numeric filter menu offers the options to filter cells in the dataset that express the chosen feature at levels above or below a defined threshold, or within a specified range of expression.
+Criteria defined by each menu are combined using `AND` syntax, meaning that only cells with metadata selected in one menu, and metadata selected in a second menu will be returned upon subsetting. Menus for the other variables will update based on possible combinations made in the current menu, and invalid combinations will appear in gray. To select a value that is currently invalid, clear or edit selections made in other filter menus, and select a different combination. Press "Apply Subset" to create the subset from the current selection.
 
-### Advanced (String) Subsetting
+
+### Advanced (String) Subsetting {#advanced-subsetting}
 
 If the "String subsetting (advanced mode)" checkbox is enabled, a text entry will appear where subset criteria may be defined via R code. This interface allows for the entry of additional types of criteria, such as:
 
