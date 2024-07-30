@@ -117,7 +117,7 @@ Criteria defined by each menu are combined using `AND` syntax, meaning that only
 
 ### Advanced (String) Subsetting {#advanced-subsetting}
 
-If the "String subsetting (advanced mode)" checkbox is enabled, a text entry will appear where subset criteria may be defined via R code. This interface allows for the entry of additional types of criteria, such as:
+If the "Advanced Subsetting" option is chosen for filtering, a text entry box will appear where subset criteria may be defined via R code. This interface allows for the entry of additional types of criteria, such as:
 
 -   Cells matching a threshold of numeric metadata expression
 
