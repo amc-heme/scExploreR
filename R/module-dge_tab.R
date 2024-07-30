@@ -857,7 +857,8 @@ dge_tab_server <- function(id,
             dge_table
           })
       
-      ## 3.10a. Table filtering interface ####
+      ## 3.10. Filter and display table ####
+      ### 3.10.1. Table filtering interface ####
       dge_table_filters <-
         dge_table_filtering_server(
           id = "dge_table_filtering",
@@ -866,7 +867,7 @@ dge_tab_server <- function(id,
           test_selections = test_selections
           )
       
-      ## 3.10b. Filter dge table based on filtering inputs ####
+      ### 3.10.2. Filter dge table based on filtering inputs ####
       filtered_dge_table <-
         reactive(
           label = "DGE: Filter DGE Table",
@@ -994,7 +995,7 @@ dge_tab_server <- function(id,
           dge_table
         })
       
-      ## 3.10. DGE table, as DT for viewing ####
+      ### 3.10.3. Display filtered table using DT package ####
       dge_DT_content <-
         eventReactive(
           filtered_dge_table(),
