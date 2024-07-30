@@ -78,7 +78,7 @@ collapsible_panel <-
           # Use header class computed above
           class = header_class, 
           # Header text of panel: use user-defined label
-          if (!is.null(label)) as.character(label)
+          if (!is.null(label)) tags$span(label)
           ),
       
       # Pass all content to div tag

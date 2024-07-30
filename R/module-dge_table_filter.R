@@ -18,7 +18,13 @@ dge_table_filtering_ui <- function(id){
         # interface
         collapsible_panel(
           inputId = ns("group_header"),
-          label = "Filter by Group/Class",
+          label = 
+            tagList(
+              # Shows "Group" or class based on whether marker selection of 
+              # differential expression was performed (display managed in server)
+              tags$span(class = "dge-filter-show-if-group", "Filter by Group:"),
+              tags$span(class = "dge-filter-show-if-class", "Filter by Class:"),
+              ),
           transparent = TRUE,
           size = "s",
           # VituralSelectInput: like PickerInput, but with a more pleasant 
@@ -195,7 +201,7 @@ dge_table_filtering_ui <- function(id){
             min = 0,
             max = 1,
             value = c(0,1),
-            step = 0.05,
+            step = 0.01,
             round = 2
             )
           ),
@@ -232,26 +238,51 @@ dge_table_filtering_ui <- function(id){
         # Percent in group slider
         collapsible_panel(
           inputId = ns("pct_header"),
-          label = "Filter by Percentage Within/Outside Group/Class:",
+          label = 
+            tagList(
+              # Shows "Group" or class based on whether marker selection of 
+              # differential expression was performed (display managed in server)
+              span(class = "dge-filter-show-if-group", "Filter by Percentage Within Group:"),
+              span(class = "dge-filter-show-if-class", "Filter by Percentage Within Class:"),
+            ),
           transparent = TRUE,
           size = "s",
           shiny::sliderInput(
             inputId = ns("pct_in"),
-            label = "Filter by Percentage in Group/Class:",
+            label = NULL,
             min = 0,
             max = 100,
             value = c(0, 100),
-            step = 5,
+            step = 1,
             post = " %"
+            )
+          ),
+        
+        # Percentage outside group slider
+        collapsible_panel(
+          inputId = ns("pct_header"),
+          label = 
+            tagList(
+              # Shows "Group" or class based on whether marker selection of 
+              # differential expression was performed (display managed in server)
+              span(
+                class = "dge-filter-show-if-group", 
+                "Filter by Percentage Outside Group:"
+                ),
+              span(
+                class = "dge-filter-show-if-class", 
+                "Filter by Percentage Outside Class:"
+                )
             ),
-          
+          transparent = TRUE,
+          size = "s",
           shiny::sliderInput(
             inputId = ns("pct_out"),
-            label = "Filter by Percentage Outside Group/Class:",
+            label = NULL,
             min = 0,
             max = 100,
             value = c(0, 100),
-            step = 5,
+            step = 1,
             post = " %"
             )
           )
@@ -265,11 +296,16 @@ dge_table_filtering_ui <- function(id){
 #' @param id Used to match server function to ui function.
 #' 
 #' @param dge_table the table produced in the DGE tab.
+#'
+#' @param test_selections Used to determine the "mode" of DGE (marker selection 
+#' or differential expression), and display UI elements accordingly. "Group" 
+#' or "Class" is shown in the filter interface UI based on the DGE mode.
 #' 
 #' @noRd
 dge_table_filtering_server <- 
   function(id,
-           dge_table){
+           dge_table,
+           test_selections){
     moduleServer(
       id,
       function(input, output, session){
@@ -288,6 +324,38 @@ dge_table_filtering_server <-
               id = target,
               anim = TRUE
             )
+          }
+        })
+        
+        # 2. Display "Group" or "Class" in UI based on DGE mode ####
+        observe({
+          req(dge_table())
+          # Updates in response to changes in the dge table only (after running
+          # new tests)
+          dge_table()
+          
+          # Targets for showing/hiding UI
+          group_selector <- "[class *= 'dge-filter-show-if-group']"
+          class_selector <- "[class *= 'dge-filter-show-if-class']"
+          
+          if (isolate(test_selections()$dge_mode) == "mode_marker"){
+            # Marker selection: show "Class", not "Group"
+            shinyjs::showElement(
+              selector = class_selector
+              )
+            
+            shinyjs::hideElement(
+              selector = group_selector
+              )
+          } else if (isolate(test_selections()$dge_mode) == "mode_dge"){
+            # Differential expression: show "Group", not "Class"
+            shinyjs::showElement(
+              selector = group_selector
+              )
+            
+            shinyjs::hideElement(
+              selector = class_selector
+              )
           }
         })
         
