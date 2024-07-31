@@ -46,7 +46,7 @@ dge_test_selections_ui <-
             'Expression" is used to identify genes that are expressed ',
             'differently in one group of cells vs. another.'
             ), 
-        placement = "top", 
+        placement = "bottom", 
         trigger = "hover",
         options = NULL
       )
@@ -168,8 +168,9 @@ dge_test_selections_ui <-
                 a(
                   id = ns("marker_groups_tooltip"),
                   icon("info-circle"), 
-                  href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                              "full_documentation.html"),  
+                  href = 
+                    paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                           "full_documentation.html"),  
                   target = "_blank"
                   )
               ),

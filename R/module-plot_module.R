@@ -475,7 +475,7 @@ plot_module_ui <- function(id,
           inputId = ns("legend_options_panel"),
           label = "Legend Options",
           active = TRUE,
-          class = "legend-options-panel",
+          class = "collapsible-panel-secondary",
           checkboxInput(
             inputId = ns("legend"),
             label = "Include Legend",
