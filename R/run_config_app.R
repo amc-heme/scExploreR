@@ -181,7 +181,34 @@ run_config <-
           )
         }
     }
+#Check for NA values in expression data
+    if(inherits(object, "SummarizedExperiment")) {
+      expr_data <- assay(object, "counts")
+    } else if(inherits(object, "Seurat")) {
+      expr_data <- GetAssayData(object, assay = "RNA", slot = "data")
+    } else if(inherits(object, "AnnData")) {
+      expr_data <- object$X
+    } else {
+      stop(NULL)
+    }
+    
+    if(anyNA(expr_data)) {
+   stop(
+   "Warning: NA values detected in expression data. This will cause errors in DE analysis."
+   )
+    }
 
+    # showNotification(
+    #   ui = 
+    #     icon_notification_ui(
+    #       icon_name = "skull-crossbones",
+    #       'Warning: NA values detected in expression data. This will cause errors in DE analysis.',
+    #       tags$br(),
+    #       'Please clean your data to ensure accurate results.'
+    #     ),
+    #   duration = NULL,
+    #   session = session
+    # )
     # Test if the loaded object is of a supported class; if not, return an error
     check_dataset(
       object,
