@@ -15,17 +15,42 @@ dge_test_selections_ui <-
   # UI components: 
   # 1. Test to perform (DGE or Marker identification) --------------------------
   mode_menu <- 
-    selectInput(
-      inputId = ns("mode"),
-      label = "Choose test to perform",
-      # User chooses either dge or marker identification.
-      # Human- and computer- readable names given for both options
-      choices = 
-        c("Marker Identification" = "mode_marker",
-          "Differential Expression" = "mode_dge"),
-      #Marker selection on clusters is displayed at startup
-      selected = "mode_marker"
+    tagList(
+      selectInput(
+        inputId = ns("mode"),
+        label = 
+          tagList(
+            "Choose Test to Perform:",
+            a(
+              id = ns("mode_tooltip"),
+              icon("info-circle"), 
+              href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                            "full_documentation.html"),  
+              target = "_blank"
+            )
+          ),
+        # User chooses either dge or marker identification.
+        # Human- and computer- readable names given for both options
+        choices = 
+          c("Marker Identification" = "mode_marker",
+            "Differential Expression" = "mode_dge"),
+        #Marker selection on clusters is displayed at startup
+        selected = "mode_marker"
+      ),
+      shinyBS::bsTooltip(
+        id = ns("mode_tooltip"), 
+        title = 
+          paste0(
+            '"Marker Identification" is used to identify genes that ',
+            'distinguish a group of cells from other groups. "Differential ',
+            'Expression" is used to identify genes that are expressed ',
+            'differently in one group of cells vs. another.'
+            ), 
+        placement = "top", 
+        trigger = "hover",
+        options = NULL
       )
+    )
   
   # 2. Choice of group by variable ---------------------------------------------
   # Default group_by choice: equal to first metadata category defined in 
@@ -39,57 +64,15 @@ dge_test_selections_ui <-
       # Input IDs for two modes must be named differently 
       # to avoid namespace collisions
       inputId = ns("group_by"),
-      # Label: changes when mode is switched to DGE
-      label = "Choose metadata to use for marker identification:",
+      # Label: created in server based on dge_mode
+      label = NULL,
       # Remove "none" from selectable options to group by
       choices = initial_choices,
       # Avoids bugs in the event the user passes a list of choices that only
       # has "none" in it (which would have a length of zero after it is removed)
       selected = 
         if (length(initial_choices) > 0) meta_choices()[1] else character(0)
-      )
-  
-  #uiOutput(outputId = ns("group_by_menu"))
-    
-    # Both menus are created (to use a separate ID for DGE group by and marker 
-    # identification group by menus), and the relevant menu is shown based
-    # on the selected mode
-    # Container for both menus created so they can be both shown/hidden 
-    # based on whether thresholding is selected.
-    # div(
-    #   id = "group_by_ui",
-    #   selectInput(
-    #     # Input IDs for two modes must be named differently 
-    #     # to avoid namespace collisions
-    #     inputId = ns("group_by_marker"),
-    #     label = 
-    #       "Choose metadata to use for marker identification:",
-    #     # Remove "none" and "best_response" from selectable
-    #     # options to group by
-    #     choices =
-    #       meta_choices()[!meta_choices() %in% "none"],
-    #     # At startup, marker selection is ran with clusters 
-    #     # as the group by variable.
-    #     selected = "clusters"
-    #   ),
-    #   # DGE group by menu is hidden at the start (marker selection is 
-    #   # the default mode)
-    #   hidden(
-    #     selectInput(
-    #       # Input IDs for two modes must be named differently 
-    #       # to avoid namespace collisions
-    #       inputId = ns("group_by_dge"),
-    #       label = 
-    #         "Choose metadata to use for differential gene expression:",
-    #       # Remove "none" and "best_response" from selectable 
-    #       # options to group 
-    #       choices = meta_choices()[!meta_choices() %in% "none"],
-    #       # Clusters is selected by default
-    #       selected = "clusters"
-    #       )
-    #     )
-    #   )
-    
+    )
 
   # 3. Classes/Groups Menu -----------------------------------------------------
   #Selection of marker classes for group by variable, or groups if mode==dge.
@@ -109,7 +92,7 @@ dge_test_selections_ui <-
           # Put choices beside one another in two-column format
           pickerInput(
             inputId = ns("group_1"),
-            label = "Group 1",
+            label = "Group 1:",
             # Choices are populated in the server
             choices = NULL, 
               #group_choices(),
@@ -127,7 +110,7 @@ dge_test_selections_ui <-
           ),
           pickerInput(
             inputId = ns("group_2"),
-            label = "Group 2",
+            label = "Group 2:",
             choices = NULL, 
               #group_choices(),
             selected = character(0),
@@ -176,28 +159,21 @@ dge_test_selections_ui <-
         # group by metadata category to include as classes in 
         # marker identification. 
         div(
-          id = ns("marker_classes_ui"),
+          id = ns("marker_groups_ui"),
           pickerInput(
-            inputId = ns("marker_class_selection"),
-            label = "Choose classes to include in marker computation",
-            # Choices: if there are groups defined in the 
-            # config file for the metadata category, build a list 
-            # with the defined groups for the menu
+            inputId = ns("marker_group_selection"),
+            label = 
+              tagList(
+                "Choose Marker Groups:",
+                a(
+                  id = ns("marker_groups_tooltip"),
+                  icon("info-circle"), 
+                  href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                              "full_documentation.html"),  
+                  target = "_blank"
+                  )
+              ),
             choices = NULL,
-              # if (
-              #   !is.null(metadata_config()[[group_by_initial]]$groups)){
-              #   # Use group_metadata_choices() to generate list
-              #   group_metadata_choices(
-              #     group_info =
-              #       metadata_config()[[group_by_initial]]$groups,
-              #     choices =
-              #       unique_metadata()[[group_by_initial]]
-              #   )
-              # } else {
-              #   # Otherwise, use the group_choices() vector
-              #   group_choices()
-              # },
-            
             # Select all unique values at startup
             selected = NULL, 
               #group_choices(),
@@ -207,22 +183,23 @@ dge_test_selections_ui <-
               "size" = 10,
               # Define max options to show at
               # a time to keep menu from being cut off
-              "actions-box"=TRUE
+              "actions-box" = TRUE
               )
           ), # End pickerInput
           shinyBS::bsTooltip(
-            id = ns("marker_classes_ui"), 
-            title = "Please choose at least 3 groups. To compare 2 groups, use Differential Expression.", 
+            id = ns("marker_groups_tooltip"), 
+            title = 
+              paste0(
+                'Groups are formed from the values selected. Please choose ',
+                'at least 3 groups. To compare 2 ',
+                'groups, select "Differential Expression".'
+              ), 
             placement = "top", 
             trigger = "hover",
             options = NULL
-          ),
+          )
         )
-        
       )
-      
-      
-      
     )
     
     #uiOutput(outputId = ns("classes_menu"))
@@ -303,7 +280,7 @@ dge_test_selections_server <-
         
         updatePickerInput(
           session = session,
-          inputId = "marker_class_selection",
+          inputId = "marker_group_selection",
           choices =
             # If groups are defined for the current group by category
             # in the config file, display the list of grouped choices
@@ -342,14 +319,14 @@ dge_test_selections_server <-
                 session = session,
                 inputId = "group_by",
                 label = 
-                  "Choose metadata to use for differential gene expression:"
+                  "Choose Metadata to use for Differential Gene Expression Groups:"
                 )
             } else if (dge_mode() == "mode_marker"){
               updateSelectInput(
                 session = session,
                 inputId = "group_by",
                 label = 
-                  "Choose metadata to use for marker identification:"
+                  "Choose Metadata to use for Marker Groups:"
                 )
             }
           })
@@ -381,7 +358,7 @@ dge_test_selections_server <-
         observe({
           standard_groups_id <- "standard_groups_ui"
           threshold_groups_id <- "threshold_groups_ui"
-          marker_classes_id <- "marker_classes_ui"
+          marker_classes_id <- "marker_groups_ui"
           
           # Hide all initially, then show based on the test requested
           for (id in 
@@ -408,7 +385,7 @@ dge_test_selections_server <-
                 )
               }
             } else if (dge_mode() == "mode_marker"){
-              # For marker selection: display UI for defining markers
+              # For marker selection: display UI for defining marker groups
               showElement(
                 id = marker_classes_id
               )
@@ -464,7 +441,7 @@ dge_test_selections_server <-
         # grouped choices
         grouped_group_choices <-
           reactive(
-            label = "Test Selections: Group Valid Marker/Group Choices",
+            label = "Test Selections: Group Valid DGE Group Choices",
             {
               if (
                 !is.null(metadata_config()[[group_by_category()]]$groups)
@@ -484,7 +461,7 @@ dge_test_selections_server <-
         ## 3.5. Update groups/classes menus ####
         ### 3.5.1. Update groups menu ####
         observe(
-          label = "Test Selection: Update groups Menu",
+          label = "Test Selection: Update Groups Menu",
           {
             req(dge_mode())
             
@@ -525,7 +502,7 @@ dge_test_selections_server <-
             if (dge_mode() == "mode_marker"){
               updatePickerInput(
                 session = session,
-                inputId = "marker_class_selection",
+                inputId = "marker_group_selection",
                 choices = grouped_group_choices(),
                 selected = group_choices()
                 )
@@ -741,14 +718,14 @@ dge_test_selections_server <-
               }
             })
         
-        # Selected marker classes: process input if marker 
+        # Selected marker groups: process input if marker 
         # identification is the mode selected
-        classes_selected <- 
+        groups_selected <- 
           reactive({
             # dge_mode() must be defined to avoid errors
             if (!is.null(dge_mode())){
               if (dge_mode() == "mode_marker"){
-                input$marker_class_selection
+                input$marker_group_selection
                 } else NULL
               }
             })
@@ -800,7 +777,7 @@ dge_test_selections_server <-
                         # conditional statements in DGE tab, but set to "none"
                         `group_mode` = "none",
                         `group_by` = group_by_category(),
-                        `classes_selected` = classes_selected()
+                        `groups_selected` = groups_selected()
                         )
                       )
                   }

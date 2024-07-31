@@ -128,14 +128,14 @@ test_that("Marker Identification With a Subset Works", {
   
   app$waitForShiny()
   
-  # Options for group_by and marker_class_selection should not have changed,
+  # Options for group_by and marker_group_selection should not have changed,
   expect_equal(
     app$getValue("object_dge-test_selections-group_by"), 
     "condensed_cell_type"
     )
   expect_equal(
     app$getValue(
-      "object_dge-test_selections-marker_class_selection",
+      "object_dge-test_selections-marker_group_selection",
       ),
     list(
       "B Cells", 

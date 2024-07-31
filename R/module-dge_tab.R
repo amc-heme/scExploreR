@@ -42,13 +42,22 @@ dge_tab_ui <- function(id,
           "Use the dropdown menus below to select the desired test, the groups 
           to use, and the subset on which to perform the test."
           ),
-            
+          
+          # collapsible_panel(
+          #   inputId = ns("dge_test_interface"), 
+          #   label = "", 
+          #   active = TRUE, 
+          #   {
+          #     
+          #   }),
+          
+          
           # Menus to choose test (DGE or marker identification and 
           # classes/groups to include). Uses dge_test_selection module
-            dge_test_selections_ui(
-              id = ns("test_selections"),
-              meta_choices = meta_choices
-              ),
+          dge_test_selections_ui(
+            id = ns("test_selections"),
+            meta_choices = meta_choices
+            ),
           
           # Menus to choose subset (placed within collapsible panel)
           collapsible_panel(
@@ -481,7 +490,7 @@ dge_tab_server <- function(id,
                     test_selections()$group_2)
                 } else if (test_selections()$dge_mode == "mode_marker"){
                   choices <- 
-                    test_selections()$classes_selected
+                    test_selections()$groups_selected
                 } else {
                     warning("DGE 3.5: Unrecognized DGE mode")
                   }
@@ -1019,11 +1028,12 @@ dge_tab_server <- function(id,
             
             # Rename "group" column based on the test selected
             group_rename <- 
-              if (test_selections()$dge_mode == "mode_dge") {
-                "Group"
-              } else if (test_selections()$dge_mode == "mode_marker") {
-                  "Class"
-              }
+              "Group"
+              # if (test_selections()$dge_mode == "mode_dge") {
+              #   "Group"
+              # } else if (test_selections()$dge_mode == "mode_marker") {
+              #     "Class"
+              # }
             
             # Renamed using base R syntax because new name is dynamic
             names(table)[names(table) == "group"] <-
