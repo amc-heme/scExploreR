@@ -43,28 +43,23 @@ dge_tab_ui <- function(id,
           to use, and the subset on which to perform the test."
           ),
           
-          # collapsible_panel(
-          #   inputId = ns("dge_test_interface"), 
-          #   label = "", 
-          #   active = TRUE, 
-          #   {
-          #     
-          #   }),
-          
-          
-          # Menus to choose test (DGE or marker identification and 
-          # classes/groups to include). Uses dge_test_selection module
-          dge_test_selections_ui(
-            id = ns("test_selections"),
-            meta_choices = meta_choices
-            ),
-          
-          # Menus to choose subset (placed within collapsible panel)
           collapsible_panel(
-            inputId = ns("subset_selections_collapsible"), 
-            label = "Subset Options", 
-            active = TRUE, 
-            {
+            inputId = ns("dge_test_interface"),
+            label = "Test Options",
+            active = TRUE,
+            # Menus to choose test (DGE or marker identification and 
+            # classes/groups to include). Uses dge_test_selection module
+            dge_test_selections_ui(
+              id = ns("test_selections"),
+              meta_choices = meta_choices
+              ),
+            
+            # Menus to choose subset (placed within collapsible panel)
+            collapsible_panel(
+              inputId = ns("subset_selections_collapsible"),
+              label = "Subset Options",
+              active = TRUE,
+              class = "collapsible-panel-secondary",
               subset_selections_ui(
                 id = ns("subset_selections"),
                 unique_metadata = unique_metadata,
@@ -72,7 +67,28 @@ dge_tab_ui <- function(id,
                 auto_dictionary_path = auto_dictionary_path,
                 string_subsetting_href = string_subsetting_href
                 )
-              }),
+              ),
+            
+            # Checkbox to return positive markers only (shown for both modes)
+            checkboxInput(
+              inputId = ns("pos"),
+              label = "Positive Markers Only",
+              value = TRUE
+            ),
+            
+            # Submit button
+            actionButton(
+              inputId = ns("submit"),
+              label = "Update Test",
+              style = "display: block; width: 100%;",
+              class = "button-primary"
+              )
+            ),
+          
+          # Panel used for further filtering of DGE table
+          dge_table_filtering_ui(
+            id = ns("dge_table_filtering")
+            ),
           
           # UMAP options panel (hidden, displays after plot is created)
           hidden(
@@ -102,24 +118,6 @@ dge_tab_ui <- function(id,
                   )
                 )
               )
-            ),
-          
-          # Panel used for further filtering of DGE table
-          dge_table_filtering_ui(
-            id = ns("dge_table_filtering")
-            ),
-          
-          # Checkbox to return positive markers only (shown for both modes)
-          checkboxInput(
-            inputId = ns("pos"),
-            label = "Positive Markers Only",
-            value = TRUE
-            ),
-          
-          # Submit button
-          actionButton(
-            inputId = ns("submit"),
-            label = "Update"
             ),
             
           # Download Button
@@ -151,13 +149,13 @@ dge_tab_ui <- function(id,
                   outputId = ns("main_panel_title"),
                   inline = TRUE
                 ),
-                class="center"
+                class = "center"
               ),
               
               # Summary stats for test used
               tags$h3(
                 "Test Summary", 
-                class="center"
+                class = "center"
               ),
               # Subset Stats Module 
               subset_stats_ui(
@@ -170,7 +168,7 @@ dge_tab_ui <- function(id,
               # DGE Table (uses DT data table)
               tags$h3(
                 "DGE Table",
-                class="center"
+                class = "center"
               ),
               DTOutput(
                 outputId = ns("table"),
@@ -182,6 +180,7 @@ dge_tab_ui <- function(id,
               uiOutput(
                 outputId = ns("umap_title_ui")
               ),
+              
               # UMAP container
               plotOutput(
                 outputId = ns("umap"),
