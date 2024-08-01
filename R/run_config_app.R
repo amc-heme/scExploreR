@@ -198,17 +198,6 @@ run_config <-
    )
     }
 
-    # showNotification(
-    #   ui = 
-    #     icon_notification_ui(
-    #       icon_name = "skull-crossbones",
-    #       'Warning: NA values detected in expression data. This will cause errors in DE analysis.',
-    #       tags$br(),
-    #       'Please clean your data to ensure accurate results.'
-    #     ),
-    #   duration = NULL,
-    #   session = session
-    # )
     # Test if the loaded object is of a supported class; if not, return an error
     check_dataset(
       object,
