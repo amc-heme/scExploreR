@@ -219,10 +219,19 @@ run_config <-
         },
         object
         )
-
+    
     numeric_cols <- meta_vars[is_numeric]
     non_numeric_cols <- meta_vars[!is_numeric]
-
+    
+   # check for NA values in metadata
+    is_na <- sapply(
+      meta_vars, 
+      function(var, object){
+        any(is.na(meta_table[[var]]))
+      },
+      object
+    )
+   print(is_na)
     # Assays, reductions in object
     all_assays <-
       scExploreR:::assay_names(
@@ -1294,7 +1303,7 @@ run_config <-
 
         all_metadata_options[[var]] <- server_output
       }
-
+     
       ### 3.3.4. RECORD: metadata options in config data ####
       #### 3.3.4.1. Category-specific options ####
       config_data$metadata <-
@@ -1439,8 +1448,25 @@ run_config <-
             }
           }
         })
-
-      #### 3.3.5.3 Show/hide Metadata Options Cards ####
+      #### 3.3.5.3.  NA Warning notification ####
+      observe({
+        req(input$metadata_selected)
+        if(any(is_na)){
+          # Show error if NAs present in metadata table
+          showNotification(
+            ui =
+              icon_notification_ui(
+                icon_name = "skull-crossbones",
+                "NA values were detected in the metadata. It is recommended to remove all NAs 
+                to ensure accurate results. Failure to remove could result in errors."
+              ),
+            duration = NULL,
+            id = "meta_NA_error",
+            session = session
+          )
+        }
+      })
+      #### 3.3.5.4. Show/hide Metadata Options Cards ####
       observe({
         for (colname in non_numeric_cols){
           # Show all cards that are in the "Metadata selected" column of the
@@ -1459,7 +1485,7 @@ run_config <-
         }
       })
 
-      #### 3.3.5.4. Render Sortable UI ####
+      #### 3.3.5.5. Render Sortable UI ####
       output$metadata_sortable_bucket <-
         renderUI({
           metadata_bucket_ui()
