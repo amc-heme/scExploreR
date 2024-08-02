@@ -1451,7 +1451,8 @@ run_config <-
       #### 3.3.5.3.  NA Warning notification ####
       observe({
         req(input$metadata_selected)
-        if(any(is_na)){
+        #only show warning if a metadata column is selected with NA values
+        if(any(is_na[input$metadata_selected])){
           # Show error if NAs present in metadata table
           showNotification(
             ui =
