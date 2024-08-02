@@ -231,7 +231,7 @@ run_config <-
       },
       object
     )
-   print(is_na)
+    
     # Assays, reductions in object
     all_assays <-
       scExploreR:::assay_names(
