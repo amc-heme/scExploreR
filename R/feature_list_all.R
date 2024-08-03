@@ -152,10 +152,6 @@ feature_list_all <-
         threshold_pairs
     }
     
-    print("Assays for which features are defined")
-    print(names(valid_features))
-    print(valid_features[[adt_threshold_title]])
-    
     # Return the valid_features list
     return(valid_features)
   }

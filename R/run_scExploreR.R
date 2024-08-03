@@ -480,20 +480,28 @@ run_scExploreR <-
           tryCatch(
             error =
               function(cnd){
+                cat("Error when loading SCE object \n")
+                #print(sys.calls(), sep = "\n")
+                print(cnd)
+                
                 stop(
                   "There was an error loading the object at path\n",
                   datasets[[data_key]]$object,
-                  "\nLoading was attempted via `HDF5Array::loadHDF5SummarizedExperiment`.\n",
-                  "Please check that the config file for the object corresponds \n",
+                  ": \n\n",
+                  "Specific error:\n",
+                  cnd,
+                  "\nSuggestions:\n",
+                  "Loading was attempted via `HDF5Array::loadHDF5SummarizedExperiment`.",
+                  "Please check that the config file for the object corresponds ",
                   "to the object.",
                   "\n",
-                  "For HDF5-enabled SingleCellExperiment objects, the object\n",
-                  "path should be set to the folder containing the assays.h5 \n",
-                  "and the se.rds file. This is the same folder that was created\n",
-                  "when the object was saved via `HDF5Array::saveHDF5SummarizedExperiment()`\n.",
+                  "For HDF5-enabled SingleCellExperiment objects, the object ",
+                  "path should be set to the folder containing the assays.h5 ",
+                  "and the se.rds file. This is the same folder that was created ",
+                  "when the object was saved via `HDF5Array::saveHDF5SummarizedExperiment()`. ",
                   "\n",
-                  "If this object is not an HDF5-enabled SingleCellExperiment\n",
-                  "object, please ensure that is_HDF5SummarizedExperiment is set\n",
+                  "If this object is not an HDF5-enabled SingleCellExperiment ",
+                  "object, please ensure that is_HDF5SummarizedExperiment is set ",
                   "to `FALSE` when run_config_app() is called."
                   )
               },
@@ -522,6 +530,7 @@ run_scExploreR <-
                     "There was an error loading the object at path \n",
                     datasets[[data_key]]$object,
                     ": \n\n",
+                    "Specific error:\n",
                     cnd,
                     "\nSuggestions:\nLoading was attempted via `readRDS()`. \n",
                     "Please check that the config file for the object corresponds \n",

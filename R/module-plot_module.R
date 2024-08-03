@@ -928,8 +928,7 @@ plot_module_ui <- function(id,
 #' TRUE in the UI
 #' @param plot_type The type of plot to create from the selected options.
 #' @param valid_features A list of the features that may be selected. Used for
-#' plot types that allow for selection of separate features (such as dot plots),
-#' or for scatterplots where two features are chosen from a search menu.
+#' plot types based on features.
 #' @param lim_orig A list with the original x- and y- axes limits for each
 #' reuction enabled for the current object. The list is generated at app
 #' startup.
@@ -3662,6 +3661,19 @@ plot_module_server <- function(id,
                        {
                          # Only runs when the plot is enabled
                          req(plot_switch())
+                         
+                         # Also, only runs if all features 
+                         # exist in the current object
+                         # This avoids errors observed when switching 
+                         # between objects (#115)
+                         valid_keyed_features <-
+                           valid_features() %>% 
+                           unlist() %>% 
+                           unname() 
+                         
+                         req(
+                           all(features() %in% valid_keyed_features)
+                           )
 
                          # Feature plot using arguments relevant to
                          # shiny_feature()
@@ -3743,6 +3755,19 @@ plot_module_server <- function(id,
                        {
                          # Only runs when the plot is enabled
                          req(plot_switch())
+                         
+                         # Also, only runs if all features 
+                         # exist in the current object
+                         # This avoids errors observed when switching 
+                         # between objects (#115)
+                         valid_keyed_features <-
+                           valid_features() %>% 
+                           unlist() %>% 
+                           unname() 
+                         
+                         req(
+                           all(features() %in% valid_keyed_features)
+                           )
 
                          # Violin plot using arguments relevant to shiny_vln()
                          shiny_vln(
@@ -3795,6 +3820,19 @@ plot_module_server <- function(id,
                        {
                          # Only runs when the plot is enabled
                          req(plot_switch())
+                         
+                         # Also, only runs if all features 
+                         # in features_entered are supported
+                         # This avoids errors observed when switching 
+                         # between objects (#115)
+                         valid_keyed_features <-
+                           valid_features() %>% 
+                           unlist() %>% 
+                           unname() 
+                         
+                         req(
+                           all(features() %in% valid_keyed_features)
+                           )
 
                          shiny_dot(
                            object = object(),
@@ -3826,6 +3864,20 @@ plot_module_server <- function(id,
                          # Fetch the features to be entered in the plot
                          feature_1 <- plot_selections$scatter_1()
                          feature_2 <- plot_selections$scatter_2()
+                         
+                         # Also only run if all features 
+                         # exist in the current object
+                         # This avoids errors observed when switching 
+                         # between objects (#115)
+                         valid_keyed_features <-
+                           valid_features() %>% 
+                           unlist() %>% 
+                           unname() 
+                         
+                         req(
+                           feature_1 %in% valid_keyed_features &
+                             feature_2 %in% valid_keyed_features
+                           )
                          
                          # Display names for features on plot: either the 
                          # raw feature name, or the "human-readable" name 
@@ -3880,6 +3932,19 @@ plot_module_server <- function(id,
                          {
                            # Only runs when the plot is enabled
                            req(plot_switch())
+                           
+                           # Also, only runs if all features 
+                           # exist in the current object
+                           # This avoids errors observed when switching 
+                           # between objects (#115)
+                           valid_keyed_features <-
+                             valid_features() %>% 
+                             unlist() %>% 
+                             unname() 
+                           
+                           req(
+                             all(features_entered() %in% valid_keyed_features)
+                             )
 
                            shiny_ridge(
                              object = object(),
