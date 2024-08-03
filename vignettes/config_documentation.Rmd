@@ -15,6 +15,96 @@ output:
     theme: cerulean
 ---
 
+```{scss document_css, echo = FALSE}
+/* Centers text and block elements */
+.center{
+  text-align: center;
+  /* Display must be set to block for centering to work */
+  display: block;
+  }
+
+.white-text{
+  color: white;
+}
+
+/* Bootstrap card elements */
+.card-header{
+  background-color: #CFB87C;
+  /* Adds a mrgin-top of 0 to the existing bootstrap class to remove white space
+   that appears when using the card component in an Rmd */
+  margin-top: 0px;
+}
+
+.card-body{
+  background-color: #E1E1E1; 
+  /* The border radius property is not properly inherited from the parent .card
+    element. The reason is unkown, but explicitly defining it here fixes 
+    the issue */
+  border-radius: 0px 0px var(--bs-card-border-radius) var(--bs-card-border-radius);
+}
+
+/* CSS for callouts
+   From https://codepen.io/superjaberwocky/pen/rLKxOa */
+   /* Requires SASS to be enabled, with sass package and "scss" code chunk*/
+.callout {
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid #eee;
+  /* If the border-radius is greater than border-left-width,  
+     the left border will curve inward onto the element's body,
+     creating a cresent-like shape*/
+  border-left-width: 8px;
+  border-radius: 8px;
+  h4, h5 {
+    margin-top: 0;
+    margin-bottom: 5px;
+  }
+  p:last-child {
+    margin-bottom: 0;
+  }
+  code {
+    border-radius: 3px;
+  }
+  & + .bs-callout {
+    margin-top: -5px;
+  }
+}
+
+/* Define properties for default, primary, info, etc. classes*/
+@each $name,$color in 
+  (default,#777),
+  (primary,#428bca),
+  (success,#5cb85c),
+  (danger,#d9534f),
+  (warning,#f0ad4e),
+  (info,#5bc0de), 
+  (bdc,#29527a){
+  .callout-#{$name} {
+    border-left-color: $color;
+    /* Background: color above, with an alpha hex value of '35'*/
+    background-color: #{$color + '35'};
+    h4, h5 {
+      color: $color;
+    }
+  }
+}
+
+/* Applied to output of code chunks. Causes a scrollbar to appear 
+   when the output extends beyond the max-height. */
+/* Adapted from https://bookdown.org/yihui/rmarkdown-cookbook/html-scroll.html */
+/* Classes are defined for several max heights */
+@each $height in 
+  80,
+  100,
+  300{
+  .scroll-#{$height} {
+    max-height: #{$height + "px"};
+    overflow-y: auto;
+    background-color: inherit;
+  }
+}
+```
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(shiny)
@@ -91,11 +181,25 @@ The config app can be ran from R Studio or the console by entering the following
       config_path = NULL 
       )
 
-The `object_path` argument is required, and it must be an .rds containing a single Seurat object. The `config_path` argument is optional and is used to load an existing config file into the app for further editing (for more on this, see [loading a config file](#load-config-file) below).
+The `object_path` argument is required. It must be an set to one of the following:
 
-<!-- Put in note container -->
+- For Seurat objects, the path to the .rds file.
+- For SingleCellExperiment objects, the path to the .rds file. If the object has been saved via `HDF5Array::saveHDF5SummarizedExperiment()`, this should be the path to the **directory** created.
+- For anndata objects, the path to the .h5ad file.
 
-Make sure that the config file loaded is based on the same object as the one specified, and be sure to name your config files using the name of the object to avoid confusion.
+The `config_path` argument is optional and is used to load an existing config file into the app for further editing (for more on this, see [loading a config file](#load-config-file) below).
+
+::: {.callout .callout-warning}
+<h4> Warning </h4>
+If you are loading a SingleCellExperiment saved using the `HDF5Array` package, you must additionally provide the parameter `is_HDF5SummarizedExperiment = TRUE`. The config app will not load successfully unless you do this. 
+:::
+
+::: {.callout .callout-info}
+<h4> Note </h4>
+
+Make sure that the config file loaded is based on the same object as the one specified. We recommend naming your config files using the convention "\{object_name\}_config.yaml" to avoid confusion.
+:::
+
 
 # General Info Tab
 

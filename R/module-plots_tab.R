@@ -957,6 +957,7 @@ plots_tab_server <- function(id,
                    plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "feature",
+                   valid_features = valid_features,
                    assay_config = assay_config,
                    metadata_config = metadata_config,
                    lim_orig = lim_orig,
@@ -982,6 +983,7 @@ plots_tab_server <- function(id,
                    plots_tab_spinner = main_spinner,
                    # Instructs server on which plot function to run
                    plot_type = "violin",
+                   valid_features = valid_features,
                    assay_config = assay_config,
                    # Use categorical palettes for violin plot
                    palette = selected_categorical_palette
@@ -1037,6 +1039,7 @@ plots_tab_server <- function(id,
                    features_entered = reactive({input$text_features}),
                    # Instructs server on which plot function to run
                    plot_type = "ridge",
+                   valid_features = valid_features,
                    assay_config = assay_config,
                    # Use categorical palettes for ridge plot
                    palette = selected_categorical_palette
