@@ -70,6 +70,9 @@
 
     
     
+<style type="text/css">
+.center{text-align:center;display:block}.white-text{color:white}.card-header{background-color:#CFB87C;margin-top:0px}.card-body{background-color:#E1E1E1;border-radius:0px 0px var(--bs-card-border-radius) var(--bs-card-border-radius)}.callout{padding:20px;margin:20px 0;border:1px solid #eee;border-left-width:8px;border-radius:8px}.callout h4,.callout h5{margin-top:0;margin-bottom:5px}.callout p:last-child{margin-bottom:0}.callout code{border-radius:3px}.callout+.bs-callout{margin-top:-5px}.callout-default{border-left-color:#777;background-color:#77735}.callout-default h4,.callout-default h5{color:#777}.callout-primary{border-left-color:#428bca;background-color:#428bca35}.callout-primary h4,.callout-primary h5{color:#428bca}.callout-success{border-left-color:#5cb85c;background-color:#5cb85c35}.callout-success h4,.callout-success h5{color:#5cb85c}.callout-danger{border-left-color:#d9534f;background-color:#d9534f35}.callout-danger h4,.callout-danger h5{color:#d9534f}.callout-warning{border-left-color:#f0ad4e;background-color:#f0ad4e35}.callout-warning h4,.callout-warning h5{color:#f0ad4e}.callout-info{border-left-color:#5bc0de;background-color:#5bc0de35}.callout-info h4,.callout-info h5{color:#5bc0de}.callout-bdc{border-left-color:#29527a;background-color:#29527a35}.callout-bdc h4,.callout-bdc h5{color:#29527a}.scroll-80{max-height:80px;overflow-y:auto;background-color:inherit}.scroll-100{max-height:100px;overflow-y:auto;background-color:inherit}.scroll-300{max-height:300px;overflow-y:auto;background-color:inherit}
+</style>
 <style type="text/css"> 
   .centered-image{
     display: block; 
@@ -89,14 +92,37 @@ the following command:</p>
 <span>  object_path <span class="op">=</span> <span class="st">"./object.rds"</span>, </span>
 <span>  config_path <span class="op">=</span> <span class="cn">NULL</span> </span>
 <span>  <span class="op">)</span></span></code></pre>
-<p>The <code>object_path</code> argument is required, and it must be an
-.rds containing a single Seurat object. The <code>config_path</code>
-argument is optional and is used to load an existing config file into
-the app for further editing (for more on this, see <a href="#load-config-file">loading a config file</a> below).</p>
-<!-- Put in note container -->
+<p>The <code>object_path</code> argument is required. It must be an set
+to one of the following:</p>
+<ul>
+<li>For Seurat objects, the path to the .rds file.</li>
+<li>For SingleCellExperiment objects, the path to the .rds file. If the
+object has been saved via
+<code><a href="https://rdrr.io/pkg/HDF5Array/man/saveHDF5SummarizedExperiment.html" class="external-link">HDF5Array::saveHDF5SummarizedExperiment()</a></code>, this should be
+the path to the <strong>directory</strong> created.</li>
+<li>For anndata objects, the path to the .h5ad file.</li>
+</ul>
+<p>The <code>config_path</code> argument is optional and is used to load
+an existing config file into the app for further editing (for more on
+this, see <a href="#load-config-file">loading a config file</a>
+below).</p>
+<div class="callout callout-warning">
+<h5>
+Warning
+</h5>
+<p>If you are loading a SingleCellExperiment saved using the
+<code>HDF5Array</code> package, you must additionally provide the
+parameter <code>is_HDF5SummarizedExperiment = TRUE</code>. The config
+app will not load successfully unless you do this.</p>
+</div>
+<div class="callout callout-info">
+<h5>
+Note
+</h5>
 <p>Make sure that the config file loaded is based on the same object as
-the one specified, and be sure to name your config files using the name
-of the object to avoid confusion.</p>
+the one specified. We recommend naming your config files using the
+convention “{object_name}_config.yaml” to avoid confusion.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="general-info-tab">General Info Tab<a class="anchor" aria-label="anchor" href="#general-info-tab"></a>
