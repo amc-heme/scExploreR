@@ -1032,6 +1032,7 @@ datasets:
         object: "~/datasets/small_cell_lung_cancer/Epithelial_SCLC.h5ad"
         config: "~/datasets/small_cell_lung_cancer/Epithelial_SCLC_config.yaml"
 RSTUDIO_PANDOC: ~
+
 ```
 
 You can create a config file from R Studio by going to **File** >> **New File** >> **Text File**. After creating the text file, save it in the same directory as the object and config files, and **be sure to add ".yaml" to the filename**. After saving initially, use the structure above and define the paths to the object and config files. 
