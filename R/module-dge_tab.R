@@ -871,8 +871,7 @@ dge_tab_server <- function(id,
         dge_table_filtering_server(
           id = "dge_table_filtering",
           # Uses table from 3.9 to populate interface
-          dge_table = dge_table_content,
-          test_selections = test_selections
+          dge_table = dge_table_content
           )
       
       ### 3.10.2. Filter dge table based on filtering inputs ####

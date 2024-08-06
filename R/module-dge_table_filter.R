@@ -272,16 +272,11 @@ dge_table_filtering_ui <- function(id){
 #' @param id Used to match server function to ui function.
 #' 
 #' @param dge_table the table produced in the DGE tab.
-#'
-#' @param test_selections Used to determine the "mode" of DGE (marker selection 
-#' or differential expression), and display UI elements accordingly. "Group" 
-#' or "Class" is shown in the filter interface UI based on the DGE mode.
 #' 
 #' @noRd
 dge_table_filtering_server <- 
   function(id,
-           dge_table,
-           test_selections){
+           dge_table){
     moduleServer(
       id,
       function(input, output, session){
@@ -302,38 +297,6 @@ dge_table_filtering_server <-
             )
           }
         })
-        
-        # Display "Group" or "Class" in UI based on DGE mode ####
-        # observe({
-        #   req(dge_table())
-        #   # Updates in response to changes in the dge table only (after running
-        #   # new tests)
-        #   dge_table()
-        #   
-        #   # Targets for showing/hiding UI
-        #   group_selector <- "[class *= 'dge-filter-show-if-group']"
-        #   class_selector <- "[class *= 'dge-filter-show-if-class']"
-        #   
-        #   if (isolate(test_selections()$dge_mode) == "mode_marker"){
-        #     # Marker selection: show "Class", not "Group"
-        #     shinyjs::showElement(
-        #       selector = class_selector
-        #       )
-        #     
-        #     shinyjs::hideElement(
-        #       selector = group_selector
-        #       )
-        #   } else if (isolate(test_selections()$dge_mode) == "mode_dge"){
-        #     # Differential expression: show "Group", not "Class"
-        #     shinyjs::showElement(
-        #       selector = group_selector
-        #       )
-        #     
-        #     shinyjs::hideElement(
-        #       selector = class_selector
-        #       )
-        #   }
-        # })
         
         # 2. Average Expression Filter UI ####
         ## 2.1. Show/hide full interface ####
