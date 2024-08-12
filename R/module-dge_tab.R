@@ -469,50 +469,70 @@ dge_tab_server <- function(id,
           ignoreNULL = TRUE,
           {
             print("DGE 3.5: subset criteria")
-
-            # The process for determining subset criteria varies when 
-            # the conditions below are met 
-            if (test_selections()$group_mode %in% c("simple_threshold")){
-              # Special case: simple expression tresholding 
-              # test selections do not influence the subset. Only
-              # the subset selections are used. There is also no 
-              # group by category.
-              subset_criteria <- subset_selections$selections()
-            } else {
-              # Standard behavior 
-              
-              # Append chosen groups/classes from the group by variable to the
-              # subset filters
-              if (test_selections()$dge_mode == "mode_dge"){
+            # Determine return behavior for subset criteria
+            # The subset criteria are equal to the data selected in 
+            # the subset_selections module, except in the case where 
+            # two groups are being compared based on categorical metadata
+            if (test_selections()$dge_mode == "mode_dge"){
+              if (test_selections()$group_mode == "simple_threshold"){
+                # "Simple threshold" DGE, based on feature expression
+                # Return subset selections as-is
+                subset_criteria <- subset_selections$selections()
+              } else if (test_selections()$group_mode == "standard"){
+                # "Standard" DGE
+                # Add extra subset filter for the two groups selected
+                # Fetch choices for group 1 and group 2
                 choices <-
                   c(test_selections()$group_1, 
                     test_selections()$group_2)
-                } else if (test_selections()$dge_mode == "mode_marker"){
-                  choices <- 
-                    test_selections()$groups_selected
-                } else {
-                    warning("DGE 3.5: Unrecognized DGE mode")
-                  }
-              
-              # Fetch subset selections
-              # Must unpack from reactive to avoid modifying the
-              # reactive with test_selections data
-              subset_criteria <- subset_selections$selections()
-              # Add group by metadata category with 
-              # classes/groups to subset instructions
-              subset_criteria[[length(subset_criteria) + 1]] <- 
-                list(
-                  `type` = "categorical",
-                  `mode` = NULL,
-                  `var` = test_selections()$group_by,
-                  # Add display name of variable for filter criteria display
-                  `label` = metadata_config()[[test_selections()$group_by]]$label,
-                  `value` = choices
+                
+                # Fetch subset selections
+                # Must unpack from reactive to avoid modifying the
+                # reactive with test_selections data
+                subset_criteria <- subset_selections$selections()
+                # Add group by metadata category with 
+                # classes/groups to subset instructions
+                subset_criteria[[length(subset_criteria) + 1]] <- 
+                  list(
+                    `type` = "categorical",
+                    `mode` = NULL,
+                    `var` = test_selections()$group_by,
+                    # Add display name of variable for filter criteria display
+                    `label` = metadata_config()[[test_selections()$group_by]]$label,
+                    `value` = choices
+                  )
+              } else {
+                # If the group mode is undefined, throw a warning 
+                # and return subset selections as-is
+                # This warning is very unlikely to be triggered, but may cause
+                # errors downstream if it ever is
+                warning(
+                  paste0(
+                    "DGE 3.5: Unrecognized group_mode setting from test_selections: ",
+                    test_selections()$group_mode
+                  )
                 )
+                
+                return(subset_selections$selections())
+              }
+            } else if (test_selections()$dge_mode == "mode_marker"){
+              # Marker identification
+              # Return subset selections as-is
+              return(subset_selections$selections())
+            } else {
+              # If the mode is undefined, throw a warning 
+              # and return subset selections as-is
+              # This warning is very unlikely to be triggered, but may cause
+              # errors downstream if it ever is
+              warning(
+                paste0(
+                  "DGE 3.5: Unrecognized dge_mode setting from test_selections: ",
+                  test_selections()$dge_mode
+                  )
+                )
+              
+              return(subset_selections$selections())
             }
-            
-            # Return subset criteria
-            subset_criteria
           })
       
       ## 3.6. Form subset ####
