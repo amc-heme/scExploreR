@@ -1025,13 +1025,9 @@ dge_tab_server <- function(id,
                 )
             
             # Rename "group" column based on the test selected
-            group_rename <- 
-              "Group"
-              # if (test_selections()$dge_mode == "mode_dge") {
-              #   "Group"
-              # } else if (test_selections()$dge_mode == "mode_marker") {
-              #     "Class"
-              # }
+            # This used to be called "Group" or "Class", but is now always 
+            # "Group" (issue #324)
+            group_rename <- "Group"
             
             # Renamed using base R syntax because new name is dynamic
             names(table)[names(table) == "group"] <-
@@ -1199,16 +1195,16 @@ dge_tab_server <- function(id,
             if (test_selections()$dge_mode == "mode_dge"){
               # DGE Title
               tags$h3(
-                "UMAP of groups being compared",
-                class="center"
+                "UMAP of DGE Groups",
+                class = "center"
               )
             } else if (test_selections()$dge_mode == "mode_marker"){
               # Marker identification title (and subtext)
               tagList(
                 # Center text
                 tags$h3(
-                  "UMAP by class",
-                  class="center"
+                  "UMAP of Marker Groups",
+                  class = "center"
                   ),
                 tags$p(
                   "(Markers are computed for each group shown)",
