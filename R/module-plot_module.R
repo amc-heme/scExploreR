@@ -2930,29 +2930,25 @@ plot_module_server <- function(id,
                        } else if (input_error == FALSE){
                          # Plot: UI depends on whether manual
                          # dimensions are specified
-                         print(paste0("width value in plotModule: ", manual_dim$width()))
-                         print(paste0("height value in plotModule: ", manual_dim$height()))
-                         
                          if (
                            (isTruthy(manual_dim$width())) &
                            (isTruthy(manual_dim$height()))
                          ){
-                           print("executing custom ui")
                            # If manual dimensions are specified, pass the
                            # values specified by the user to plotOutput
                            ui <-
                              plotOutput(
                                outputId = ns("plot"),
-                               width = manual_dim$width()*72,
-                               height = manual_dim$height()*72
+                               width = manual_dim$width()*96,
+                               height = manual_dim$height()*96
                                )
                          } else {
-                           print("executing default ui")
                            # Otherwise, call plotOutput without defining
                            # width and height
                            ui <-
                              plotOutput(
-                               outputId = ns("plot")
+                               outputId = ns("plot"),
+                               height = "600px"
                                )
                          }
 
@@ -3981,7 +3977,6 @@ plot_module_server <- function(id,
                          session = session
                          )
                      }
-
                      plot()
                    })
 

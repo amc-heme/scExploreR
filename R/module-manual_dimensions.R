@@ -97,8 +97,8 @@ manual_dimensions_server <- function(id,
                          selectInput(
                            inputId = ns("dpi"),
                            label = "Select resolution (dpi)",
-                           choices = c(72, 150, 300, 600),
-                           selected = 150
+                           choices = c(72, 150, 300, 400),
+                           selected = 72
                          )
                         ) # End tagList
                      })
@@ -115,15 +115,12 @@ manual_dimensions_server <- function(id,
                  width <- reactive(
                    label = glue("{id}: Process Width Selection"),
                    {
-                     if (input$manual_dim == TRUE){
+                     if (isTruthy(input$manual_dim)){
                        # If the manual dimensions checkbox is checked, store the
                        # width from input
-                       #req(input$width)
-                       print(paste0("input$width: ", input$width))
-                       print(paste0("input$dpi: ", input$dpi))
-                       print(paste0("class(input$dpi): ", class(input$dpi)))
                        
-                       input$width#*as.numeric(input$dpi)
+                       #req(input$width)
+                       input$width
                        } else {
                          # Otherwise, output NULL for the width argument
                          NULL
@@ -133,12 +130,10 @@ manual_dimensions_server <- function(id,
                  height <- reactive(
                    label = glue("{id}: Process Height Selection"),
                    {
-                   if (input$manual_dim == TRUE){
+                   if (isTruthy(input$manual_dim)){
                      # If the manual dimensions checkbox is checked, store the
                      # height from input
-                     print(paste0("input$height: ", input$height))
-                     print(paste0("input$dpi: ", input$dpi))
-                     input$height#*as.numeric(input$dpi)
+                     input$height
                      } else {
                        # Otherwise, output NULL for the height argument
                        NULL
