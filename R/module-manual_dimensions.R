@@ -96,7 +96,7 @@ manual_dimensions_server <- function(id,
                          ),
                          selectInput(
                            inputId = ns("dpi"),
-                           label = "Select resolution (dpi)",
+                           label = "Select resolution in DPI (PNG only):",
                            choices = c(72, 150, 300, 400),
                            selected = 72
                          )
