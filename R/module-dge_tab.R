@@ -54,6 +54,13 @@ dge_tab_ui <- function(id,
               meta_choices = meta_choices
               ),
             
+            # Checkbox to return positive markers only (shown for both modes)
+            checkboxInput(
+              inputId = ns("pos"),
+              label = "Positive Markers Only",
+              value = TRUE
+            ),
+            
             # Menus to choose subset (placed within collapsible panel)
             collapsible_panel(
               inputId = ns("subset_selections_collapsible"),
@@ -69,17 +76,10 @@ dge_tab_ui <- function(id,
                 )
               ),
             
-            # Checkbox to return positive markers only (shown for both modes)
-            checkboxInput(
-              inputId = ns("pos"),
-              label = "Positive Markers Only",
-              value = TRUE
-            ),
-            
             # Submit button
             actionButton(
               inputId = ns("submit"),
-              label = "Update Test",
+              label = "Run DGE",
               style = "display: block; width: 100%;",
               class = "button-primary"
               )
@@ -311,28 +311,31 @@ dge_tab_server <- function(id,
           })
       
       # 2. Process Subset Selection Options -------------------------
-      ## 2.1. Hide Subset Menu Currently Used as Group By Category ####
-      # For standard DGE and marker identification, the selections for the group 
-      # by metadata category are used to subset the object, so that presto only 
-      # compares the selected groups or classes.
-      hidden_category <- 
+      ## 2.1. Remove the current group by variable from subsetting choices ####
+      # For standard DGE, the selections for the group by metadata category 
+      # are used to subset the object, so that presto only compares 
+      # the selected groups. The metadata variable used for forming groups must
+      # be hidden from the subsetting menu to keep the user from being able to 
+      # select a subset that does not allow comparison of the selected groups.
+      hidden_variable <- 
         reactive(
           label = "DGE Tab: Define Hidden Subset Menu",
           {
             req(test_selections())
-            # The menu only needs to be hidden for standard DGE, or DGE with 
-            # metaclusters. For thresholding, categorical metadata (the group
-            # by category) is not used to define presto classes.
             
-            # Conditional: do not use metaclusters_present() or 
-            # thresholding_present(). These are currently only computed after 
-            # the submit button is pressed.
-            if (!test_selections()$group_mode %in% ("simple_threshold")){
-              # Hide menu for group_by_category() when thresholds are not used
-              group_by_category()
-            } else {
-              # Return NULL when feature thresholds are requested 
+            # Metadata choices are not hidden during marker identification, 
+            # or during DGE based on a feature expression threshold. 
+            if (test_selections()$dge_mode == "mode_marker"){
+              # Return NULL, to hide no choices
               NULL
+            } else if (test_selections()$dge_mode == "mode_dge"){
+              # DGE mode: hide choices in all cases except 
+              # grouping based on a "simple_threshold".
+              if (test_selections()$group_mode == "simple_threshold"){
+                NULL
+              } else {
+                group_by_category()
+              }
             }
           })
       
@@ -347,8 +350,9 @@ dge_tab_server <- function(id,
           assay_config = assay_config,
           meta_categories = meta_categories,
           valid_features = valid_features,
-          hide_menu = hidden_category
+          hide_menu = hidden_variable
           )
+      
       # 3. Calculations ran after submit button is pressed ----------
       # Includes table, stats, and UMAP
       # Subset criteria (3.1) processed first,
@@ -526,7 +530,8 @@ dge_tab_server <- function(id,
               # errors downstream if it ever is
               warning(
                 paste0(
-                  "DGE 3.5: Unrecognized dge_mode setting from test_selections: ",
+                  "DGE 3.5: Unrecognized dge_mode setting ",
+                  "from test_selections: ",
                   test_selections()$dge_mode
                   )
                 )
