@@ -153,57 +153,9 @@ dge_test_selections_ui <-
             id = ns("simple_threshold"),
             plot_height = "150px"
           )
-        ),
-        ## 3.C. Marker Identification UI ####
-        # Display menu to choose values from the 
-        # group by metadata category to include as classes in 
-        # marker identification. 
-        div(
-          id = ns("marker_groups_ui"),
-          pickerInput(
-            inputId = ns("marker_group_selection"),
-            label = 
-              tagList(
-                "Choose Marker Groups:",
-                a(
-                  id = ns("marker_groups_tooltip"),
-                  icon("info-circle"), 
-                  href = 
-                    paste0("https://amc-heme.github.io/scExploreR/articles/", 
-                           "full_documentation.html"),  
-                  target = "_blank"
-                  )
-              ),
-            choices = NULL,
-            # Select all unique values at startup
-            selected = NULL, 
-              #group_choices(),
-            multiple = TRUE,
-            options = list(
-              "selected-text-format" = "count > 3",
-              "size" = 10,
-              # Define max options to show at
-              # a time to keep menu from being cut off
-              "actions-box" = TRUE
-              )
-          ), # End pickerInput
-          shinyBS::bsTooltip(
-            id = ns("marker_groups_tooltip"), 
-            title = 
-              paste0(
-                'Groups are formed from the values selected. Please choose ',
-                'at least 3 groups. To compare 2 ',
-                'groups, select "Differential Expression".'
-              ), 
-            placement = "top", 
-            trigger = "hover",
-            options = NULL
-          )
         )
       )
     )
-    
-    #uiOutput(outputId = ns("classes_menu"))
   
   # 4. Feature Expression Checkbox ---------------------------------------------
   # Option to use feature expression instead of categorical
@@ -256,50 +208,6 @@ dge_test_selections_server <-
       function(input,output,session){
         # Namespace function: for dynamic UI
         ns <- session$ns
-        
-        # 0. Populate choices for marker classes menu (marker classes is 
-        # the default menu at startup)
-        initial_group_by <- meta_choices()[!meta_choices() %in% "none"][1]
-        
-        # In the event the initial choices list only contains "none", NA will
-        # be returned above. This must be tested for to avoid errors when
-        # computing initial choices
-        # NULL could also result if the user has not included any metadata in
-        # the config file
-        initial_marker_choices <-
-          if (!is.na(initial_group_by) & !is.null(initial_group_by)){
-            # Get unique values for the group by variable
-            SCUBA::unique_values(
-              object(),
-              var = initial_group_by
-              ) |> 
-              # Sort choices
-              str_sort(numeric = TRUE)
-          } else {
-            NULL
-          }
-        
-        updatePickerInput(
-          session = session,
-          inputId = "marker_group_selection",
-          choices =
-            # If groups are defined for the current group by category
-            # in the config file, display the list of grouped choices
-            if (
-              !is.null(metadata_config()[[initial_group_by]]$groups)
-            ){
-              group_metadata_choices(
-                group_info =
-                  metadata_config()[[initial_group_by]]$groups,
-                choices =
-                  unique_metadata()[[initial_group_by]]
-              )
-            } else {
-              # Otherwise, use the initial_marker_choices vector
-              initial_marker_choices
-            },
-          selected = initial_marker_choices
-        )
         
         # 1. Process test mode -------------------------------------------------
         dge_mode <- 
@@ -359,11 +267,11 @@ dge_test_selections_server <-
         observe({
           standard_groups_id <- "standard_groups_ui"
           threshold_groups_id <- "threshold_groups_ui"
-          marker_classes_id <- "marker_groups_ui"
+          #marker_classes_id <- "marker_groups_ui"
           
           # Hide all initially, then show based on the test requested
           for (id in 
-               c(standard_groups_id, threshold_groups_id, marker_classes_id)){
+               c(standard_groups_id, threshold_groups_id)){
             hideElement(
               id = id
             )
@@ -386,10 +294,7 @@ dge_test_selections_server <-
                 )
               }
             } else if (dge_mode() == "mode_marker"){
-              # For marker selection: display UI for defining marker groups
-              showElement(
-                id = marker_classes_id
-              )
+              # Neither menu is shown during marker identification
             }
           }
         })
@@ -490,23 +395,6 @@ dge_test_selections_server <-
                   selected = character(0)
                   )
                 }
-              }
-          })
-        
-        ### 3.5.2 Update classes menu ####
-        observe(
-          label = "Test Selection: Update classes Menu",
-          {
-            req(dge_mode())
-            
-            # Update proceeds when simple DGE is selected
-            if (dge_mode() == "mode_marker"){
-              updatePickerInput(
-                session = session,
-                inputId = "marker_group_selection",
-                choices = grouped_group_choices(),
-                selected = group_choices()
-                )
               }
           })
         
@@ -686,7 +574,6 @@ dge_test_selections_server <-
                 server = TRUE
                 )
             }
-            
           })
         
         ### 3.8.2. Server for Interactive Ridge Plot ####
@@ -716,18 +603,6 @@ dge_test_selections_server <-
             # dge_mode() must be defined to avoid errors
             if (!is.null(dge_mode())){
               if (dge_mode() == "mode_dge") input$group_2 else NULL
-              }
-            })
-        
-        # Selected marker groups: process input if marker 
-        # identification is the mode selected
-        groups_selected <- 
-          reactive({
-            # dge_mode() must be defined to avoid errors
-            if (!is.null(dge_mode())){
-              if (dge_mode() == "mode_marker"){
-                input$marker_group_selection
-                } else NULL
               }
             })
         
@@ -777,8 +652,7 @@ dge_test_selections_server <-
                         # Leave group_mode defined for compatability with 
                         # conditional statements in DGE tab, but set to "none"
                         `group_mode` = "none",
-                        `group_by` = group_by_category(),
-                        `groups_selected` = groups_selected()
+                        `group_by` = group_by_category()
                         )
                       )
                   }
