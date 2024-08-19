@@ -491,8 +491,6 @@ dge_table_filtering_server <-
           reactive({
             req(dge_table())
             
-            print("avgExpr Input processing")
-            
             # Conditional values 
             if ("avgExpr" %in% colnames(dge_table())){
               # Return the value of the slider or the text boxes depending on
@@ -501,11 +499,6 @@ dge_table_filtering_server <-
                 # Manual (text) entry: return values of max and min, using 
                 # NULL for undefined entries (NULL will result in no filtering
                 # being applied)
-                print("input$expr_min_text")
-                print(input$expr_min_text)
-                print("input$expr_max_text")
-                print(input$expr_max_text)
-                
                 min <- 
                   if (isTruthy(input$expr_min_text)){
                     as.numeric(input$expr_min_text)
@@ -542,9 +535,6 @@ dge_table_filtering_server <-
                   pull(avgExpr) %>% 
                   max(na.rm = TRUE) %>% 
                   signif(digits = 4)
-                  
-                print("input$expr[1] == slider_min")
-                print(input$expr[1] == slider_min)
                 
                 min <- if (input$expr[1] != slider_min) input$expr[1] else NULL
                 max <- if (input$expr[2] != slider_max) input$expr[2] else NULL
@@ -625,7 +615,6 @@ dge_table_filtering_server <-
                 )
               }
             } else {
-              print("lfc not in table. Returning NULL/NULL for lfc")
               # If the average expression column is not in the table, 
               # return NULL for both the min and the max.
               list(
