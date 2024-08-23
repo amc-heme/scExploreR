@@ -473,7 +473,7 @@ dge_tab_server <- function(id,
           ignoreNULL = TRUE,
           {
             print("DGE 3.5: subset criteria")
-            # Determine return behavior for subset criteria
+            # Define subset criteria conditionally and return
             # The subset criteria are equal to the data selected in 
             # the subset_selections module, except in the case where 
             # two groups are being compared based on categorical metadata
@@ -517,12 +517,12 @@ dge_tab_server <- function(id,
                   )
                 )
                 
-                return(subset_selections$selections())
+                subset_criteria <- subset_selections$selections()
               }
             } else if (test_selections()$dge_mode == "mode_marker"){
               # Marker identification
               # Return subset selections as-is
-              return(subset_selections$selections())
+              subset_criteria <- subset_selections$selections()
             } else {
               # If the mode is undefined, throw a warning 
               # and return subset selections as-is
@@ -536,8 +536,11 @@ dge_tab_server <- function(id,
                   )
                 )
               
-              return(subset_selections$selections())
+              subset_criteria <- subset_selections$selections()
             }
+            
+            # Return subset_criteria defined above
+            return(subset_criteria)
           })
       
       ## 3.6. Form subset ####
@@ -579,20 +582,30 @@ dge_tab_server <- function(id,
             
             subset <- 
               tryCatch(
-                error = function(cnd){
+                # Convention is to use function(cnd) for tryCatch, but "cnd"
+                # is a function in the rlang package, as is "error"
+                error = function(err_cnd){
                   # Log interpreted subset filters in the event of an error
-                  log_info(
-                    "Error in dge tab subsetting. ",
-                    "Subset filters entered:"
+                  log_error(
+                    paste0(
+                      "Error in dge tab subsetting: \n",
+                      err_cnd$message
+                      )
                     )
-                  scExploreR:::log_subset(
-                    filter_list = subset_selections$selections()
+                  
+                  log_info(
+                    paste0(
+                      "Subset filters entered:",
+                      scExploreR:::log_subset(
+                        filter_list = subset_selections$selections()
+                        )
+                      )
                     )
                   
                   # Use error_handler to display notification to user
                   error_handler(
                     session,
-                    cnd_message = cnd$message,
+                    cnd_message = err_cnd$message,
                     # Uses a list of
                     # subset-specific errors
                     error_list = error_list$subset_errors
@@ -605,7 +618,7 @@ dge_tab_server <- function(id,
                   # Return NULL for subset to 
                   # discontinue downstream calculations
                   NULL
-                },
+                  },
                 # Begin tryCatch code
                 {
                   # If object_init == TRUE, return the full object
