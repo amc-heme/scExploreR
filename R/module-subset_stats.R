@@ -245,7 +245,7 @@ subset_stats_server <-
                   FetchData(
                     subset(),
                     vars = gene_selected(),
-                    slot = "counts"
+                    layer = "counts"
                     ) 
                 
                 sum(expr_data > 0)

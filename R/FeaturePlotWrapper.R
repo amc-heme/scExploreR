@@ -135,7 +135,7 @@ FeaturePlotSingle<-
       vars = feature,
       # Slot: will use "data" for Seurat objects and "logcounts" 
       # for SingleCellExperiment objects
-      slot = SCUBA::default_slot(object)
+      layer = SCUBA::default_layer(object)
     )[,1]
   minimal <- min(feature_data)
   maximal <- max(feature_data)
@@ -552,7 +552,7 @@ MultiFeatureSimple <-
                 vars = group,
                 # Slot: will use "data" for Seurat objects and "logcounts" 
                 # for SingleCellExperiment objects
-                slot = SCUBA::default_slot(object)
+                layer = SCUBA::default_layer(object)
                 )[,1]
             # Return minimum value of data
             min(feature_data)
@@ -572,7 +572,7 @@ MultiFeatureSimple <-
                 vars = group,
                 # Slot: will use "data" for Seurat objects and "logcounts" 
                 # for SingleCellExperiment objects
-                slot = SCUBA::default_slot(object)
+                layer = SCUBA::default_layer(object)
               )[,1]
             # Return minimum value of data
             max(feature_data)
