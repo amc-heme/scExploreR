@@ -946,9 +946,6 @@ dge_tab_server <- function(id,
           if (isTruthy(dge_table_filters$expression())){
             if (!is.null(dge_table_filters$expression()$min) & 
                 !is.null(dge_table_filters$expression()$max)){
-              print("dge_table_filters$expression()")
-              print(dge_table_filters$expression())
-              
               # If both values are defined, filter based on both values
               dge_table <-
                 dge_table %>% 

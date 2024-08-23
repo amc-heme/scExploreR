@@ -18,7 +18,17 @@ dge_table_filtering_ui <- function(id){
         # interface
         collapsible_panel(
           inputId = ns("group_header"),
-          label = "Filter by Group:",
+          label = 
+            tags$span(
+              tags$span("Filter by Group: "),
+              a(
+                id = ns("group_tooltip"),
+                icon("info-circle"), 
+                href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                              "full_documentation.html"),  
+                target = "_blank"
+                )
+              ),
           transparent = TRUE,
           size = "s",
           # VituralSelectInput: like PickerInput, but with a more pleasant 
@@ -36,13 +46,38 @@ dge_table_filtering_ui <- function(id){
             search = TRUE,
             optionsCount = 5,
             zIndex = 4
+            ),
+          shinyBS::bsTooltip(
+            id = ns("group_tooltip"), 
+            title = 
+              paste0(
+                'Select groups in the menu to filter the table for ',
+                'those groups. When no groups are selected, all groups will ',
+                'included in the table (no filtering will be applied based ',
+                'on group). Use the checkbox next to "search" to select or ',
+                'de-select all groups, and the "search" text box to search ',
+                'for groups via text.'
+                ), 
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
             )
           ),
         
         # By feature
         collapsible_panel(
           inputId = ns("feature_header"),
-          label = "Filter by Feature:",
+          label = 
+            tags$span(
+              "Filter by Feature: ",
+              a(
+                id = ns("feature_tooltip"),
+                icon("info-circle"), 
+                href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                              "full_documentation.html"),  
+                target = "_blank"
+              )
+            ),
           transparent = TRUE,
           size = "s",
           shiny::selectizeInput(
@@ -57,9 +92,23 @@ dge_table_filtering_ui <- function(id){
               # Do not allow user to input features not
               # in the list of options
               'create'= FALSE
+              )
+            ),
+          shinyBS::bsTooltip(
+            id = ns("feature_tooltip"), 
+            title = 
+              paste0(
+                'Type genes/features in the menu below to fitler the table ',
+                'for those genes. You may enter as many features as you would ',
+                'like in this menu. To remove a feature from the filtering, ',
+                'press the "x" button next to the feature. When no features ',
+                'are entered, no filtering will be applied based on feature.'
+                ), 
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
             )
-          )
-        ),
+          ),
         
         # Average Expression filter interface
         # Collapsible panel is within a container to show/hide the whole
@@ -68,7 +117,17 @@ dge_table_filtering_ui <- function(id){
           id = ns("expr_ui"),
           collapsible_panel(
             inputId = ns("expr_header"),
-            label = "Filter by Average Expression:",
+            label = 
+              tags$span(
+                "Filter by Average Expression: ",
+                a(
+                  id = ns("expr_tooltip"),
+                  icon("info-circle"), 
+                  href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                                "full_documentation.html"),  
+                  target = "_blank"
+                  )
+                ),
             transparent = TRUE,
             size = "s",
             # Expression range slider
@@ -117,6 +176,22 @@ dge_table_filtering_ui <- function(id){
                   )
                 )
               )
+            ),
+            shinyBS::bsTooltip(
+              id = ns("expr_tooltip"), 
+              title = 
+                paste0(
+                  'Drag either ends of the slider to set the min and max ',
+                  'values to filter based on average expression. To ',
+                  'manually enter thresholds for either end, select the ',
+                  '"manually enter range" checkbox and type the min/max ',
+                  'values in the text boxes that appear. Press enter to apply ',
+                  'filters. If either box is blank, no filter is applied to ',
+                  'the bound set by the text box.'
+                  ), 
+              placement = "bottom", 
+              trigger = "hover",
+              options = NULL
             )
           )
         ),
@@ -126,7 +201,17 @@ dge_table_filtering_ui <- function(id){
           id = ns("lfc_ui"),
           collapsible_panel(
             inputId = ns("lfc_header"),
-            label = "Filter by Log-2 Fold Change Value:",
+            label = 
+              tags$span(
+                "Filter by Log-2 Fold Change Value:",
+                a(
+                  id = ns("lfc_tooltip"),
+                  icon("info-circle"), 
+                  href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                                "full_documentation.html"),  
+                  target = "_blank"
+                  )
+                ),
             transparent = TRUE,
             size = "s",
             # LFC range slider
@@ -178,6 +263,23 @@ dge_table_filtering_ui <- function(id){
                     )
                   )
                 )
+              ),
+            
+            shinyBS::bsTooltip(
+              id = ns("lfc_tooltip"), 
+              title = 
+                paste0(
+                  'Drag either ends of the slider to set the min and max ',
+                  'values to filter based on log-fold change. To ',
+                  'manually enter thresholds for either end, select the ',
+                  '"manually enter range" checkbox and type the min/max ',
+                  'values in the text boxes that appear. Press enter to apply ',
+                  'filters. If either box is blank, no filter is applied to ',
+                  'the bound set by the text box.'
+                ), 
+              placement = "bottom", 
+              trigger = "hover",
+              options = NULL
               )
             )
           ),
@@ -185,7 +287,17 @@ dge_table_filtering_ui <- function(id){
         # AUC slider
         collapsible_panel(
           inputId = ns("auc_header"),
-          label = "Filter by AUC Value:",
+          label = 
+            tags$span(
+              "Filter by AUC Value: ",
+              a(
+                id = ns("auc_tooltip"),
+                icon("info-circle"), 
+                href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                              "full_documentation.html"),  
+                target = "_blank"
+                )
+              ),
           transparent = TRUE,
           size = "s",
           shiny::sliderInput(
@@ -197,13 +309,35 @@ dge_table_filtering_ui <- function(id){
             value = c(0,1),
             step = 0.01,
             round = 2
+            ),
+          
+          shinyBS::bsTooltip(
+            id = ns("auc_tooltip"), 
+            title = 
+              paste0(
+                'Drag either ends of the slider to set the min and max ',
+                'values to filter based on auc value.'
+                ), 
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
             )
           ),
         
         # Filter by p-value
         collapsible_panel(
           inputId = ns("pval_header"),
-          label = "Filter by Adjusted p-value:",
+          label = 
+            tags$span(
+              "Filter by Adjusted p-value: ",
+              a(
+                id = ns("pval_tooltip"),
+                icon("info-circle"), 
+                href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                              "full_documentation.html"),  
+                target = "_blank"
+              )
+            ),
           transparent = TRUE,
           size = "s",
           # Adjusted p-value
@@ -226,13 +360,36 @@ dge_table_filtering_ui <- function(id){
                 1e-50, 
                 1e-100),
             selected = 1
+            ),
+          
+          shinyBS::bsTooltip(
+            id = ns("pval_tooltip"), 
+            title = 
+              paste0(
+                'Use the selection menu to define a cutoff for the adjusted ',
+                'p-value of test results. Only entries with adjusted p-values ',
+                'less than the threshold selected will be displayed.'
+              ), 
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
             )
           ),
         
         # Percent in group slider
         collapsible_panel(
-          inputId = ns("pct_header"),
-          label = "Filter by Percentage Within Group:",
+          inputId = ns("pct_in_header"),
+          label = 
+            tags$span(
+              "Filter by Percentage Within Group: ",
+              a(
+                id = ns("pct_in_tooltip"),
+                icon("info-circle"), 
+                href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                              "full_documentation.html"),  
+                target = "_blank"
+                )
+            ),
           transparent = TRUE,
           size = "s",
           shiny::sliderInput(
@@ -243,13 +400,36 @@ dge_table_filtering_ui <- function(id){
             value = c(0, 100),
             step = 1,
             post = " %"
+            ),
+          
+          shinyBS::bsTooltip(
+            id = ns("pct_in_tooltip"), 
+            title = 
+              paste0(
+                'Drag either ends of the slider to set the min and max ',
+                'values to filter based on percentage expression within ',
+                'a group.'
+              ), 
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
             )
           ),
         
         # Percentage outside group slider
         collapsible_panel(
-          inputId = ns("pct_header"),
-          label = "Filter by Percentage Outside Group:",
+          inputId = ns("pct_out_header"),
+          label = 
+            tags$span(
+              "Filter by Percentage Outside Group: ",
+              a(
+                id = ns("pct_out_tooltip"),
+                icon("info-circle"), 
+                href = paste0("https://amc-heme.github.io/scExploreR/articles/", 
+                              "full_documentation.html"),  
+                target = "_blank"
+                )
+              ),
           transparent = TRUE,
           size = "s",
           shiny::sliderInput(
@@ -260,7 +440,20 @@ dge_table_filtering_ui <- function(id){
             value = c(0, 100),
             step = 1,
             post = " %"
-            )
+            ),
+          
+          shinyBS::bsTooltip(
+            id = ns("pct_out_tooltip"), 
+            title = 
+              paste0(
+                'Drag either ends of the slider to set the min and max ',
+                'values to filter based on percentage expression ',
+                'outside of a group.'
+                ), 
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
+          )
           )
         )
       )
