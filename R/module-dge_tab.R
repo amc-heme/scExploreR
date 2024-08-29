@@ -42,20 +42,31 @@ dge_tab_ui <- function(id,
           "Use the dropdown menus below to select the desired test, the groups 
           to use, and the subset on which to perform the test."
           ),
-            
-          # Menus to choose test (DGE or marker identification and 
-          # classes/groups to include). Uses dge_test_selection module
+          
+          collapsible_panel(
+            inputId = ns("dge_test_interface"),
+            label = "Test Options",
+            active = TRUE,
+            # Menus to choose test (DGE or marker identification and 
+            # classes/groups to include). Uses dge_test_selection module
             dge_test_selections_ui(
               id = ns("test_selections"),
               meta_choices = meta_choices
               ),
-          
-          # Menus to choose subset (placed within collapsible panel)
-          collapsible_panel(
-            inputId = ns("subset_selections_collapsible"), 
-            label = "Subset Options", 
-            active = TRUE, 
-            {
+            
+            # Checkbox to return positive markers only (shown for both modes)
+            checkboxInput(
+              inputId = ns("pos"),
+              label = "Positive Markers Only",
+              value = TRUE
+            ),
+            
+            # Menus to choose subset (placed within collapsible panel)
+            collapsible_panel(
+              inputId = ns("subset_selections_collapsible"),
+              label = "Subset Options",
+              active = TRUE,
+              class = "collapsible-panel-secondary",
               subset_selections_ui(
                 id = ns("subset_selections"),
                 unique_metadata = unique_metadata,
@@ -63,7 +74,21 @@ dge_tab_ui <- function(id,
                 auto_dictionary_path = auto_dictionary_path,
                 string_subsetting_href = string_subsetting_href
                 )
-              }),
+              ),
+            
+            # Submit button
+            actionButton(
+              inputId = ns("submit"),
+              label = "Run DGE",
+              style = "display: block; width: 100%;",
+              class = "button-primary"
+              )
+            ),
+          
+          # Panel used for further filtering of DGE table
+          dge_table_filtering_ui(
+            id = ns("dge_table_filtering")
+            ),
           
           # UMAP options panel (hidden, displays after plot is created)
           hidden(
@@ -93,23 +118,6 @@ dge_tab_ui <- function(id,
                   )
                 )
               )
-            ),
-          
-          # uiOutput(
-          #   outputId = ns("umap_options")
-          #   ),
-          
-          # Checkbox to return positive markers only (shown for both modes)
-          checkboxInput(
-            inputId = ns("pos"),
-            label = "Positive Markers Only",
-            value = TRUE
-            ),
-          
-          # Submit button
-          actionButton(
-            inputId = ns("submit"),
-            label = "Update"
             ),
             
           # Download Button
@@ -141,13 +149,13 @@ dge_tab_ui <- function(id,
                   outputId = ns("main_panel_title"),
                   inline = TRUE
                 ),
-                class="center"
+                class = "center"
               ),
               
               # Summary stats for test used
               tags$h3(
                 "Test Summary", 
-                class="center"
+                class = "center"
               ),
               # Subset Stats Module 
               subset_stats_ui(
@@ -160,7 +168,7 @@ dge_tab_ui <- function(id,
               # DGE Table (uses DT data table)
               tags$h3(
                 "DGE Table",
-                class="center"
+                class = "center"
               ),
               DTOutput(
                 outputId = ns("table"),
@@ -172,11 +180,16 @@ dge_tab_ui <- function(id,
               uiOutput(
                 outputId = ns("umap_title_ui")
               ),
+              
               # UMAP container
               plotOutput(
                 outputId = ns("umap"),
                 height = "600px"
-              )
+              ),
+              
+              verbatimTextOutput(
+                outputId = ns("dge_filter_status")
+                )
               
               # # TEMP: display reactive variables used in this tab while developing
               # "Test Selection Output",
@@ -298,28 +311,31 @@ dge_tab_server <- function(id,
           })
       
       # 2. Process Subset Selection Options -------------------------
-      ## 2.1. Hide Subset Menu Currently Used as Group By Category ####
-      # For standard DGE and marker identification, the selections for the group 
-      # by metadata category are used to subset the object, so that presto only 
-      # compares the selected groups or classes.
-      hidden_category <- 
+      ## 2.1. Remove the current group by variable from subsetting choices ####
+      # For standard DGE, the selections for the group by metadata category 
+      # are used to subset the object, so that presto only compares 
+      # the selected groups. The metadata variable used for forming groups must
+      # be hidden from the subsetting menu to keep the user from being able to 
+      # select a subset that does not allow comparison of the selected groups.
+      hidden_variable <- 
         reactive(
           label = "DGE Tab: Define Hidden Subset Menu",
           {
             req(test_selections())
-            # The menu only needs to be hidden for standard DGE, or DGE with 
-            # metaclusters. For thresholding, categorical metadata (the group
-            # by category) is not used to define presto classes.
             
-            # Conditional: do not use metaclusters_present() or 
-            # thresholding_present(). These are currently only computed after 
-            # the submit button is pressed.
-            if (!test_selections()$group_mode %in% ("simple_threshold")){
-              # Hide menu for group_by_category() when thresholds are not used
-              group_by_category()
-            } else {
-              # Return NULL when feature thresholds are requested 
+            # Metadata choices are not hidden during marker identification, 
+            # or during DGE based on a feature expression threshold. 
+            if (test_selections()$dge_mode == "mode_marker"){
+              # Return NULL, to hide no choices
               NULL
+            } else if (test_selections()$dge_mode == "mode_dge"){
+              # DGE mode: hide choices in all cases except 
+              # grouping based on a "simple_threshold".
+              if (test_selections()$group_mode == "simple_threshold"){
+                NULL
+              } else {
+                group_by_category()
+              }
             }
           })
       
@@ -334,8 +350,9 @@ dge_tab_server <- function(id,
           assay_config = assay_config,
           meta_categories = meta_categories,
           valid_features = valid_features,
-          hide_menu = hidden_category
+          hide_menu = hidden_variable
           )
+      
       # 3. Calculations ran after submit button is pressed ----------
       # Includes table, stats, and UMAP
       # Subset criteria (3.1) processed first,
@@ -456,50 +473,74 @@ dge_tab_server <- function(id,
           ignoreNULL = TRUE,
           {
             print("DGE 3.5: subset criteria")
-
-            # The process for determining subset criteria varies when 
-            # the conditions below are met 
-            if (test_selections()$group_mode %in% c("simple_threshold")){
-              # Special case: simple expression tresholding 
-              # test selections do not influence the subset. Only
-              # the subset selections are used. There is also no 
-              # group by category.
-              subset_criteria <- subset_selections$selections()
-            } else {
-              # Standard behavior 
-              
-              # Append chosen groups/classes from the group by variable to the
-              # subset filters
-              if (test_selections()$dge_mode == "mode_dge"){
+            # Define subset criteria conditionally and return
+            # The subset criteria are equal to the data selected in 
+            # the subset_selections module, except in the case where 
+            # two groups are being compared based on categorical metadata
+            if (test_selections()$dge_mode == "mode_dge"){
+              if (test_selections()$group_mode == "simple_threshold"){
+                # "Simple threshold" DGE, based on feature expression
+                # Return subset selections as-is
+                subset_criteria <- subset_selections$selections()
+              } else if (test_selections()$group_mode == "standard"){
+                # "Standard" DGE
+                # Add extra subset filter for the two groups selected
+                # Fetch choices for group 1 and group 2
                 choices <-
                   c(test_selections()$group_1, 
                     test_selections()$group_2)
-                } else if (test_selections()$dge_mode == "mode_marker"){
-                  choices <- 
-                    test_selections()$classes_selected
-                } else {
-                    warning("DGE 3.5: Unrecognized DGE mode")
-                  }
-              
-              # Fetch subset selections
-              # Must unpack from reactive to avoid modifying the
-              # reactive with test_selections data
-              subset_criteria <- subset_selections$selections()
-              # Add group by metadata category with 
-              # classes/groups to subset instructions
-              subset_criteria[[length(subset_criteria) + 1]] <- 
-                list(
-                  `type` = "categorical",
-                  `mode` = NULL,
-                  `var` = test_selections()$group_by,
-                  # Add display name of variable for filter criteria display
-                  `label` = metadata_config()[[test_selections()$group_by]]$label,
-                  `value` = choices
+                
+                # Fetch subset selections
+                # Must unpack from reactive to avoid modifying the
+                # reactive with test_selections data
+                subset_criteria <- subset_selections$selections()
+                # Add group by metadata category with 
+                # classes/groups to subset instructions
+                subset_criteria[[length(subset_criteria) + 1]] <- 
+                  list(
+                    `type` = "categorical",
+                    `mode` = NULL,
+                    `var` = test_selections()$group_by,
+                    # Add display name of variable for filter criteria display
+                    `label` = metadata_config()[[test_selections()$group_by]]$label,
+                    `value` = choices
+                  )
+              } else {
+                # If the group mode is undefined, throw a warning 
+                # and return subset selections as-is
+                # This warning is very unlikely to be triggered, but may cause
+                # errors downstream if it ever is
+                warning(
+                  paste0(
+                    "DGE 3.5: Unrecognized group_mode setting from test_selections: ",
+                    test_selections()$group_mode
+                  )
                 )
+                
+                subset_criteria <- subset_selections$selections()
+              }
+            } else if (test_selections()$dge_mode == "mode_marker"){
+              # Marker identification
+              # Return subset selections as-is
+              subset_criteria <- subset_selections$selections()
+            } else {
+              # If the mode is undefined, throw a warning 
+              # and return subset selections as-is
+              # This warning is very unlikely to be triggered, but may cause
+              # errors downstream if it ever is
+              warning(
+                paste0(
+                  "DGE 3.5: Unrecognized dge_mode setting ",
+                  "from test_selections: ",
+                  test_selections()$dge_mode
+                  )
+                )
+              
+              subset_criteria <- subset_selections$selections()
             }
             
-            # Return subset criteria
-            subset_criteria
+            # Return subset_criteria defined above
+            return(subset_criteria)
           })
       
       ## 3.6. Form subset ####
@@ -541,20 +582,30 @@ dge_tab_server <- function(id,
             
             subset <- 
               tryCatch(
-                error = function(cnd){
+                # Convention is to use function(cnd) for tryCatch, but "cnd"
+                # is a function in the rlang package, as is "error"
+                error = function(err_cnd){
                   # Log interpreted subset filters in the event of an error
-                  log_info(
-                    "Error in dge tab subsetting. ",
-                    "Subset filters entered:"
+                  log_error(
+                    paste0(
+                      "Error in dge tab subsetting: \n",
+                      err_cnd$message
+                      )
                     )
-                  scExploreR:::log_subset(
-                    filter_list = subset_selections$selections()
+                  
+                  log_info(
+                    paste0(
+                      "Subset filters entered:",
+                      scExploreR:::log_subset(
+                        filter_list = subset_selections$selections()
+                        )
+                      )
                     )
                   
                   # Use error_handler to display notification to user
                   error_handler(
                     session,
-                    cnd_message = cnd$message,
+                    cnd_message = err_cnd$message,
                     # Uses a list of
                     # subset-specific errors
                     error_list = error_list$subset_errors
@@ -567,7 +618,7 @@ dge_tab_server <- function(id,
                   # Return NULL for subset to 
                   # discontinue downstream calculations
                   NULL
-                },
+                  },
                 # Begin tryCatch code
                 {
                   # If object_init == TRUE, return the full object
@@ -848,23 +899,154 @@ dge_tab_server <- function(id,
                  
                   return(dge_table)
                 })
-            
-            print("DGE table colnanes")
-            print(colnames(dge_table))
 
             dge_table
           })
       
-      ## 3.10. DGE table, as DT for viewing ####
+      ## 3.10. Filter and display table ####
+      ### 3.10.1. Table filtering interface ####
+      dge_table_filters <-
+        dge_table_filtering_server(
+          id = "dge_table_filtering",
+          # Uses table from 3.9 to populate interface
+          dge_table = dge_table_content
+          )
+      
+      ### 3.10.2. Filter dge table based on filtering inputs ####
+      filtered_dge_table <-
+        reactive(
+          label = "DGE: Filter DGE Table",
+          {
+          # Runs only if a DGE test has completed
+          req(dge_table_content())
+          # Store the current state of the dge table
+          # If none of the filter operations below run, the table will be 
+          # returned from the function unchanged.
+          dge_table <- dge_table_content()
+          
+          # Filter by group
+          if (isTruthy(dge_table_filters$group())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                group %in% dge_table_filters$group()
+              )
+          }
+          
+          # Filter by feature
+          if (isTruthy(dge_table_filters$feature())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                feature %in% dge_table_filters$feature()
+              )
+          }
+          
+          # Filter based on average expression within group
+          if (isTruthy(dge_table_filters$expression())){
+            if (!is.null(dge_table_filters$expression()$min) & 
+                !is.null(dge_table_filters$expression()$max)){
+              # If both values are defined, filter based on both values
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(avgExpr >= dge_table_filters$expression()$min &
+                                avgExpr <= dge_table_filters$expression()$max)
+            } else if (!is.null(dge_table_filters$expression()$min) & 
+                       is.null(dge_table_filters$expression()$max)){
+              # Min is defined but not the max
+              # filter based on the min
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(avgExpr >= dge_table_filters$expression()$min)
+            } else if (is.null(dge_table_filters$expression()$min) & 
+                       !is.null(dge_table_filters$expression()$max)){
+              # Max is defined but not the min 
+              # filter based on the max
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(avgExpr <= dge_table_filters$expression()$max)
+            }
+          }
+          
+          # Filter based on lfc values
+          if (isTruthy(dge_table_filters$lfc())){
+            if (!is.null(dge_table_filters$lfc()$min) & 
+                !is.null(dge_table_filters$lfc()$max)){
+              print("dge_table_filters$lfc()")
+              print(dge_table_filters$lfc())
+              
+              # If both values are defined, filter based on both values
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(log2FC >= dge_table_filters$lfc()$min &
+                                log2FC <= dge_table_filters$lfc()$max)
+            } else if (!is.null(dge_table_filters$lfc()$min) & 
+                       is.null(dge_table_filters$lfc()$max)){
+              # Min is defined but not the max
+              # filter based on the min
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(log2FC >= dge_table_filters$lfc()$min)
+            } else if (is.null(dge_table_filters$lfc()$min) & 
+                       !is.null(dge_table_filters$lfc()$max)){
+              # Max is defined but not the min 
+              # filter based on the max
+              dge_table <-
+                dge_table %>% 
+                dplyr::filter(log2FC <= dge_table_filters$lfc()$max)
+            }
+          }
+          
+          # Filter based on AUC value
+          if (isTruthy(dge_table_filters$auc())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(auc >= dge_table_filters$auc()[1] &
+                              auc <= dge_table_filters$auc()[2])
+          }
+          
+          # Filter by adjusted p-value
+          if (isTruthy(dge_table_filters$pval_adj())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                pval_adj <= dge_table_filters$pval_adj()
+              )
+          }
+          
+          # Filter based on percent expression within group/class
+          if (isTruthy(dge_table_filters$pct_in())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                pct_in >= dge_table_filters$pct_in()[1] &
+                  pct_in <= dge_table_filters$pct_in()[2]
+              )
+          }
+          
+          # Filter based on percent expression outside group/class
+          if (isTruthy(dge_table_filters$pct_out())){
+            dge_table <-
+              dge_table %>% 
+              dplyr::filter(
+                pct_out >= dge_table_filters$pct_out()[1] &
+                  pct_out <= dge_table_filters$pct_out()[2]
+              )
+          }
+          
+          dge_table
+        })
+      
+      ### 3.10.3. Display filtered table using DT package ####
       dge_DT_content <-
         eventReactive(
-          dge_table_content(),
+          filtered_dge_table(),
           label = "DGE: DT Generation",
           {
-            print("DGE 3.10: DGE table")
+            print("DGE DT table")
             
             # Add Genecards link for each gene
-            table <- dge_table_content()
+            table <- filtered_dge_table()
             # Vector of feature names to pass to links
             features <- table$feature 
             
@@ -878,12 +1060,9 @@ dge_tab_server <- function(id,
                 )
             
             # Rename "group" column based on the test selected
-            group_rename <- 
-              if (test_selections()$dge_mode == "mode_dge") {
-                "Group"
-              } else if (test_selections()$dge_mode == "mode_marker") {
-                  "Class"
-              }
+            # This used to be called "Group" or "Class", but is now always 
+            # "Group" (issue #324)
+            group_rename <- "Group"
             
             # Renamed using base R syntax because new name is dynamic
             names(table)[names(table) == "group"] <-
@@ -946,7 +1125,7 @@ dge_tab_server <- function(id,
           ignoreNULL = FALSE,
           label = "DGE: UMAP",
           {
-            print("DGE 3.11: UMAP")
+            print("DGE: UMAP")
 
             # Determine value of ncol
             # ncol depends on number of panels.
@@ -1009,9 +1188,9 @@ dge_tab_server <- function(id,
       main_panel_title <-
         eventReactive(
           dge_umap(),
-          label = "DGE 3.12: Main Panel Title",
+          label = "DGE: Main Panel Title",
           {
-            print("DGE 3.12: Main Panel Title")
+            print("DGE: Main Panel Title")
             
             if (thresholding_present()){
               print("Conditional: thresholding present")
@@ -1044,23 +1223,23 @@ dge_tab_server <- function(id,
       umap_title <-
         eventReactive(
           main_panel_title(),
-          label = "DGE 3.13: UMAP Title",
+          label = "DGE: UMAP Title",
           {
-            print("DGE 3.13: UMAP Title")
+            print("DGE: UMAP Title")
             # UI returned depends on DGE mode
             if (test_selections()$dge_mode == "mode_dge"){
               # DGE Title
               tags$h3(
-                "UMAP of groups being compared",
-                class="center"
+                "UMAP of DGE Groups",
+                class = "center"
               )
             } else if (test_selections()$dge_mode == "mode_marker"){
               # Marker identification title (and subtext)
               tagList(
                 # Center text
                 tags$h3(
-                  "UMAP by class",
-                  class="center"
+                  "UMAP of Marker Groups",
+                  class = "center"
                   ),
                 tags$p(
                   "(Markers are computed for each group shown)",
@@ -1073,7 +1252,7 @@ dge_tab_server <- function(id,
       ## 3.14. Hide Spinners ####
       observeEvent(
         umap_title(),
-        label = "DGE 3.14: Hide Spinner",
+        label = "DGE: Hide Spinner",
         {
           # Show UI (do not namespace ID for showElement)
           showElement(
@@ -1150,7 +1329,7 @@ dge_tab_server <- function(id,
             },
           content = function(file) {
             write.csv(
-              dge_table_content(),
+              filtered_dge_table(),
               file = file,
               row.names = FALSE
               )
@@ -1158,9 +1337,24 @@ dge_tab_server <- function(id,
           contentType = "text/csv"
           ) # End downloadHandler
       
-      # 6. Testing: export raw DGE table ---------------------------------------
+      # Dev mode: status of filter table values
+      if (session$userData$dev_mode == TRUE){
+        output$dge_filter_status <-
+          renderPrint({
+            lapply(
+              dge_table_filters,
+              # Unpack all reactive values in the list
+              function(x){x()}
+            )
+          })
+      }
+      
+      # 6. Testing -------------------------------------------------------------
       exportTestValues(
-        dge_table = dge_table_content()
+        # Raw DGE table produced by scDE
+        dge_table = dge_table_content(),
+        # Filtered DGE table
+        filtered_dge_table = filtered_dge_table()
       )
       
       }

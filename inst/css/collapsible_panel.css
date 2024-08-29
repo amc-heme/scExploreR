@@ -153,3 +153,9 @@ button.transparent.active::before {
 	/* Standard value for ul is 40px; shrink for collapsible-small class*/
 	padding-inline-start: 25px;
 }
+
+/* Background color for collapsible panels within collapsible panels */
+/* Use a slightly darker color for the background */
+.collapsible-panel-secondary{
+	background-color: #D1D1D1;
+  }

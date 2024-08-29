@@ -12,6 +12,11 @@
   color: #FFFFFF;
 }
 
+.button-primary:focus{
+  background-color: var(--mid-blue-hover);
+  color: #FFFFFF;
+}
+
 .button-primary:active{
   background-color: var(--mid-blue-active);
   color: #FFFFFF;
@@ -27,6 +32,11 @@
 }
 
 .button-ghost:hover{
+  border-color: #333333;
+  background-color: #E8E8E8
+}
+
+.button-ghost:focus{
   border-color: #333333;
   background-color: #E8E8E8
 }

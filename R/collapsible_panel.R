@@ -15,6 +15,10 @@
 #' @param active If TRUE, panel appears in the open position upon app startup. 
 #' If FALSE (the default) the panel starts in the closed position
 #' @param transparent If TRUE, panel will appear transparent (default is FALSE).
+#' @param background_color A background color to use for the panel. This should 
+#' be passed as a single-length character vector, and should contain a valid 
+#' CSS value for the background-color attribute. If NULL, the background color
+#' defaults to "#E1E1E1"
 #'
 #' @noRd
                               
@@ -25,6 +29,7 @@ collapsible_panel <-
     label = NULL,
     active = FALSE,
     transparent = FALSE,
+    background_color = NULL,
     size = "l"
     ){
     if (!size %in% c("s", "l")){
@@ -64,6 +69,18 @@ collapsible_panel <-
         collapse = " "
       )
     
+    # Add background color designation if defined
+    main_panel_style <-
+      if (!is.null(background_color)){
+        paste0(
+          "background-color: ",
+          background_color,
+          " !important;"
+          )
+      } else {
+        ""
+      }
+    
     # Use taglist to return button tag for header and div tag for content
     tagList( 
       # Header of panel: built with button tag. 
@@ -78,7 +95,7 @@ collapsible_panel <-
           # Use header class computed above
           class = header_class, 
           # Header text of panel: use user-defined label
-          if (!is.null(label)) as.character(label)
+          if (!is.null(label)) tags$span(label)
           ),
       
       # Pass all content to div tag
@@ -89,7 +106,7 @@ collapsible_panel <-
           div(
             ...,
             class = content_class,
-            style = "display: block;"
+            style = c(main_panel_style, "display: block;")
             )
         } else {
           # Otherwise, the default value of none will be used to 
@@ -97,7 +114,8 @@ collapsible_panel <-
           content_html <- 
             div(
               ...,
-              class = content_class
+              class = content_class,
+              style = main_panel_style
               )
           }
       )#End taglist
