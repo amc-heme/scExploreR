@@ -1,0 +1,135 @@
+---
+title: "ScExploreRTesting"
+format: html
+editor: visual
+---
+
+```{r}
+library(anndata)
+
+full_dataset <- 
+  anndata::read_h5ad(
+    # Replace the path below with the path to the downloaded dataset
+    "/Users/kaylinker/Downloads/1ba7d495-c1a8-4809-b56d-548fbea77c8a.h5ad"
+  )
+```
+
+You can add options to executable code like this
+
+```{r}
+SCUBA::meta_varnames(full_dataset)
+
+full_unique_vars <- SCUBA::meta_varnames(full_dataset)
+```
+
+The block of code refers to 'sclc_dataset', but previous code blocks uses 'full_dataset'
+
+```{r}
+# Iterate through metadata variables and return a vector specifying whether 
+# the variable is categorical (character, factor), or numeric (numeric, 
+# double, integer)
+var_classes <- 
+  sapply(
+    full_unique_vars,
+    # Compute the class of the variable
+    function(meta_var){
+      class(sclc_dataset$obs[[meta_var]]) # Changeed to 
+    }
+  )
+```
+
+Changed 'sclc_dataset' to 'full_dataset'
+
+```{r}
+# Iterate through metadata variables and return a vector specifying whether 
+# the variable is categorical (character, factor), or numeric (numeric, 
+# double, integer)
+var_classes <- 
+  sapply(
+    full_unique_vars,
+    # Compute the class of the variable
+    function(meta_var){
+      class(full_dataset$obs[[meta_var]])
+    }
+  )
+
+# Sort to group classes together
+sort(var_classes)
+
+```
+
+```{r}
+SCUBA::unique_values(
+  object = full_dataset,
+  var = "cell_type_fine"
+  )
+```
+
+```{r}
+cell_type_vars <- 
+  c("cell_type_coarse", 
+    "cell_type_fine", 
+    "cell_type_general", 
+    "cell_type",
+    "clusters", 
+    "cell_type_med"
+    )
+
+for (meta_var in cell_type_vars){
+  print(meta_var)
+  
+  # Pass results of unique_values to length() to get the number of values
+  n_unique <-
+    SCUBA::unique_values(
+    object = full_dataset,
+    var = meta_var
+    ) |> 
+    length()
+  
+  print(n_unique)
+}
+```
+
+```{r}
+library(patchwork)
+
+cell_type_vars <- 
+  c("cell_type_general", 
+    "cell_type_coarse",
+    "cell_type",
+    "cell_type_med", 
+    "cell_type_fine", 
+    "clusters"
+    )
+
+plots <- list()
+
+for (meta_var in cell_type_vars){
+  plots[[meta_var]] <- 
+    SCUBA::plot_reduction(
+      full_dataset,
+      group_by = meta_var,
+      label = TRUE
+      ) 
+}
+
+wrap_plots(plots, ncol = 2)
+```
+
+```{r}
+SCUBA::unique_values(
+  object = full_dataset,
+  var = "donor_id"
+) |> 
+  stringr::str_sort(numeric = TRUE)
+```
+
+```{r}
+full_dataset$obsm_keys()
+```
+
+```{r}
+# Number of dimensions in each reduction
+full_dataset$obsm$X_umap |> dim()
+full_dataset$obsm$X_pca |> dim()
+```
