@@ -3080,23 +3080,24 @@ plot_module_server <- function(id,
                          # Plot: UI depends on whether manual
                          # dimensions are specified
                          if (
-                           (!is.null(manual_dim$width())) &&
-                           (!is.null(manual_dim$height()))
+                           (isTruthy(manual_dim$width())) &
+                           (isTruthy(manual_dim$height()))
                          ){
                            # If manual dimensions are specified, pass the
                            # values specified by the user to plotOutput
                            ui <-
                              plotOutput(
                                outputId = ns("plot"),
-                               width = manual_dim$width(),
-                               height = manual_dim$height()
+                               width = manual_dim$width()*96,
+                               height = manual_dim$height()*96
                                )
                          } else {
                            # Otherwise, call plotOutput without defining
                            # width and height
                            ui <-
                              plotOutput(
-                               outputId = ns("plot")
+                               outputId = ns("plot"),
+                               height = "600px"
                                )
                          }
 
@@ -4291,7 +4292,6 @@ plot_module_server <- function(id,
                          session = session
                          )
                      }
-
                      plot()
                    })
 
@@ -4338,8 +4338,8 @@ plot_module_server <- function(id,
                      content = function(file){
                        # Conditional: manual dimensions are specified
                        if (
-                         (!is.null(manual_dim$width())) &&
-                         (!is.null(manual_dim$height()))
+                         (isTruthy(manual_dim$width())) &
+                         (isTruthy(manual_dim$height()))
                        ){
                          # If manual dimensions are specified, apply them to
                          # height and width arguments
@@ -4350,10 +4350,10 @@ plot_module_server <- function(id,
                            device = input$file_type,
                            width = manual_dim$width(),
                            height = manual_dim$height(),
-                           # Set dpi to 72 so proportions of downloaded plot
-                           # match the plot in the app
-                           dpi = 72,
-                           units = "px",
+                           # Set dpi to selected value so proportions of 
+                           # downloaded plot match the plot in the app
+                           dpi = manual_dim$dpi(),
+                           units = "in",
                            # Set background color to white (background is
                            # transparent on some plots)
                            bg="#FFFFFF"
