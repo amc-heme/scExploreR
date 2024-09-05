@@ -181,6 +181,22 @@ run_config <-
           )
         }
     }
+#Check for NA values in expression data
+    if(inherits(object, "HDF5SummarizedExperiment")) {
+      expr_data <- assay(object, "counts")
+    } else if(inherits(object, "Seurat")) {
+      expr_data <- GetAssayData(object, assay = "RNA", slot = "data")
+    } else if(inherits(object, "AnnData")) {
+      expr_data <- object$X
+    } else {
+      stop(NULL)
+    }
+    # stop config from running if NAs found and show a warning to remove from dataset
+    if(anyNA(expr_data)) {
+   stop(
+   "Warning: NA values detected in expression data. Please remove NA values from dataset before loading."
+   )
+    }
 
     # Test if the loaded object is of a supported class; if not, return an error
     check_dataset(
