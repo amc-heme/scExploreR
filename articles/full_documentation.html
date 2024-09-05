@@ -82,8 +82,7 @@
 </h2>
 <p>The plots tab is used to explore and summarize the data using several
 plot types. All plots may be created from either the full dataset or a
-subset of cells based on metadata. For more, see the subsetting
-section.</p>
+subset of cells based on metadata. For more, see the <a href="#Subsets">subsetting section</a>.</p>
 <div class="section level3">
 <h3 id="plot-switches">Plot Switches<a class="anchor" aria-label="anchor" href="#plot-switches"></a>
 </h3>
@@ -92,74 +91,77 @@ for each plot type. To show/hide each plot, click the switch. The
 available plot types are described briefly below, and each is described
 in more detail in their respective sections.</p>
 <ul>
-<li><p><strong>DimPlot:</strong> shows each cell on dimensional
-reduction plot, either a UMAP, or a set of other visualizations enabled
-by the browser admin.</p></li>
-<li><p><strong>Feature Plot:</strong> a DimPlot with cells colored by
-expression of a feature (gene, surface protein, or other data enabled by
+<li><p><strong>DimPlot:</strong> shows each cell on a dimensional
+reduction plot, e.g. a UMAP, tSNE, or other projection enabled by the
+browser admin.</p></li>
+<li><p><strong>Feature Plot:</strong> a DimPlot with cells colored by a
+feature’s value (e.g. gene, surface protein, or other data enabled by
 the browser admin).</p></li>
-<li><p><strong>Violin Plot:</strong> displays the distribution of
-expression of a feature across groups of cells in the sample.</p></li>
-<li><p><strong>Dot Plot:</strong> shows the average expression and
-extent of expression of multiple features across groups of cells in the
-sample.</p></li>
-<li><p><strong>Scatterplot:</strong> compares expression of two genes in
-a sample. All cells are plotted according to the expression value of
-each of the two features entered. Correlation between genes may be
-quantified in the <a href="#correlations-tab">Gene Correlations
-Tab</a>.</p></li>
-<li><p><strong>Ridge Plot:</strong> displays a density plot of the
-expression of a feature in all cells, or in groups of cells.</p></li>
-<li><p><strong>Cell Proportion Plot:</strong> used to visualize
-metadata. Shows the proportion of cells belonging to each value of a
-categorical metadata variable, and compares proportions across each
-value of a second categorical metadata variable.</p></li>
-<li><p><strong>Metadata Pie Chart:</strong> shows metadata at the
-sample/patient level. The pie chart displays the number of
-samples/patients in each categorical metadata value.</p></li>
+<li><p><strong>Violin Plot:</strong> displays the distribution of a
+feature’s value across groups of cells as defined in the
+metadata.</p></li>
+<li><p><strong>Dot Plot:</strong> shows the average scaled value and
+percentage of cells with non-zero values for multiple features across
+groups of cells as defined by metadata categories.</p></li>
+<li><p><strong>Scatterplot:</strong> compares values of two features.
+Correlation between values may be quantified in the <a href="#correlations-tab">Gene Correlations Tab</a>.</p></li>
+<li><p><strong>Ridge Plot:</strong> displays a density plot of a
+feature’s value across a group of cells defined by metadata.</p></li>
+<li><p><strong>Cell Proportion Plot:</strong> used to visualize the
+proportion of cells belonging to each value of a categorical metadata
+variable.</p></li>
+<li><p><strong>Metadata Pie Chart:</strong> displays the number of
+samples/patients in each selected categorical metadata value.</p></li>
 </ul>
 </div>
 <div class="section level3">
 <h3 id="feature-selection">Feature Selection<a class="anchor" aria-label="anchor" href="#feature-selection"></a>
 </h3>
 <p>When plot types based on a gene or multiple genes are selected, the
-feature entry menu will display beneath the switches. Any gene in the
-dataset may be entered here. Surface proteins, gene signatures, and
-other data enabled by the user setting up the browser may also be
-entered in this menu. As you type the name of a feature, suggestions
-will appear along with the type of the suggested feature.</p>
+feature entry menu will display beneath the switches. Any feature
+(e.g. genes, surface proteins, gene signatures, or other data enabled by
+the browser admin) may be entered here. As you type the name of a
+feature, matching suggestions will appear along with the type of the
+suggested feature.</p>
 </div>
 <div class="section level3">
 <h3 id="Palettes">Palettes<a class="anchor" aria-label="anchor" href="#Palettes"></a>
 </h3>
-<p>Allows for the selection of palettes for categorical and continuous
-data. Selections made will apply to all plots in the plots tab
-displaying each type of data.</p>
+<p>Allows for the selection of color palettes for categorical and
+continuous data. Selections made will apply to all plots in the plots
+tab.</p>
 </div>
 <div class="section level3">
 <h3 id="Subsets">Forming Subsets<a class="anchor" aria-label="anchor" href="#Subsets"></a>
 </h3>
 <p>Use the “Subset Options” menu to filter cells in the dataset based on
-specified criteria, and view plots with only the cells matching the
-defined criteria.</p>
-<p>Filter menus will appear for each categorical metadata variable in
-the dataset enabled by the user setting up the browser. Use each menu to
-select values for the metadata variable to include in the subset; the
-“select all” and “remove filter” button can be used to add and remove
-all values in the variable, respectively. Criteria defined by each menu
-are combined using <code>AND</code> syntax, meaning that only cells with
-metadata selected in one menu, and metadata selected in a second menu
-will be returned upon subsetting. Menus for the other variables will
-update based on possible combinations made in the current menu, and
-invalid combinations will appear in gray. To select a value that is
-currently invalid, clear selections made in other filter menus, and
-select a different combination. Press “Apply Subset” to create the
-subset from the current selection.</p>
+specified criteria, selection of which in these menus will include, not
+exclude, cells defined by the criteria. These selections will be
+inherited by all plots.</p>
+<p>The dataset can be filtered by categorical metadata, feature
+expression, or advanced subsetting (see <a href="#advanced-subsetting">Advanced (String) Subsetting</a>). Select
+the “add filter” button to access the filter type menu. When choosing
+categorical filter, any metadata variable can be chosen along with a
+single value or combination of values. Select “select all” to include
+all values in a filter, and select “deselect all” to clear all choices.
+Once a filter has been chosen, the “confirm filter” button must be
+selected before moving back to the filter menu. When choosing a feature
+expression filter, the numeric filter menu offers the options to filter
+cells in the dataset that express the chosen feature at levels above or
+below a defined threshold, or within a specified range of expression.
+Criteria defined by each menu are combined using <code>AND</code>
+syntax, meaning that only cells with metadata selected in one menu, and
+metadata selected in a second menu will be returned upon subsetting.
+Menus for the other variables will update based on possible combinations
+made in the current menu, and invalid combinations will appear in gray.
+To select a value that is currently invalid, clear or edit selections
+made in other filter menus, and select a different combination. Press
+“Apply Subset” to create the subset from the current selection.</p>
 <div class="section level4">
-<h4 id="advanced-string-subsetting">Advanced (String) Subsetting<a class="anchor" aria-label="anchor" href="#advanced-string-subsetting"></a>
+<h4 id="advanced-subsetting">Advanced (String) Subsetting<a class="anchor" aria-label="anchor" href="#advanced-subsetting"></a>
 </h4>
-<p>If the “String subsetting (advanced mode)” checkbox is enabled, a
-text entry will appear where subset criteria may be defined via R code.
+<p>If the “Advanced Subsetting” option is chosen for filtering, a text
+entry box will appear where subset criteria may be defined via R code.
 This interface allows for the entry of additional types of criteria,
 such as:</p>
 <ul>
@@ -175,35 +177,31 @@ subsetting</a>.</p>
 <div class="section level3">
 <h3 id="DimPlots">Dimensional Reduction Plots<a class="anchor" aria-label="anchor" href="#DimPlots"></a>
 </h3>
-<p>Dimensional reduction plots are used to summarize overall gene
-expression in the sample (for more, see <a href="scRNA_Plots_Explained.html">Interpereting scRNA-seq plots</a>).
-Cells with similar expression profiles tend to cluster next to each
-other, but quantitative connections can’t necessarily be made between
-distance on the plot and similarity in gene expression (i.e. a cell that
-is 16 units away from another cell is not twice as dissimilar from a
-cell that is 8 units away).</p>
+<p>Dimensional reduction plots are used to summarize relatedness between
+cells across the dataset, e.g. using gene expression (for more, see <a href="scRNA_Plots_Explained.html">Interpereting scRNA-seq plots</a>).
+Cells with similar profiles tend to cluster next to each other, but
+quantitative connections can’t necessarily be made between distance on
+the plot and similarity in gene expression (i.e. a cell that is 16 units
+away from another cell is not twice as dissimilar from a cell that is 8
+units away).</p>
 <div class="section level4">
-<h4 id="metadata-to-group-by">Metadata to Group By<a class="anchor" aria-label="anchor" href="#metadata-to-group-by"></a>
+<h4 id="DimPlots-group-by">Metadata to Group By<a class="anchor" aria-label="anchor" href="#DimPlots-group-by"></a>
 </h4>
-<p>This menu is used to select a categorical metadata variable to be
-used to coloring cells. Cells will be colored according to their
-associated metadata for the variable chosen, and the key for colors used
-will display in the legend to the right.</p>
+<p>This menu is used to select a categorical metadata variable
+(e.g. cell type) to be used to label cells by color. The key for colors
+used will display in the legend to the right.</p>
 </div>
 <div class="section level4">
-<h4 id="metadata-to-split-by">Metadata to Split By<a class="anchor" aria-label="anchor" href="#metadata-to-split-by"></a>
+<h4 id="DimPlots-split-by">Metadata to Split By<a class="anchor" aria-label="anchor" href="#DimPlots-split-by"></a>
 </h4>
 <p>This menu sets a categorical metadata variable used to “split” cells
-into separate plots for viewing side-by-side. One panel will be created
-for each value in the split by variable, and cells will display on the
-panel corresponding to the metadata value for that cell.</p>
+into separate plots for viewing side-by-side, and defaults to
+“None”.</p>
 <p>This menu is useful for comparing projections between different
-metadata. For example, transcriptional differences between patients can
-be quickly spotted when splitting by patient. A patient may be missing a
-certain cell type, or have a different proportion of cells compared to
-other patients. Differences spotted in this selection can be analyzed in
-more detail in the differential gene expression and correlations tabs.
-This menu defaults to “None”.</p>
+metadata values. For example, broad differences in cell type proportions
+may be visualized when splitting by disease response. These
+obsservations can be analyzed in more detail in the differential gene
+expression and correlations tabs.</p>
 <p>When a variable is selected, a slider to choose the number of columns
 will appear under the “Title options menu” (see <a href="#choose-number-of-columns">Choose number of columns</a> for more
 info).</p>
@@ -213,14 +211,14 @@ info).</p>
 </h4>
 <p>This menu is used to switch between different methods of dimensional
 reduction: cells are plotted according to the coordinates selected in
-the current projection method. Projection methods are added by the user
-setting up the browser, and the default projection is chosen by that
-user. Common projections include UMAP and t-SNE. For more information on
-each projection included with the current dataset, contact the user or
-organization that set up the browser.</p>
+the current projection method. Projection methods are generated during
+dataset processing and added by the browser admin. Common projections
+include UMAP and t-SNE. For more information on each projection included
+with the current dataset, contact the user or organization that set up
+the browser.</p>
 </div>
 <div class="section level4">
-<h4 id="title-options">Title Options<a class="anchor" aria-label="anchor" href="#title-options"></a>
+<h4 id="DimPlots-title-options">Title Options<a class="anchor" aria-label="anchor" href="#DimPlots-title-options"></a>
 </h4>
 <p>The title options menu is used to change or remove the title of the
 dimensional reduction plot. When set to “Default” the title shown is the
@@ -243,50 +241,44 @@ number of panels created by the current split by variable.</p>
 <div class="section level4">
 <h4 id="label-groups">Label Groups<a class="anchor" aria-label="anchor" href="#label-groups"></a>
 </h4>
-<p>When checked, labels will display above each cluster of cells
+<p>Toggles on and off labels displayed above each cluster of cells
 according to the currently selected group by variable.</p>
 </div>
 <div class="section level4">
-<h4 id="include-legend">Include Legend<a class="anchor" aria-label="anchor" href="#include-legend"></a>
+<h4 id="DimPlots-include-legend">Include Legend<a class="anchor" aria-label="anchor" href="#DimPlots-include-legend"></a>
 </h4>
-<p>When checked, the legend will display to the right-hand side of the
-plot. when unchecked, the legend will be removed.</p>
-<h4 id="include-legend-4">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#include-legend-4"></a>
+<p>Adds or removes legend displayed on the right side of the plot.</p>
+<h4 id="DimPlots-include-legend-1">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#DimPlots-include-legend-1"></a>
 </h4>
 <p>When enabled, an interface appears allowing 
-the user to change the height and width of the plot. The height and width are 
-entered in pixels, and may be chosen using the slider or the text box. When 
+the user to change the height and width of the plot in pixels using either a slider bar or text entry. When 
 entering a value in the text box, press return to update the plot with the 
-value. Downloaded plots will have the dimensions defined here, if "manually 
-adjust plot dimensions" is checked.</p>
-<h4 id="include-legend-5">Download Button<a class="anchor" aria-label="anchor" href="#include-legend-5"></a>
+value. Downloaded plots will have the dimensions defined here if "manually 
+adjust plot dimensions" is checked. Otherwise defaults are...?</p>
+<h4 id="DimPlots-include-legend-2">Download Button<a class="anchor" aria-label="anchor" href="#DimPlots-include-legend-2"></a>
 </h4>
-<p>To download plots, press the download button at the bottom left hand 
+<p>Plots are downloaded by clicking the download button at the bottom left 
 side of the "DimPlot Specific Options" menu. A menu will appear 
-with an option to choose whether to download a .png or .svg file, and 
-a download button will appear beneath that button. Downloads in the 
-.svg format can be edited with Adobe Illustrator or a similar program 
-to add additional labels or modify the text or colors of the plot. 
-All graphical elements added to the plot can be edited individually 
-in an .svg editor.</p>
+with an option to choose whether to download a .png or .svg file. Downloads in the 
+.svg format can be edited with Adobe Illustrator or a similar program.</p>
 </div>
 </div>
 <div class="section level3">
 <h3 id="Feature-plots">Feature Plots<a class="anchor" aria-label="anchor" href="#Feature-plots"></a>
 </h3>
 <p>Feature plots are dimensional reduction plots that are colored
-according to feature expression instead of categorical metadata. Among
-other things, feature plots can be used to see which cell types are
-expressing a feature and to what extent, or to visualize differences in
-expression between treatment groups when a split by metadata variable is
+according to feature values instead of categorical metadata. Among other
+things, feature plots can be used to see which cell types are expressing
+a feature and to what extent, or to visualize differences in expression
+between treatment groups when a split by metadata variable is
 selected.</p>
 <!-- ### Metadata to Group By
 
-For feature plots, the group by selection menu controls the metadata to use for labeling cells, if
+For feature plots, the group by selection menu controls the metadata to use for labeling cells, if ...?
 
 This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right. -->
 <div class="section level4">
-<h4 id="metadata-to-split-by-1">Metadata to Split By<a class="anchor" aria-label="anchor" href="#metadata-to-split-by-1"></a>
+<h4 id="Feature-plots-split-by">Metadata to Split By<a class="anchor" aria-label="anchor" href="#Feature-plots-split-by"></a>
 </h4>
 <p>This menu sets a categorical metadata variable used to “split” cells
 into separate plots for viewing side-by-side. One panel will be created
@@ -299,23 +291,23 @@ row and split by groups by column.</p>
 <div class="section level4">
 <h4 id="choose-projection-1">Choose Projection<a class="anchor" aria-label="anchor" href="#choose-projection-1"></a>
 </h4>
-<p>This menu is used to switch between different methods of dimensional
-reduction: cells are plotted according to the coordinates selected in
-the current projection method. Projection methods are added by the user
-setting up the browser, and the default projection is chosen by that
-user. Common projections include UMAP and t-SNE. For more information on
-each projection included with the current dataset, contact the user or
+<p>This menu is used to switch between visualizing different methods of
+dimensional reduction: cells are plotted according to the coordinates
+selected in the current projection method. Projection methods are
+calculated during dataset processing and added by the browser admin.
+Common projections include UMAP and t-SNE. For more information on each
+projection included with the current dataset, contact the user or
 organization that set up the browser.</p>
 </div>
 <div class="section level4">
-<h4 id="title-options-1">Title Options<a class="anchor" aria-label="anchor" href="#title-options-1"></a>
+<h4 id="Feature-plots-title-options">Title Options<a class="anchor" aria-label="anchor" href="#Feature-plots-title-options"></a>
 </h4>
 <p>The title options menu is used to change or remove the titles
 appearing above each panel of the feature plot. When set to “default”,
-the titles shown are equal to the feature (if one feature or multiple
-features are entered without a split by variable), or to the values in
-the split by metadata variable when one feature is entered with a split
-by variable. When set to “none”, no titles are shown.</p>
+the titles shown are equal to the feature if one or multiple features
+are entered without a split by variable, or to the values in the split
+by metadata variable when one feature is entered with a split by
+variable. When set to “none”, no titles are shown.</p>
 <p>The “Custom” option is available in all settings except for when
 multiple features are entered and a split by variable is chosen. When
 set to “custom”, an interface will appear to customize titles for every
@@ -329,16 +321,16 @@ panels to the default.</p>
 <div class="section level4">
 <h4 id="display-options-for-legend-title">Display Options for Legend Title<a class="anchor" aria-label="anchor" href="#display-options-for-legend-title"></a>
 </h4>
-<p>Used to control the title that displays above the legend to the
-right. When set to “Feature Name” (the default), the feature name will
-display above the legend. When set to “Expression”, the legend will be
-set to “Expression”. If “No Title” is selected, the title will be
-removed. This menu is hidden when multiple features are entered and a
-split by variable is chosen. In this case, no title will display above
-the legend.</p>
+<p>Used to control the title that displays above the legend. When set to
+“Feature Name” (the default), the feature name will display above the
+legend. When set to “Expression”, the legend will be set to
+“Expression”. If “No Title” is selected, the title will be removed. This
+menu is hidden when multiple features are entered and a split by
+variable is chosen. In this case, no title will display above the
+legend.</p>
 </div>
 <div class="section level4">
-<h4 id="choose-number-of-columns-1">Choose Number of Columns<a class="anchor" aria-label="anchor" href="#choose-number-of-columns-1"></a>
+<h4 id="feature-choose-ncol">Choose Number of Columns<a class="anchor" aria-label="anchor" href="#feature-choose-ncol"></a>
 </h4>
 <p>This setting is available when one feature is selected with a split
 by variable, or when multiple features are chosen without a split by
@@ -353,8 +345,9 @@ variable.</p>
 the output plot will be fixed in a layout of n splits by m features. If
 you wish to have a custom layout for these plots, it is recommended to
 create a separate plot for each feature with the desired layout,
-download each plot, and then combine them using graphic design
-software.</p>
+download each plot, and then combine them using graphic design software.
+A caveat of this approach is that the value scales may be different for
+each plot.</p>
 </div>
 <div class="section level4">
 <h4 id="share-scale-between-features">Share Scale Between Features<a class="anchor" aria-label="anchor" href="#share-scale-between-features"></a>
@@ -362,9 +355,9 @@ software.</p>
 <p>This setting is available when multiple features are entered with no
 split by variable. When enabled, all features will be plotted using the
 same scale. When disabled, each feature is plotted using a scale defined
-by the minimum and maximum expression values for that feature. This
-setting must be enabled to properly compare expression between different
-features.</p>
+by the minimum and maximum values for that feature. This setting must be
+enabled to properly compare values between different features using a
+color scale.</p>
 </div>
 <div class="section level4">
 <h4 id="display-feature-name-above-panels">Display Feature Name Above Panels<a class="anchor" aria-label="anchor" href="#display-feature-name-above-panels"></a>
@@ -376,46 +369,42 @@ centered above the panels created from the split by variable.</p>
 <div class="section level4">
 <h4 id="order-cells-by-expression">Order Cells by Expression<a class="anchor" aria-label="anchor" href="#order-cells-by-expression"></a>
 </h4>
-<p>When checked, cells with the highest expression values will be
-plotted on top of the cells with lower expression values. When unchecked
-(the default), cells will be plotted in random order. Enabling this
-setting can help with features that are expressed in only a few cells in
-the sample, but when used with features that are expressed in many cells
-but with a low average expression, the extent of expression in the
-sample may be exaggerated. To avoid this, we recommend that feature
-plots be used alongside other means of visualization for expression,
-such as <a href="#violin-plots">violin plots</a>, <a href="#dot-plots">dot plots</a>, and <a href="#ridge-plots">ridge
+<p>When checked, cells with the highest values will be plotted on top of
+the cells with lower expression values- essentially masking them. When
+unchecked (the default), cells will be plotted in random order giving no
+preference to either high or low value containing cells to be seen.
+Enabling this setting can help with features that are expressed in only
+a few cells in the dataset. Caution should be taken when visualizing
+features with detectable values in many cells but low average values. In
+these scenarios the values in the dataset may be exaggerated. To avoid
+this, we recommend that feature plots be used alongside other means of
+visualization, such as <a href="#violin-plots">violin plots</a>, <a href="#dot-plots">dot plots</a>, and <a href="#ridge-plots">ridge
 plots</a>.</p>
 </div>
 <div class="section level4">
 <h4 id="label-groups-1">Label Groups<a class="anchor" aria-label="anchor" href="#label-groups-1"></a>
 </h4>
-<p>When checked, labels will display above each cluster of cells
-according to the currently selected group by variable.</p>
+<p>Toggles group by variable labels above each set of cells on and
+off.</p>
 </div>
 <div class="section level4">
-<h4 id="include-legend-1">Include Legend<a class="anchor" aria-label="anchor" href="#include-legend-1"></a>
+<h4 id="feature-plots-include-legend">Include Legend<a class="anchor" aria-label="anchor" href="#feature-plots-include-legend"></a>
 </h4>
-<p>When checked, the legend will display to the right-hand side of the
-plot. when unchecked, the legend will be removed.</p>
-<h4 id="include-legend-1-1">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#include-legend-1-1"></a>
+<p>Toggles appearance of a legend to the right side of the plot on and
+off.</p>
+<h4 id="feature-plots-include-legend-1">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#feature-plots-include-legend-1"></a>
 </h4>
 <p>When enabled, an interface appears allowing 
-the user to change the height and width of the plot. The height and width are 
-entered in pixels, and may be chosen using the slider or the text box. When 
+the user to change the height and width of the plot in pixels using either a slider bar or text entry. When 
 entering a value in the text box, press return to update the plot with the 
-value. Downloaded plots will have the dimensions defined here, if "manually 
-adjust plot dimensions" is checked.</p>
-<h4 id="include-legend-1-2">Download Button<a class="anchor" aria-label="anchor" href="#include-legend-1-2"></a>
+value. Downloaded plots will have the dimensions defined here if "manually 
+adjust plot dimensions" is checked. Otherwise defaults are...?</p>
+<h4 id="feature-plots-include-legend-2">Download Button<a class="anchor" aria-label="anchor" href="#feature-plots-include-legend-2"></a>
 </h4>
-<p>To download plots, press the download button at the bottom left hand 
+<p>Plots are downloaded by clicking the download button at the bottom left 
 side of the "Feature Plot Specific Options" menu. A menu will appear 
-with an option to choose whether to download a .png or .svg file, and 
-a download button will appear beneath that button. Downloads in the 
-.svg format can be edited with Adobe Illustrator or a similar program 
-to add additional labels or modify the text or colors of the plot. 
-All graphical elements added to the plot can be edited individually 
-in an .svg editor.</p>
+with an option to choose whether to download a .png or .svg file. Downloads in the 
+.svg format can be edited with Adobe Illustrator or a similar program.</p>
 </div>
 </div>
 <div class="section level3">
@@ -423,14 +412,14 @@ in an .svg editor.</p>
 </h3>
 <p><code># TODO: General description</code></p>
 <div class="section level4">
-<h4 id="metadata-for-primary-groups">Metadata for Primary Groups<a class="anchor" aria-label="anchor" href="#metadata-for-primary-groups"></a>
+<h4 id="violin-plots-group-by">Metadata for Primary Groups<a class="anchor" aria-label="anchor" href="#violin-plots-group-by"></a>
 </h4>
 <p>The categorical metadata variable chosen here will determine how
 cells are grouped. One violin plot will be drawn for each unique value
 in the chosen metadata variable.</p>
 </div>
 <div class="section level4">
-<h4 id="metadata-for-secondary-grouping">Metadata for Secondary Grouping<a class="anchor" aria-label="anchor" href="#metadata-for-secondary-grouping"></a>
+<h4 id="violin-plots-split-by">Metadata for Secondary Grouping<a class="anchor" aria-label="anchor" href="#violin-plots-split-by"></a>
 </h4>
 <p>A second categorical variable may be supplied for more in-depth
 comparison of groups. When specified, violins for each combination
@@ -442,7 +431,7 @@ the primary variable between each value of the secondary variable.</p>
 <p>[ADD IMAGE]</p>
 </div>
 <div class="section level4">
-<h4 id="order-of-groups-on-plot">Order of Groups on Plot<a class="anchor" aria-label="anchor" href="#order-of-groups-on-plot"></a>
+<h4 id="violin-plots-group-order">Order of Groups on Plot<a class="anchor" aria-label="anchor" href="#violin-plots-group-order"></a>
 </h4>
 <p>Sets the order groups specified by the primary metadata selection
 appear on the plot. When set to “ascending”, values in the primary
@@ -453,7 +442,7 @@ arrange values in any order. To change the order of a value,
 drag-and-drop the value in the interface.</p>
 </div>
 <div class="section level4">
-<h4 id="number-of-columns">Number of Columns<a class="anchor" aria-label="anchor" href="#number-of-columns"></a>
+<h4 id="violin-choose-ncol">Number of Columns<a class="anchor" aria-label="anchor" href="#violin-choose-ncol"></a>
 </h4>
 <p>This setting is available when multiple features have been
 entered.</p>
@@ -464,28 +453,23 @@ enabled.</p>
 <p><img src="full_documentation-number_of_columns.png" class="centered-image" width="460"></p>
 </div>
 <div class="section level4">
-<h4 id="include-legend-2">Include Legend<a class="anchor" aria-label="anchor" href="#include-legend-2"></a>
+<h4 id="violin-plots-include-legend">Include Legend<a class="anchor" aria-label="anchor" href="#violin-plots-include-legend"></a>
 </h4>
 <p>When checked, the legend will display to the right-hand side of the
 plot. when unchecked, the legend will be removed.</p>
-<h4 id="include-legend-2-1">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#include-legend-2-1"></a>
+<h4 id="violin-plots-include-legend-1">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#violin-plots-include-legend-1"></a>
 </h4>
 <p>When enabled, an interface appears allowing 
-the user to change the height and width of the plot. The height and width are 
-entered in pixels, and may be chosen using the slider or the text box. When 
+the user to change the height and width of the plot in pixels using either a slider bar or text entry. When 
 entering a value in the text box, press return to update the plot with the 
-value. Downloaded plots will have the dimensions defined here, if "manually 
-adjust plot dimensions" is checked.</p>
-<h4 id="include-legend-2-2">Download Button<a class="anchor" aria-label="anchor" href="#include-legend-2-2"></a>
+value. Downloaded plots will have the dimensions defined here if "manually 
+adjust plot dimensions" is checked. Otherwise defaults are...?</p>
+<h4 id="violin-plots-include-legend-2">Download Button<a class="anchor" aria-label="anchor" href="#violin-plots-include-legend-2"></a>
 </h4>
-<p>To download plots, press the download button at the bottom left hand 
+<p>Plots are downloaded by clicking the download button at the bottom left 
 side of the "Violin Plot Specific Options" menu. A menu will appear 
-with an option to choose whether to download a .png or .svg file, and 
-a download button will appear beneath that button. Downloads in the 
-.svg format can be edited with Adobe Illustrator or a similar program 
-to add additional labels or modify the text or colors of the plot. 
-All graphical elements added to the plot can be edited individually 
-in an .svg editor.</p>
+with an option to choose whether to download a .png or .svg file. Downloads in the 
+.svg format can be edited with Adobe Illustrator or a similar program.</p>
 </div>
 </div>
 <div class="section level3">
@@ -493,14 +477,14 @@ in an .svg editor.</p>
 </h3>
 <pre><code><span><span class="co"># TODO: General description</span></span></code></pre>
 <div class="section level4">
-<h4 id="metadata-to-group-by-1">Metadata to group by<a class="anchor" aria-label="anchor" href="#metadata-to-group-by-1"></a>
+<h4 id="dot-plots-group-by">Metadata to group by<a class="anchor" aria-label="anchor" href="#dot-plots-group-by"></a>
 </h4>
 <p>Specifies the categorical metadata variable used to group cells. One
 dot per feature will be created for each value of the selected
 variable.</p>
 </div>
 <div class="section level4">
-<h4 id="order-of-groups-on-plot-1">Order of Groups on Plot<a class="anchor" aria-label="anchor" href="#order-of-groups-on-plot-1"></a>
+<h4 id="dot-plots-group-order">Order of Groups on Plot<a class="anchor" aria-label="anchor" href="#dot-plots-group-order"></a>
 </h4>
 <p>Sets the order groups appear on the plot. When set to “ascending”,
 values in the group by metadata variable will display in ascending
@@ -511,7 +495,7 @@ order. To change the order of a value, drag-and-drop the value in the
 interface.</p>
 </div>
 <div class="section level4">
-<h4 id="include-legend-3">Include Legend<a class="anchor" aria-label="anchor" href="#include-legend-3"></a>
+<h4 id="dot-plots-include-legend">Include Legend<a class="anchor" aria-label="anchor" href="#dot-plots-include-legend"></a>
 </h4>
 <p>When checked, the legend will display to the right-hand side of the
 plot. when unchecked, the legend will be removed.</p>
@@ -534,14 +518,10 @@ or to remove features that were entered in the <a href="#feature-selection">feat
 removed in this interface will apply only to the dot plot.</p>
 <h4 id="use-separate-features-for-dot-plot-1">Download Button<a class="anchor" aria-label="anchor" href="#use-separate-features-for-dot-plot-1"></a>
 </h4>
-<p>To download plots, press the download button at the bottom left hand 
+<p>Plots are downloaded by clicking the download button at the bottom left 
 side of the "Dot Plot Specific Options" menu. A menu will appear 
-with an option to choose whether to download a .png or .svg file, and 
-a download button will appear beneath that button. Downloads in the 
-.svg format can be edited with Adobe Illustrator or a similar program 
-to add additional labels or modify the text or colors of the plot. 
-All graphical elements added to the plot can be edited individually 
-in an .svg editor.</p>
+with an option to choose whether to download a .png or .svg file. Downloads in the 
+.svg format can be edited with Adobe Illustrator or a similar program.</p>
 </div>
 </div>
 <div class="section level3">
@@ -565,17 +545,16 @@ the <a href="#feature-selection">feature selection</a> menu may be
 entered here.</p>
 </div>
 <div class="section level4">
-<h4 id="metadata-to-group-by-2">Metadata to Group By<a class="anchor" aria-label="anchor" href="#metadata-to-group-by-2"></a>
+<h4 id="scatterplots-group-by">Metadata to Group By<a class="anchor" aria-label="anchor" href="#scatterplots-group-by"></a>
 </h4>
 <p>This menu is used to select a categorical metadata variable to be
 used to coloring cells. Cells will be colored according to their
 associated metadata for the variable chosen, and the key for colors used
 will display in the legend to the right.</p>
 <!-- Include Legend -->
-<h4 id="metadata-to-group-by-2-1">Include Legend<a class="anchor" aria-label="anchor" href="#metadata-to-group-by-2-1"></a>
+<h4 id="scatterplots-group-by-1">Include Legend<a class="anchor" aria-label="anchor" href="#scatterplots-group-by-1"></a>
 </h4>
-<p>When checked, the legend will display to the right-hand side of the plot. 
-  when unchecked, the legend will be removed.</p>
+<p>Adds or removes legend displayed on the right side of the plot.</p>
 </div>
 <div class="section level4">
 <h4 id="show-pearson-coefficient">Show Pearson Coefficient<a class="anchor" aria-label="anchor" href="#show-pearson-coefficient"></a>
@@ -586,38 +565,32 @@ checked by default.</p>
 <h4 id="show-pearson-coefficient-1">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#show-pearson-coefficient-1"></a>
 </h4>
 <p>When enabled, an interface appears allowing 
-the user to change the height and width of the plot. The height and width are 
-entered in pixels, and may be chosen using the slider or the text box. When 
+the user to change the height and width of the plot in pixels using either a slider bar or text entry. When 
 entering a value in the text box, press return to update the plot with the 
-value. Downloaded plots will have the dimensions defined here, if "manually 
-adjust plot dimensions" is checked.</p>
+value. Downloaded plots will have the dimensions defined here if "manually 
+adjust plot dimensions" is checked. Otherwise defaults are...?</p>
 <h4 id="show-pearson-coefficient-2">Download Button<a class="anchor" aria-label="anchor" href="#show-pearson-coefficient-2"></a>
 </h4>
-<p>To download plots, press the download button at the bottom left hand 
+<p>Plots are downloaded by clicking the download button at the bottom left 
 side of the "Scatterplot Specific Options" menu. A menu will appear 
-with an option to choose whether to download a .png or .svg file, and 
-a download button will appear beneath that button. Downloads in the 
-.svg format can be edited with Adobe Illustrator or a similar program 
-to add additional labels or modify the text or colors of the plot. 
-All graphical elements added to the plot can be edited individually 
-in an .svg editor.</p>
+with an option to choose whether to download a .png or .svg file. Downloads in the 
+.svg format can be edited with Adobe Illustrator or a similar program.</p>
 </div>
 </div>
 <div class="section level3">
 <h3 id="ridge-plots">Ridge Plots<a class="anchor" aria-label="anchor" href="#ridge-plots"></a>
 </h3>
 <div class="section level4">
-<h4 id="metadata-to-group-by-3">Metadata to Group by<a class="anchor" aria-label="anchor" href="#metadata-to-group-by-3"></a>
+<h4 id="ridge-plots-group-by">Metadata to Group by<a class="anchor" aria-label="anchor" href="#ridge-plots-group-by"></a>
 </h4>
 <p>Used to choose a categorical variable for splitting ridge plots into
 groups. One ridge plot will be drawn for each value in the chosen
 metadata variable. If set to “None”, a single ridge plot for all cells
 will be plotted</p>
 <!-- Include Legend -->
-<h4 id="metadata-to-group-by-3-1">Include Legend<a class="anchor" aria-label="anchor" href="#metadata-to-group-by-3-1"></a>
+<h4 id="ridge-plots-group-by-1">Include Legend<a class="anchor" aria-label="anchor" href="#ridge-plots-group-by-1"></a>
 </h4>
-<p>When checked, the legend will display to the right-hand side of the plot. 
-  when unchecked, the legend will be removed.</p>
+<p>Adds or removes legend displayed on the right side of the plot.</p>
 </div>
 <div class="section level4">
 <h4 id="define-custom-x-axis-limits">Define Custom X-axis Limits<a class="anchor" aria-label="anchor" href="#define-custom-x-axis-limits"></a>
@@ -633,28 +606,33 @@ Reset”.</p>
 <h4 id="define-custom-x-axis-limits-1">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#define-custom-x-axis-limits-1"></a>
 </h4>
 <p>When enabled, an interface appears allowing 
-the user to change the height and width of the plot. The height and width are 
-entered in pixels, and may be chosen using the slider or the text box. When 
+the user to change the height and width of the plot in pixels using either a slider bar or text entry. When 
 entering a value in the text box, press return to update the plot with the 
-value. Downloaded plots will have the dimensions defined here, if "manually 
-adjust plot dimensions" is checked.</p>
+value. Downloaded plots will have the dimensions defined here if "manually 
+adjust plot dimensions" is checked. Otherwise defaults are...?</p>
 <h4 id="define-custom-x-axis-limits-2">Download Button<a class="anchor" aria-label="anchor" href="#define-custom-x-axis-limits-2"></a>
 </h4>
-<p>To download plots, press the download button at the bottom left hand 
+<p>Plots are downloaded by clicking the download button at the bottom left 
 side of the "Ridge Plot Specific Options" menu. A menu will appear 
-with an option to choose whether to download a .png or .svg file, and 
-a download button will appear beneath that button. Downloads in the 
-.svg format can be edited with Adobe Illustrator or a similar program 
-to add additional labels or modify the text or colors of the plot. 
-All graphical elements added to the plot can be edited individually 
-in an .svg editor.</p>
+with an option to choose whether to download a .png or .svg file. Downloads in the 
+.svg format can be edited with Adobe Illustrator or a similar program.</p>
+</div>
+<div class="section level4">
+<h4 id="ridge-title-options">Title Options<a class="anchor" aria-label="anchor" href="#ridge-title-options"></a>
+</h4>
+<p>The title options menu is used to change or remove the title of the
+plot. When set to “Default” the title shown is the name of the selected
+feature. When set to “None”, no title is shown. When set to “Custom”, an
+interface will appear beneath the menu to enter a custom title. Press
+“Update” to apply changes to the title, and “Reset” to revert the title
+to the default.</p>
 </div>
 </div>
 <div class="section level3">
 <h3 id="cell-proportion-plot">Cell Proportion Plot<a class="anchor" aria-label="anchor" href="#cell-proportion-plot"></a>
 </h3>
 <div class="section level4">
-<h4 id="choose-metadata-for-proportions">Choose Metadata for Proportions<a class="anchor" aria-label="anchor" href="#choose-metadata-for-proportions"></a>
+<h4 id="cell-proportion-plot-proportion-metadata">Choose Metadata for Proportions<a class="anchor" aria-label="anchor" href="#cell-proportion-plot-proportion-metadata"></a>
 </h4>
 <p>Used to choose the metadata to use for displaying cell type
 proportions. The proportions illustrated by the stacked bar plots will
@@ -662,14 +640,14 @@ be relative to the number of cells matching each value in the chosen
 metadata variable.</p>
 </div>
 <div class="section level4">
-<h4 id="choose-metadata-for-proportion-comparison">Choose Metadata for Proportion Comparison<a class="anchor" aria-label="anchor" href="#choose-metadata-for-proportion-comparison"></a>
+<h4 id="cell-proportion-plot-comparison-metadata">Choose Metadata for Proportion Comparison<a class="anchor" aria-label="anchor" href="#cell-proportion-plot-comparison-metadata"></a>
 </h4>
 <p>Used to choose a categorical metadata variable used for comparing
 cell type proportions. One bar will be plotted for each value of the
 chosen metadata variable.</p>
 </div>
 <div class="section level4">
-<h4 id="title-options-2">Title Options<a class="anchor" aria-label="anchor" href="#title-options-2"></a>
+<h4 id="cell-proportion-plot-title-options">Title Options<a class="anchor" aria-label="anchor" href="#cell-proportion-plot-title-options"></a>
 </h4>
 <p>The title options menu is used to change or remove the title of the
 plot. When set to “Default” the title shown is the name of the selected
@@ -680,7 +658,7 @@ and “Reset” to revert the title to the default.</p>
 <p><img src="full_documentation-custom_title_menu.png" class="centered-image" style="display: block; margin-left: auto; margin-right: auto;" width="336"></p>
 </div>
 <div class="section level4">
-<h4 id="order-of-groups-on-plot-2">Order of Groups on Plot<a class="anchor" aria-label="anchor" href="#order-of-groups-on-plot-2"></a>
+<h4 id="cell-proportion-plot-group-order">Order of Groups on Plot<a class="anchor" aria-label="anchor" href="#cell-proportion-plot-group-order"></a>
 </h4>
 <p>Sets the order bars created by the proportion comparison metadata
 variable appear on the plot. When set to “ascending”, values in the
@@ -690,24 +668,19 @@ descending alphanumeric order. When set to “custom”, an interface will
 appear that will allow you to arrange values in any order. To change the
 order of a value, drag-and-drop the value in the interface.</p>
 <!-- Manual Dimensions and Download Button -->
-<h4 id="order-of-groups-on-plot-2-1">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#order-of-groups-on-plot-2-1"></a>
+<h4 id="cell-proportion-plot-group-order-1">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#cell-proportion-plot-group-order-1"></a>
 </h4>
 <p>When enabled, an interface appears allowing 
-the user to change the height and width of the plot. The height and width are 
-entered in pixels, and may be chosen using the slider or the text box. When 
+the user to change the height and width of the plot in pixels using either a slider bar or text entry. When 
 entering a value in the text box, press return to update the plot with the 
-value. Downloaded plots will have the dimensions defined here, if "manually 
-adjust plot dimensions" is checked.</p>
-<h4 id="order-of-groups-on-plot-2-2">Download Button<a class="anchor" aria-label="anchor" href="#order-of-groups-on-plot-2-2"></a>
+value. Downloaded plots will have the dimensions defined here if "manually 
+adjust plot dimensions" is checked. Otherwise defaults are...?</p>
+<h4 id="cell-proportion-plot-group-order-2">Download Button<a class="anchor" aria-label="anchor" href="#cell-proportion-plot-group-order-2"></a>
 </h4>
-<p>To download plots, press the download button at the bottom left hand 
+<p>Plots are downloaded by clicking the download button at the bottom left 
 side of the "Cell Proportion Plot Specific Options" menu. A menu will appear 
-with an option to choose whether to download a .png or .svg file, and 
-a download button will appear beneath that button. Downloads in the 
-.svg format can be edited with Adobe Illustrator or a similar program 
-to add additional labels or modify the text or colors of the plot. 
-All graphical elements added to the plot can be edited individually 
-in an .svg editor.</p>
+with an option to choose whether to download a .png or .svg file. Downloads in the 
+.svg format can be edited with Adobe Illustrator or a similar program.</p>
 </div>
 </div>
 <div class="section level3">
@@ -732,7 +705,7 @@ value of all slices will be greater than the total number of
 patients.</p>
 </div>
 <div class="section level4">
-<h4 id="title-options-3">Title Options<a class="anchor" aria-label="anchor" href="#title-options-3"></a>
+<h4 id="title-options">Title Options<a class="anchor" aria-label="anchor" href="#title-options"></a>
 </h4>
 <p>The title options menu is used to change or remove the title of the
 pie chart. When set to “Default” the title shown is the name of the
@@ -743,29 +716,23 @@ changes to the title, and “Reset” to revert the title to the
 default.</p>
 <p><img src="full_documentation-custom_title_menu.png" class="centered-image" style="display: block; margin-left: auto; margin-right: auto;" width="336"></p>
 <!-- Include Legend -->
-<h4 id="title-options-3-1">Include Legend<a class="anchor" aria-label="anchor" href="#title-options-3-1"></a>
+<h4 id="title-options-1">Include Legend<a class="anchor" aria-label="anchor" href="#title-options-1"></a>
 </h4>
-<p>When checked, the legend will display to the right-hand side of the plot. 
-  when unchecked, the legend will be removed.</p>
+<p>Adds or removes legend displayed on the right side of the plot.</p>
 <!-- Manual Dimensions -->
-<h4 id="title-options-3-2">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#title-options-3-2"></a>
+<h4 id="title-options-2">Manually Adjust Plot Dimensions<a class="anchor" aria-label="anchor" href="#title-options-2"></a>
 </h4>
 <p>When enabled, an interface appears allowing 
-the user to change the height and width of the plot. The height and width are 
-entered in pixels, and may be chosen using the slider or the text box. When 
+the user to change the height and width of the plot in pixels using either a slider bar or text entry. When 
 entering a value in the text box, press return to update the plot with the 
-value. Downloaded plots will have the dimensions defined here, if "manually 
-adjust plot dimensions" is checked.</p>
-<h4 id="title-options-3-3">Download Button<a class="anchor" aria-label="anchor" href="#title-options-3-3"></a>
+value. Downloaded plots will have the dimensions defined here if "manually 
+adjust plot dimensions" is checked. Otherwise defaults are...?</p>
+<h4 id="title-options-3">Download Button<a class="anchor" aria-label="anchor" href="#title-options-3"></a>
 </h4>
-<p>To download plots, press the download button at the bottom left hand 
+<p>Plots are downloaded by clicking the download button at the bottom left 
 side of the "Metadata Pie Chart Specific Options" menu. A menu will appear 
-with an option to choose whether to download a .png or .svg file, and 
-a download button will appear beneath that button. Downloads in the 
-.svg format can be edited with Adobe Illustrator or a similar program 
-to add additional labels or modify the text or colors of the plot. 
-All graphical elements added to the plot can be edited individually 
-in an .svg editor.</p>
+with an option to choose whether to download a .png or .svg file. Downloads in the 
+.svg format can be edited with Adobe Illustrator or a similar program.</p>
 </div>
 </div>
 </div>
