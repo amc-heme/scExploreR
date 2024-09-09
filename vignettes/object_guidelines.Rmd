@@ -105,6 +105,13 @@ output:
   padding: 5px 15px;
 }
 
+/* Remove borders beneath each row that appear in pkgdown */
+/* Only the header row will have a border*/
+.object-table tr,
+.object-table td{
+  border-style: none;
+}
+
 .object-table table{
   background-color: transparent !important;
 }
@@ -113,6 +120,7 @@ output:
 .object-table .header{
   border-style: solid;
   border-width: 0px 0px 2px 0px;
+  border-color: #3a3c3e;
 }
 
 /* Color of icons in object table indicating presence and absence of features */
@@ -391,4 +399,4 @@ object.uns["scExploreR_reductions"] = ["X_umap", "X_pca"]
 object.uns["scExploreR_assays"] = ["protein"]
 ```
 
-For an additional example, see the [object setup vignette](object_guidelines.html).
+For an additional example, see the [app setup walkthrough vignette](dataset_setup_walkthrough.html#anndata_uns_requirements).
