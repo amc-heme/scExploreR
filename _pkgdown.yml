@@ -28,6 +28,8 @@ navbar:
         href: articles/dataset_setup_walkthrough.html
       - text: Exploring your Data
         href: articles/tutorial.html
+      - text: Preparing Objects for scExploreR
+        href: articles/object_guidelines.html
       - text: Guide to scRNA-Seq Plots
         href: articles/scRNA_Plots_Explained.html
       - text: String Subsetting Guide
