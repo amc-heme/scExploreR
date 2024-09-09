@@ -1,5 +1,5 @@
 ---
-title: "scExploreR Manual"
+title: "scExploreR Documentation"
 output: 
   html_document:
     toc: true

@@ -30,13 +30,15 @@ navbar:
         href: articles/tutorial.html
       - text: Preparing Objects for scExploreR
         href: articles/object_guidelines.html
+      - text: -------
+      - text: "Additional Information"
       - text: Guide to scRNA-Seq Plots
         href: articles/scRNA_Plots_Explained.html
       - text: String Subsetting Guide
         href: articles/advanced_subsetting_documentation.html
       - text: -------
-      - text: "Reference"
-      - text: Full App Manual
+      - text: "Full Documentation"
+      - text: Full App Documentation
         href: articles/full_documentation.html
       - text: Config App Documentation
         href: articles/config_documentation.html

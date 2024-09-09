@@ -1,5 +1,5 @@
 ---
-title: "Hosting a Dataset in scExploreR and Performing Analysis"
+title: "App Setup Walkthrough"
 output: 
   html_document:
     theme:
