@@ -28,7 +28,7 @@ navbar:
         href: articles/dataset_setup_walkthrough.html
       - text: Exploring your Data
         href: articles/tutorial.html
-      - text: Preparing Objects for scExploreR
+      - text: Object Preparation Guidelines
         href: articles/object_guidelines.html
       - text: -------
       - text: "Additional Information"
@@ -38,7 +38,7 @@ navbar:
         href: articles/advanced_subsetting_documentation.html
       - text: -------
       - text: "Full Documentation"
-      - text: Full App Documentation
+      - text: scExploreR Documentation
         href: articles/full_documentation.html
       - text: Config App Documentation
         href: articles/config_documentation.html
