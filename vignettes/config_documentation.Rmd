@@ -170,7 +170,9 @@ download_button <-
   }
 ```
 
-The scExploreR config app is used to configure datasets for display in the main browser. This vignette will walk through the operation of the app and detail all settings that may be adjusted.
+The scExploreR config app is used to configure single-cell objects for display in the main browser. This vignette will walk through the operation of the app and detail all settings that may be adjusted.
+
+For guidelines on preparing objects before loading them into the config app, see the [object guidelines vignette](object_guidelines.html), and see the [app setup walkthrough vignette](dataset_setup_walkthrough.html) for an interactive walkthrough of both object preparation and use of the config app.
 
 # Running the config app
 
