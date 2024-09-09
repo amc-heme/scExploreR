@@ -21,7 +21,6 @@
 #' run_config(./path_to_object.rds, ./path_to_config_file.yaml)
 #'
 #' @export
-
 run_config <-
   function(
     object_path,
@@ -223,15 +222,7 @@ run_config <-
     numeric_cols <- meta_vars[is_numeric]
     non_numeric_cols <- meta_vars[!is_numeric]
     
-   # check for NA values in metadata
-    is_na <- sapply(
-      meta_vars, 
-      function(var, object){
-        any(is.na(meta_table[[var]]))
-      },
-      object
-    )
-    
+
     # Assays, reductions in object
     all_assays <-
       scExploreR:::assay_names(
@@ -521,7 +512,7 @@ run_config <-
               ),
               
               # Options specific to each metadata variable
-              
+    
               # Options for Numeric metadata (Numeric metadata is currently not
               # displayed)
 
@@ -1449,34 +1440,44 @@ run_config <-
           }
         })
       #### 3.3.5.3.  NA Warning notification ####
-      observe({
-        req(input$metadata_selected)
-        #only show warning if a metadata column is selected with NA values
-        if(any(is_na[input$metadata_selected])){
-          # Show error if NAs present in metadata table
-          showNotification(
-            ui =
-              icon_notification_ui(
-                icon_name = "skull-crossbones",
-                "NA values were detected in the metadata. It is recommended to remove all NAs 
-                to ensure accurate results. Failure to remove could result in errors."
-              ),
-            duration = NULL,
-            id = "meta_NA_error",
-            session = session
-          )
-        }
-      })
+
+      # check for NA values in metadata
+      # check_na <- function(meta_table, meta_vars) {
+      #   sapply(meta_vars, function(var){
+      #     any(is.na(meta_table[[var]]) | meta_table[[var]] == "" | is.null(meta_table[[var]]))
+      #   })
+      # }
+      # 
+      # is_na <- check_na(meta_table, non_numeric_cols)
+     
       #### 3.3.5.4. Show/hide Metadata Options Cards ####
       observe({
         for (colname in non_numeric_cols){
           # Show all cards that are in the "Metadata selected" column of the
           # sortable, and hide all cards that are not
           if (colname %in% input$metadata_selected){
+       
+            
             showElement(
               id = glue("{colname}-optcard"),
               asis = TRUE
             )
+            # 
+            # # show tooltip warning icon if NA values found
+            #  if(isTruthy(is_na[colname])){
+            #    print(glue("NA detected in {colname}"))
+            #   showElement(
+            #     id = "warning_icon_na",
+            #     asis = TRUE
+            #     )
+            # } else{
+            #   #hide tooltip warning icon if no NA values found
+            #   print(glue("No NA detected"))
+            #   hideElement(
+            #     id = "warning_icon_na",
+            #     asis = TRUE
+            #     )
+            # }
           } else {
             hideElement(
               id = glue("{colname}-optcard"),
@@ -1485,7 +1486,8 @@ run_config <-
           }
         }
       })
-
+      
+  
       #### 3.3.5.5. Render Sortable UI ####
       output$metadata_sortable_bucket <-
         renderUI({
