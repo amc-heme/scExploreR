@@ -90,7 +90,7 @@ At the top of the options panel you will see several switches, one for each plot
 
 -   **Dot Plot:** shows the average scaled value and percentage of cells with non-zero values for multiple features across groups of cells as defined by metadata categories.
 
--   **Scatterplot:** compares values of two features. Correlation between values may be quantified in the [Gene Correlations Tab](#correlations-tab).
+-   **Scatterplot:** compares values of two features. <!--Correlation between values may be quantified in the [Gene Correlations Tab](#correlations-tab).-->
 
 -   **Ridge Plot:** displays a density plot of a feature's value across a group of cells defined by metadata.
 
@@ -139,7 +139,7 @@ This menu is used to select a categorical metadata variable (e.g. cell type) to 
 
 This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side, and defaults to "None".
 
-This menu is useful for comparing projections between different metadata values. For example, broad differences in cell type proportions may be visualized when splitting by disease response. These obsservations can be analyzed in more detail in the differential gene expression and correlations tabs. 
+This menu is useful for comparing projections between different metadata values. For example, broad differences in cell type proportions may be visualized when splitting by disease response. These obsservations can be analyzed in more detail in the differential gene expression tab. <!-- and correlations tabs.--> 
 
 When a variable is selected, a slider to choose the number of columns will appear under the "Title options menu" (see [Choose number of columns](#choose-number-of-columns) for more info).
 
@@ -306,7 +306,7 @@ download_button(plot_type = "Dot Plot")
 
 ## Scatterplots {#scatterplots}
 
-Scatterplots are useful for viewing co-expression of two features. All cells are plotted according to the expression of each feature, and are useful for quallitative assessments of correlation.
+Scatterplots are useful for viewing co-expression of two features. All cells are plotted according to the expression of each feature, and are useful for qualitative assessments of correlation.
 
 ### Feature for x-axis
 

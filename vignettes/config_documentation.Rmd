@@ -239,7 +239,7 @@ On the upper right-hand corner of the screen, a panel of general assay-related o
 ```
 #### *"*Choose Genes Assay"
 
-The assay selected in this tab will be the assay used when computing differential expression or correlation; it does not effect plotting.
+The assay selected in this menu will be the assay used when computing differential expression. <!--or correlation;--> It does not effect plotting.
 
 Note, if you wish to include only non-gene assays in the object, you may designate those assays as the "genes" assay, but this may cause issues with the DGE and correlation analyses. The analyses are validated for gene expression only, and may not be accurate when using other data types. We will address means of including these data types in analyses in the future.
 
