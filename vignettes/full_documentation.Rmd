@@ -511,9 +511,10 @@ If either of the percent expression values are very low, or if there is a large 
 
 To visually identify and verify the groups/marker classes being compared in the selected test, a dimensional reduction plot will display beneath the table. After the plot is displayed, a menu ("DimPlot options") will appear in the options panel on the left. The reduction and the color by metadata can be changed here.
 
+<!-- The correlations tab was removed due to performance issues. The docs for the tab are left here but commented out.
 # Correlations Tab {#correlations-tab}
 
-This tab is used to compute the correlation between a gene entered and all other genes in the dataaset. The correlations analysis uses a pearson correlation coefficient. Only genes may be used for computing correlation at this time: other feature types will be available in the future.
+This tab is used to compute the correlation between a gene entered and all other genes in the dataset. The correlations analysis uses a pearson correlation coefficient. Only genes may be used for computing correlation at this time: other feature types will be available in the future.
 
 ## Running a correlation analysis
 
@@ -536,6 +537,7 @@ The columns of the correlation table are as below. The table may be downloaded v
 ### Correlation Scatterplots
 
 Click any gene on the correlation table to view a scatterplot of expression for the gene entered vs. the selected gene (for more information on scatterplots, see the [scatterplots](#scatterplots) section). If a subset is selected, two plots will display, one for the full data and the other for the selected subset. The metadata variable used for coloring the plot may be selected using the **"choose metadata to group by"** menu. To download either of the plots, press the "`r icon("poll")` download scatterplot" button corresponding to the desired plot.
+-->
 
 # Changing Datasets
 
