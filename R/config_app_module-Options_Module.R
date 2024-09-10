@@ -148,9 +148,15 @@ options_ui <- function(id,
         # #add a tooltip for warning if NAs are present in the chosen metadata variable
         bsTooltip(
           id = ns("warning_icon_na"),
-          title = glue(
-          '{card_name} contains NA values. It is recommended to replace NA values with "undefined", "unknown", etc. to ensure accurate results'
-          ),
+          title = 
+            glue(
+              paste0(
+                '{card_name} contains NA values, which may cause unexpected ',
+                'behavior in the main app. We recommend replacing NA values ',
+                'with "undefined", "unknown", the character ',
+                '"NA" (in quotes), etc.' 
+                )
+              ),
           placement = "right",
           trigger = "hover",
           options = NULL
