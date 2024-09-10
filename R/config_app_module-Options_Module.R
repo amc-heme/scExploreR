@@ -135,16 +135,17 @@ options_ui <- function(id,
         class = "optcard single-space-bottom",
         tags$strong(glue("Options for {card_name}"),
                     class="large center",
+                    #hidden exclamation triangle warning to show if NAs are present in the chosen metadata variable 
                     shinyjs::hidden(
                     tags$i(
-                      class = "fa-solid fa-circle-exclamation", #"fa-sharp fa-light fa-triangle-exclamation"
-                      style = "color: #f25e0d; margin-left: 5px;",
+                      class = "fa-solid fa-exclamation-triangle", 
+                      style = "color: #D67E1A; margin-left: 5px;",
                       id = ns("warning_icon_na")
                     )
                  )
         ),
 
-        # #add a tooltip for warning if NAs are present in the metadata variable
+        # #add a tooltip for warning if NAs are present in the chosen metadata variable
         bsTooltip(
           id = ns("warning_icon_na"),
           title = glue(
@@ -356,7 +357,8 @@ options_server <-
               hideElement("optcard")
             }
           })
-       # 1.1 Show/ hide warning icon if metadata selected by user contains NAs
+        
+       ## 1.1. Show/ hide NA warning icon ####
       
         # Pull full metadata table 
         meta_table <-
@@ -364,20 +366,7 @@ options_server <-
             object,
             full_table = TRUE
           )
-      
-        # is_numeric: a vector of boolean values used to subset meta_columns
-        # for numeric metadata
-        is_numeric <-
-          sapply(
-            card_name,
-            function(x, object){
-              class(meta_table[[x]]) %in% c("numeric", "integer")
-            },
-            object
-          )
-
-        non_numeric_cols <- card_name[!is_numeric]
-        
+    
         # check for NA values in metadata
         check_na <- function(meta_table, meta_vars) {
           sapply(meta_vars, function(var){
@@ -385,58 +374,19 @@ options_server <-
           })
         }
         
-        is_na <- check_na(meta_table, non_numeric_cols)
-        # print("is_na:")
-        # print(is_na)
-        # 
-        
-        # show_na_warning <- function(meta_var, na, id){
-        #   observe({
-        #     if(meta_var %in% categories_selected()){
-        #       
-        #       # show tooltip warning icon if NA values found
-        #       if(isTruthy(na[meta_var])){
-        #         print(glue("NA detected in {meta_var}"))
-        #         showElement(
-        #           id = id,
-        #           asis = TRUE
-        #         )
-        #       } else{
-        #         #hide tooltip warning icon if no NA values found
-        #         print(glue("No NA detected in {meta_var}"))
-        #         hideElement(
-        #           id = id,
-        #           asis = TRUE
-        #         )
-        #       }
-        #     }
-        #   })
-        # }
-        # 
-        # lapply(non_numeric_cols, function(card_name) {
-        #   show_na_warning(card_name, is_na, "warning_icon_na")
-        # })
+        is_na <- check_na(meta_table, card_name)
+       
         observe({
-          for (card_name in non_numeric_cols){
-
-           if(card_name %in% categories_selected()){
-
-          # show tooltip warning icon if NA values found
-          if(isTruthy(is_na[card_name])){
-            print(glue("NA detected in {card_name}"))
-            showElement(
-              id = "warning_icon_na"
-            )
-          } else{
-            #hide tooltip warning icon if no NA values found
-            print(glue("No NA detected in {card_name}"))
-            hideElement(
-              id = "warning_icon_na"
-            )
+          if (card_name %in% categories_selected()) {
+            # show tooltip warning icon if NA values found
+            if (isTruthy(is_na[card_name])) {
+              showElement(id = "warning_icon_na")
+            } else{
+              #hide tooltip warning icon if no NA values found
+              hideElement(id = "warning_icon_na")
+            }
           }
-         }
-        }
-      })
+        })
 
         # 2. Metadata-tab specific functions -----------------------------------
         # Determine if metadata field is categorical or numeric

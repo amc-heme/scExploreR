@@ -1439,18 +1439,8 @@ run_config <-
             }
           }
         })
-      #### 3.3.5.3.  NA Warning notification ####
-
-      # check for NA values in metadata
-      # check_na <- function(meta_table, meta_vars) {
-      #   sapply(meta_vars, function(var){
-      #     any(is.na(meta_table[[var]]) | meta_table[[var]] == "" | is.null(meta_table[[var]]))
-      #   })
-      # }
-      # 
-      # is_na <- check_na(meta_table, non_numeric_cols)
-     
-      #### 3.3.5.4. Show/hide Metadata Options Cards ####
+   
+      #### 3.3.5.3. Show/hide Metadata Options Cards ####
       observe({
         for (colname in non_numeric_cols){
           # Show all cards that are in the "Metadata selected" column of the
@@ -1462,22 +1452,6 @@ run_config <-
               id = glue("{colname}-optcard"),
               asis = TRUE
             )
-            # 
-            # # show tooltip warning icon if NA values found
-            #  if(isTruthy(is_na[colname])){
-            #    print(glue("NA detected in {colname}"))
-            #   showElement(
-            #     id = "warning_icon_na",
-            #     asis = TRUE
-            #     )
-            # } else{
-            #   #hide tooltip warning icon if no NA values found
-            #   print(glue("No NA detected"))
-            #   hideElement(
-            #     id = "warning_icon_na",
-            #     asis = TRUE
-            #     )
-            # }
           } else {
             hideElement(
               id = glue("{colname}-optcard"),
@@ -1488,7 +1462,7 @@ run_config <-
       })
       
   
-      #### 3.3.5.5. Render Sortable UI ####
+      #### 3.3.5.4. Render Sortable UI ####
       output$metadata_sortable_bucket <-
         renderUI({
           metadata_bucket_ui()
