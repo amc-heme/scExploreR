@@ -127,33 +127,35 @@ This vignette will walk you through the process of setting up a dataset in scExp
 Only the combined samples dataset and the SCLC epithelial cells dataset will be covered in the vignette.
 -->
 ```
--   Combined samples 
-<!-- -   Epithelial cells -->
+-   Combined samples <!-- -   Epithelial cells -->
 -   SCLC epithelial cells
 
-Chan et al. use all three datasets in their analysis, and the same will be done in this example. The "Epithelial cells" dataset is a subset of the "Combined samples" dataset that has been re-clustered. Likewise, the SCLC epithelial cells dataset is a subset of the epithelial cells dataset. See **Figure 1A** of Chan et al. for a visual representation.
+Chan et al. use these datasets in their analysis, and the same will be done in this example. The "Epithelial cells" dataset is a subset of the "Combined samples" dataset that has been re-clustered. Likewise, the "SCLC epithelial cells" dataset is a subset of the Epithelial cells dataset. See **Figure 1A** of Chan et al. for a visual representation.
 
 You may choose either the Anndata or the Seurat formats for download, though we recommend the Anndata format due to improved performance and decreased RAM requirements. This article will cover operations on the Anndata object.
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 While the anndata format is exclusive to python, anndata objects can be explored in R Studio with R-style commands using the [Reticulate](https://rstudio.github.io/reticulate/) package. The example in this vignette uses Reticulate, along with the [anndata](https://anndata.dynverse.org) R package, and SCUBA, which provides utility functions for common exploration/data accession operations in single cell objects.
 :::
 
 <!-- Vignette Overview/Goals Statement -->
+
 <!-- Update this after finishing the vignette -->
 
 By the end of this example, you will be able to set up an scExploreR instance with both datasets<!--, and you will be able to reproduce some of the figures in the paper using the plots tab. This vignette will also show how to identify differentially expressed genes between groups of cells using a wilcoxon rank sum-->.
 
 ::: {.card .mb-3}
-::: {.card-header}
-<h4 class = "card-title center"> 
-  Process to host a dataset in scExploreR 
+::: card-header
+<h4 class="card-title center">
+
+Process to host a dataset in scExploreR
+
 </h4>
 :::
 
-::: {.card-body}
+::: card-body
 1.  Explore object to determine appropriate data to display in app.
 2.  Use the config app to select relevant data and generate a config file
 3.  Launch scExploreR using the created config file
@@ -169,27 +171,26 @@ To understand what aspects to include, it is best to explore the object to ident
 In this section, we will load the "Combined Samples" and "SCLC epithelial cells" objects and explore relevant data to include in the scExploreR instance.
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 The example below is one of many ways this step can be approached. With other objects, the process of understanding relevant data may also involve communicating with staff involved in sequencing of your samples and preprocessing of the data.
 :::
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 For objects that you preprocess, it is good practice to include details on the metadata in your object. This is helpful for when you share your object upon publication, or for sharing your object internally or with collaborators. There are many ways to do this, though anndata formats make this easy using the unstructured (`uns`) data slot. One suggestion is to add a python dictionary to `uns` with relevant variable names as keys, and information on each variable as values.
 :::
 
 Run the code below to load the Combined Samples dataset, replacing the path with the path to the downloaded object.
 
-
-```r
+``` r
 library(anndata)
 
 full_dataset <- 
   anndata::read_h5ad(
     # Replace the path below with the path to the downloaded dataset
-    "~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad"
+    "~/scExplorer/datasets/Epithelial_SCLC.h5ad"
     )
 ```
 
@@ -201,12 +202,11 @@ scExploreR allows you to select as many metadata variables as you like, even all
 
 The object in this example contains 35 metadata variables. Let's explore the variables to narrow down which are the most relevant.
 
-
-```r
+``` r
 SCUBA::meta_varnames(full_dataset)
 ```
 
-```{.scroll-100}
+``` scroll-100
 ##  [1] "ngenes"                                  
 ##  [2] "libsize"                                 
 ##  [3] "mito_frac"                               
@@ -244,10 +244,29 @@ SCUBA::meta_varnames(full_dataset)
 ## [35] "development_stage"
 ```
 
+```{=html}
+<!-- My output for this was a bit different, FYI
+ [1] "n_genes_by_counts"                        "log1p_n_genes_by_counts"                  "total_counts"                            
+ [4] "log1p_total_counts"                       "mito_frac"                                "RBP_frac"                                
+ [7] "batch"                                    "donor_id"                                 "treatment"                               
+[10] "procedure"                                "SCLC_subtype"                             "SCLC_subtype_plus_TP53_RB1_wt"           
+[13] "pval_SCLC-A"                              "pval_SCLC-N"                              "pval_SCLC-P"                             
+[16] "NEUROD genes"                             "MHCI_PRESENTATION"                        "MHCII_PRESENTATION"                      
+[19] "SCLC_major_subtype_of_sample"             "clusters"                                 "treatment_categorized"                   
+[22] "recurrent_cluster"                        "histo"                                    "clusters_fine"                           
+[25] "disease_ontology_term_id"                 "tissue_ontology_term_id"                  "cell_type_ontology_term_id"              
+[28] "organism_ontology_term_id"                "is_primary_data"                          "assay_ontology_term_id"                  
+[31] "sex_ontology_term_id"                     "self_reported_ethnicity_ontology_term_id" "development_stage_ontology_term_id"      
+[34] "suspension_type"                          "HTAN_Biospecimen_ID"                      "HTAN_Participant_ID"                     
+[37] "tissue_type"                              "cell_type"                                "assay"                                   
+[40] "disease"                                  "organism"                                 "sex"                                     
+[43] "tissue"                                   "self_reported_ethnicity"                  "development_stage"                       
+[46] "observation_joinid"       
+-->
+```
 Only categorical metadata variables may be selected for use in the app. Below we identify categorical metadata variables.
 
-
-```r
+``` r
 full_unique_vars <- SCUBA::meta_varnames(full_dataset)
 
 # Iterate through metadata variables and return a vector specifying whether 
@@ -258,7 +277,7 @@ var_classes <-
     full_unique_vars,
     # Compute the class of the variable
     function(meta_var){
-      class(sclc_dataset$obs[[meta_var]])
+      class(full_dataset$obs[[meta_var]])
     }
   )
 
@@ -266,7 +285,7 @@ var_classes <-
 sort(var_classes)
 ```
 
-```{.scroll-300}
+``` scroll-300
 ##                                    batch 
 ##                                 "factor" 
 ##                                 donor_id 
@@ -339,14 +358,42 @@ sort(var_classes)
 ##                                "numeric"
 ```
 
+```{=html}
+<!-- My output was different, as above:
+                        observation_joinid                                    batch                                 donor_id                                treatment 
+                             "character"                                 "factor"                                 "factor"                                 "factor" 
+                               procedure                                    histo                         cell_type_coarse                           cell_type_fine 
+                                "factor"                                 "factor"                                 "factor"                                 "factor" 
+                       cell_type_general                                 clusters                            cell_type_med       development_stage_ontology_term_id 
+                                "factor"                                 "factor"                                 "factor"                                 "factor" 
+                    sex_ontology_term_id self_reported_ethnicity_ontology_term_id                   assay_ontology_term_id                  tissue_ontology_term_id 
+                                "factor"                                 "factor"                                 "factor"                                 "factor" 
+                disease_ontology_term_id                organism_ontology_term_id               cell_type_ontology_term_id                          suspension_type 
+                                "factor"                                 "factor"                                 "factor"                                 "factor" 
+                     HTAN_Biospecimen_ID                      HTAN_Participant_ID                              tissue_type                                cell_type 
+                                "factor"                                 "factor"                                 "factor"                                 "factor" 
+                                   assay                                  disease                                 organism                                      sex 
+                                "factor"                                 "factor"                                 "factor"                                 "factor" 
+                                  tissue                  self_reported_ethnicity                        development_stage                          is_primary_data 
+                                "factor"                                 "factor"                                 "factor"                                "logical" 
+                                  ngenes                                  libsize                                mito_frac                                 RBP_frac 
+                               "numeric"                                "numeric"                                "numeric"                                "numeric" 
+                                   H_knn 
+                               "numeric" 
+-->
+```
 This example will identify relevant metadata following the guiding questions below. The questions apply to other objects as well.
 
 ::: {.card .mb-3}
-::: {.card-header}
-<h4 class = "card-title center"> Guiding Questions for Metadata Selection </h4>
+::: card-header
+<h4 class="card-title center">
+
+Guiding Questions for Metadata Selection
+
+</h4>
 :::
 
-::: {.card-body}
+::: card-body
 -   Which variables represent cell type annotation, or clustering?
 -   If there are multiple variables for cell type, which are most relevant to the end user?
 -   Do the different variables reflect resolutions for cell type, and if so, which resolution is most appropriate?
@@ -357,7 +404,7 @@ This example will identify relevant metadata following the guiding questions bel
 :::
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 While Numeric metadata can't be used for subsetting or choices on plots, it may be plotted like features, if allowed via the config app. See the config app section for instructions on how to enable/disable this usage.
 :::
@@ -366,15 +413,14 @@ In the Chan et al. dataset, there are six metadata variables related to cell typ
 
 To identify which are relevant, one approach is to look at the unique values for each variable. You can get this information in a single function call using the `unique_values()` function from the [SCUBA](https://github.com/amc-heme/SCUBA#readme) package.
 
-
-```r
+``` r
 SCUBA::unique_values(
   object = full_dataset,
   var = "cell_type_fine"
   )
 ```
 
-```
+```         
 ##  [1] T cell         SCLC-N         Endothelial    SCLC-A         SCLC-P        
 ##  [6] AE1            Basal          Macrophage     DC             NSCLC         
 ## [11] Ciliated       Neuroendocrine Plasma cell    Ionocyte       Hepatocyte    
@@ -385,8 +431,7 @@ SCUBA::unique_values(
 
 It may also be helpful to look at the number of unique values in the object for each variable.
 
-
-```r
+``` r
 cell_type_vars <- 
   c("cell_type_coarse", 
     "cell_type_fine", 
@@ -411,7 +456,7 @@ for (meta_var in cell_type_vars){
 }
 ```
 
-```
+```         
 ## [1] "cell_type_coarse"
 ## [1] 4
 ## [1] "cell_type_fine"
@@ -430,8 +475,7 @@ We see that `cell_type_general` and `cell_type_coarse` have the lowest resolutio
 
 Which resolution is most appropriate? Let's plot the each one find out. <!-- Let's plot each metadata variable to see which resolution is most appropriate. -->
 
-
-```r
+``` r
 library(patchwork)
 
 cell_type_vars <- 
@@ -463,8 +507,7 @@ From the plots, we see that the resolution in `cell_type_coarse` matches the res
 
 Next, we look at patient or sample metadata. There are also multiple variables for sample metadata in this object: `donor_id`, `HTAN_Biospecimen_ID`, `HTAN_Participant_ID`, and `batch`. The levels in the `donor_id` variable most closely match the patient IDs specified by Chan et al. 2021 in **Supplementary Table S1**.
 
-
-```r
+``` r
 SCUBA::unique_values(
   object = full_dataset,
   var = "donor_id"
@@ -472,7 +515,7 @@ SCUBA::unique_values(
   stringr::str_sort(numeric = TRUE)
 ```
 
-```{.scroll-100}
+``` scroll-100
 ##  [1] "PleuralEffusion" "RU255"           "RU426"           "RU653"          
 ##  [5] "RU661"           "RU666"           "RU675"           "RU676"          
 ##  [9] "RU681"           "RU682"           "RU684"           "RU685"          
@@ -492,12 +535,11 @@ SCUBA::unique_values(
 
 The features included in the app for plotting are based on the included modalities. For anndata objects, expression data for features in the primary modality is stored in the `X` slot, and data for additional modalities is stored in `obsm`. Dimensional reduction coordinates for each cell are also stored in `obsm`. Let's use the `obsm_keys()` method to see what alternate modalities and reductions exist.
 
-
-```r
+``` r
 full_dataset$obsm_keys()
 ```
 
-```
+```         
 ## [1] "X_pca"  "X_umap"
 ```
 
@@ -505,28 +547,27 @@ We observe see two matrices in `obsm`: `X_umap` and `X_pca`. These correspond to
 
 The UMAP reduction is preferred as it is the current standard for scRNA-seq visualization. The PCA reduction is of limited utility, partially due to the number of dimensions. Plotting in the app is best suited for reductions with exactly two dimensions, so only the UMAP reduction should be included.
 
-
-```r
+``` r
 # Number of dimensions in each reduction
 full_dataset$obsm$X_umap |> dim()
 ```
 
-```
+```         
 ## [1] 147137      2
 ```
 
-```r
+``` r
 full_dataset$obsm$X_pca |> dim()
 ```
 
-```
+```         
 ## [1] 147137     50
 ```
 
 No alternate modalities are observed in the `obsm` slot for this object. There is only the main modality, gene expression, in the `X` slot.
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 Other datasets may include surface protein (ADT) data, computed gene signatures per cell, or other data. **For anndata objects, alternate modalities must be stored in `obsm` to be accessible to scExploreR** (with the exception of `X`, of course). Seurat and SingleCellExperiment objects have defined slots for modalities: `@assays` in Seurat objects, and "alternate experiments" for SingleCellExperiment objects. For these object types, scExploreR will use these slots to access modality information. As long as feature expression data for each modality is stored using the convention for Seurat and SingleCellExperiment objects, no additional action is needed for scExploreR to find this data.
 :::
@@ -535,14 +576,13 @@ Other datasets may include surface protein (ADT) data, computed gene signatures 
 
 Next, we explore the SCLC Epithelial Cells dataset to see if the characteristics exposed differ from the combined dataset.
 
-
-```r
+``` r
 library(anndata)
 
 sclc_dataset <- 
   anndata::read_h5ad(
     # Replace the code below with the path to the downloaded dataset
-    "~/datasets/small_cell_lung_cancer/Epithelial_SCLC.h5ad"
+    "~/scExploreR/datasets/Epithelial_SCLC.h5ad"
     )
 ```
 
@@ -550,8 +590,7 @@ sclc_dataset <-
 
 To determine if there are metadata variables that are in the SCLC object that are not in the full object, run `setdiff()` on the variable names from each. If you want to see variables that are in the full object that are not in the SCLC object, switch the order of the parameters to `setdiff()`.
 
-
-```r
+``` r
 # Identify metadata variables that are specific to the SCLC object
 sclc_unique_vars <-
   setdiff(
@@ -562,7 +601,7 @@ sclc_unique_vars <-
 sclc_unique_vars
 ```
 
-```
+```         
 ##  [1] "n_genes_by_counts"             "log1p_n_genes_by_counts"      
 ##  [3] "total_counts"                  "log1p_total_counts"           
 ##  [5] "SCLC_subtype"                  "SCLC_subtype_plus_TP53_RB1_wt"
@@ -577,8 +616,7 @@ sclc_unique_vars
 
 From this we see 16 variables that are not in the full object. Let's view which variables are categorical.
 
-
-```r
+``` r
 # Iterate through metadata variables and return a vector specifying whether 
 # the variable is categorical (character, factor), or numeric (numeric, 
 # double, integer)
@@ -595,7 +633,7 @@ var_classes <-
 sort(var_classes)
 ```
 
-```
+```         
 ##                  SCLC_subtype SCLC_subtype_plus_TP53_RB1_wt 
 ##                      "factor"                      "factor" 
 ##  SCLC_major_subtype_of_sample         treatment_categorized 
@@ -616,8 +654,7 @@ sort(var_classes)
 
 We see that SCLC_subtype, SCLC_subtype_plus_TP53_RB1_wt, SCLC_major_subtype_of_sample, treatment_categorized, recurrent_cluster, and clusters_fine are categorical variables. Let's plot them below to better understand them. `clusters` and `treatment` are added for comparison with `clusters_fine` and `treatment_categorized`, respectively.
 
-
-```r
+``` r
 cell_type_vars <- 
   c("SCLC_subtype",
     "SCLC_subtype_plus_TP53_RB1_wt",
@@ -651,8 +688,7 @@ For clustering, the clusters in `clusters` appear to align with the representati
 
 The `recurrent_cluster` variable appears to align with cluster 22 in `clusters`. Below we test if the cell IDs in cluster 22 are identical to the IDs for cells where `recurrent_cluster` is TRUE.
 
-
-```r
+``` r
 # Use SCUBA::get_all_cells to return cell IDs for cells with a value 
 # of TRUE for the "recurrent cluster" column
 recurrent_cluster_cell_names <-
@@ -674,7 +710,7 @@ all.equal(
   )
 ```
 
-```
+```         
 ## [1] TRUE
 ```
 
@@ -697,13 +733,12 @@ Before loading Anndata objects into the config app, the keys of alternate modali
 Alternate modalities and reductions should be stored in `uns`, under `scExploreR_assays` and `scExploreR_reductions`, respectively. This is done below in python, via reticulate, for both the full object and the SCLC object.
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 This step is not required for Seurat or SingleCellExperiment objects.
 :::
 
-
-```python
+``` python
 # If you are working in RStudio, make sure to replace the `r` in the 
 # code chunk with `python`
 
@@ -723,27 +758,28 @@ r.sclc_dataset.uns["scExploreR_reductions"] = ["X_umap", "X_pca", "X_diffmap"]
 
 After adding the data to `uns`, make sure to save both objects. They can now be loaded into the config app for analysis.
 
-
-```r
+``` r
 anndata::write_h5ad(
   full_dataset,
-  filename = "~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad"
+  filename = "~/scExploreR/datasets/SCLC_Full.h5ad"
 )
 
 anndata::write_h5ad(
   sclc_dataset,
-  filename = "~/datasets/small_cell_lung_cancer/Epithelial_SCLC.h5ad"
+  filename = "~/scExploreR/datasets/Epithelial_SCLC.h5ad"
 )
 ```
 
 ## Launching the Config App
-
+<!-- note about installing scExploreR with link to install guide -->
 To launch the config app, run the code below replacing `object_path` with the path to the downloaded dataset.
 
+``` {r}
+#remotes::install_github("amc-heme/scExploreR")
+library(scExploreR)
 
-```r
 scExploreR::run_config(
-  object_path = "~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad"
+  object_path = "~/scExploreR/datasets/SCLC_Full.h5ad"
   )
 ```
 
@@ -799,7 +835,7 @@ To include a modality in scExploreR, select it under **"Available Assays"**. Onc
 If you want the name to display in plots, click the checkbox. This is helpful when you have features in multiple modalities with the same name, though in this example there is only one modality, so the box can be left unchecked.
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 When configuring an object with multiple modalities, the checkbox for the "Gene" assay should generally not be checked. Usually most of the features in an object will be genes, so it is not necessary to specify that a feature is a gene. For other modalities, it generally does make sense to add the name of modality to the plot. It is especially helpful to add a label when feature names overlap with names in the gene assay. This can be the case for ADT data, where several surface proteins overlap with human gene symbols (i.e. CD34 and CD36).
 :::
@@ -816,7 +852,6 @@ Drag a metadata variable from the **"Available Metadata"** column to the **"Sele
 
 ![](dataset_setup_walkthrough-011-Drag_Metadata_Demo.png)
 
-
 You can drag the variables in the **"Selected Metadata"** column to change their order. Menus in the app will reflect the order of the variables.
 
 ![](dataset_setup_walkthrough-012-Reorder_Metadata.png)
@@ -824,14 +859,15 @@ You can drag the variables in the **"Selected Metadata"** column to change their
 Drag the metadata columns listed below to the **"Selected Metadata"** column, and add the suggested display names.
 
 ::: {.card .mb-3}
-::: {.card-header}
-<h4 class = "card-title center"> 
-  Suggested Metadata Options 
-  </h4>
+::: card-header
+<h4 class="card-title center">
+
+Suggested Metadata Options
+
+</h4>
 :::
 
-::: {.card-body}
-
+::: card-body
 ```{r metadata suggestion table, echo = FALSE, message = FALSE}
 meta_vars <- 
   c("clusters", "cell_type_fine", "treatment", "tissue", "donor_id", "HTAN_Biospecimen_ID", "self_reported_ethnicity")
@@ -872,7 +908,6 @@ DT::datatable(
       )
   )
 ```
-
 :::
 :::
 
@@ -895,7 +930,7 @@ Now that we've filled out all the information in the config file, let's save the
 ![](dataset_setup_walkthrough-016-config_save_file.png)
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 The recommended filename is the the name of your object plus "\_config", though you can use any name you wish.
 :::
@@ -904,8 +939,7 @@ The recommended filename is the the name of your object plus "\_config", though 
 
 Next, we'll create the config file for the SCLC object. Run the config app and repeat the process above, using the suggested settings below as a guide.
 
-
-```r
+``` r
 scExploreR::run_config(
   object_path = "~/datasets/small_cell_lung_cancer/Epithelial_SCLC.h5ad"
 )
@@ -919,16 +953,16 @@ scExploreR::run_config(
 ```
 
 ::: {.card .mb-3}
-::: {.card-header}
-<h4 class = "card-title center"> 
-  Suggested Settings for Epithelial SCLC Object 
-  </h4>
+::: card-header
+<h4 class="card-title center">
+
+Suggested Settings for Epithelial SCLC Object
+
+</h4>
 :::
 
-::: {.card-body}
-<h4> 
-  **General Tab**
-</h4>
+::: card-body
+<h4>**General Tab**</h4>
 
 **Label for dataset:** SCLC Epithelial Cells
 
@@ -1001,24 +1035,22 @@ DT::datatable(
 Reductions selected: X_umap
 
 Options for X_umap - Label: "UMAP"
-
 :::
 :::
 
 ## Create an App Config File
 
-The final step before launching scExploreR is to create an app config file. The app config file specifies the paths of all objects used in the app and their respective config files, and it also defines app-wide settings. An example app config file is given below. 
+The final step before launching scExploreR is to create an app config file. The app config file specifies the paths of all objects used in the app and their respective config files, and it also defines app-wide settings. An example app config file is given below.
 
 `datasets` is a list of all the datasets in the app. Each key under `datasets` represents a dataset to be loaded in the app instance (in this case, the dataset keys are `combined_sclc` and `epithelial_sclc`). The keys under `datasets` can be any name, as long as spaces are not used (use underscores instead). Any descriptive name for the dataset will work.
 
 Under the dataset keys, there are two keys: `object` and `config`. These should be the path to the object and config file, respectively.
 
-The `RSTUDIO_PANDOC` key is used to define a path to an RStudio pandoc installation. This should only be necessary when running on a linux server. 
+The `RSTUDIO_PANDOC` key is used to define a path to an RStudio pandoc installation. This should only be necessary when running on a linux server.
 
-To determine if this is necessary, run `rmarkdown::pandoc_available()` in your R console. If `TRUE` is returned, `RSTUDIO_PANDOC` does not need to be specified. In place of a path, enter a YAML `NULL` (`~`) for this key. If you see `FALSE`, you will need to install pandoc manually and provide the path to the installation. `rmarkdown::find_pandoc()` may be able to find the path. 
+To determine if this is necessary, run `rmarkdown::pandoc_available()` in your R console. If `TRUE` is returned, `RSTUDIO_PANDOC` does not need to be specified. In place of a path, enter a YAML `NULL` (`~`) for this key. If you see `FALSE`, you will need to install pandoc manually and provide the path to the installation. `rmarkdown::find_pandoc()` may be able to find the path.
 
-
-```yaml
+``` yaml
 # YAML version
 %YAML 1.1
 ---
@@ -1032,13 +1064,12 @@ datasets:
         object: "~/datasets/small_cell_lung_cancer/Epithelial_SCLC.h5ad"
         config: "~/datasets/small_cell_lung_cancer/Epithelial_SCLC_config.yaml"
 RSTUDIO_PANDOC: ~
-
 ```
 
-You can create a config file from R Studio by going to **File** >> **New File** >> **Text File**. After creating the text file, save it in the same directory as the object and config files, and **be sure to add ".yaml" to the filename**. After saving initially, use the structure above and define the paths to the object and config files. 
+You can create a config file from R Studio by going to **File** \>\> **New File** \>\> **Text File**. After creating the text file, save it in the same directory as the object and config files, and **be sure to add ".yaml" to the filename**. After saving initially, use the structure above and define the paths to the object and config files.
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 Don't forget the YAML version at the top. Version 1.1 is the latest version supported by the `yaml` package used to read the data into R.
 :::
@@ -1047,24 +1078,21 @@ Don't forget the YAML version at the top. Version 1.1 is the latest version supp
 
 The app can now be ran by providing the path to the app config file. Use the `browser_config` parameter to specify the path.
 
-
-```r
+``` r
 scExploreR::run_scExploreR(
   browser_config = "~/datasets/small_cell_lung_cancer/sclc_app_config.yaml"
 )
 ```
 
 ::: {.callout .callout-info}
-<h4> Note </h4>
+<h4>Note</h4>
 
 If you only have one object, you don't need to make an app config file. You can simply run `run_scExploreR`, using the `object_path` and `config_path` parameters instead of `browser_config`.
 
-
-```r
+``` r
 scExploreR::run_scExploreR(
   object_path = "~/datasets/small_cell_lung_cancer/SCLC_Full.h5ad",
   config_path = "~/datasets/small_cell_lung_cancer/SCLC_Full_config.yaml"
 )
 ```
 :::
-
