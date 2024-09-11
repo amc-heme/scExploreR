@@ -180,22 +180,33 @@ run_config <-
           )
         }
     }
-#Check for NA values in expression data
-    if(inherits(object, "HDF5SummarizedExperiment")) {
-      expr_data <- assay(object, "counts")
-    } else if(inherits(object, "Seurat")) {
-      expr_data <- GetAssayData(object, assay = "RNA", slot = "data")
-    } else if(inherits(object, "AnnData")) {
-      expr_data <- object$X
-    } else {
-      stop(NULL)
-    }
+    
+    # Check for NA values in expression data
+    # if(inherits(object, "HDF5SummarizedExperiment")) {
+    #   expr_data <- assay(object, "counts")
+    # } else if(inherits(object, "Seurat")) {
+    #   expr_data <- GetAssayData(object, assay = "RNA", slot = "data")
+    # } else if(inherits(object, "AnnDataR6")) {
+    #   expr_data <- object$X
+    # } else {
+    #   stop(
+    #     paste0(
+    #       'Unrecognized object class: ', 
+    #       paste(class(obj), collapse = ", "),
+    #       ". "
+    #       )
+    #     )
+    # }
+    
     # stop config from running if NAs found and show a warning to remove from dataset
-    if(anyNA(expr_data)) {
-   stop(
-   "Warning: NA values detected in expression data. Please remove NA values from dataset before loading."
-   )
-    }
+    # if(anyNA(expr_data)){
+    #   stop(
+    #     paste0(
+    #       "NA values detected in expression data. Please remove ",
+    #       "NA values from dataset before loading."
+    #       )
+    #     )
+    # }
 
     # Test if the loaded object is of a supported class; if not, return an error
     check_dataset(

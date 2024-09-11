@@ -146,7 +146,7 @@ options_ui <- function(id,
         ),
 
         # #add a tooltip for warning if NAs are present in the chosen metadata variable
-        bsTooltip(
+        shinyBS::bsTooltip(
           id = ns("warning_icon_na"),
           title = 
             glue(
