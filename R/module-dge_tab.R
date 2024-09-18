@@ -1204,7 +1204,7 @@ dge_tab_server <- function(id,
               # Header for simple thresholding
               glue("Differential Expression Results Based on
                    {feature_label} Expression Threshold")
-            } else {z
+            } else {
               # Standard DGE or metaclusters: add group by category to
               # header text
               # Label for group by category in config file

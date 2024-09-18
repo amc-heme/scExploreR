@@ -548,7 +548,7 @@ dge_table_filtering_server <-
         observe({
           req(dge_table())
           
-          target <- "auc_ui"
+          target <- "auc_header"
           
           if ("auc" %in% colnames(dge_table())){
             shinyjs::showElement(
@@ -817,6 +817,18 @@ dge_table_filtering_server <-
             }
           })
         
+        ## 5.3 AUC ####
+        # Explicitly return NULL if "auc" does not appear in the table
+        # Avoids issue 350
+        auc <-
+          reactive({
+            if ("auc" %in% colnames(dge_table())){
+              input$auc
+              } else {
+                NULL
+                }
+            })
+        
         # 6. Return filter inputs ####
         return(
           list(
@@ -824,7 +836,7 @@ dge_table_filtering_server <-
             `feature` = reactive({input$feature}),
             `expression` = expr_value,
             `lfc` = lfc_value,
-            `auc` = reactive({input$auc}),
+            `auc` = auc,
             # pval_adj selection must be converted to numeric before returning
             `pval_adj` = reactive({as.numeric(input$pval_adj)}),
             `pct_in` = reactive({input$pct_in}),
