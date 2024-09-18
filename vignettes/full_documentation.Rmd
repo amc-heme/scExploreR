@@ -139,7 +139,7 @@ This menu is used to select a categorical metadata variable (e.g. cell type) to 
 
 This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side, and defaults to "None".
 
-This menu is useful for comparing projections between different metadata values. For example, broad differences in cell type proportions may be visualized when splitting by disease response. These obsservations can be analyzed in more detail in the differential gene expression and correlations tabs. 
+This menu is useful for comparing projections between different metadata values. For example, broad differences in cell type proportions may be visualized when splitting by disease response. These observations can be analyzed in more detail in the differential gene expression and correlations tabs. 
 
 When a variable is selected, a slider to choose the number of columns will appear under the "Title options menu" (see [Choose number of columns](#choose-number-of-columns) for more info).
 
@@ -306,7 +306,7 @@ download_button(plot_type = "Dot Plot")
 
 ## Scatterplots {#scatterplots}
 
-Scatterplots are useful for viewing co-expression of two features. All cells are plotted according to the expression of each feature, and are useful for quallitative assessments of correlation.
+Scatterplots are useful for viewing co-expression of two features. All cells are plotted according to the expression of each feature, and are useful for qualitative assessments of correlation.
 
 ### Feature for x-axis
 
@@ -513,7 +513,7 @@ To visually identify and verify the groups/marker classes being compared in the 
 
 # Correlations Tab {#correlations-tab}
 
-This tab is used to compute the correlation between a gene entered and all other genes in the dataaset. The correlations analysis uses a pearson correlation coefficient. Only genes may be used for computing correlation at this time: other feature types will be available in the future.
+This tab is used to compute the correlation between a gene entered and all other genes in the dataset. The correlations analysis uses a pearson correlation coefficient. Only genes may be used for computing correlation at this time: other feature types will be available in the future.
 
 ## Running a correlation analysis
 
@@ -521,7 +521,7 @@ To run an analysis, select a gene from the **"Gene Selection"** menu. All pearso
 
 ## Interpreting Correlation Results
 
-The **"Subset Summary and Quality Statistics"** section will display the metadata included in the selected subset, along with quality statistics for the analysis. The number of cells in the selected subset will be displayed, along with the number and precentage of cells with non-zero reads for the currently selected gene. If either of these numbers are very low (less than 250 cells or so in the subset and less than 5% of cells with non-zero reads), caution should be taken when drawing conclusions from the results.
+The **"Subset Summary and Quality Statistics"** section will display the metadata included in the selected subset, along with quality statistics for the analysis. The number of cells in the selected subset will be displayed, along with the number and percentage of cells with non-zero reads for the currently selected gene. If either of these numbers are very low (less than 250 cells or so in the subset and less than 5% of cells with non-zero reads), caution should be taken when drawing conclusions from the results.
 
 ### Correlation table
 
