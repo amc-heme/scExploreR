@@ -30,7 +30,7 @@ output:
 /* Bootstrap card elements */
 .card-header{
   background-color: #CFB87C;
-  /* Adds a mrgin-top of 0 to the existing bootstrap class to remove white space
+  /* Adds a margin-top of 0 to the existing bootstrap class to remove white space
    that appears when using the card component in an Rmd */
   margin-top: 0px;
 }
@@ -38,7 +38,7 @@ output:
 .card-body{
   background-color: #E1E1E1; 
   /* The border radius property is not properly inherited from the parent .card
-    element. The reason is unkown, but explicitly defining it here fixes 
+    element. The reason is unknown, but explicitly defining it here fixes 
     the issue */
   border-radius: 0px 0px var(--bs-card-border-radius) var(--bs-card-border-radius);
 }
@@ -52,7 +52,7 @@ output:
   border: 1px solid #eee;
   /* If the border-radius is greater than border-left-width,  
      the left border will curve inward onto the element's body,
-     creating a cresent-like shape*/
+     creating a crescent-like shape*/
   border-left-width: 8px;
   border-radius: 8px;
   h4, h5 {
@@ -219,7 +219,7 @@ Use the **"Metadata to Group By"** to choose the variable for coloring the cells
 
 # Assays Tab
 
-Settings for the assays to be included in the Seurat object are entered in the assays tab.
+Settings for the assays to be included in the browser are entered in the assays tab. <!--This is the first place you mention a new object being made, and that it's a Seurat object? That was confusing, so here's a suggested language change -->
 
 #### Adding/Removing Assays
 
@@ -237,7 +237,7 @@ On the upper right-hand corner of the screen, a panel of general assay-related o
 ```
 #### *"*Choose Genes Assay"
 
-The assay selected in this tab will be the assay used when computing differential expression or correlation; it does not effect plotting.
+The assay selected in this tab will be the assay used when computing differential expression or correlation; it does not affect plotting.
 
 Note, if you wish to include only non-gene assays in the object, you may designate those assays as the "genes" assay, but this may cause issues with the DGE and correlation analyses. The analyses are validated for gene expression only, and may not be accurate when using other data types. We will address means of including these data types in analyses in the future.
 
