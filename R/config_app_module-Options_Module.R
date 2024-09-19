@@ -134,12 +134,37 @@ options_ui <- function(id,
         id = ns("optcard"),
         class = "optcard single-space-bottom",
         tags$strong(glue("Options for {card_name}"),
-                    class="large center"),
+                    class="large center",
+                    #hidden exclamation triangle warning to show if NAs are present in the chosen metadata variable 
+                    shinyjs::hidden(
+                    tags$i(
+                      class = "fa-solid fa-exclamation-triangle", 
+                      style = "color: #D67E1A; margin-left: 5px;",
+                      id = ns("warning_icon_na")
+                    )
+                 )
+        ),
 
+        # #add a tooltip for warning if NAs are present in the chosen metadata variable
+        shinyBS::bsTooltip(
+          id = ns("warning_icon_na"),
+          title = 
+            glue(
+              paste0(
+                '{card_name} contains NA values, which may cause unexpected ',
+                'behavior in the main app. We recommend replacing NA values ',
+                'with "undefined", "unknown", the character ',
+                '"NA" (in quotes), etc.' 
+                )
+              ),
+          placement = "right",
+          trigger = "hover",
+          options = NULL
+        ), 
         # Print the type of metadata beneath the title, and a brief description
         tags$p(glue("({metadata_type}, {metadata_description})"),
                class = "center small half-space-bottom"),
-
+        
         # If the metadata is categorical and there are 15 values or less,
         # print the values to screen
         if (metadata_type == "Categorical"){
@@ -338,6 +363,36 @@ options_server <-
               hideElement("optcard")
             }
           })
+        
+       ## 1.1. Show/ hide NA warning icon ####
+      
+        # Pull full metadata table 
+        meta_table <-
+          SCUBA::fetch_metadata(
+            object,
+            full_table = TRUE
+          )
+    
+        # check for NA values in metadata
+        check_na <- function(meta_table, meta_vars) {
+          sapply(meta_vars, function(var){
+            any(is.na(meta_table[[var]]) | meta_table[[var]] == "" | is.null(meta_table[[var]]))
+          })
+        }
+        
+        is_na <- check_na(meta_table, card_name)
+       
+        observe({
+          if (card_name %in% categories_selected()) {
+            # show tooltip warning icon if NA values found
+            if (isTruthy(is_na[card_name])) {
+              showElement(id = "warning_icon_na")
+            } else{
+              #hide tooltip warning icon if no NA values found
+              hideElement(id = "warning_icon_na")
+            }
+          }
+        })
 
         # 2. Metadata-tab specific functions -----------------------------------
         # Determine if metadata field is categorical or numeric

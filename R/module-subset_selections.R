@@ -802,7 +802,7 @@ subset_selections_server <- function(id,
           # Obtain summary stats for feature
           feature_summary <-
             # Uses FetchData methods to pull expression data for the feature
-            # Data slot is pulled by default; this can be changed
+            # Data layer is pulled by default; this can be changed
             FetchData(
               object(),
               vars = input$search_feature
