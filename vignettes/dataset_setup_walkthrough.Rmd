@@ -774,7 +774,7 @@ anndata::write_h5ad(
 <!-- note about installing scExploreR with link to install guide -->
 To launch the config app, run the code below replacing `object_path` with the path to the downloaded dataset.
 
-``` {r}
+``` {r, eval=FALSE}
 #remotes::install_github("amc-heme/scExploreR")
 library(scExploreR)
 
