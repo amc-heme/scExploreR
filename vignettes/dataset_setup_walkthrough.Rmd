@@ -8,6 +8,28 @@ output:
 #date: "2023-11-16"
 ---
 
+<!-- 
+#### Developer README ####
+
+when making edits to this Rmd, please do not add any evaluating R chunks. This
+vignette was designed to have markdown code only, rather than live R code, 
+since it needs to be knit in a GitHub Actions Runner to post to the pkgdown
+website.
+
+If you add an R code chunk, plase add eval=FALSE to the end. 
+
+In several locations in this document, markdown-only R chunks exist. These have 
+r after triple backticks without braces:
+
+``` r instead of ``` {r}.
+
+If you add braces to execute these chunks locally, please also add eval=FALSE to
+ensure they don't execute on the GitHub runner.
+
+Thank you!!
+
+-->
+
 ```{scss document_css, echo = FALSE}
 /* Centers text and block elements */
 .center{
