@@ -652,8 +652,7 @@ run_scExploreR <-
     log_info("Datasets successfully loaded.")
 
     # Read plaintext credentials from config
-    credentials <- data.frame(user = browser_config$auth_users,
-                              password = browser_config$auth_passwords)
+    credentials <- read_tsv(browser_config$credentials) %>% filter(user %in% browser_config$users)
     
     # Table of Contents ------------------------------------------------------------
     # TODO: Add module tree here
