@@ -38,6 +38,14 @@ subset_stats_ui <- function(id,
           outputId = ns("print_mode"), 
           inline = FALSE
           ),
+        # Statistical method used for test
+        # Always a Wilcoxon rank sum
+        tags$strong(
+          "Statistical Method:"
+        ),
+        tags$span(
+          "Wilcoxon rank sum"
+        ),
         # Threshold used: only displays for threshold-based DGE
         hidden(
           div(
@@ -92,7 +100,7 @@ subset_stats_ui <- function(id,
           )
         ),
       div(
-        tags$strong("Number of cells per class: "),
+        tags$strong("Number of cells per group: "),
         verbatimTextOutput(outputId = ns("n_by_class")),
         # Applies CSS from www/other.css to verbatimTextOutput
         class = "n_by_class_style"
@@ -237,7 +245,7 @@ subset_stats_server <-
                   FetchData(
                     subset(),
                     vars = gene_selected(),
-                    slot = "counts"
+                    layer = "counts"
                     ) 
                 
                 sum(expr_data > 0)
@@ -267,13 +275,13 @@ subset_stats_server <-
               })
           }
         
-        # For DGE tab only: stats on selected DE/marker classes, test 
+        # For DGE tab only: stats on selected DE/marker groups, test 
         # mode, and number of cells by class
         if (tab == "dge"){
-          # Classes
+          # `groups`
           # The groups or markers used for DGE. 
           # Used for downstream stats
-          classes <- 
+          groups <- 
             eventReactive(
               event_expr(),
               {
@@ -294,17 +302,17 @@ subset_stats_server <-
                   )
                 })
           
-          # Number of classes of the group_by metadata 
+          # Number of groups of the group_by metadata 
           # category in subset
-          n_classes <- 
+          n_groups <- 
             eventReactive(
               event_expr(),
               {
-                length(classes())
+                length(groups())
               })
           
           # Print the type of test (DE or marker identification) and a 
-          # brief description of the classes selected
+          # brief description of the groups selected
           mode_description <- 
             eventReactive(
               event_expr(),
@@ -312,14 +320,14 @@ subset_stats_server <-
                 ifelse(
                   # Conditional: TRUE when differential expression 
                   # is selected
-                  n_classes() == 2,
+                  n_groups() == 2,
                   # Differential expression: print the two groups
-                  # classes() contains the identities of both groups
-                  glue("Differential Expression ({classes()[1]} vs. 
-                                {classes()[2]})"),
+                  # groups() contains the identities of both groups
+                  glue("Differential Expression ({groups()[1]} vs. 
+                                {groups()[2]})"),
                   # Marker identification: print the number of
-                  # classes selected
-                  glue("Marker Identification ({n_classes()}  classes)")
+                  # groups selected
+                  glue("Marker Identification ({n_groups()} groups)")
                 )
               })
           
@@ -368,7 +376,7 @@ subset_stats_server <-
                 # Cell counts: second column of tibble
                 n_cells <- n_cells_tibble[[2]]
 
-                # Print list of classes and the number of cells in each
+                # Print list of groups and the number of cells in each
                 n_cells_list = list()
                 for (i in 1:nrow(n_cells_tibble)){
                   n_cells_list[[i]] <-
@@ -505,14 +513,14 @@ subset_stats_server <-
         )
         
         # 5. Return Stats from Server ------------------------------------------
-        # For dge tab: return n_cells, classes, and n_classes
+        # For dge tab: return n_cells, groups, and n_groups
         # Return a list of reactives, as opposed to a reactive list
         if (tab=="dge"){
           return(
             list(
               `n_cells` = reactive({n_cells()}),
-              `classes` = reactive({classes()}),
-              `n_classes` = reactive({n_classes()})
+              `groups` = reactive({groups()}),
+              `n_groups` = reactive({n_groups()})
             )
           )
         } # Currently no need to return values for correlations tab

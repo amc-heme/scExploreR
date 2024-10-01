@@ -17,6 +17,7 @@ If using anndata objects, [reticulate](https://github.com/rstudio/reticulate) mu
 * Pandas
 * Scipy
 * Anndata
+* Scanpy
 
 <!-- Add page on HDF5 storage, and put a link here -->
   <!-- For Seurat objects, you need at least as much RAM as the size of the object in memory, but the size of the object can be considerably greater than the available RAM for Anndata and SingleCellExperiment objects using HDF5 storage. -->

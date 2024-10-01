@@ -21,7 +21,6 @@
 #' run_config(./path_to_object.rds, ./path_to_config_file.yaml)
 #'
 #' @export
-
 run_config <-
   function(
     object_path,
@@ -181,6 +180,33 @@ run_config <-
           )
         }
     }
+    
+    # Check for NA values in expression data
+    # if(inherits(object, "HDF5SummarizedExperiment")) {
+    #   expr_data <- assay(object, "counts")
+    # } else if(inherits(object, "Seurat")) {
+    #   expr_data <- GetAssayData(object, assay = "RNA", slot = "data")
+    # } else if(inherits(object, "AnnDataR6")) {
+    #   expr_data <- object$X
+    # } else {
+    #   stop(
+    #     paste0(
+    #       'Unrecognized object class: ', 
+    #       paste(class(obj), collapse = ", "),
+    #       ". "
+    #       )
+    #     )
+    # }
+    
+    # stop config from running if NAs found and show a warning to remove from dataset
+    # if(anyNA(expr_data)){
+    #   stop(
+    #     paste0(
+    #       "NA values detected in expression data. Please remove ",
+    #       "NA values from dataset before loading."
+    #       )
+    #     )
+    # }
 
     # Test if the loaded object is of a supported class; if not, return an error
     check_dataset(
@@ -219,9 +245,10 @@ run_config <-
         },
         object
         )
-
+    
     numeric_cols <- meta_vars[is_numeric]
     non_numeric_cols <- meta_vars[!is_numeric]
+    
 
     # Assays, reductions in object
     all_assays <-
@@ -512,7 +539,7 @@ run_config <-
               ),
               
               # Options specific to each metadata variable
-              
+    
               # Options for Numeric metadata (Numeric metadata is currently not
               # displayed)
 
@@ -1294,7 +1321,7 @@ run_config <-
 
         all_metadata_options[[var]] <- server_output
       }
-
+     
       ### 3.3.4. RECORD: metadata options in config data ####
       #### 3.3.4.1. Category-specific options ####
       config_data$metadata <-
@@ -1439,13 +1466,15 @@ run_config <-
             }
           }
         })
-
-      #### 3.3.5.3 Show/hide Metadata Options Cards ####
+   
+      #### 3.3.5.3. Show/hide Metadata Options Cards ####
       observe({
         for (colname in non_numeric_cols){
           # Show all cards that are in the "Metadata selected" column of the
           # sortable, and hide all cards that are not
           if (colname %in% input$metadata_selected){
+       
+            
             showElement(
               id = glue("{colname}-optcard"),
               asis = TRUE
@@ -1458,7 +1487,8 @@ run_config <-
           }
         }
       })
-
+      
+  
       #### 3.3.5.4. Render Sortable UI ####
       output$metadata_sortable_bucket <-
         renderUI({
