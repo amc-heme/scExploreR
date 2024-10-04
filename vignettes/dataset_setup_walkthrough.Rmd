@@ -1,5 +1,5 @@
 ---
-title: "Hosting a Dataset in scExploreR and Performing Analysis"
+title: "App Setup Walkthrough"
 output: 
   html_document:
     theme:
@@ -690,9 +690,9 @@ There are no alternate modalities in `obsm`. The reductions in `obsm` are the sa
 
 Now that we have identified metadata, reductions, and modalities to include for the dataset, the next step is to apply these settings in the config app.
 
-## Anndata-specific Preparation for the Config App
+## Anndata-specific Preparation for the Config App {#anndata_uns_requirements}
 
-Before loading Anndata objects into the config app, the keys of alternate modalities and reductions must be defined, since both types of data are stored in `obsm`, and there is no exclusive storage slot for reductions or modalities in anndata objects.
+Before loading anndata objects into the config app, the keys of alternate modalities and reductions must be defined, since both types of data are stored in `obsm`, and there is no exclusive storage slot for reductions or modalities in anndata objects.
 
 Alternate modalities and reductions should be stored in `uns`, under `scExploreR_assays` and `scExploreR_reductions`, respectively. This is done below in python, via reticulate, for both the full object and the SCLC object.
 

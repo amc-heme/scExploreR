@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This tutorial will guide you through the use of scExploreR to analyze your data. This is not a comprehensive exploration of each feature: for more information on any feature, see the [full documentation](full_documentation.html). The browser used for this tutorial is hosted here<!--[here]()-->. The dataset contains a single bone marrow and peripheral blood sample from a healthy patient (for more, see the [download page for the dataset](https://figshare.com/articles/dataset/Expression_of_197_surface_markers_and_462_mRNAs_in_15281_cells_from_blood_and_bone_marrow_from_a_young_healthy_donor/13398065), and the related [publication](https://doi.org/10.1038/s41590-021-01059-0)).
 
-Key functionality is grouped into three tabs: plots, differential expression, and gene correlations. The interface on each tab displays the plots and analysis results on the right, and the options on the left hand panel (referred to in this document as the options panel). The plots tab is selected by default, and is helpful for summarizing data and producing visualizations. While this is a good place to get an overview your dataset, some biological questions may be best answered by starting in different tabs. This vignette will walk through common biological questions and how to approach them using the app.
+Key functionality is grouped into two <!--three--> tabs: plots and differential expression. <!--and gene correlations.--> The interface on each tab displays the plots and analysis results on the right, and the options on the left hand panel (referred to in this document as the options panel). The plots tab is selected by default, and is helpful for summarizing data and producing visualizations. While this is a good place to get an overview your dataset, some biological questions may be best answered by starting in different tabs. This vignette will walk through common biological questions and how to approach them using the app.
 
 # In which cell types is my gene deferentially expressed?
 
@@ -107,6 +107,7 @@ On the plot, there are two peaks for CD34 expression. Most cells appear either n
 
 After pressing **"Update"** to run the analysis, the results will show genes expressed to a greater extent in CD34+ (high) cells versus CD34- (low) ones. When sorting the table by AUC, several good markers for both groups appear.
 
+<!--
 # What genes in the dataset are correlated with my gene?
 
 The correlations tab can be used, among other things, to determine which genes are co-expressed with a given gene in a sample. In this example, we will analyze the correlation of other genes with CXCR4, [a top marker for the peripheral blood dendritic cells](#marker-by-sample).
@@ -119,4 +120,4 @@ The results will show the person correlation coefficients for both the full data
 
 ![](tutorial-014_Correlation_Scatterplots.gif){.centered-image width="650"}
 
-To view correlation results for a particular gene of interest, you can search for it using the text box below the "Feature" column header on the table.
+To view correlation results for a particular gene of interest, you can search for it using the text box below the "Feature" column header on the table. -->

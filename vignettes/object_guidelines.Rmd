@@ -1,0 +1,402 @@
+---
+title: "Guidelines for Preparing objects for scExploreR"
+output: 
+  html_document:
+    theme:
+      bslib: true
+      version: 5
+#date: "2023-11-16"
+---
+
+```{scss document_css, echo = FALSE}
+/* Centers text and block elements */
+.center{
+  text-align: center;
+  /* Display must be set to block for centering to work */
+  display: block;
+  }
+
+.white-text{
+  color: white;
+}
+
+/* Bootstrap card elements */
+.card-header{
+  background-color: #CFB87C;
+  /* Adds a mrgin-top of 0 to the existing bootstrap class to remove white space
+   that appears when using the card component in an Rmd */
+  margin-top: 0px;
+}
+
+.card-body{
+  background-color: #E1E1E1; 
+  /* The border radius property is not properly inherited from the parent .card
+    element. The reason is unkown, but explicitly defining it here fixes 
+    the issue */
+  border-radius: 0px 0px var(--bs-card-border-radius) var(--bs-card-border-radius);
+}
+
+/* CSS for callouts
+   From https://codepen.io/superjaberwocky/pen/rLKxOa */
+   /* Requires SASS to be enabled, with sass package and "scss" code chunk*/
+.callout {
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid #eee;
+  /* If the border-radius is greater than border-left-width,  
+     the left border will curve inward onto the element's body,
+     creating a cresent-like shape*/
+  border-left-width: 8px;
+  border-radius: 8px;
+  h4, h5 {
+    margin-top: 0;
+    margin-bottom: 5px;
+  }
+  p:last-child {
+    margin-bottom: 0;
+  }
+  code {
+    border-radius: 3px;
+  }
+  & + .bs-callout {
+    margin-top: -5px;
+  }
+}
+
+/* Define properties for default, primary, info, etc. classes*/
+@each $name,$color in 
+  (default,#777),
+  (primary,#428bca),
+  (success,#5cb85c),
+  (danger,#d9534f),
+  (warning,#f0ad4e),
+  (info,#5bc0de), 
+  (bdc,#29527a){
+  .callout-#{$name} {
+    border-left-color: $color;
+    /* Background: color above, with an alpha hex value of '35'*/
+    background-color: #{$color + '35'};
+    h4, h5 {
+      color: $color;
+    }
+  }
+}
+
+/* Applied to output of code chunks. Causes a scrollbar to appear 
+   when the output extends beyond the max-height. */
+/* Adapted from https://bookdown.org/yihui/rmarkdown-cookbook/html-scroll.html */
+/* Classes are defined for several max heights */
+@each $height in 
+  80,
+  100,
+  300{
+  .scroll-#{$height} {
+    max-height: #{$height + "px"};
+    overflow-y: auto;
+    background-color: inherit;
+  }
+}
+
+/* For the object table, override the background colors applied
+   by R Markdown using the object-table class*/
+.object-table th,
+.object-table td{
+  background-color: transparent !important;
+  padding: 5px 15px;
+}
+
+/* Remove borders beneath each row that appear in pkgdown */
+/* Only the header row will have a border*/
+.object-table tr,
+.object-table td{
+  border-style: none;
+}
+
+.object-table table{
+  background-color: transparent !important;
+}
+
+/* Also add a bottom border underneath the table header */
+.object-table .header{
+  border-style: solid;
+  border-width: 0px 0px 2px 0px;
+  border-color: #3a3c3e;
+}
+
+/* Color of icons in object table indicating presence and absence of features */
+.yes {
+  color: #008b00;
+}
+
+.no {
+  color: #8b0000;
+}
+
+/* Classes to control size of text */
+.x-large{
+  font-size: 1.3em;
+}
+
+.small{
+ font-size: 0.9em;
+}
+```
+
+```{r message=FALSE, warning = FALSE, echo=FALSE}
+# Load shiny library to render icons in object table
+library(shiny)
+library(htmltools)
+```
+
+This vignette details the requirements and guidelines for loading single-cell data in scExploreR. 
+
+# What objects can I upload to scExploreR?
+
+scExploreR works with many common object formats for single-cell data. Functionality is largely similar between object classes, but there are some differences. A table with the supported object classes summarizing the differences in functionality between each class is given below.
+
+```{r object_functionality_table, echo=FALSE, message=FALSE, warning=FALSE}
+# Functionality by object class table
+# Icon functions: render icons indicating whether or not a feature is present
+# for the obhect classs
+yes <- 
+  function(){
+    shiny::icon(
+      name = "check-circle",
+      class = "yes fas center x-large"
+      )
+  }
+
+no <-
+  function(){
+    shiny::icon(
+      name = "minus-circle", #circle-xmark
+      class = "no fas center x-large"
+      )
+    }
+
+tags$div(
+  class = "object-table",
+  tags$table(
+    # Initialize table columns
+    tags$colgroup(
+      tags$col(class = "col-md-4", span = 1),
+      tags$col(class = "col-md-2", span = 1),
+      tags$col(class = "col-md-2", span = 1),
+      tags$col(class = "col-md-2", span = 1),
+      tags$col(class = "col-md-2", span = 1)
+      ),
+    # Table header
+    tags$thead(
+      # Header class inserts a border beneath the header
+      class = "header",
+      tags$tr(
+        # First column is blank
+        tags$th(),
+        tags$th(tags$b("Seurat", class = "center")),
+        tags$th(tags$b("Seurat v5 + BPCells", class = "center")),
+        tags$th(tags$b("SingleCellExperiment", class = "center")),
+        tags$th(tags$b("Anndata", class = "center"))
+        )
+      ),
+    # Main table
+    tags$tbody(
+      # Header row for plotting features
+      tags$tr(
+        # "Plotting" is a section header, so it is bold and no data is shown
+        # in the other columns
+        tags$td(
+          tags$b(
+            "Plotting"
+            )
+          ),
+        tags$td(),
+        tags$td(),
+        tags$td(),
+        tags$td()
+        ),
+      # icon functions yes() and no() used to indicate the presence or abscence
+      # of features
+      tags$tr(
+        tags$td("Full plotting capabilities"),
+        tags$td(yes()),
+        tags$td(yes()),
+        tags$td(yes()),
+        tags$td(yes())
+        ),
+      tags$tr(
+        tags$td("Consistent Style"),
+        tags$td(yes()),
+        tags$td(yes()),
+        tags$td(yes()),
+        tags$td(yes())
+        ),
+      # Section header for Subsetting
+      tags$tr(
+        tags$td(
+          tags$b(
+            "Subsetting"
+            )
+          ),
+        tags$td(),
+        tags$td(),
+        tags$td(),
+        tags$td()
+        ),
+      tags$tr(
+        tags$td("Based on categorical Metadata"),
+        tags$td(yes()),
+        tags$td(yes()),
+        tags$td(yes()),
+        tags$td(yes())
+        ),
+      tags$tr(
+        tags$td("Based on feature expression"),
+        tags$td(yes()),
+        tags$td(yes()),
+        tags$td(no()),
+        tags$td(yes())
+        ),
+      tags$tr(
+        tags$td("Advanced code-based subsetting"),
+        tags$td(yes()),
+        tags$td(yes()),
+        tags$td(no()),
+        tags$td(no())
+        ),
+      # Section header for DGE features
+      tags$tr(
+        tags$td(
+          tags$b(
+            "Differential Gene Expression"
+            )
+          ),
+        tags$td(),
+        tags$td(),
+        tags$td(),
+        tags$td()
+        ),
+      tags$tr(
+        tags$td("Can perform DGE"),
+        tags$td(yes()),
+        tags$td(yes()),
+        tags$td(no()),
+        tags$td(yes())
+        ),
+      tags$tr(
+        tags$td("Results show AUC value"),
+        tags$td(yes()),
+        tags$td(no()),
+        tags$td(no()),
+        tags$td(no())
+        )#,
+      # Links to functions used for DGE for each object class
+      # tags$tr(
+      #   tags$td("Function ran for DGE results"),
+      #   tags$td("presto::wilcoxauc"),
+      #   tags$td("BPcells::marker_features"),
+      #   tags$td("NA"),
+      #   tags$td("scanpy.tl.rank_genes_groups")
+      #   )
+      )
+    )
+  )
+```
+
+```{r dge_additional_info, echo=FALSE, message=FALSE, warning=FALSE}
+# Information on functions used in DGE caused issues with the table formatting
+# since function names were very long, and I didn't want to break them into
+# multiple lines. Instead, I listed the functions in a separate table.
+tags$div(
+  class = "callout callout-info",
+  tags$h4("Note"),
+  tags$p(
+    paste0(
+      "The function used to perform DGE varies by object class. The functions used for each object class are listed below."
+      )
+    ),
+  # Table of functions used, with a link to each function for more info
+  tags$table(
+    # Table should take up full space in callout
+    style = "width: 100%;",
+    tags$colgroup(
+      tags$col(class = "col-md-4", span = 1),
+      tags$col(class = "col-md-8", span = 1),
+      ),
+    tags$tbody(
+      tags$tr(
+        tags$td(tags$b("Seurat")),
+        tags$td(
+          tags$a(
+            "presto::wilcoxauc", 
+            href = "https://immunogenomics.github.io/presto/reference/wilcoxauc.html"
+            )
+          )
+        ),
+      tags$tr(
+        tags$td(tags$b("Seurat v5 + BPCells")),
+        tags$td(
+          tags$a(
+            "BPcells::marker_features", 
+            href = "https://bnprks.github.io/BPCells/reference/marker_features.html"
+            )
+          )
+        ),
+      tags$tr(
+        tags$td(tags$b("anndata")),
+        tags$td(
+          tags$a(
+            "scanpy.tl.rank_genes_groups", 
+            href = "https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.rank_genes_groups.html"
+            )
+          )
+        )
+      )
+    ),
+  # Additional information on DGE function choices and why SCE is not supported
+  tags$p(
+    style = "margin-top: 15px;",
+    "scExploreR uses the most performant wilcoxon rank sum function for each object class. DGE is not available for SingleCellExperiment objects because there is no known package that can process both the standard sparse matrices and the HDF5-enabled DelayedArray matrices in these objects."
+    )
+  )
+```
+
+
+# How should objects be processed?
+
+Generally speaking, objects should be be pre-processed before loading into the browser. Pre-processing steps encompass operations such as those outlined in the [Seurat](https://satijalab.org/seurat/articles/pbmc3k_tutorial) and [Scanpy](https://scanpy.readthedocs.io/en/stable/tutorials/basics/clustering.html) docs. 
+
+Objects should have the have the following characteristics below before loading into the browser. Objects lacking these properties may load in scExploreR, but key functionality may be limited, and unexpected behavior may be observed. 
+
+Objects should have:
+
+- At least one reduction.
+- Feature expression data for at least one modality (assay in Seurat). The browser is designed for use with both unimodal or multimodal data. 
+- Normalized count data for each modality included.
+- No `NA` values in the count/normalized count data (or `NaN` values in anndata object format).
+
+::: {.callout .callout-info}
+<h4> Note </h4>
+
+If `NA` literals exist in feature expression data, the config app will stop loading the object and return an error. We did this because `NA` values in expression data are known to cause issues in the app. If you are using software that outputs count data that evaluates to `NA` in R, or `NaN` in Python, we recommend changing those values to `0`. If this causes issues with the software you are using, please [file an issue](https://github.com/amc-heme/scExploreR/issues) and mention the software name in the issue title and text.
+
+:::
+
+- No `NA` values in metadata. `NA` values for categorical metadata should be renamed from literal `NA` values to character values (`"NA"`, `"Undefined"`, `"Unspecified"`, etc.) before loading the object into the app.
+
+If you wish to load an object that doesn't meet the conditions above, feel free to [file an issue](https://github.com/amc-heme/scExploreR/issues) describing your situation. Please search the issue board for similar situations to yours before filing an issue.
+
+## Additional Preprocessing for anndata objects
+
+For anndata objects, scExploreR requires additional information to locate matrices corresponding to reductions and multimodal data. Unlike Seurat and SingleCellExperment objects, the anndata class does not specify storage locations exclusive to modalities and reductions. Instead, both are stored in `obsm`. 
+
+For scExploreR to properly locate additional modalities and reductions, you must specify the names of the matrices in `obsm` corresponding to these data types. This is done by adding two python lists to `uns`: `uns.scExploreR_assays` for additional modalities, and `uns.scExploreR_reductions` for reductions. 
+
+For example, if you have an object with surface protein measurements in `obsm.protein`, and UMAP and PCA reductions in `obsm.X_uamp` and `obsm.X_pca`, respectively, you would enter the following in uns (replacing `object` with the name of the variable you assigned to your object):
+
+```
+object.uns["scExploreR_reductions"] = ["X_umap", "X_pca"]
+
+object.uns["scExploreR_assays"] = ["protein"]
+```
+
+For an additional example, see the [app setup walkthrough vignette](dataset_setup_walkthrough.html#anndata_uns_requirements).

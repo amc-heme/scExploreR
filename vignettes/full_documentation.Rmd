@@ -1,5 +1,5 @@
 ---
-title: "scExploreR Manual"
+title: "scExploreR Documentation"
 output: 
   html_document:
     toc: true
@@ -90,7 +90,7 @@ At the top of the options panel you will see several switches, one for each plot
 
 -   **Dot Plot:** shows the average scaled value and percentage of cells with non-zero values for multiple features across groups of cells as defined by metadata categories.
 
--   **Scatterplot:** compares values of two features. Correlation between values may be quantified in the [Gene Correlations Tab](#correlations-tab).
+-   **Scatterplot:** compares values of two features. <!--Correlation between values may be quantified in the [Gene Correlations Tab](#correlations-tab).-->
 
 -   **Ridge Plot:** displays a density plot of a feature's value across a group of cells defined by metadata.
 
@@ -139,7 +139,7 @@ This menu is used to select a categorical metadata variable (e.g. cell type) to 
 
 This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side, and defaults to "None".
 
-This menu is useful for comparing projections between different metadata values. For example, broad differences in cell type proportions may be visualized when splitting by disease response. These obsservations can be analyzed in more detail in the differential gene expression and correlations tabs. 
+This menu is useful for comparing projections between different metadata values. For example, broad differences in cell type proportions may be visualized when splitting by disease response. These obsservations can be analyzed in more detail in the differential gene expression tab. <!-- and correlations tabs.--> 
 
 When a variable is selected, a slider to choose the number of columns will appear under the "Title options menu" (see [Choose number of columns](#choose-number-of-columns) for more info).
 
@@ -306,7 +306,7 @@ download_button(plot_type = "Dot Plot")
 
 ## Scatterplots {#scatterplots}
 
-Scatterplots are useful for viewing co-expression of two features. All cells are plotted according to the expression of each feature, and are useful for quallitative assessments of correlation.
+Scatterplots are useful for viewing co-expression of two features. All cells are plotted according to the expression of each feature, and are useful for qualitative assessments of correlation.
 
 ### Feature for x-axis
 
@@ -511,9 +511,10 @@ If either of the percent expression values are very low, or if there is a large 
 
 To visually identify and verify the groups/marker classes being compared in the selected test, a dimensional reduction plot will display beneath the table. After the plot is displayed, a menu ("DimPlot options") will appear in the options panel on the left. The reduction and the color by metadata can be changed here.
 
+<!-- The correlations tab was removed due to performance issues. The docs for the tab are left here but commented out.
 # Correlations Tab {#correlations-tab}
 
-This tab is used to compute the correlation between a gene entered and all other genes in the dataaset. The correlations analysis uses a pearson correlation coefficient. Only genes may be used for computing correlation at this time: other feature types will be available in the future.
+This tab is used to compute the correlation between a gene entered and all other genes in the dataset. The correlations analysis uses a pearson correlation coefficient. Only genes may be used for computing correlation at this time: other feature types will be available in the future.
 
 ## Running a correlation analysis
 
@@ -536,6 +537,7 @@ The columns of the correlation table are as below. The table may be downloaded v
 ### Correlation Scatterplots
 
 Click any gene on the correlation table to view a scatterplot of expression for the gene entered vs. the selected gene (for more information on scatterplots, see the [scatterplots](#scatterplots) section). If a subset is selected, two plots will display, one for the full data and the other for the selected subset. The metadata variable used for coloring the plot may be selected using the **"choose metadata to group by"** menu. To download either of the plots, press the "`r icon("poll")` download scatterplot" button corresponding to the desired plot.
+-->
 
 # Changing Datasets
 
