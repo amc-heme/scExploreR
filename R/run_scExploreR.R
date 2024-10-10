@@ -894,7 +894,7 @@ run_scExploreR <-
         glue("New Connection \n(session ID: {session$token})")
       )
       log_info(
-        glue("Memory usage upon connection: {to_GB(mem_used())}")
+        glue("Memory usage upon connection: {to_GB(pryr::mem_used())}")
       )
       log_session(session)
 
@@ -1936,7 +1936,7 @@ run_scExploreR <-
         object(),
         {
           log_info(
-            glue("Memory used after loading current object: {to_GB(mem_used())}")
+            glue("Memory used after loading current object: {to_GB(pryr::mem_used())}")
           )
         })
 
@@ -2006,7 +2006,7 @@ run_scExploreR <-
       onSessionEnded(
         function(){
           log_info(glue("Session {session$token} disconnected."))
-          log_info(glue("Memory usage upon disconnection: {to_GB(mem_used())}"))
+          log_info(glue("Memory usage upon disconnection: {to_GB(pryr::mem_used())}"))
         }
       )
 

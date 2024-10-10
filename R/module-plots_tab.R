@@ -220,7 +220,7 @@ plots_tab_ui <- function(id,
                  ),
              value = FALSE
             ),
-           bsTooltip(
+           shinyBS::bsTooltip(
              id = ns("raw_feature_names_help"), 
              title = 
                paste0(
@@ -265,7 +265,7 @@ plots_tab_ui <- function(id,
                      )
                  )
              ),
-             bsTooltip(
+             shinyBS::bsTooltip(
                id = ns("categorical_palette_div"),
                title = "Categorical palette applies to DimPlot, Scatterplot, Cell Proportion Plot, Violin Plot and Ridge Plot.", 
                placement = "top", 
@@ -299,7 +299,7 @@ plots_tab_ui <- function(id,
                      )
                  )
              ),
-             bsTooltip(
+             shinyBS::bsTooltip(
                id = ns("continuous_palette_div"),
                title = "Continous palette applies to Dot Plot and Feature plot.",
                placement = "top",

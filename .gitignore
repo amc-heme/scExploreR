@@ -28,3 +28,5 @@ docs
 background_script.R
 execution_scripts.Rmd
 resources/Auto_Dictionary.html
+# {shinytest2}: Ignore new debug snapshots for `$expect_values()`
+*_.new.png

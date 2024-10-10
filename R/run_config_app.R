@@ -2022,7 +2022,7 @@ run_config <-
         })
 
       output$threshold_table <-
-        renderDT({
+        DT::renderDT({
           threshold_DT()
         })
 

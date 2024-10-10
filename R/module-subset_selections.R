@@ -275,7 +275,7 @@ subset_selections_ui <-
             )
           )
         ),
-      bsTooltip(
+      shinyBS::bsTooltip(
         id = ns("subset_selections_all"), 
         title = 
           paste0(

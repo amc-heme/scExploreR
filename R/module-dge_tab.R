@@ -1285,7 +1285,7 @@ dge_tab_server <- function(id,
       
       # Table
       output$table <- 
-        renderDT({
+        DT::renderDT({
           dge_DT_content()
           })
       
@@ -1297,7 +1297,7 @@ dge_tab_server <- function(id,
       
       # UMAP plot
       output$umap <- 
-        suppressGraphics(
+        R.devices::suppressGraphics(
           renderPlot({
             dge_umap()
             })

@@ -1274,7 +1274,7 @@ corr_tab_server <- function(id,
                  
                  # Table
                  output$corr_table <- 
-                   renderDT({
+                   DT::renderDT({
                      corr_DT_content()
                      })
                  

@@ -225,7 +225,7 @@ plot_module_ui <- function(id,
           )
         # Do not add element if FALSE
       } else NULL,
-      bsTooltip(
+      shinyBS::bsTooltip(
         id = ns("plot_info_icon"), 
         title = "Select variable to group cells by.",
         placement = "top", 
@@ -287,7 +287,7 @@ plot_module_ui <- function(id,
          )
       } else NULL,
       
-      bsTooltip(
+      shinyBS::bsTooltip(
         id = ns("split_by_info_icon"), 
         title = "Select variable to split cells into separate plots.",
         placement = "bottom", 
@@ -352,7 +352,7 @@ plot_module_ui <- function(id,
                 "None" = "none"),
             selected = "default"
           ),
-          bsTooltip(
+          shinyBS::bsTooltip(
             id = ns("title_settings_info_icon"), 
             title = 
               paste0(
@@ -468,7 +468,7 @@ plot_module_ui <- function(id,
           )
         } else NULL,
 
-      bsTooltip(
+      shinyBS::bsTooltip(
         id = ns("sort_groups_info_icon"), 
         title = 
           paste0(
@@ -558,7 +558,7 @@ plot_module_ui <- function(id,
               value = TRUE
             )
           ),
-          bsTooltip(
+          shinyBS::bsTooltip(
             id = ns("default_legend_ncol_info_icon"), 
             title = "Uncheck this to set the number of columns in the legend.", 
             placement = "top", 
@@ -683,17 +683,17 @@ plot_module_ui <- function(id,
               div(
                 id = ns("blend_palette_custom_colors"),
                 tags$b("Choose Custom Palette for Co-Expression"),
-                colourInput(
+                colourpicker::colourInput(
                   inputId = ns("blend_custom_low"),
                   label = "Low expression color",
                   value = "#E1E1E1"
                 ),
-                colourInput(
+                colourpicker::colourInput(
                   inputId = ns("blend_custom_1"),
                   label = "First feature color",
                   value = "#FF0000"
                 ),
-                colourInput(
+                colourpicker::colourInput(
                   inputId = ns("blend_custom_2"),
                   label = "Second feature color",
                   value = "#0000FF"
@@ -726,7 +726,7 @@ plot_module_ui <- function(id,
           )
         } else NULL
       ),
-      bsTooltip(
+      shinyBS::bsTooltip(
         id = ns("order_div"), 
         title = "Plot cells with higher expression first (this may distort results).", 
         placement = "top", 
@@ -747,7 +747,7 @@ plot_module_ui <- function(id,
         } else NULL
       ),
       
-      bsTooltip(
+      shinyBS::bsTooltip(
         id = ns("label_tooltip"),
         title =
           paste0("Label cells by metadata on plot. If checked, a menu will ",
@@ -779,7 +779,7 @@ plot_module_ui <- function(id,
             )
         } else NULL
       ),
-      bsTooltip(
+      shinyBS::bsTooltip(
         id = ns("display_coeff_div"), 
         title = "Display correlation coefficient as the plot title.", 
         placement = "top", 
@@ -808,7 +808,7 @@ plot_module_ui <- function(id,
             tagList(
               div(
                 class = "two-color-input-left",
-                colourInput(
+                colourpicker::colourInput(
                   inputId = ns("min_color"),
                   label = "Low Expression",
                   # palette = "limited",
@@ -818,7 +818,7 @@ plot_module_ui <- function(id,
                 ),
               div(
                 class = "two-color-input-right",
-                colourInput(
+                colourpicker::colourInput(
                   inputId = ns("max_color"),
                   label = "High Expression",
                   # palette = "limited",
