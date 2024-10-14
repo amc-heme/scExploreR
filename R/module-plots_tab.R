@@ -1288,14 +1288,14 @@ plots_tab_server <- function(id,
                          log_info(
                             glue(
                                "Memory used after loading full object in ",
-                               "plots tab: {to_GB(mem_used())}"
+                               "plots tab: {to_GB(pryr::mem_used())}"
                                )
                             )
                       } else {
                          log_info(
                             glue(
                                "Memory used after creating subset in plots ",
-                               "tab: {to_GB(mem_used())}"
+                               "tab: {to_GB(pryr::mem_used())}"
                                )
                             )
                          }

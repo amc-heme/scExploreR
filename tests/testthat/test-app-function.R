@@ -3,8 +3,9 @@ test_that("scExploreR Basic Test", {
   skip_on_cran()
   
   
-  #library(shiny)
-  #library(shinytest2)
+  library(shiny)
+  library(shinytest2)
+  options(shiny.reactlog = TRUE)
   selected_key <- "object"
   
   shiny_app <- scExploreR::run_scExploreR(
@@ -19,9 +20,9 @@ test_that("scExploreR Basic Test", {
     dev_mode=TRUE
   )
   
-  app <- AppDriver$new(shiny_app, name = "scExploreR")
-  
-  
+  app <- AppDriver$new(shiny_app, name = "scExploreR", load_timeout = 30000)
+  #app$stop() 
+
   record_test(app,
               name = "test1",
               seed = NULL,

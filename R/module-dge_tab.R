@@ -760,7 +760,7 @@ dge_tab_server <- function(id,
           log_session(session)
           log_info(
             glue(
-              "Memory used after creating subset in dge tab {to_GB(mem_used())}"
+              "Memory used after creating subset in dge tab {to_GB(pryr::mem_used())}"
               )
             )
           })

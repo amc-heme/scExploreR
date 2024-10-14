@@ -4301,16 +4301,16 @@ plot_module_server <- function(id,
                    {
                      scroll_restore$depend()
 
-                     shinyjs::js$setTopScroll(
-                       # First parameter: target ID to get scroll position
-                       session$userData$plots_tab_main_panel_id,
+                     #shinyjs::js$setTopScroll(
+                    #   # First parameter: target ID to get scroll position
+                    #   session$userData$plots_tab_main_panel_id,
                        # Second parameter: input ID to retrieve scroll position
                        # from. This fetches the input value via Javascript
                        # instead of via `input` in Shiny, and uses an input ID
                        # defined outside of a module. This may need to be
                        # revisited if it causes bugs.
-                       "plots-topscroll"
-                     )
+                    #   "plots-topscroll"
+                    # )
                      })
 
                  # 13. Custom x-axis limits server (ridge plots) ---------------
