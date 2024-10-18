@@ -23,6 +23,8 @@ error_handler <-
     issue_href = "https://github.com/amc-heme/DataExploreShiny/issues", 
     duration = NULL
     ){
+    # Log full error message to console
+    message(glue("Error occured: {cnd_message}"))
     # Error match: conditional that is set to TRUE when an error is found, 
     # signaling the function not to run the code for displaying a generic
     # error message
@@ -32,15 +34,20 @@ error_handler <-
       # If the condition message (the error that is returned) matches the error 
       # message of a stored error type (error_type$err_message), show the 
       # notification associated with that error type
-      print(glue("Testing error {error_type$err_message}"))
+      print(glue("Testing error: {error_type$err_message}"))
+      
       if (grepl(pattern = error_type$err_message, x = cnd_message)){
-        print("match.")
-        print(error_type$err_message)
-        print(cnd_message)
+        message(glue("matched."))
+    
+        message(glue("Error message: {cnd_message}"))
+        
+        #log full error to the console for matched errors
+        message(glue("Matched error: {error_type$err_message}"))
         
         # Display Notification
         showNotification(
-          ui = error_type$notification, 
+          #ui = error_type$notification, 
+          ui = "An error occured.",
           # Duration = NULL will make the message 
           # persist until dismissed (default)
           duration = duration,
@@ -58,11 +65,14 @@ error_handler <-
     # If all error types are looped through and no match is found, 
     # display a generic error message
     if (error_match == FALSE){
+      #log full error to the console for unmatched errors
+      message(glue("Unmatched error: {cnd_message}"))
       #Define UI for generic error
       other_err_ui <- 
         icon_notification_ui(
           icon_name = "skull-crossbones",
-          glue("Error: {cnd_message}. Please "),
+          #glue("Error: {cnd_message}. Please "),
+          "An error occured. Please ",
           github_link("report this issue"),
           " with a screenshot of the app window."
           )
