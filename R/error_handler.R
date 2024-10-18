@@ -46,7 +46,6 @@ error_handler <-
         
         # Display Notification
         showNotification(
-          #ui = error_type$notification, 
           ui = "An error occured.",
           # Duration = NULL will make the message 
           # persist until dismissed (default)
@@ -71,7 +70,6 @@ error_handler <-
       other_err_ui <- 
         icon_notification_ui(
           icon_name = "skull-crossbones",
-          #glue("Error: {cnd_message}. Please "),
           "An error occured. Please ",
           github_link("report this issue"),
           " with a screenshot of the app window."
