@@ -383,7 +383,7 @@ options_server <-
         # check for NA values in metadata
         check_na <- function(meta_table, meta_vars) {
           sapply(meta_vars, function(var){
-            any(is.na(meta_table[[var]]) | meta_table[[var]] == "" | is.null(meta_table[[var]]))
+            any(is.na(meta_table[[var]]) | is.null(meta_table[[var]]))
           })
         }
         
