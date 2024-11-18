@@ -128,7 +128,7 @@ make_subset.default <-
         )
     
     for (meta_var in colnames(meta_table)){
-      if (class(meta_table[[meta_var]]) == "factor"){
+      if (inherits(meta_table[[x]], "factor")){
         # If the metadata variable is a factor, drop unused levels
         meta_table[[meta_var]] <- 
           droplevels(meta_table[[meta_var]])

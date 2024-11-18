@@ -43,17 +43,18 @@ options_ui <- function(id,
 
     # Create list of sorted values for display
     values_sorted <- str_sort(values, numeric = TRUE)
-    # Determine type of metadata
+    
+    # set display name for variable type
     metadata_type <- metadata_type(object, card_name)
 
     # Metadata description
     # Display number of unique values if categorical; display range if numeric
-    if (metadata_type == "Categorical"){
+    if (inherits(values, c("character", "factor"))){
       # Compute the number of unique values
       n_values <- length(values)
 
       metadata_description <- glue("{n_values} unique values")
-    } else if (metadata_type == "Numeric"){
+    } else if (inherits(values, c("numeric", "integer"))){
       metadata_description <- ""
       # Previous code for describing numeric metadata: does not work
       # metadata_description <-
@@ -162,12 +163,18 @@ options_ui <- function(id,
           options = NULL
         ), 
         # Print the type of metadata beneath the title, and a brief description
-        tags$p(glue("({metadata_type}, {metadata_description})"),
-               class = "center small half-space-bottom"),
+        if (!metadata_description == ""){
+          tags$p(glue("({metadata_type}, {metadata_description})"),
+                 class = "center small half-space-bottom")
+        } else {
+          # if the metadata description is blank, just display the type
+          tags$p(glue("({metadata_type})"),
+                 class = "center small half-space-bottom")
+        },
         
         # If the metadata is categorical and there are 15 values or less,
         # print the values to screen
-        if (metadata_type == "Categorical"){
+        if (inherits(values, c("character", "factor"))){
           if (n_values <= 15){
             tags$p(glue("Values: {paste(values_sorted, collapse=', ')}"))
           }
@@ -207,7 +214,7 @@ options_ui <- function(id,
         # Option to classify metadata into list (ex. group patients 
         # by sample conditions)
         # Only available for categorical metadata columns
-        if (metadata_type == "Categorical"){
+        if (inherits(values, c("character", "factor"))){
           tagList(
             div(
               id = ns("groups_disable_transparent"),
@@ -395,18 +402,22 @@ options_server <-
         })
 
         # 2. Metadata-tab specific functions -----------------------------------
-        # Determine if metadata field is categorical or numeric
+        # Store unique values for downstream class determination (categorical
+        # or numeric)
         if (options_type == "metadata"){
-          type <- metadata_type(object, id)
-        }
+          metadata_values <- 
+            SCUBA::unique_values(
+              object = object,
+              var = card_name
+              ) 
+          }
 
         ## 2.1. Metadata Groups ####
         # User Interface to define subgroups within a metadata column
         # Only performed for categorical inputs
         if (options_type == "metadata"){
-          # Test for type of metadata field after testing to see
-          # if the object is a metadata entry
-          if (type == "Categorical"){
+          # Only applies to categorical metadata
+          if (inherits(metadata_values, c("character", "factor"))){
             # Categorical metadata: determine number of unique values
             n_values <-
               SCUBA:::n_unique(
@@ -820,7 +831,7 @@ options_server <-
           # Return options depend on the type of metadata (Categorical metadata
           # has a reactive list of metadata group choices; numeric and other
           # types have a non-reactive value of NULL for group_choices)
-          if (type == "Categorical"){
+          if (inherits(metadata_values, c("character", "factor"))){
             # Return metadata-specific variables as a list
             # Returns
             # 1. The name of the category (machine-readable and used for

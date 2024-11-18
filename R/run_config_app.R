@@ -241,7 +241,7 @@ run_config <-
       sapply(
         meta_vars,
         function(x, object){
-          class(meta_table[[x]]) %in% c("numeric", "integer")
+          inherits(meta_table[[x]], c("numeric", "integer"))
         },
         object
         )
@@ -270,7 +270,7 @@ run_config <-
         class = "single-column-page",
         tags$h3("General Dataset Info"),
         tags$p("Options entered here will display in the dataset preview
-               window in the main browser."),
+              window in the main browser."),
         textInput(
           inputId = "dataset_label",
           label = "Label for Dataset",

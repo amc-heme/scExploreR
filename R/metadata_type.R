@@ -1,6 +1,6 @@
 #' Metadata Type
 #'
-#' Takes a Seurat object and a metadata variable, and returns the class of the 
+#' Takes a single-cell object and a metadata variable, and returns the class of the 
 #' metadata variable.
 #'
 #' @param object a single cell object (currently, Seurat and SingleCellExperiment
@@ -9,28 +9,35 @@
 #'
 #' @noRd
 metadata_type <- function(object, meta_var){
-  # Get unique values of metadata field for display of summary statistics
-  values <- SCUBA::unique_values(object, var = meta_var)
-  
-  # Determine type of metadata (class of values)
-  class <- class(values)
-  
+  # Fetch metadata variable, determine data type/class
+  values <- 
+    SCUBA::fetch_metadata(
+      object, 
+      vars = meta_var, 
+      return_class = "vector"
+      )
+
   # Simplify metadata type: "character" and "factor" classes are reported as 
-  # "categorical", while "numeric" and "integer" classes are reported 
-  # as "numeric"
-  if (class == "character" || class == "factor"){
+  # "Categorical", while "numeric" and "integer" classes are reported 
+  # as "Numeric"
+  if (inherits(values, c("character", "factor"))){
     type <- "Categorical"
-  } else if (class == "numeric" || class == "integer"){
+  } else if (inherits(values, c("numeric", "integer"))){
     type <- "Numeric"
-  } else if (class == "logical"){
+  } else if (inherits(values, c("logical"))){
     type <- "Logical"
   } else {
     # Other metadata classes may exist: warn user for unexpected classes
     warning(
-      glue("Unexpected class for metadata column {meta_var}: {class}.")
+      "Unexpected class for metadata column ",
+      meta_var,
+      ": ",
+      paste(class(values), collapse = ', ')
       )
     
-    type <- class
+    # Return the class, or if multiple classes, the classes 
+    # concatenated with commas
+    type <- paste(class(values), collapse = ',')
   }
   
   type

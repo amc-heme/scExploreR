@@ -96,8 +96,7 @@ feature_list_all <-
                 full_table = TRUE
                 )
             
-            (class(meta_table[[x]])=="numeric") || 
-              (class(meta_table[[x]])=="integer")
+            inherits(meta_table[[x]], c("numeric", "integer"))
             }
           )
       
