@@ -4243,20 +4243,26 @@ plot_module_server <- function(id,
                            # Record the scroll position of the plots tab window to
                            # Restore the position after the window is hidden and
                            # re-shown
-                           shinyjs::js$getTopScroll(
-                             # First parameter: target ID to get scroll position
-                             session$userData$plots_tab_main_panel_id,
-                             # Second parameter: input ID to record scroll position
-                             # This is currently recorded outside of this module
-                             # since there should only be one value for the
-                             # scroll position, and if the value was defined in
-                             # the context of this module there would be
-                             # multiple copies of the same value.
-
-                             # This is not best shiny practice however, and may
-                             # need to be revisited.
-                             "plots-topscroll"
-                           )
+                           
+                           # Shinyjs functions do not initialze properly when 
+                           # running AppDriver for testing. The code below runs
+                           # setTopScroll if the function exists (is not NULL)
+                           if (!is.null(shinyjs::js$getTopScroll)){
+                             shinyjs::js$getTopScroll(
+                               # First parameter: target ID to get scroll position
+                               session$userData$plots_tab_main_panel_id,
+                               # Second parameter: input ID to record scroll position
+                               # This is currently recorded outside of this module
+                               # since there should only be one value for the
+                               # scroll position, and if the value was defined in
+                               # the context of this module there would be
+                               # multiple copies of the same value.
+                               
+                               # This is not best shiny practice however, and may
+                               # need to be revisited.
+                               "plots-topscroll"
+                             )
+                           }
                          }
                        })
 
@@ -4299,18 +4305,25 @@ plot_module_server <- function(id,
                  observe(
                    label = glue("{id}: Restore scroll position"),
                    {
+                     # Execute observer in response to scroll_restore 
+                     # reactive trigger 
                      scroll_restore$depend()
                      
-                     shinyjs::js$setTopScroll(
-                       # First parameter: target ID to get scroll position
-                       session$userData$plots_tab_main_panel_id,
-                       # Second parameter: input ID to retrieve scroll position
-                       # from. This fetches the input value via Javascript
-                       # instead of via `input` in Shiny, and uses an input ID
-                       # defined outside of a module. This may need to be
-                       # revisited if it causes bugs.
-                       "plots-topscroll"
-                     )
+                     # Shinyjs functions do not initialze properly when running
+                     # AppDriver for testing. The code below runs setTopScroll
+                     # if the function exists (is not NULL)
+                     if (!is.null(shinyjs::js$setTopScroll)){
+                       shinyjs::js$setTopScroll(
+                         # First parameter: target ID to get scroll position
+                         session$userData$plots_tab_main_panel_id,
+                         # Second parameter: input ID to retrieve scroll position
+                         # from. This fetches the input value via Javascript
+                         # instead of via `input` in Shiny, and uses an input ID
+                         # defined outside of a module. This may need to be
+                         # revisited if it causes bugs.
+                         "plots-topscroll"
+                        )
+                      }
                      })
 
                  # 13. Custom x-axis limits server (ridge plots) ---------------
