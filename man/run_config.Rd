@@ -4,7 +4,13 @@
 \alias{run_config}
 \title{scExploreR config app}
 \usage{
-run_config(./path_to_object.rds, ./path_to_config_file.yaml)
+run_config(
+  object_path,
+  config_path = NULL,
+  is_HDF5SummarizedExperiment = FALSE,
+  HDF5_prefix = "",
+  dev_mode = FALSE
+)
 }
 \arguments{
 \item{object_path}{relative or absolute path to the Seurat object to be
@@ -21,6 +27,10 @@ SingleCellExperiment object saved via saveHDF5SummarizedExperiment. When
 loading an HDF5-enabled object, set the object_path to the directory of the
 HDF5-enabled object, created when saving the object via
 HDF5Array:saveHDF5SummarizedExperiment.}
+
+\item{HDF5_prefix}{When loading an HDF5-backed SingleCellExperiment HDF5_prefix
+is passed to the prefix parameter of HDF5Array::loadHDF5SummarizedExperiment 
+to specify the prefixes for the se.rds and assays.h5 files.}
 
 \item{dev_mode}{Used only for development. If TRUE, the server values for each option chosen by the user will be printed at the bottom of the "general" tab.}
 }
