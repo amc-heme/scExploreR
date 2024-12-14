@@ -71,19 +71,80 @@ plots_tab_ui <- function(id,
              # Switch for Dimplot
              materialSwitch(
                inputId = ns("make_dimplot"),
-               label = "DimPlot", 
+               label = 
+                  tagList(
+                     "DimPlot",
+                     a(id = ns("make_dimplot_help"),
+                       icon(
+                          "circle-question",
+                          class = "fa-solid"
+                          ), 
+                       href = 
+                          paste0(
+                             "https://amc-heme.github.io/scExploreR/articles/",
+                             "scRNA_Plots_Explained.html"
+                             ),  
+                       target = "_blank"
+                       )
+                     ),
                value = TRUE,
                right = TRUE,
                status = "default"
+               ),
+             bsTooltip(
+                id = ns("make_dimplot_help"), 
+                title = 
+                   paste0(
+                      'DimPlots show a summary of gene expression, ',
+                      'representing gene expression in a two-dimensional ',
+                      'space. Cells with similar expression profiles will ',
+                      'cluster together. This plot is most useful as a ',
+                      'starting point for analysis, as it provides a summary ',
+                      'of what cell types are present in the dataset.'
+                      ),
+                placement = "bottom", 
+                trigger = "hover",
+                options = NULL
              ),
              
              # Switch for feature plot
              materialSwitch(
                inputId = ns("make_feature"),
-               label = "Feature Plot", 
+               label = 
+                  tagList(
+                     "Feature Plot",
+                     a(id = ns("make_feature_plot_help"),
+                       icon(
+                          "circle-question",
+                          class = "fa-solid"
+                          ), 
+                       href = 
+                          paste0(
+                             "https://amc-heme.github.io/scExploreR/articles/",
+                             "scRNA_Plots_Explained.html"
+                          ),  
+                       target = "_blank"
+                     )
+                  ),
                value = FALSE,
                right = TRUE,
                status = "default"
+               ),
+             bsTooltip(
+                id = ns("make_feature_plot_help"), 
+                title = 
+                   paste0(
+                      'Feature plots are dimensional reduction plots ',
+                      '(DimPlots) colored by feature expression. Feature ',
+                      'plots are great for summarizing feature expression, ',
+                      'but can mis-represent the average expression in ',
+                      'specific cell clusters. Observations in feature plots ',
+                      'should be further queried using violin plots, dot ',
+                      'plots, and differential gene expression analysis. '
+                   ),
+                placement = "bottom", 
+                trigger = "hover",
+                options = NULL
              ),
              
              # Switch for scatterplot
