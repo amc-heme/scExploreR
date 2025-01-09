@@ -191,7 +191,7 @@ shiny_umap <-
         # Legend position: "right" if a legend is desired, 
         # and "none" if not
         list(
-          theme(
+          ggplot2::theme(
             legend.position = 
               if (show_legend==TRUE) {
                 "right"
@@ -218,17 +218,17 @@ shiny_umap <-
         # Otherwise, labs() is not run and the Seurat default is used
         if (!is.null(plot_title) | show_title == FALSE ){
           list(
-            labs(title = plot_title)
+            ggplot2::labs(title = plot_title)
           )
         }, 
         
         # Elements E-F: Number of columns in legend, size of legend keys
         list(
-          guides(
+          ggplot2::guides(
             # Guide for dimplot (scatterplot) is color
             color = 
               do.call(
-                guide_legend,
+                ggplot2::guide_legend,
                 # List of arguments to call
                 args =
                   c(
@@ -257,7 +257,7 @@ shiny_umap <-
         # Elements G-H: legend arguments called with theme()
         list(
           do.call(
-            theme,
+            ggplot2::theme,
             # List of arguments to call with theme
             args = 
               # Arguments are included in list conditionally. If no elements 
@@ -269,7 +269,7 @@ shiny_umap <-
                 if (isTruthy(legend_font_size)){
                   list(
                     legend.text = 
-                      element_text(
+                      ggplot2::element_text(
                         size = legend_font_size
                       )
                   )
@@ -280,7 +280,7 @@ shiny_umap <-
                 if (isTruthy(legend_key_spacing)){
                   list(
                     legend.key.size =
-                      unit(legend_key_spacing, "points")
+                      ggplot2::unit(legend_key_spacing, "points")
                   )
                 }
               )
