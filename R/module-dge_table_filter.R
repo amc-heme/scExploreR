@@ -491,9 +491,11 @@ dge_table_filtering_server <-
           }
         })
         
-        # 2. Average Expression Filter UI ####
-        ## 2.1. Show/hide full interface ####
-        # Show only for tables that contain the average expression column
+        # 2. Manage Display of UI Elements ####
+        ## 2.1. Average Expression ####
+        ### 2.1.1. Show/hide Full Interface ####
+        # Average expression interface is shown only for tables that contain 
+        # the average expression column
         observe({
           req(dge_table())
           
@@ -503,16 +505,18 @@ dge_table_filtering_server <-
             shinyjs::showElement(
               id = target,
               anim = TRUE
-              )
+            )
           } else {
             shinyjs::hideElement(
               id = target,
               anim = TRUE
-              )
+            )
           }
         })
         
-        ## 2.2. Manual min/max UI: show/hide, and enable/disable slider ####
+        ### 2.1.2. Manage Manual Entry UI ####
+        # When manual entry is enabled, show text boxes for manual entry, and 
+        # disable the slider that appears by default
         observe({
           manual_interface_id = "expr_manual_ui"
           slider_id = "expr"
@@ -522,12 +526,12 @@ dge_table_filtering_server <-
             shinyjs::showElement(
               id = manual_interface_id,
               anim = TRUE
-              )
+            )
             
             # Disable the slider while the text interface is enabled
             shinyjs::disable(
               id = slider_id
-              )
+            )
           } else {
             # Hide the manual entry interface and re-enable the slider 
             # when the checkbox is unchecked
@@ -542,9 +546,8 @@ dge_table_filtering_server <-
           }
         })
         
-        # 3. AUC UI ####
-        ## 3.1. Show/hide full interface ####
-        # Show only for tables that contain the AUC column
+        ## 2.2. AUC ####
+        ### 2.2.1. Show/hide full interface ####
         observe({
           req(dge_table())
           
@@ -563,7 +566,9 @@ dge_table_filtering_server <-
           }
         })
         
-        ## 3.2. Manual min/max UI: show/hide, and enable/disable slider ####
+        ### 2.2.2. Manage Manual Entry UI #### 
+        # When manual entry is enabled, show text boxes for manual entry, and 
+        # disable the slider that appears by default
         observe({
           manual_interface_id = "lfc_manual_ui"
           slider_id = "lfc"
@@ -574,17 +579,17 @@ dge_table_filtering_server <-
             shinyjs::showElement(
               id = manual_interface_id,
               anim = TRUE
-              )
+            )
             
             shinyjs::disable(
               id = slider_id
-              )
+            )
           } else {
             # When disabled, hide the interface and re-enable the slider
             shinyjs::hideElement(
               id = manual_interface_id,
               anim = TRUE
-              )
+            )
             
             shinyjs::enable(
               id = slider_id
@@ -592,7 +597,48 @@ dge_table_filtering_server <-
           }
         })
         
-        # 4. Update inputs based on the DGE table returned ####
+        ## 2.3. Percentage inside, Outside Group #### 
+        ### 2.3.1. Show/hide interface ####
+        # Show each interface the pct_in and pct_out columns are in the DGE 
+        # table, and hide otherwise
+        observe({
+          req(dge_table())
+          
+          target <- "pct_in_header"
+          
+          if ("pct_in" %in% colnames(dge_table())){
+            shinyjs::showElement(
+              id = target,
+              anim = TRUE
+            )
+          } else {
+            shinyjs::hideElement(
+              id = target,
+              anim = TRUE
+            )
+          }
+        })
+        
+        observe({
+          req(dge_table())
+          
+          target <- "pct_out_header"
+          
+          if ("pct_out" %in% colnames(dge_table())){
+            shinyjs::showElement(
+              id = target,
+              anim = TRUE
+            )
+          } else {
+            shinyjs::hideElement(
+              id = target,
+              anim = TRUE
+            )
+          }
+        })
+        
+        
+        # 3. Update inputs based on the DGE table returned ####
         observe({
           req(dge_table())
           
@@ -676,10 +722,10 @@ dge_table_filtering_server <-
           }
         })
         
-        # 5. Conditional processing of inputs ####
+        # 4. Conditional processing of inputs ####
         # `expr_value` is Named to avoid namespace collisions with 
         # expr(), expression()
-        ## 5.1. Average expression return value ####
+        ## 4.1. Average expression return value ####
         expr_value <- 
           reactive({
             req(dge_table())
@@ -748,7 +794,7 @@ dge_table_filtering_server <-
               }
           })
         
-        ## 5.2. LFC return value ####
+        ## 4.2. LFC return value ####
         lfc_value <- 
           reactive({
             req(dge_table())
@@ -817,9 +863,9 @@ dge_table_filtering_server <-
             }
           })
         
-        ## 5.3 AUC ####
+        ## 4.3 AUC ####
         # Explicitly return NULL if "auc" does not appear in the table
-        # Avoids issue 350
+        # Avoids issue #350
         auc <-
           reactive({
             if ("auc" %in% colnames(dge_table())){
@@ -829,7 +875,28 @@ dge_table_filtering_server <-
                 }
             })
         
-        # 6. Return filter inputs ####
+        ## 4.4. Pct in, Pct out ####
+        # Return NULL for pct_in, pct_out, if they are not in the DGE table
+        # (this is currently the case for BPCells objects)
+        pct_in <-
+          reactive({
+              if ("pct_in" %in% colnames(dge_table())){
+                input$pct_in
+              } else {
+                NULL
+              }
+            })
+        
+        pct_out <-
+          reactive({
+            if ("pct_out" %in% colnames(dge_table())){
+              input$pct_out
+            } else {
+              NULL
+            }
+          })
+        
+        # 5. Return filter inputs ####
         return(
           list(
             `group` = reactive({input$group}),
@@ -839,8 +906,8 @@ dge_table_filtering_server <-
             `auc` = auc,
             # pval_adj selection must be converted to numeric before returning
             `pval_adj` = reactive({as.numeric(input$pval_adj)}),
-            `pct_in` = reactive({input$pct_in}),
-            `pct_out` = reactive({input$pct_out})
+            `pct_in` = pct_in,
+            `pct_out` = pct_out
             )
         )
       }
