@@ -23,6 +23,10 @@
 #'
 #' @param id ID to use for module elements. IDs for the options and plot UI
 #' components, and the server component, must match.
+#' @param plot_type An explicit definition of the plot type. In the near future,
+#' the plot type defined here is envisioned to be used to determine the UI 
+#' components present, rather than the large set of group_by, split_by, etc. 
+#' parameters.
 #' @param ui_component Determines which UI component is to be plotted. Use
 #' "options" to create the input menus for plot options, and "plot" to create
 #' the output container for the plot.
@@ -61,6 +65,7 @@
 #'
 #' @noRd
 plot_module_ui <- function(id,
+                           plot_type,
                            # The plot_module UI consists of the options
                            # panels and the plot output, which exist in
                            # different places in the app. This argument will
@@ -423,9 +428,9 @@ plot_module_ui <- function(id,
           )
         } else NULL,
 
-      ## Refactor groups (dot, violin plots) ####
+      ## Group Sorting interface (dot, violin, ridge, proportion plots) ####
       if (sort_groups_menu == TRUE){
-        #html anchors pointing to relevant section in full documentation based on plot type
+        # html anchors pointing to relevant section in full documentation based on plot type
         plot_to_anchor <- 
         list(
           "Violin Plot" = "violin-plots-group-order",
