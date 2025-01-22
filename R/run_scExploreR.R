@@ -717,22 +717,24 @@ run_scExploreR <-
         size = "sm",
         icon = icon("question"),
         # Dropdown menu content
-        # Header
-        tagList(
+        div(
+          # Centers all elements in the dropdown menu
+          class = "center",
+          # Header
           tags$p(
             "Help and Background",
-            style=
+            style =
               "color: #888888;
               margin-bottom: 0px;
               font-size: 1.17em;"
-            ),
+              ),
 
           # Link to auto-generated object dictionary
           # dictionary is created at a temp file, so href must reactively point
           # to the file
           uiOutput(
             outputId = "auto_dictionary_link"
-          ),
+            ),
 
           # Interpreting scRNA-seq plots
           tags$a(
@@ -748,7 +750,7 @@ run_scExploreR <-
             # Cybersecurity measure for links that
             # open in new tab: prevents tabnapping
             rel = "noopener noreferrer"
-          ),
+            ),
 
         # Tutorial Document
         tags$a(
@@ -762,7 +764,7 @@ run_scExploreR <-
           # Opens link in new tab
           target = "_blank",
           rel = "noopener noreferrer"
-        ), # End link
+          ), # End link
 
         # Full Feature Documentation
         tags$a(
@@ -772,7 +774,7 @@ run_scExploreR <-
           # Opens link in new tab
           target = "_blank",
           rel = "noopener noreferrer"
-        ), # End link
+          ), # End link
 
         # File issue on github
         tags$a(
@@ -782,7 +784,7 @@ run_scExploreR <-
           # Opens link in new tab
           target = "_blank",
           rel = "noopener noreferrer"
-        ),
+          ),
 
         # Link to Genecards
         tags$a(
@@ -791,8 +793,15 @@ run_scExploreR <-
           class = "blue_hover",
           target = "_blank",
           rel = "noopener noreferrer"
-        )
-        )# End tagList
+          ),
+        
+        # Version of scExploreR
+        tags$p(
+            class = "small",
+            style = "color: #888888AA;",
+            paste0("version ", packageVersion("scExploreR"))
+          )
+        ) # End tagList
       ), #End Help Button
 
       # Dataset Button
@@ -803,10 +812,13 @@ run_scExploreR <-
         label = "",
         size = "sm",
         icon = icon("ellipsis-h"),
-        actionLink(
-          inputId = "open_dataset_window",
-          label = "Choose Dataset",
-          class = "blue_hover"
+        div(
+          class = "center",
+          actionLink(
+            inputId = "open_dataset_window",
+            label = "Choose Dataset",
+            class = "blue_hover"
+          )
         )
       ),
 
