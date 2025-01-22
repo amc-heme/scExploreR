@@ -677,8 +677,8 @@ run_scExploreR <-
             "setTopScroll")
       ),
       # CSS and JS for collapsible panel
-      navbarPage("Shiny scExplorer",
-                 windowTitle = "Shiny scExplorer",
+      navbarPage("scExplorer",
+                 windowTitle = "scExplorer",
                  position = "fixed-top",
                  id = "navigator",
                  lang = "en",
