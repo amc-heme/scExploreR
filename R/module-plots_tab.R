@@ -82,7 +82,7 @@ plots_tab_ui <- function(id,
                        href = 
                           paste0(
                              "https://amc-heme.github.io/scExploreR/articles/",
-                             "scRNA_Plots_Explained.html"
+                             "scRNA_Plots_Explained.html#dimplot"
                              ),  
                        target = "_blank"
                        )
@@ -121,7 +121,7 @@ plots_tab_ui <- function(id,
                        href = 
                           paste0(
                              "https://amc-heme.github.io/scExploreR/articles/",
-                             "scRNA_Plots_Explained.html"
+                             "scRNA_Plots_Explained.html#feature"
                           ),  
                        target = "_blank"
                      )
@@ -162,7 +162,7 @@ plots_tab_ui <- function(id,
                        href = 
                           paste0(
                              "https://amc-heme.github.io/scExploreR/articles/",
-                             "scRNA_Plots_Explained.html"
+                             "scRNA_Plots_Explained.html#scatter"
                           ),  
                        target = "_blank"
                      )
@@ -198,7 +198,7 @@ plots_tab_ui <- function(id,
                      href = 
                        paste0(
                          "https://amc-heme.github.io/scExploreR/articles/",
-                         "scRNA_Plots_Explained.html"
+                         "scRNA_Plots_Explained.html#proportion"
                        ),  
                      target = "_blank"
                    )
@@ -240,7 +240,7 @@ plots_tab_ui <- function(id,
                        href = 
                           paste0(
                              "https://amc-heme.github.io/scExploreR/articles/",
-                             "scRNA_Plots_Explained.html"
+                             "scRNA_Plots_Explained.html#vln"
                              ),  
                        target = "_blank"
                      )
@@ -276,7 +276,7 @@ plots_tab_ui <- function(id,
                      href = 
                        paste0(
                          "https://amc-heme.github.io/scExploreR/articles/",
-                         "scRNA_Plots_Explained.html"
+                         "scRNA_Plots_Explained.html#dot"
                        ),  
                      target = "_blank"
                    )
@@ -314,7 +314,7 @@ plots_tab_ui <- function(id,
                        href = 
                           paste0(
                              "https://amc-heme.github.io/scExploreR/articles/",
-                             "scRNA_Plots_Explained.html"
+                             "scRNA_Plots_Explained.html#ridge"
                           ),  
                        target = "_blank"
                        )
@@ -354,7 +354,7 @@ plots_tab_ui <- function(id,
                               href = 
                                  paste0(
                                     "https://amc-heme.github.io/scExploreR/articles/",
-                                    "scRNA_Plots_Explained.html"
+                                    "scRNA_Plots_Explained.html#pie"
                                  ),  
                               target = "_blank"
                             )
