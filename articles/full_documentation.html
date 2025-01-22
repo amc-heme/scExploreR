@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>scExploreR Manual • scExploreR</title>
+<title>scExploreR Documentation • scExploreR</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="scExploreR Manual">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="scExploreR Documentation">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -35,11 +35,14 @@
 <li><h6 class="dropdown-header" data-toc-skip>Help and Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/dataset_setup_walkthrough.html">App Setup Walkthrough</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial.html">Exploring your Data</a></li>
+    <li><a class="dropdown-item" href="../articles/object_guidelines.html">Object Preparation Guidelines</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Additional Information</h6></li>
     <li><a class="dropdown-item" href="../articles/scRNA_Plots_Explained.html">Guide to scRNA-Seq Plots</a></li>
     <li><a class="dropdown-item" href="../articles/advanced_subsetting_documentation.html">String Subsetting Guide</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Reference</h6></li>
-    <li><a class="dropdown-item" href="../articles/full_documentation.html">Full App Manual</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Full Documentation</h6></li>
+    <li><a class="dropdown-item" href="../articles/full_documentation.html">scExploreR Documentation</a></li>
     <li><a class="dropdown-item" href="../articles/config_documentation.html">Config App Documentation</a></li>
   </ul>
 </li>
@@ -61,7 +64,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>scExploreR Manual</h1>
+      <h1>scExploreR Documentation</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/amc-heme/scExploreR/blob/main/vignettes/full_documentation.Rmd" class="external-link"><code>vignettes/full_documentation.Rmd</code></a></small>
@@ -104,7 +107,7 @@ metadata.</p></li>
 percentage of cells with non-zero values for multiple features across
 groups of cells as defined by metadata categories.</p></li>
 <li><p><strong>Scatterplot:</strong> compares values of two features.
-Correlation between values may be quantified in the <a href="#correlations-tab">Gene Correlations Tab</a>.</p></li>
+<!--Correlation between values may be quantified in the [Gene Correlations Tab](#correlations-tab).--></p></li>
 <li><p><strong>Ridge Plot:</strong> displays a density plot of a
 feature’s value across a group of cells defined by metadata.</p></li>
 <li><p><strong>Cell Proportion Plot:</strong> used to visualize the
@@ -201,7 +204,7 @@ into separate plots for viewing side-by-side, and defaults to
 metadata values. For example, broad differences in cell type proportions
 may be visualized when splitting by disease response. These
 obsservations can be analyzed in more detail in the differential gene
-expression and correlations tabs.</p>
+expression tab. <!-- and correlations tabs.--></p>
 <p>When a variable is selected, a slider to choose the number of columns
 will appear under the “Title options menu” (see <a href="#choose-number-of-columns">Choose number of columns</a> for more
 info).</p>
@@ -529,7 +532,7 @@ with an option to choose whether to download a .png or .svg file. Downloads in t
 </h3>
 <p>Scatterplots are useful for viewing co-expression of two features.
 All cells are plotted according to the expression of each feature, and
-are useful for quallitative assessments of correlation.</p>
+are useful for qualitative assessments of correlation.</p>
 <div class="section level4">
 <h4 id="feature-for-x-axis">Feature for x-axis<a class="anchor" aria-label="anchor" href="#feature-for-x-axis"></a>
 </h4>
@@ -932,73 +935,33 @@ compared in the selected test, a dimensional reduction plot will display
 beneath the table. After the plot is displayed, a menu (“DimPlot
 options”) will appear in the options panel on the left. The reduction
 and the color by metadata can be changed here.</p>
-</div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="correlations-tab">Correlations Tab<a class="anchor" aria-label="anchor" href="#correlations-tab"></a>
-</h2>
-<p>This tab is used to compute the correlation between a gene entered
-and all other genes in the dataaset. The correlations analysis uses a
-pearson correlation coefficient. Only genes may be used for computing
-correlation at this time: other feature types will be available in the
-future.</p>
-<div class="section level3">
-<h3 id="running-a-correlation-analysis">Running a correlation analysis<a class="anchor" aria-label="anchor" href="#running-a-correlation-analysis"></a>
-</h3>
-<p>To run an analysis, select a gene from the <strong>“Gene
-Selection”</strong> menu. All pearson coefficients returned will be for
-the genes relative to the selected gene. To view correlation results in
-a subset of cells rather than the full dataset, select categories for
-metadata variables in the <strong>“Subset Options”</strong> panel. The
-interface for entering subset criteria is the same as in the plots tab,
-and string subsetting may be performed for advanced subset selection.
-See <a href="#Subsets">“forming subsets”</a> for more info. Press the
-<strong>“submit”</strong> button to run the analysis.</p>
-</div>
-<div class="section level3">
-<h3 id="interpreting-correlation-results">Interpreting Correlation Results<a class="anchor" aria-label="anchor" href="#interpreting-correlation-results"></a>
-</h3>
-<p>The <strong>“Subset Summary and Quality Statistics”</strong> section
-will display the metadata included in the selected subset, along with
-quality statistics for the analysis. The number of cells in the selected
-subset will be displayed, along with the number and precentage of cells
-with non-zero reads for the currently selected gene. If either of these
-numbers are very low (less than 250 cells or so in the subset and less
-than 5% of cells with non-zero reads), caution should be taken when
-drawing conclusions from the results.</p>
-<div class="section level4">
-<h4 id="correlation-table">Correlation table<a class="anchor" aria-label="anchor" href="#correlation-table"></a>
-</h4>
-<p>The columns of the correlation table are as below. The table may be
-downloaded via the
-“<i class="fas fa-table" role="presentation" aria-label="table icon"></i>
-download table” button.</p>
-<ul>
-<li><p><strong>Feature:</strong> the gene being compared to the gene
-entered</p></li>
-<li><p><strong>Correlation coefficient (global):</strong> the pearson
-correlation coefficient of correlation with the gene entered, in all
-cells in the dataset</p></li>
-<li><p><strong>Correlation coefficient (subset):</strong> if a subset is
-entered in the options menu to the left, the pearson correlation
-coefficient of correlation in the chosen subset will display in this
-column. A column for both the full data and a subset will
-display.</p></li>
-</ul>
-</div>
-<div class="section level4">
-<h4 id="correlation-scatterplots">Correlation Scatterplots<a class="anchor" aria-label="anchor" href="#correlation-scatterplots"></a>
-</h4>
-<p>Click any gene on the correlation table to view a scatterplot of
-expression for the gene entered vs. the selected gene (for more
-information on scatterplots, see the <a href="#scatterplots">scatterplots</a> section). If a subset is selected,
-two plots will display, one for the full data and the other for the
-selected subset. The metadata variable used for coloring the plot may be
-selected using the <strong>“choose metadata to group by”</strong> menu.
-To download either of the plots, press the
-“<i class="fas fa-square-poll-vertical" role="presentation" aria-label="square-poll-vertical icon"></i>
-download scatterplot” button corresponding to the desired plot.</p>
+<!-- The correlations tab was removed due to performance issues. The docs for the tab are left here but commented out.
+# Correlations Tab {#correlations-tab}
+
+This tab is used to compute the correlation between a gene entered and all other genes in the dataset. The correlations analysis uses a pearson correlation coefficient. Only genes may be used for computing correlation at this time: other feature types will be available in the future.
+
+## Running a correlation analysis
+
+To run an analysis, select a gene from the **"Gene Selection"** menu. All pearson coefficients returned will be for the genes relative to the selected gene. To view correlation results in a subset of cells rather than the full dataset, select categories for metadata variables in the **"Subset Options"** panel. The interface for entering subset criteria is the same as in the plots tab, and string subsetting may be performed for advanced subset selection. See ["forming subsets"](#Subsets) for more info. Press the **"submit"** button to run the analysis.
+
+## Interpreting Correlation Results
+
+The **"Subset Summary and Quality Statistics"** section will display the metadata included in the selected subset, along with quality statistics for the analysis. The number of cells in the selected subset will be displayed, along with the number and precentage of cells with non-zero reads for the currently selected gene. If either of these numbers are very low (less than 250 cells or so in the subset and less than 5% of cells with non-zero reads), caution should be taken when drawing conclusions from the results.
+
+### Correlation table
+
+The columns of the correlation table are as below. The table may be downloaded via the "`<i class="fas fa-table" role="presentation" aria-label="table icon"></i>`{=html} download table" button.
+
+-   **Feature:** the gene being compared to the gene entered
+
+-   **Correlation coefficient (global):** the pearson correlation coefficient of correlation with the gene entered, in all cells in the dataset
+
+-   **Correlation coefficient (subset):** if a subset is entered in the options menu to the left, the pearson correlation coefficient of correlation in the chosen subset will display in this column. A column for both the full data and a subset will display.
+
+### Correlation Scatterplots
+
+Click any gene on the correlation table to view a scatterplot of expression for the gene entered vs. the selected gene (for more information on scatterplots, see the [scatterplots](#scatterplots) section). If a subset is selected, two plots will display, one for the full data and the other for the selected subset. The metadata variable used for coloring the plot may be selected using the **"choose metadata to group by"** menu. To download either of the plots, press the "`<i class="fas fa-square-poll-vertical" role="presentation" aria-label="square-poll-vertical icon"></i>`{=html} download scatterplot" button corresponding to the desired plot.
+-->
 </div>
 </div>
 </div>

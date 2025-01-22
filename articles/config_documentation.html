@@ -35,11 +35,14 @@
 <li><h6 class="dropdown-header" data-toc-skip>Help and Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/dataset_setup_walkthrough.html">App Setup Walkthrough</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial.html">Exploring your Data</a></li>
+    <li><a class="dropdown-item" href="../articles/object_guidelines.html">Object Preparation Guidelines</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Additional Information</h6></li>
     <li><a class="dropdown-item" href="../articles/scRNA_Plots_Explained.html">Guide to scRNA-Seq Plots</a></li>
     <li><a class="dropdown-item" href="../articles/advanced_subsetting_documentation.html">String Subsetting Guide</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Reference</h6></li>
-    <li><a class="dropdown-item" href="../articles/full_documentation.html">Full App Manual</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Full Documentation</h6></li>
+    <li><a class="dropdown-item" href="../articles/full_documentation.html">scExploreR Documentation</a></li>
     <li><a class="dropdown-item" href="../articles/config_documentation.html">Config App Documentation</a></li>
   </ul>
 </li>
@@ -80,9 +83,14 @@
     margin-right: auto;
     } 
     </style>
-<p>The scExploreR config app is used to configure datasets for display
-in the main browser. This vignette will walk through the operation of
-the app and detail all settings that may be adjusted.</p>
+<p>The scExploreR config app is used to configure single-cell objects
+for display in the main browser. This vignette will walk through the
+operation of the app and detail all settings that may be adjusted.</p>
+<p>For guidelines on preparing objects before loading them into the
+config app, see the <a href="object_guidelines.html">object guidelines
+vignette</a>, and see the <a href="dataset_setup_walkthrough.html">app
+setup walkthrough vignette</a> for an interactive walkthrough of both
+object preparation and use of the config app.</p>
 <div class="section level2">
 <h2 id="running-the-config-app">Running the config app<a class="anchor" aria-label="anchor" href="#running-the-config-app"></a>
 </h2>
@@ -185,8 +193,9 @@ below.</p>
 <h5 id="choose-genes-assay">
 <em>“</em>Choose Genes Assay”<a class="anchor" aria-label="anchor" href="#choose-genes-assay"></a>
 </h5>
-<p>The assay selected in this tab will be the assay used when computing
-differential expression or correlation; it does not effect plotting.</p>
+<p>The assay selected in this menu will be the assay used when computing
+differential expression. <!--or correlation;--> It does not effect
+plotting.</p>
 <p>Note, if you wish to include only non-gene assays in the object, you
 may designate those assays as the “genes” assay, but this may cause
 issues with the DGE and correlation analyses. The analyses are validated

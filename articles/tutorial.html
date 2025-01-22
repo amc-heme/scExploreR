@@ -35,11 +35,14 @@
 <li><h6 class="dropdown-header" data-toc-skip>Help and Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/dataset_setup_walkthrough.html">App Setup Walkthrough</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial.html">Exploring your Data</a></li>
+    <li><a class="dropdown-item" href="../articles/object_guidelines.html">Object Preparation Guidelines</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Additional Information</h6></li>
     <li><a class="dropdown-item" href="../articles/scRNA_Plots_Explained.html">Guide to scRNA-Seq Plots</a></li>
     <li><a class="dropdown-item" href="../articles/advanced_subsetting_documentation.html">String Subsetting Guide</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Reference</h6></li>
-    <li><a class="dropdown-item" href="../articles/full_documentation.html">Full App Manual</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Full Documentation</h6></li>
+    <li><a class="dropdown-item" href="../articles/full_documentation.html">scExploreR Documentation</a></li>
     <li><a class="dropdown-item" href="../articles/config_documentation.html">Config App Documentation</a></li>
   </ul>
 </li>
@@ -86,15 +89,16 @@ for this tutorial is hosted here<!--[here]()-->. The dataset contains a
 single bone marrow and peripheral blood sample from a healthy patient
 (for more, see the <a href="https://figshare.com/articles/dataset/Expression_of_197_surface_markers_and_462_mRNAs_in_15281_cells_from_blood_and_bone_marrow_from_a_young_healthy_donor/13398065" class="external-link">download
 page for the dataset</a>, and the related <a href="https://doi.org/10.1038/s41590-021-01059-0" class="external-link">publication</a>).</p>
-<p>Key functionality is grouped into three tabs: plots, differential
-expression, and gene correlations. The interface on each tab displays
-the plots and analysis results on the right, and the options on the left
-hand panel (referred to in this document as the options panel). The
-plots tab is selected by default, and is helpful for summarizing data
-and producing visualizations. While this is a good place to get an
-overview your dataset, some biological questions may be best answered by
-starting in different tabs. This vignette will walk through common
-biological questions and how to approach them using the app.</p>
+<p>Key functionality is grouped into two <!--three--> tabs: plots and
+differential expression. <!--and gene correlations.--> The interface on
+each tab displays the plots and analysis results on the right, and the
+options on the left hand panel (referred to in this document as the
+options panel). The plots tab is selected by default, and is helpful for
+summarizing data and producing visualizations. While this is a good
+place to get an overview your dataset, some biological questions may be
+best answered by starting in different tabs. This vignette will walk
+through common biological questions and how to approach them using the
+app.</p>
 </div>
 <div class="section level2">
 <h2 id="in-which-cell-types-is-my-gene-deferentially-expressed">In which cell types is my gene deferentially expressed?<a class="anchor" aria-label="anchor" href="#in-which-cell-types-is-my-gene-deferentially-expressed"></a>
@@ -300,31 +304,20 @@ above this boundary will be compared to all cells below.</p>
 results will show genes expressed to a greater extent in CD34+ (high)
 cells versus CD34- (low) ones. When sorting the table by AUC, several
 good markers for both groups appear.</p>
-</div>
-<div class="section level2">
-<h2 id="what-genes-in-the-dataset-are-correlated-with-my-gene">What genes in the dataset are correlated with my gene?<a class="anchor" aria-label="anchor" href="#what-genes-in-the-dataset-are-correlated-with-my-gene"></a>
-</h2>
-<p>The correlations tab can be used, among other things, to determine
-which genes are co-expressed with a given gene in a sample. In this
-example, we will analyze the correlation of other genes with CXCR4, <a href="#marker-by-sample">a top marker for the peripheral blood dendritic
-cells</a>.</p>
-<p>To run this analysis, switch to the correlation tab and enter “CXCR4”
-in the <strong>“Gene Selection”</strong> menu. Next, subset for
-dendritic cells by choosing this cell type under the <strong>“Filter By
-Cell Type”</strong> menus: this will allow for the comparison of
-correlation results in this cell type to the results in all cells. Press
-<strong>“Submit”</strong> to run the analysis.</p>
-<p><img src="tutorial-013_Correlation_Demo.gif" class="centered-image" width="650"></p>
-<p>The results will show the person correlation coefficients for both
-the full dataset, and the subset of dendritic cells. The analysis
-reveals several genes with a fairly strong positive correlation with
-CXCR4 expression in dendritic cells, but no genes have a strong positive
-or negative correlation in the context of the full dataset. Click a gene
-to view scatterplots of the correlation.</p>
-<p><img src="tutorial-014_Correlation_Scatterplots.gif" class="centered-image" width="650"></p>
-<p>To view correlation results for a particular gene of interest, you
-can search for it using the text box below the “Feature” column header
-on the table.</p>
+<!--
+# What genes in the dataset are correlated with my gene?
+
+The correlations tab can be used, among other things, to determine which genes are co-expressed with a given gene in a sample. In this example, we will analyze the correlation of other genes with CXCR4, [a top marker for the peripheral blood dendritic cells](#marker-by-sample).
+
+To run this analysis, switch to the correlation tab and enter "CXCR4" in the **"Gene Selection"** menu. Next, subset for dendritic cells by choosing this cell type under the **"Filter By Cell Type"** menus: this will allow for the comparison of correlation results in this cell type to the results in all cells. Press **"Submit"** to run the analysis.
+
+![](tutorial-013_Correlation_Demo.gif){.centered-image width="650"}
+
+The results will show the person correlation coefficients for both the full dataset, and the subset of dendritic cells. The analysis reveals several genes with a fairly strong positive correlation with CXCR4 expression in dendritic cells, but no genes have a strong positive or negative correlation in the context of the full dataset. Click a gene to view scatterplots of the correlation.
+
+![](tutorial-014_Correlation_Scatterplots.gif){.centered-image width="650"}
+
+To view correlation results for a particular gene of interest, you can search for it using the text box below the "Feature" column header on the table. -->
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

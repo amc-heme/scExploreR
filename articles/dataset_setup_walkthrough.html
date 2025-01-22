@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Hosting a Dataset in scExploreR and Performing Analysis • scExploreR</title>
+<title>App Setup Walkthrough • scExploreR</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Hosting a Dataset in scExploreR and Performing Analysis">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="App Setup Walkthrough">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -35,11 +35,14 @@
 <li><h6 class="dropdown-header" data-toc-skip>Help and Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/dataset_setup_walkthrough.html">App Setup Walkthrough</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial.html">Exploring your Data</a></li>
+    <li><a class="dropdown-item" href="../articles/object_guidelines.html">Object Preparation Guidelines</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Additional Information</h6></li>
     <li><a class="dropdown-item" href="../articles/scRNA_Plots_Explained.html">Guide to scRNA-Seq Plots</a></li>
     <li><a class="dropdown-item" href="../articles/advanced_subsetting_documentation.html">String Subsetting Guide</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Reference</h6></li>
-    <li><a class="dropdown-item" href="../articles/full_documentation.html">Full App Manual</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Full Documentation</h6></li>
+    <li><a class="dropdown-item" href="../articles/full_documentation.html">scExploreR Documentation</a></li>
     <li><a class="dropdown-item" href="../articles/config_documentation.html">Config App Documentation</a></li>
   </ul>
 </li>
@@ -63,7 +66,7 @@
 <script src="dataset_setup_walkthrough_files/crosstalk-1.2.1/js/crosstalk.min.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Hosting a Dataset in scExploreR and Performing Analysis</h1>
+      <h1>App Setup Walkthrough</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/amc-heme/scExploreR/blob/main/vignettes/dataset_setup_walkthrough.Rmd" class="external-link"><code>vignettes/dataset_setup_walkthrough.Rmd</code></a></small>
@@ -688,9 +691,9 @@ App<a class="anchor" aria-label="anchor" href="#configure-dataset-specific-scexp
 include for the dataset, the next step is to apply these settings in the
 config app.</p>
 <div class="section level3">
-<h3 id="anndata-specific-preparation-for-the-config-app">Anndata-specific Preparation for the Config App<a class="anchor" aria-label="anchor" href="#anndata-specific-preparation-for-the-config-app"></a>
+<h3 id="anndata_uns_requirements">Anndata-specific Preparation for the Config App<a class="anchor" aria-label="anchor" href="#anndata_uns_requirements"></a>
 </h3>
-<p>Before loading Anndata objects into the config app, the keys of
+<p>Before loading anndata objects into the config app, the keys of
 alternate modalities and reductions must be defined, since both types of
 data are stored in <code>obsm</code>, and there is no exclusive storage
 slot for reductions or modalities in anndata objects.</p>
