@@ -616,6 +616,7 @@ plots_tab_ui <- function(id,
              active = TRUE,
              plot_module_ui(
                id = ns("dimplot"),
+               plot_type = "dimplot",
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "DimPlot",
@@ -646,6 +647,7 @@ plots_tab_ui <- function(id,
              active = FALSE,
              plot_module_ui(
                id = ns("feature"),
+               plot_type = "feature",
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "Feature Plot",
@@ -689,6 +691,7 @@ plots_tab_ui <- function(id,
              active = FALSE,
              plot_module_ui(
                id = ns("violin"),
+               plot_type = "violin",
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "Violin Plot",
@@ -718,6 +721,7 @@ plots_tab_ui <- function(id,
              active = FALSE,
              plot_module_ui(
                id = ns("dot"),
+               plot_type = "dot",
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "Dot Plot",
@@ -748,6 +752,7 @@ plots_tab_ui <- function(id,
              active = FALSE,
              plot_module_ui(
                id = ns("scatter"),
+               plot_type = "scatter",
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "Scatterplot",
@@ -778,6 +783,7 @@ plots_tab_ui <- function(id,
              active = FALSE,
              plot_module_ui(
                id = ns("ridge"),
+               plot_type = "ridge",
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "Ridge",
@@ -812,6 +818,7 @@ plots_tab_ui <- function(id,
              active = FALSE,
              plot_module_ui(
                id = ns("proportion"),
+               plot_type = "proportion",
                ui_component = "options",
                meta_choices = meta_choices,
                plot_label = "Cell Proportion",
@@ -862,6 +869,7 @@ plots_tab_ui <- function(id,
                active = FALSE,
                plot_module_ui(
                  id = ns("pie"),
+                 plot_type = "pie",
                  ui_component = "options",
                  meta_choices = meta_choices,
                  plot_label = "Metadata Pie Chart",
@@ -909,6 +917,7 @@ plots_tab_ui <- function(id,
             ## 2.1. DimPlot plot panel
             plot_module_ui(
                id = ns("dimplot"),
+               plot_type = "dimplot",
                ui_component = "plot"
             ),
             
@@ -917,6 +926,7 @@ plots_tab_ui <- function(id,
             # been entered
             plot_module_ui(
                id = ns("feature"),
+               plot_type = "feature",
                ui_component = "plot"
             ),
             
@@ -924,30 +934,35 @@ plots_tab_ui <- function(id,
             # UI displayed will vary based on the entry into the feature text box
             plot_module_ui(
                id = ns("violin"),
+               plot_type = "violin",
                ui_component = "plot"
             ),
             
             ## 2.4. Dot plot panel
             plot_module_ui(
                id = ns("dot"),
+               plot_type = "dot",
                ui_component = "plot"
             ),
             
             ## 2.5. Scatterplot panel
             plot_module_ui(
                id = ns("scatter"),
+               plot_type = "scatter",
                ui_component = "plot"
             ),
             
             ## 2.6. Ridge plot panel
             plot_module_ui(
                id = ns("ridge"),
+               plot_type = "ridge",
                ui_component = "plot"
             ),
             
             ## 2.7. Cell proportion stacked bar plot panel
             plot_module_ui(
                id = ns("proportion"),
+               plot_type = "proportion",
                ui_component = "plot"
             ),
             
@@ -955,6 +970,7 @@ plots_tab_ui <- function(id,
             if (!is.null(patient_colname())){
                plot_module_ui(
                   id = ns("pie"),
+                  plot_type = "pie",
                   ui_component = "plot"
                )
             }

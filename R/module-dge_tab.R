@@ -882,24 +882,26 @@ dge_tab_server <- function(id,
                   log_info("DGE Tab: Completed Presto")
                   
                   # Compute on values of table (for use with automated tests)
-                  if (session$userData$dev_mode == TRUE){
-                    print("Colsums vector")
-                    colsums_vector <- colSums(dge_table[3:8])
-                    # Print vector to screen as code to be copied to the test
-                    # scripts
-                    cat(
-                      paste0(
-                        "c(", 
-                        paste0(colsums_vector, collapse = ", "),
-                        ")"
-                        ),
-                      "\n"
-                      )
-                  }
-                 
+                  # Commented out, column formatting here does not apply for 
+                  # Seurat v5 objects with BPCells matrices
+                  # if (session$userData$dev_mode == TRUE){
+                  #   print("Colsums vector")
+                  #   colsums_vector <- colSums(dge_table[3:8])
+                  #   # Print vector to screen as code to be copied to the test
+                  #   # scripts
+                  #   cat(
+                  #     paste0(
+                  #       "c(", 
+                  #       paste0(colsums_vector, collapse = ", "),
+                  #       ")"
+                  #       ),
+                  #     "\n"
+                  #     )
+                  # }
+
                   return(dge_table)
                 })
-
+            
             dge_table
           })
       
@@ -924,117 +926,215 @@ dge_tab_server <- function(id,
           # returned from the function unchanged.
           dge_table <- dge_table_content()
           
-          # Filter by group
-          if (isTruthy(dge_table_filters$group())){
-            dge_table <-
-              dge_table %>% 
-              dplyr::filter(
-                group %in% dge_table_filters$group()
+          tryCatch(
+            # Convention is to use function(cnd) for tryCatch, but "cnd"
+            # is a function in the rlang package, as is "error", so err_cnd 
+            # was used instead to avoid namespace conflicts
+            error = function(err_cnd){
+              # Log interpreted subset filters in the event of an error
+              log_error(
+                paste0(
+                  "Error in filtering of dge table: \n",
+                  err_cnd$message
+                )
               )
-          }
-          
-          # Filter by feature
-          if (isTruthy(dge_table_filters$feature())){
-            dge_table <-
-              dge_table %>% 
-              dplyr::filter(
-                feature %in% dge_table_filters$feature()
-              )
-          }
-          
-          # Filter based on average expression within group
-          if (isTruthy(dge_table_filters$expression())){
-            if (!is.null(dge_table_filters$expression()$min) & 
-                !is.null(dge_table_filters$expression()$max)){
-              # If both values are defined, filter based on both values
-              dge_table <-
-                dge_table %>% 
-                dplyr::filter(avgExpr >= dge_table_filters$expression()$min &
-                                avgExpr <= dge_table_filters$expression()$max)
-            } else if (!is.null(dge_table_filters$expression()$min) & 
-                       is.null(dge_table_filters$expression()$max)){
-              # Min is defined but not the max
-              # filter based on the min
-              dge_table <-
-                dge_table %>% 
-                dplyr::filter(avgExpr >= dge_table_filters$expression()$min)
-            } else if (is.null(dge_table_filters$expression()$min) & 
-                       !is.null(dge_table_filters$expression()$max)){
-              # Max is defined but not the min 
-              # filter based on the max
-              dge_table <-
-                dge_table %>% 
-                dplyr::filter(avgExpr <= dge_table_filters$expression()$max)
-            }
-          }
-          
-          # Filter based on lfc values
-          if (isTruthy(dge_table_filters$lfc())){
-            if (!is.null(dge_table_filters$lfc()$min) & 
-                !is.null(dge_table_filters$lfc()$max)){
-              print("dge_table_filters$lfc()")
-              print(dge_table_filters$lfc())
               
-              # If both values are defined, filter based on both values
-              dge_table <-
-                dge_table %>% 
-                dplyr::filter(log2FC >= dge_table_filters$lfc()$min &
-                                log2FC <= dge_table_filters$lfc()$max)
-            } else if (!is.null(dge_table_filters$lfc()$min) & 
-                       is.null(dge_table_filters$lfc()$max)){
-              # Min is defined but not the max
-              # filter based on the min
-              dge_table <-
-                dge_table %>% 
-                dplyr::filter(log2FC >= dge_table_filters$lfc()$min)
-            } else if (is.null(dge_table_filters$lfc()$min) & 
-                       !is.null(dge_table_filters$lfc()$max)){
-              # Max is defined but not the min 
-              # filter based on the max
-              dge_table <-
-                dge_table %>% 
-                dplyr::filter(log2FC <= dge_table_filters$lfc()$max)
+              # Print state of filter inputs?
+              
+              # Use error_handler to display notification to user
+              error_handler(
+                session,
+                cnd_message = err_cnd$message,
+                # Uses a list of
+                # subset-specific errors
+                error_list = error_list$subset_errors
+              )
+              
+              # Hide the spinners
+              main_spinner$hide()
+              sidebar_spinner$hide()
+              
+              # Return NULL for subset to 
+              # discontinue downstream calculations
+              NULL
+            },
+            # Begin tryCatch code
+            {
+              # Print statements for debugging when dev mode is TRUE
+              # TODO: tests for filtering should be written, perhaps from the 
+              # number of rows at each step. Store number of rows at each step as 
+              # a special list for output to testing?
+              if (session$userData$dev_mode == TRUE){
+                print("Filtering of DGE table")
+                print(paste0("Number of rows in original table: ", nrow(dge_table)))
+                print("Pre-filtering table summary:")
+                print(str(dge_table))
+                print("Filtering by group:")
+              }
+              
+              # Filter by group
+              if (isTruthy(dge_table_filters$group())){
+                dge_table <-
+                  dge_table %>% 
+                  dplyr::filter(
+                    group %in% dge_table_filters$group()
+                  )
+              }
+              
+              if (session$userData$dev_mode == TRUE){
+                print(paste0("Number of rows remaining: ", nrow(dge_table)))
+                print("Filtering by feature:")
+              }
+              
+              # Filter by feature
+              if (isTruthy(dge_table_filters$feature())){
+                dge_table <-
+                  dge_table %>% 
+                  dplyr::filter(
+                    feature %in% dge_table_filters$feature()
+                  )
+              }
+              
+              if (session$userData$dev_mode == TRUE){
+                print(paste0("Number of rows remaining: ", nrow(dge_table)))
+                print("Filtering by expression:")
+              }
+              
+              # Filter based on average expression within group
+              # Proceed with this filter only if "avgExpr" is present in the table
+              if ("avgExpr" %in% colnames(dge_table)){
+                if (isTruthy(dge_table_filters$expression())){
+                  if (!is.null(dge_table_filters$expression()$min) & 
+                      !is.null(dge_table_filters$expression()$max)){
+                    # If both values are defined, filter based on both values
+                    dge_table <-
+                      dge_table %>% 
+                      dplyr::filter(avgExpr >= dge_table_filters$expression()$min &
+                                      avgExpr <= dge_table_filters$expression()$max)
+                  } else if (!is.null(dge_table_filters$expression()$min) & 
+                             is.null(dge_table_filters$expression()$max)){
+                    # Min is defined but not the max
+                    # filter based on the min
+                    dge_table <-
+                      dge_table %>% 
+                      dplyr::filter(avgExpr >= dge_table_filters$expression()$min)
+                  } else if (is.null(dge_table_filters$expression()$min) & 
+                             !is.null(dge_table_filters$expression()$max)){
+                    # Max is defined but not the min 
+                    # filter based on the max
+                    dge_table <-
+                      dge_table %>% 
+                      dplyr::filter(avgExpr <= dge_table_filters$expression()$max)
+                  }
+                }
+              }
+              
+              if (session$userData$dev_mode == TRUE){
+                print(paste0("Number of rows remaining: ", nrow(dge_table)))
+                print("Filtering by log-fold change:")
+              }
+              
+              # Filter based on lfc values
+              if (isTruthy(dge_table_filters$lfc())){
+                if (!is.null(dge_table_filters$lfc()$min) & 
+                    !is.null(dge_table_filters$lfc()$max)){
+                  # If both values are defined, filter based on both values
+                  dge_table <-
+                    dge_table %>% 
+                    dplyr::filter(log2FC >= dge_table_filters$lfc()$min &
+                                    log2FC <= dge_table_filters$lfc()$max)
+                } else if (!is.null(dge_table_filters$lfc()$min) & 
+                           is.null(dge_table_filters$lfc()$max)){
+                  # Min is defined but not the max
+                  # filter based on the min
+                  dge_table <-
+                    dge_table %>% 
+                    dplyr::filter(log2FC >= dge_table_filters$lfc()$min)
+                } else if (is.null(dge_table_filters$lfc()$min) & 
+                           !is.null(dge_table_filters$lfc()$max)){
+                  # Max is defined but not the min 
+                  # filter based on the max
+                  dge_table <-
+                    dge_table %>% 
+                    dplyr::filter(log2FC <= dge_table_filters$lfc()$max)
+                }
+              }
+              
+              if (session$userData$dev_mode == TRUE){
+                print(paste0("Number of rows remaining: ", nrow(dge_table)))
+                print("Filtering by AUC value:")
+              }
+              
+              # Filter based on AUC value
+              # Proceed with this filter only if "avgExpr" is present in the table
+              if ("auc" %in% colnames(dge_table)){
+                if (isTruthy(dge_table_filters$auc())){
+                  dge_table <-
+                    dge_table %>% 
+                    dplyr::filter(auc >= dge_table_filters$auc()[1] &
+                                    auc <= dge_table_filters$auc()[2])
+                }
+              }
+              
+              if (session$userData$dev_mode == TRUE){
+                print(paste0("Number of rows remaining: ", nrow(dge_table)))
+                print("Filtering by adjusted p-value:")
+              }
+              
+              # Filter by adjusted p-value
+              if (isTruthy(dge_table_filters$pval_adj())){
+                dge_table <-
+                  dge_table %>% 
+                  dplyr::filter(
+                    pval_adj <= dge_table_filters$pval_adj()
+                  )
+              }
+              
+              if (session$userData$dev_mode == TRUE){
+                print(paste0("Number of rows remaining: ", nrow(dge_table)))
+                print("Filtering by percentage in group:")
+              }
+              
+              # Filter based on percent expression within group/class
+              # Proceed with this filter only if "pct_in" is present in the table
+              if ("pct_in" %in% colnames(dge_table)){
+                if (isTruthy(dge_table_filters$pct_in())){
+                  dge_table <-
+                    dge_table %>% 
+                    dplyr::filter(
+                      pct_in >= dge_table_filters$pct_in()[1] &
+                        pct_in <= dge_table_filters$pct_in()[2]
+                    )
+                }
+              }
+              
+              if (session$userData$dev_mode == TRUE){
+                print(paste0("Number of rows remaining: ", nrow(dge_table)))
+                print("Filtering by percentage outside group:")
+              }
+              
+              # Filter based on percent expression outside group/class
+              # Proceed with this filter only if "pct_out" is present in the table
+              if ("pct_out" %in% colnames(dge_table)){
+                if (isTruthy(dge_table_filters$pct_out())){
+                  dge_table <-
+                    dge_table %>% 
+                    dplyr::filter(
+                      pct_out >= dge_table_filters$pct_out()[1] &
+                        pct_out <= dge_table_filters$pct_out()[2]
+                    )
+                }
+              }
+              
+              if (session$userData$dev_mode == TRUE){
+                print(paste0("Number of rows remaining: ", nrow(dge_table)))
+              }
+              
+              # The filtered table should automatically return from both the 
+              # TryCatch expression and the parent reactive expression
+              dge_table
             }
-          }
-          
-          # Filter based on AUC value
-          if (isTruthy(dge_table_filters$auc())){
-            dge_table <-
-              dge_table %>% 
-              dplyr::filter(auc >= dge_table_filters$auc()[1] &
-                              auc <= dge_table_filters$auc()[2])
-          }
-          
-          # Filter by adjusted p-value
-          if (isTruthy(dge_table_filters$pval_adj())){
-            dge_table <-
-              dge_table %>% 
-              dplyr::filter(
-                pval_adj <= dge_table_filters$pval_adj()
-              )
-          }
-          
-          # Filter based on percent expression within group/class
-          if (isTruthy(dge_table_filters$pct_in())){
-            dge_table <-
-              dge_table %>% 
-              dplyr::filter(
-                pct_in >= dge_table_filters$pct_in()[1] &
-                  pct_in <= dge_table_filters$pct_in()[2]
-              )
-          }
-          
-          # Filter based on percent expression outside group/class
-          if (isTruthy(dge_table_filters$pct_out())){
-            dge_table <-
-              dge_table %>% 
-              dplyr::filter(
-                pct_out >= dge_table_filters$pct_out()[1] &
-                  pct_out <= dge_table_filters$pct_out()[2]
-              )
-          }
-          
-          dge_table
+          )
         })
       
       ### 3.10.3. Display filtered table using DT package ####

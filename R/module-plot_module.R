@@ -23,6 +23,10 @@
 #'
 #' @param id ID to use for module elements. IDs for the options and plot UI
 #' components, and the server component, must match.
+#' @param plot_type An explicit definition of the plot type. In the near future,
+#' the plot type defined here is envisioned to be used to determine the UI 
+#' components present, rather than the large set of group_by, split_by, etc. 
+#' parameters.
 #' @param ui_component Determines which UI component is to be plotted. Use
 #' "options" to create the input menus for plot options, and "plot" to create
 #' the output container for the plot.
@@ -61,6 +65,7 @@
 #'
 #' @noRd
 plot_module_ui <- function(id,
+                           plot_type,
                            # The plot_module UI consists of the options
                            # panels and the plot output, which exist in
                            # different places in the app. This argument will
@@ -423,9 +428,9 @@ plot_module_ui <- function(id,
           )
         } else NULL,
 
-      ## Refactor groups (dot, violin plots) ####
+      ## Group Sorting interface (dot, violin, ridge, proportion plots) ####
       if (sort_groups_menu == TRUE){
-        #html anchors pointing to relevant section in full documentation based on plot type
+        # html anchors pointing to relevant section in full documentation based on plot type
         plot_to_anchor <- 
         list(
           "Violin Plot" = "violin-plots-group-order",
@@ -3301,6 +3306,103 @@ plot_module_server <- function(id,
                    # the requested feature per group.
                    # Result is passed to the `sort_groups` reactive expression
                    if (plot_type %in% c("violin", "dot", "ridge")){
+                     #### 8.4.4.1. Define UI for feature expression sorting menu ####
+                     expr_sort_menu <-
+                       reactive({
+                         # Responds to both the object and the group by
+                         # variable, but only runs when the group by variable is
+                         # defined
+                         req(plot_selections$group_by())
+                         
+                         # For ridge plots, the group_by variable can also be
+                         # "none", which will cause errors. The UI should not
+                         # compute in this case
+                         if (plot_type == "ridge"){
+                           req(plot_selections$group_by() != "none")
+                         }
+                         
+                         # Also only runs when the plot is enabled, and if a 
+                         # feature has been chosen
+                         req(plot_switch())
+                         req(features_entered())
+                         
+                         # Define display names for features
+                         # Remove the assay key from features and add the 
+                         # assay-based "suffix" from the config file, unless
+                         # the user requests the assay key be displayed before
+                         # feature names
+                         if (raw_feature_names() == FALSE){
+                           display_names <-
+                             sapply(
+                               features_entered(),
+                               function(feature_i, assay_config){
+                                 hr_name(
+                                   machine_readable_name = feature_i,
+                                   assay_config = assay_config,
+                                   use_suffix = TRUE
+                                 )
+                               },
+                               assay_config()
+                             )
+                         } else {
+                           # If the user checks "Show modality key before 
+                           # feature", display the machine-readable feature 
+                           # names with the assay key added
+                           display_names <- features_entered()
+                         }
+                         
+                         
+                         # Set up choices vector: values are machine-readable 
+                         # feature names from features_entered(), and names are 
+                         # the display 
+                         feature_choices <- features_entered()
+                         names(feature_choices) <- display_names
+                         
+                         # Menu UI
+                         div(
+                           id = ns("expr_sort_menu"),
+                           class = "compact-options-container",
+                           selectInput(
+                             inputId = ns("sort_expr_feature"),
+                             label = "Choose a feature to sort by:",
+                             choices = feature_choices,
+                             # Explicitly set the selected value to the first 
+                             # feature to avoid the menu being blank
+                             selected = feature_choices[1]
+                           ),
+                           selectInput(
+                             inputId = ns("sort_expr_order"),
+                             label = "Order of sorting:",
+                             choices = 
+                               c("Descending" = "descending",
+                                 "Ascending" = "ascending"
+                               )
+                           )
+                         )
+                       })
+                     
+                     #### 8.4.4.2. Show/hide feature sorting UI ####
+                     observe({
+                       # The output container is shown/hidden
+                       target_id <- "expr_sort_menu"
+                       
+                       # Show when "custom" is chosen from the group order menu
+                       if (isTruthy(input$sort_groups)){
+                         if (input$sort_groups == "expression"){
+                           showElement(
+                             id = target_id,
+                             anim = TRUE
+                           )
+                         } else {
+                           hideElement(
+                             id = target_id,
+                             anim = TRUE
+                           )
+                         }
+                       }
+                     })
+                     
+                     #### 8.4.4.3. Perform sorting, define new levels ####
                      expr_sort_levels <-
                        reactive({
                          # Only run when the user requests to sort by expression
@@ -3335,183 +3437,9 @@ plot_module_server <- function(id,
                          summary_table %>%
                            pull(id)
                        })
-
                    }
                  }
                  
-                 ## Menu for refactoring by feature expression 
-                 if (plot_type %in% c("violin", "dot", "ridge")){
-                   # Violin, dot, ridge plots: refactoring affects
-                   # group by variable
-                   expr_sort_menu <-
-                     reactive({
-                       # Responds to both the object and the group by
-                       # variable, but only runs when the group by variable is
-                       # defined
-                       req(plot_selections$group_by())
-
-                       # For ridge plots, the group_by variable can also be
-                       # "none", which will cause errors. The UI should not
-                       # compute in this case
-                       if (plot_type == "ridge"){
-                         req(plot_selections$group_by() != "none")
-                       }
-
-                       # Also only runs when the plot is enabled, and if a 
-                       # feature has been chosen
-                       req(plot_switch())
-                       req(features_entered())
-                     
-                       # Define display names for features
-                       # Remove the assay key from features and add the 
-                       # assay-based "suffix" from the config file, unless
-                       # the user requests the assay key be displayed before
-                       # feature names
-                       if (raw_feature_names() == FALSE){
-                         display_names <-
-                           sapply(
-                             features_entered(),
-                             function(feature_i, assay_config){
-                               hr_name(
-                                 machine_readable_name = feature_i,
-                                 assay_config = assay_config,
-                                 use_suffix = TRUE
-                               )
-                             },
-                             assay_config()
-                           )
-                       } else {
-                         # If the user checks "Show modality key before 
-                         # feature", display the machine-readable feature 
-                         # names with the assay key added
-                         display_names <- features_entered()
-                       }
-                       
-                       
-                       # Set up choices vector: values are machine-readable 
-                       # feature names from features_entered(), and names are 
-                       # the display 
-                       feature_choices <- features_entered()
-                       names(feature_choices) <- display_names
-                       
-                       # Menu UI
-                       div(
-                         id = ns("expr_sort_menu"),
-                         class = "compact-options-container",
-                         selectInput(
-                           inputId = ns("sort_expr_feature"),
-                           label = "Choose a feature to sort by:",
-                           choices = feature_choices,
-                           # Explicitly set the selected value to the first 
-                           # feature to avoid the menu being blank
-                           selected = feature_choices[1]
-                         ),
-                         selectInput(
-                           inputId = ns("sort_expr_order"),
-                           label = "Order of sorting:",
-                           choices = 
-                             c("Descending" = "descending",
-                               "Ascending" = "ascending"
-                               )
-                           )
-                         )
-                       })
-                   
-                   # hide/show feature sorting container
-                   observe({
-                     # The output container is shown/hidden
-                     target_id <- "expr_sort_menu"
-                     
-                     # Show when "custom" is chosen from the group order menu
-                     if (isTruthy(input$sort_groups)){
-                       if (input$sort_groups == "expression"){
-                         showElement(
-                           id = target_id,
-                           anim = TRUE
-                         )
-                       } else {
-                         hideElement(
-                           id = target_id,
-                           anim = TRUE
-                         )
-                       }
-                     }
-                   })
-                   }
-                ## 8.5 HTML Anchor links ####
-                 # observe({
-                 #   print("plot anchor")
-                 #   print(plot_to_anchor())
-                 # })
-                 # plot_to_anchor <- reactive({
-                 #   req(plot_switch())
-                 #   
-                 #   switch(plot_type,
-                 #          "scatterplot" = {
-                 #            if(group_by) {
-                 #              "scatterplots-group-by"
-                 #            } else if(split_by) {
-                 #              "scatterplots-split-by"
-                 #            }
-                 #          },
-                 #          "dimplot" = {
-                 #            if(group_by) {
-                 #              "DimPlots-group-by"
-                 #            } else if(split_by) {
-                 #              "DimPlots-split-by"
-                 #            } else if(title_menu) {
-                 #              "DimPlots-title-options"
-                 #            } else if(legend_options_menu) {
-                 #              "choose-number-of-columns"
-                 #            }
-                 #          },
-                 #          "dot" = {
-                 #            if(group_by) {
-                 #              "dot-plots-group-by"
-                 #            } else if(sort_groups_menu) {
-                 #              "dot-plots-group-order"
-                 #            }
-                 #          },
-                 #          "proportion" = {
-                 #            if(title_menu) {
-                 #              "cell-proportion-plot-title-options"
-                 #            } else if(sort_groups_menu) {
-                 #              "cell-proportion-plot-group-order"
-                 #            }
-                 #          },
-                 #          "feature" = {
-                 #            if(split_by) {
-                 #              "Feature-plots-split-by"
-                 #            } else if(title_menu) {
-                 #              "Feature-plots-title-options"
-                 #            } else if(legend_options_menu) {
-                 #              "feature-choose-ncol"
-                 #            }
-                 #          },
-                 #          "ridge" = {
-                 #            if(group_by){
-                 #              "ridge-plots-group-by"
-                 #            } 
-                 #          },
-                 #          "violin" = {
-                 #            if(sort_groups_menu) {
-                 #              "violin-plots-group-order"
-                 #            } else if(legend_options_menu){
-                 #              "violin-choose-ncol"
-                 #            }
-                 #          },
-                 #          "pie" = {
-                 #            if(title_menu){
-                 #              "metadata-pie-chart-title-options"
-                 #            }
-                 #          }
-                 #      )
-                 # })
-                 # 
-              # observe({
-              #   print("anchor:")
-              #   print(plot_to_anchor())
-              # })
                  ## 8.6. Render Dynamic UI ####
                  output$ncol_slider <-
                    renderUI({
