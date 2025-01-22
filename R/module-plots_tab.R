@@ -113,7 +113,7 @@ plots_tab_ui <- function(id,
                label = 
                   tagList(
                      "Feature Plot",
-                     a(id = ns("make_feature_plot_help"),
+                     a(id = ns("make_feature_help"),
                        icon(
                           "circle-question",
                           class = "fa-solid"
@@ -131,7 +131,7 @@ plots_tab_ui <- function(id,
                status = "default"
                ),
              bsTooltip(
-                id = ns("make_feature_plot_help"), 
+                id = ns("make_feature_help"), 
                 title = 
                    paste0(
                       'Feature plots are dimensional reduction plots ',
@@ -139,8 +139,9 @@ plots_tab_ui <- function(id,
                       'plots are great for summarizing feature expression, ',
                       'but can mis-represent the average expression in ',
                       'specific cell clusters. Observations in feature plots ',
-                      'should be further queried using violin plots, dot ',
-                      'plots, and differential gene expression analysis. '
+                      'should be further queried using violin plots, ridge ',
+                      'plots, dot plots, and differential gene expression ',
+                      'analysis. '
                    ),
                 placement = "bottom", 
                 trigger = "hover",
@@ -150,19 +151,76 @@ plots_tab_ui <- function(id,
              # Switch for scatterplot
              materialSwitch(
                inputId = ns("make_scatter"),
-               label = "Scatterplot", 
+               label = 
+                  tagList(
+                     "Scatterplot",
+                     a(id = ns("make_scatter_help"),
+                       icon(
+                          "circle-question",
+                          class = "fa-solid"
+                       ), 
+                       href = 
+                          paste0(
+                             "https://amc-heme.github.io/scExploreR/articles/",
+                             "scRNA_Plots_Explained.html"
+                          ),  
+                       target = "_blank"
+                     )
+                  ),
                value = FALSE,
                right = TRUE,
                status = "default"
+             ),
+             bsTooltip(
+               id = ns("make_scatter_help"), 
+               title = 
+                 paste0(
+                   "Scatterplots show the correlation between two features. ",
+                   "A pearson correlation coefficient for the two features ",
+                   "entered will show as the plot title by default."
+                   ),
+                placement = "bottom", 
+                trigger = "hover",
+                options = NULL
              ),
              
              # Switch for cell type proportion bar plot
              materialSwitch(
                inputId = ns("make_proportion"),
-               label = "Cell Proportion Plot", 
+               label = 
+                 tagList(
+                   "Cell Proportion Plot",
+                   a(id = ns("make_proportion_help"),
+                     icon(
+                       "circle-question",
+                       class = "fa-solid"
+                     ), 
+                     href = 
+                       paste0(
+                         "https://amc-heme.github.io/scExploreR/articles/",
+                         "scRNA_Plots_Explained.html"
+                       ),  
+                     target = "_blank"
+                   )
+                 ),
                value = FALSE,
                right = TRUE,
                status = "default"
+               ),
+             bsTooltip(
+               id = ns("make_proportion_help"), 
+               title = 
+                 paste0(
+                   "Proprotion plots are useful for summarizing sample ",
+                   "level trends in a dataset. Proprotion plots compare the ",
+                   "proportions of cells in groups defined by a metadata ",
+                   "variable, often cell type. Proportions are compared ",
+                   "accross groups defined by a second variable, ",
+                   "usually sample or patient ID."
+                  ),
+               placement = "bottom", 
+               trigger = "hover",
+               options = NULL
              )
            ),# End div
            # Right column
@@ -171,40 +229,154 @@ plots_tab_ui <- function(id,
              # Switch for violin plot
              materialSwitch(
                inputId = ns("make_vln"),
-               label = "Violin Plot", 
+               label = 
+                  tagList(
+                     "Violin Plot", 
+                     a(id = ns("make_vln_help"),
+                       icon(
+                          "circle-question",
+                          class = "fa-solid"
+                          ), 
+                       href = 
+                          paste0(
+                             "https://amc-heme.github.io/scExploreR/articles/",
+                             "scRNA_Plots_Explained.html"
+                             ),  
+                       target = "_blank"
+                     )
+                  ),
                value = FALSE,
                right = TRUE,
                status = "default"
+               ),
+             bsTooltip(
+                id = ns("make_vln_help"), 
+                title = 
+                   paste0(
+                      'Violin plots show the distribution of feature ',
+                      'expression and can be used to compare distributions in ',
+                      'expression between groups of cells. '
+                     ),
+                placement = "bottom", 
+                trigger = "hover",
+                options = NULL
              ),
+             
              # Switch for dot plot
              materialSwitch(
                inputId = ns("make_dot"),
-               label = "Dot Plot", 
+               label = 
+                 tagList(
+                   "Dot Plot", 
+                   a(id = ns("make_dot_help"),
+                     icon(
+                       "circle-question",
+                       class = "fa-solid"
+                     ), 
+                     href = 
+                       paste0(
+                         "https://amc-heme.github.io/scExploreR/articles/",
+                         "scRNA_Plots_Explained.html"
+                       ),  
+                     target = "_blank"
+                   )
+                 ),
                value = FALSE,
                right = TRUE,
                status = "default"
-             ),
+               ),
+             bsTooltip(
+               id = ns("make_dot_help"), 
+               title = 
+                 paste0(
+                   'For defined groups of cells, dot plots show the ',
+                   'average expression per cell group, as well as the ',
+                   'percentage of cells with non-zero expression of the ',
+                   'feature. Dot plots are especially useful for large ',
+                   'numbers of features.'
+                   ),
+                placement = "bottom", 
+                trigger = "hover",
+                options = NULL
+               ),
+             
              # Switch for ridge plot
              materialSwitch(
                inputId = ns("make_ridge"),
-               label = "Ridge Plot", 
+               label = 
+                  tagList(
+                     "Ridge Plot", 
+                     a(id = ns("make_ridge_help"),
+                       icon(
+                          "circle-question",
+                          class = "fa-solid"
+                       ), 
+                       href = 
+                          paste0(
+                             "https://amc-heme.github.io/scExploreR/articles/",
+                             "scRNA_Plots_Explained.html"
+                          ),  
+                       target = "_blank"
+                       )
+                     ),
                value = FALSE,
                right = TRUE,
                status = "default"
+               ),
+             bsTooltip(
+                id = ns("make_ridge_help"), 
+                title = 
+                   paste0(
+                      'Ridge plots show the distribution of feature ',
+                      'expression and can be used to compare distributions in ',
+                      'expression between groups of cells. '
+                   ),
+                placement = "bottom", 
+                trigger = "hover",
+                options = NULL
              ),
              
              # Switch for pie chart 
              # Only appears if a column for patient- or sample- level metadata
              # is defined
              if (!is.null(patient_colname())){
-               materialSwitch(
-                 inputId = ns("make_pie"),
-                 label = "Metadata Pie Chart", 
-                 value = FALSE,
-                 right = TRUE,
-                 status = "default"
-                 )
-               }
+                tagList(
+                   materialSwitch(
+                      inputId = ns("make_pie"),
+                      label = 
+                         tagList(
+                            "Metadata Pie Chart",
+                            a(id = ns("make_pie_help"),
+                              icon(
+                                 "circle-question",
+                                 class = "fa-solid"
+                              ), 
+                              href = 
+                                 paste0(
+                                    "https://amc-heme.github.io/scExploreR/articles/",
+                                    "scRNA_Plots_Explained.html"
+                                 ),  
+                              target = "_blank"
+                            )
+                         ), 
+                      value = FALSE,
+                      right = TRUE,
+                      status = "default"
+                   ),
+                   bsTooltip(
+                      id = ns("make_ridge_help"), 
+                      title = 
+                        paste0(
+                          'Pie charts summarize sample level metadata. The ',
+                          'charts show the number of samples in each group ',
+                          'of the chosen group by metadata variable.'
+                          ),
+                      placement = "bottom", 
+                      trigger = "hover",
+                      options = NULL
+                      ) 
+                   )
+                }
            ),#End div
          ),
          
