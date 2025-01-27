@@ -1,0 +1,317 @@
+---
+title: "Running scExploreR with Docker"
+output: html_document
+---
+
+```{scss document_css, echo = FALSE}
+/* Centers text and block elements */
+.center{
+  text-align: center;
+  /* Display must be set to block for centering to work */
+  display: block;
+  }
+
+.white-text{
+  color: white;
+}
+
+/* Bootstrap card elements */
+.card-header{
+  background-color: #CFB87C;
+  /* Adds a mrgin-top of 0 to the existing bootstrap class to remove white space
+   that appears when using the card component in an Rmd */
+  margin-top: 0px;
+}
+
+.card-body{
+  background-color: #E1E1E1; 
+  /* The border radius property is not properly inherited from the parent .card
+    element. The reason is unkown, but explicitly defining it here fixes 
+    the issue */
+  border-radius: 0px 0px var(--bs-card-border-radius) var(--bs-card-border-radius);
+}
+
+/* CSS for callouts
+   From https://codepen.io/superjaberwocky/pen/rLKxOa */
+   /* Requires SASS to be enabled, with sass package and "scss" code chunk*/
+.callout {
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid #eee;
+  /* If the border-radius is greater than border-left-width,  
+     the left border will curve inward onto the element's body,
+     creating a cresent-like shape*/
+  border-left-width: 8px;
+  border-radius: 8px;
+  h4, h5 {
+    margin-top: 0;
+    margin-bottom: 5px;
+  }
+  p:last-child {
+    margin-bottom: 0;
+  }
+  code {
+    border-radius: 3px;
+  }
+  & + .bs-callout {
+    margin-top: -5px;
+  }
+}
+
+/* Define properties for default, primary, info, etc. classes*/
+@each $name,$color in 
+  (default,#777),
+  (primary,#428bca),
+  (success,#5cb85c),
+  (danger,#d9534f),
+  (warning,#f0ad4e),
+  (info,#5bc0de), 
+  (bdc,#29527a){
+  .callout-#{$name} {
+    border-left-color: $color;
+    /* Background: color above, with an alpha hex value of '35'*/
+    background-color: #{$color + '35'};
+    h4, h5 {
+      color: $color;
+    }
+  }
+}
+
+/* Applied to output of code chunks. Causes a scrollbar to appear 
+   when the output extends beyond the max-height. */
+/* Adapted from https://bookdown.org/yihui/rmarkdown-cookbook/html-scroll.html */
+/* Classes are defined for several max heights */
+@each $height in 
+  80,
+  100,
+  300{
+  .scroll-#{$height} {
+    max-height: #{$height + "px"};
+    overflow-y: auto;
+    background-color: inherit;
+  }
+}
+
+/* Devin CSS for docker vignette */
+pre code {
+    /* Wrap long lines in code blocks */
+   /* white-space: pre-wrap; */
+    /* Break long words if necessary */
+    /* word-wrap: break-word; */
+    } 
+```
+
+# Running scExploreR with Docker
+
+This guide provides step-by-step instructions for setting up and running the scExploreR Shiny app using Docker. We'll cover building the Docker image, understanding the file structure, configuring the application, and running the app.
+
+## Table of Contents
+
+
+1. [Prerequisites](#prerequisites)
+3. [File Structure](#file-structure)
+4. [Step 1: Setting Up the Dockerfile](#step-1-setting-up-the-dockerfile)
+5. [Step 2: Configuring the Shiny Server](#step-2-configuring-the-shiny-server)
+6. [Step 3: Setting Up the Shiny Application](#step-3-setting-up-the-shiny-application)
+7. [Step 4: Configuring scExploreR](#step-4-configuring-scexplorer)
+8. [Step 5: Building the Docker Image](#step-5-building-the-docker-image)
+9. [Step 6: Running the Docker Container](#step-6-running-the-docker-container)
+10. [Troubleshooting](#troubleshooting)
+11. [References](#references)
+
+## Prerequisites
+
+- **Docker**: Ensure Docker is installed and running on your system. You can download it from the [official website](https://www.docker.com/products/docker-desktop).
+
+## File Structure
+
+Your project directory should have the following structure:
+
+```
+.
+│Dockerfile
+│shiny-server.conf    
+└───shiny-server/
+    └───project-name/
+        │   app.R
+        │   config.yaml
+        │   object-config.yaml
+        │   object.rds
+   
+```
+
+- **Dockerfile**: Instructions to build the Docker image.
+- **shiny-server.conf**: Configuration for the Shiny server.
+- **shiny-server/**: Directory containing the Shiny app files.
+- **project-name/**: Directory for the specific dataset/application.
+- **app.R**: Main R script to run the scExploreR app.
+- **config.yaml**: Configuration file specifying datasets and settings for scExploreR .
+- **object-config.yaml**: Configuration for the specific data object built using the scExploreR Config App.
+- **object.rds**: Serialized R data object containing your single-cell dataset.
+
+
+
+
+## Step 1: Setting Up the Dockerfile
+
+The ```Dockerfile``` specifies the environment and dependencies required to run scExploreR.
+```Dockerfile
+# Dockerfile
+
+FROM rocker/shiny-verse:latest
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libglpk-dev libhdf5-dev
+
+# Install essential R packages
+RUN R -e "install.packages('Seurat'); if (!library(Seurat, logical.return=T)) quit(status=10)"
+RUN R -e "remotes::install_github('bnprks/BPCells/r');  if (!library(BPCells, logical.return=T)) quit(status=10)"
+
+# Install Bioconductor packages
+RUN R -e "install.packages('BiocManager'); if (!library(BiocManager, logical.return=T)) quit(status=10)"
+RUN R -e "BiocManager::install(c('SummarizedExperiment', 'HDF5Array', 'SingleCellExperiment'))"
+RUN R -e "remotes::install_github('amc-heme/scExploreR');  if (!library(scExploreR, logical.return=T)) quit(status=10)"
+
+# Install additional system dependencies
+RUN apt-get install -y --no-install-recommends texlive-latex-base texlive-fonts-recommended texlive-fonts-extra texlive-latex-extra lmodern
+
+# Install additional R packages
+RUN R -e "install.packages(c('survminer','survival','tinytex','RColorBrewer','data.table','ggpubr','reshape2','viridis'))"
+RUN R -e "BiocManager::install(c('biomaRt','RTCGA.clinical'))"
+
+# Install more R packages
+RUN R -e "install.packages(c('shinythemes', 'thematic', 'kableExtra', 'TidyMultiqc', 'janitor', 'ggiraph', 'circlize', 'esquisse', 'ggprism', 'formulaic', 'heatmaply', 'bsicons'))"
+RUN R -e "BiocManager::install(c('tximport','DESeq2','fgsea','BiocParallel','ComplexHeatmap','sva', 'InteractiveComplexHeatmap'))"
+
+# Install Python dependencies using reticulate
+USER shiny
+RUN R -e "reticulate::install_miniconda()"
+RUN . /home/shiny/.local/share/r-miniconda/bin/activate \
+    && conda activate /home/shiny/.local/share/r-miniconda/envs/r-reticulate \
+    && /home/shiny/.local/share/r-miniconda/envs/r-reticulate/bin/python -m pip install --upgrade --no-user anndata scanpy
+
+USER root
+
+# Clean up and copy app files
+RUN rm -rf /srv/shiny-server
+COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
+COPY shiny-server/ /srv/shiny-server/
+```
+
+    
+## Step 2: Configuring the Shiny Server
+
+The ```shiny-server.conf``` file sets up the Shiny server to host our application.
+```shiny-server.conf
+
+# shiny-server.conf
+
+# Run applications as the "shiny" user
+run_as shiny;
+http_keepalive_timeout 600;
+
+# Define a server that listens on port 3838
+server {
+  listen 3838;
+
+  # Location at the base URL
+  location / {
+    # Set application idle timeout
+    app_idle_timeout 600;
+
+    # Host the directory of Shiny apps
+    site_dir /srv/shiny-server;
+
+    # Log all Shiny output
+    log_dir /var/log/shiny-server;
+
+    # Show an index of applications at the base URL
+    directory_index on;
+  }
+}
+```
+
+    
+## Step 3: Setting Up the Shiny Application
+
+The app.R script is the entry point for the Shiny app.
+```app.R
+# app.R
+
+setwd("/srv/shiny-server/aml")
+scExploreR::run_scExploreR(browser_config = "/srv/shiny-server/aml/config.yaml", launch_browser = FALSE)
+```
+
+- setwd: Sets the working directory to where our data and configuration files are located.
+- run_scExploreR: Launches the scExploreR app with the specified configuration.
+
+
+## Step 4: Configuring scExploreR
+
+The ```config.yaml``` file specifies datasets and settings for scExploreR.
+```config.yaml
+# config.yaml
+
+datasets:
+  aml_dataset:
+    object: "/srv/shiny-server/aml/object.rds"
+    config: "/srv/shiny-server/aml/object-config.yaml"
+```
+
+
+For detailed instructions on configuring datasets, refer to the scExploreR Dataset Setup Walkthrough.
+
+## Step 5: Building the Docker Image
+
+Navigate to the directory containing the Dockerfile and run:
+
+```bash
+docker build --platform=linux/amd64 -t scexplorer .
+```
+- ```--platform=linux/amd64``` : Builds the image for the amd64 architecture. (remove if not using ARM Mac)
+- ```-t scexplorer`` : Tags the image with the name scexplorer.
+- ```.``` : Specifies the current directory as the build context.
+
+
+### Important Notes
+
+- Build Time: Building the image may take some time as it installs several packages.
+- Troubleshooting: If you encounter errors, ensure that all package names and dependencies are correct.
+    
+    
+## Step 6: Running the Docker Container
+
+Run the Docker container with:
+```bash
+docker run --rm -p 3838:3838 scexplorer
+```
+
+# Accessing the Application
+
+Once the container is running, open your web browser and navigate to ```http://localhost:3838```. You should see the scExploreR interface.
+
+
+## Troubleshooting
+### Common Issues
+
+- Cannot Access App: Ensure the container is running and ```port 3838``` is not blocked by a firewall.
+- Data Loading Errors: Verify that the paths in ```config.yaml``` and `object-config.yaml` are correct and that the files exist in the specified locations.
+
+### Tips
+
+- Check Logs: Use Docker logs to identify issues by running ```bash docker logs <container_id> ```.
+
+- Interactive Shell: If needed, start a shell inside the container for debugging:
+
+```bash
+docker run -it --entrypoint /bin/bash -p 3838:3838 scexplorer
+```
+
+# References
+
+- [scExploreR GitHub Repository](https://github.com/amc-heme/scExploreR)
+    
+- [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html#configure-dataset-specific-scexplorer-settings-in-the-config-app)
+
+- [Docker Documentation](https://www.docker.com)
