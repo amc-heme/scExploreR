@@ -194,9 +194,14 @@ COPY shiny-server/ /srv/shiny-server/
     
 # Step 2: Configure the Shiny Server {#step-2}
 
-The `shiny-server.conf` file sets up the Shiny server to host our application.
+The `shiny-server.conf` file sets up the Shiny server to host scExploreR.
 
+<!-- Note containers must use ::: for the <div> and <h4> for the header 
+(not ####). They will not display properly on the pkgdown site otherwise. -->
+::: {.callout .callout-info}
+<h4>Note</h4>
 Port `3838` is used in the example below, but any port between 3000 and 8000 can be used, except for ports [blocked by browsers](https://fetch.spec.whatwg.org/#port-blocking) due to security concerns. *Invalid ports* include 3659, 4045, 5060, 5061, 6000, 6566, 6665-6669, 6679, and 6697. 
+:::
 
 ```shiny-server.conf
 
@@ -206,7 +211,7 @@ Port `3838` is used in the example below, but any port between 3000 and 8000 can
 run_as shiny;
 http_keepalive_timeout 600;
 
-# Define a server that listens on port 3838
+# Define a server that listens on port 3838 (or your chosen port)
 server {
   listen 3838;
 
@@ -281,14 +286,14 @@ docker build --platform=linux/amd64 -t scexplorer .
 - `-t scexplorer` : Tags the image with the name scexplorer.
 - `.` : Specifies the current directory as the build context.
 
-<!-- "Important" note container -->
-<div class="callout callout-info">
-#### **Note**
+<!-- Note containers must use ::: for the <div> and <h4> for the header 
+(not ####). They will not display properly on the pkgdown site otherwise. -->
+::: {.callout .callout-info}
+<h4>**Note**</h4>
 **Build Time:** Building the image may take some time as it installs several packages.
 
 **Troubleshooting:** If you encounter errors, ensure that all package names and dependencies are correct.
-</div>
-<!-- end "Important" note container -->
+:::
 
 # Step 7: Run the Docker Container {#step-7}
 
