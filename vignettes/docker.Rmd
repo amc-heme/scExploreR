@@ -254,7 +254,7 @@ datasets:
     
 # Step 5: Set up scExploreR Script {#step-5}
 
-The app.R script is the entry point for the scExploreR. This should be an R script with a call to `run_scExploreR`, with the `browser_config` parameter set to the path of the app config file created in step 4. 
+The `app.R` script defines how scExploreR will be ran. This file should be an R script with a call to `run_scExploreR`, with the `browser_config` parameter set to the path of the app config file created in step 4. 
 
 ```app.R
 # app.R
@@ -266,8 +266,8 @@ scExploreR::run_scExploreR(
   )
 ```
 
-- setwd: Sets the working directory to where our data and configuration files are located.
-- run_scExploreR: Launches the scExploreR app with the specified configuration.
+- `setwd`: Sets the working directory to where data and configuration files are located.
+- `run_scExploreR`: Launches the scExploreR app with the specified configuration.
 
 
 # Step 6: Build the Docker Image {#step-6}
