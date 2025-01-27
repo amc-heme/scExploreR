@@ -249,7 +249,8 @@ scExploreR::run_scExploreR(browser_config = "/srv/shiny-server/aml/config.yaml",
 
 ## Step 4: Configuring scExploreR
 
-The ```config.yaml``` file specifies datasets and settings for scExploreR.
+The `config.yaml` file specifies settings for scExploreR, and the paths of datasets to load in the app. This is the app config file (rather than the object config file). For more information on how to generate this file, see the [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html#create-an-app-config-file) article.
+
 ```config.yaml
 # config.yaml
 
@@ -258,9 +259,6 @@ datasets:
     object: "/srv/shiny-server/aml/object.rds"
     config: "/srv/shiny-server/aml/object-config.yaml"
 ```
-
-
-For detailed instructions on configuring datasets, refer to the scExploreR Dataset Setup Walkthrough.
 
 ## Step 5: Building the Docker Image
 
