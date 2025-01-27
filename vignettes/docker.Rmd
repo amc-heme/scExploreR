@@ -196,6 +196,8 @@ COPY shiny-server/ /srv/shiny-server/
 
 The `shiny-server.conf` file sets up the Shiny server to host our application.
 
+Port `3838` is used in the example below, but any port between 3000 and 8000 can be used, except for ports [blocked by browsers](https://fetch.spec.whatwg.org/#port-blocking) due to security concerns. *Invalid ports* include 3659, 4045, 5060, 5061, 6000, 6566, 6665-6669, 6679, and 6697. 
+
 ```shiny-server.conf
 
 # shiny-server.conf
@@ -290,20 +292,27 @@ docker build --platform=linux/amd64 -t scexplorer .
 
 # Step 7: Run the Docker Container {#step-7}
 
-Run the Docker container with:
+Run the Docker container with the command below.
+
 ```bash
 docker run --rm -p 3838:3838 scexplorer
 ```
 
+If you use a different port than `3838`, replace `3838` with your port number. For example, to run on port `3850`, use:
+
+```bash
+docker run --rm -p 3850:3850 scexplorer
+```
+
 # Accessing the Application
 
-Once the container is running, open your web browser and navigate to `http://localhost:3838`. You should see the scExploreR interface.
+Once the container is running, open your web browser and navigate to `http://localhost:3838` (If you use a different port, replace `3838` with your port number). You should see the scExploreR interface.
 
 
 # Troubleshooting
 ## Common Issues
 
-- Cannot Access App: Ensure the container is running and `port 3838` is not blocked by a firewall.
+- Cannot Access App: Ensure the container is running and the port chosen (`3838` in this tutorial) is not blocked by a firewall. Also ensure that the port chosen is not on the [list of ports considered unsafe](https://fetch.spec.whatwg.org/#port-blocking) and therefore blocked by browsers.
 - Data Loading Errors: Verify that the paths in `config.yaml` and `object-config.yaml` are correct and that the files exist in the specified locations.
 
 ## Tips
@@ -323,3 +332,5 @@ docker run -it --entrypoint /bin/bash -p 3838:3838 scexplorer
 - [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html)
 
 - [Docker Documentation](https://www.docker.com)
+
+- [List of Unsafe Ports](https://fetch.spec.whatwg.org/#port-blocking)
