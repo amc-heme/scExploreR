@@ -237,10 +237,24 @@ scExploreR::run_config(
 )
 ```
 
-    
-# Step 4: Set Up the Shiny Application {#step-4}
 
-The app.R script is the entry point for the Shiny app. This should involve a call to `run_scExploreR` 
+# Step 4: Generate App Config File {#step-4}
+
+The `config.yaml` file specifies settings for scExploreR, and the paths of datasets to load in the app. This is the app config file (rather than the object config file). For more information on how to generate this file, see the [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html#create-an-app-config-file) article.
+
+```config.yaml
+# config.yaml
+
+datasets:
+  dataset_name:
+    object: "/srv/shiny-server/project-name/object.rds"
+    config: "/srv/shiny-server/project-name/object-config.yaml"
+```
+
+    
+# Step 5: Set up scExploreR Script {#step-5}
+
+The app.R script is the entry point for the scExploreR. This should be an R script with a call to `run_scExploreR`, with the `browser_config` parameter set to the path of the app config file created in step 4. 
 
 ```app.R
 # app.R
@@ -255,18 +269,6 @@ scExploreR::run_scExploreR(
 - setwd: Sets the working directory to where our data and configuration files are located.
 - run_scExploreR: Launches the scExploreR app with the specified configuration.
 
-# Step 5: Generate App Config File {#step-5}
-
-The `config.yaml` file specifies settings for scExploreR, and the paths of datasets to load in the app. This is the app config file (rather than the object config file). For more information on how to generate this file, see the [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html#create-an-app-config-file) article.
-
-```config.yaml
-# config.yaml
-
-datasets:
-  dataset_name:
-    object: "/srv/shiny-server/project-name/object.rds"
-    config: "/srv/shiny-server/project-name/object-config.yaml"
-```
 
 # Step 6: Build the Docker Image {#step-6}
 
