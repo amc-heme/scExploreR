@@ -452,11 +452,18 @@ plot_module_ui <- function(id,
                 target="_blank")
             ),
             # Can select all options except "none"
-            choices =
-              c("Ascending" = "ascending",
-                "Descending" = "descending",
-                "Feature Expression" = "expression",
-                "Custom" = "custom")
+            choices = 
+              if(plot_type == "proportion"){
+                c("Ascending" = "ascending",
+                  "Descending" = "descending",
+                  "Proportion" = "proportion",
+                  "Custom" = "custom")
+              } else {
+                c("Ascending" = "ascending",
+                  "Descending" = "descending",
+                  "Feature Expression" = "expression",
+                  "Custom" = "custom")
+              },
             ),
           # Custom refactoring sortable input (shows when custom is chosen above)
           hidden(
@@ -469,7 +476,11 @@ plot_module_ui <- function(id,
             uiOutput(
               outputId = ns("expr_sort_menu")
               )
-            )
+            ),
+          # sort by proportion when proportion is chosen above
+          hidden(
+            uiOutput(ns("prop_sort_menu"))
+          )
           )
         } else NULL,
 
@@ -2533,6 +2544,8 @@ plot_module_server <- function(id,
                                  # When "expression", use the levels computed
                                  # based on average feature expression
                                  expr_sort_levels()
+                                 } else if (input$sort_groups == "proportion"){
+                                   prop_sort_levels()     # <--- use proportion-based sorting here
                                  } else NULL
                              # NULL is returned otherwise,
                              # or when input$sort_groups does not exist
@@ -3438,6 +3451,97 @@ plot_module_server <- function(id,
                            pull(id)
                        })
                    }
+                   
+                   # [2] PROPORTION SORTING SECTION (for proportion plots) ---------------------
+                   if (plot_type == "proportion") {
+                     
+                     # 2.a. UI for choosing a group_by level to sort by
+                     prop_sort_menu <- reactive({
+                       req(plot_selections$group_by())
+                       
+                       # We'll get the unique levels in the group_by variable,
+                       # so the user can choose which one to base the sorting on.
+                       group_by_vals <- SCUBA::unique_values(
+                         object = object(),
+                         var = plot_selections$group_by()
+                       )
+                       
+                       # Return a small tagList containing two selectInputs:
+                       # 1) Which group_by level to sort by
+                       # 2) Ascending or descending
+                       div(
+                         id = ns("prop_sort_menu"),
+                         class = "compact-options-container",
+                         selectInput(
+                           inputId = ns("sort_prop_value"),
+                           label = "Choose the Group By level:",
+                           choices = group_by_vals,
+                           selected = group_by_vals[1]
+                         ),
+                         selectInput(
+                           inputId = ns("sort_prop_order"),
+                           label = "Order of Sorting:",
+                           choices = c("Ascending"="ascending", "Descending"="descending"),
+                           selected = "descending"
+                         )
+                       )
+                     })
+                     
+                     # 2.b. Show/hide that interface if user picks "Proportion" in sort_groups
+                     observe({
+                       if (isTruthy(input$sort_groups) && input$sort_groups == "proportion"){
+                         showElement(
+                           id = "prop_sort_menu",
+                           anim = TRUE
+                         )
+                       } else {
+                         hideElement(
+                           id = "prop_sort_menu",
+                           anim = TRUE
+                         )
+                       }
+                     })
+                     
+                     # 2.c. Compute new levels for split_by in ascending/descending order of proportion
+                     prop_sort_levels <- reactive({
+                       req(input$sort_groups == "proportion")
+                       req(input$sort_prop_value)      # Which group_by level (e.g. "CD4 T cells")
+                       req(plot_selections$split_by()) # The variable we're re-ordering
+                       req(plot_switch())              # only run if plot is actually on
+                       
+                       # We'll fetch the relevant metadata as a data.frame with two columns:
+                       # group_by and split_by
+                       meta_df <- SCUBA::fetch_metadata(
+                         object(),
+                         vars = c(plot_selections$group_by(), plot_selections$split_by())
+                       )
+                       colnames(meta_df) <- c("group_by", "split_by")
+                       
+                       # For each split_by level, compute proportion of cells in that group_by level
+                       sum_df <- meta_df %>%
+                         dplyr::group_by(.data$split_by) %>%
+                         dplyr::summarize(
+                           prop_value = sum(.data$group_by == input$sort_prop_value) / dplyr::n(),
+                           .groups = "drop"
+                         )
+                       
+                       # Sort ascending or descending by prop_value
+                       if (input$sort_prop_order == "ascending"){
+                         sum_df <- dplyr::arrange(sum_df, .data$prop_value)
+                       } else {
+                         sum_df <- dplyr::arrange(sum_df, dplyr::desc(.data$prop_value))
+                       }
+                       
+                       # Return a character vector of the new factor levels for "split_by"
+                       sum_df$split_by
+                     })
+                     
+                     # 2.d. RENDER the UI
+                     output$prop_sort_menu <- renderUI({
+                       prop_sort_menu()
+                     })
+                   }
+                   
                  }
                  
                  ## 8.6. Render Dynamic UI ####
