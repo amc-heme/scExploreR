@@ -453,7 +453,7 @@ plot_module_ui <- function(id,
             ),
             # Can select all options except "none"
             choices = 
-              if(plot_type == "proportion"){
+              if (plot_type == "proportion"){
                 c("Ascending" = "ascending",
                   "Descending" = "descending",
                   "Proportion" = "proportion",
@@ -465,22 +465,25 @@ plot_module_ui <- function(id,
                   "Custom" = "custom")
               },
             ),
-          # Custom refactoring sortable input (shows when custom is chosen above)
+          # Menus for sorting groups depending on the options chosen above #
+          # Custom refactoring sortable input (for "custom")
           hidden(
             uiOutput(
               outputId = ns("refactor_sortable")
               )
             ),
-          # sort by feature expression when feature expression is chosen above
+          # Feature expression sorting (for "expression")
           hidden(
             uiOutput(
               outputId = ns("expr_sort_menu")
               )
             ),
-          # sort by proportion when proportion is chosen above
+          # Proportion sorting (for "proportion")
           hidden(
-            uiOutput(ns("prop_sort_menu"))
-          )
+            uiOutput(
+              outputId = ns("prop_sort_menu")
+              )
+            )
           )
         } else NULL,
 
@@ -489,9 +492,22 @@ plot_module_ui <- function(id,
         title = 
           paste0(
             'Use "Ascending" or "Descending" to sort by group name in ',
-            'ascending or descending alphanumeric order, respectively. Use ',
-            '"Feature Expression" to sort by average expression in each group, ',
-            'and "custom" to define a custom order.'
+            'ascending or descending alphanumeric order, respectively. ',
+            # Tooltip text depends on plot type
+            if (plot_type == "proportion"){
+              paste0(
+                'Use "proportion" to sort proportion plots by the proportion ',
+                'in a chosen group, and "custom" to define a custom order.'
+              )
+            } else if (plot_type %in% c("violin", "ridge", "dot")){
+              paste0(
+                # Violin, ridge, dot plots: expression sorting
+                'Use "Feature Expression" to sort by average expression in ',
+                'each group, and "custom" to define a custom order.'
+              )
+            } else {
+              'Use "custom" to define a custom order.'
+            }
             ),
         placement = "top", 
         trigger = "hover",
@@ -2545,7 +2561,9 @@ plot_module_server <- function(id,
                                  # based on average feature expression
                                  expr_sort_levels()
                                  } else if (input$sort_groups == "proportion"){
-                                   prop_sort_levels()     # <--- use proportion-based sorting here
+                                   # When "propportion" use levels from sorting
+                                   # based on cell proportions
+                                   prop_sort_levels()
                                  } else NULL
                              # NULL is returned otherwise,
                              # or when input$sort_groups does not exist
@@ -3452,10 +3470,9 @@ plot_module_server <- function(id,
                        })
                    }
                    
-                   # [2] PROPORTION SORTING SECTION (for proportion plots) ---------------------
+                   ### 8.4.5. Sorting by Cell type proportion ####
                    if (plot_type == "proportion") {
-                     
-                     # 2.a. UI for choosing a group_by level to sort by
+                     #### 8.4.5.1. UI for sorting by proportion ####
                      prop_sort_menu <- reactive({
                        req(plot_selections$group_by())
                        
@@ -3466,28 +3483,29 @@ plot_module_server <- function(id,
                          var = plot_selections$group_by()
                        )
                        
-                       # Return a small tagList containing two selectInputs:
-                       # 1) Which group_by level to sort by
-                       # 2) Ascending or descending
                        div(
                          id = ns("prop_sort_menu"),
                          class = "compact-options-container",
+                         # Menu to choose value of metadata variable for sorting
                          selectInput(
                            inputId = ns("sort_prop_value"),
                            label = "Choose the Group By level:",
                            choices = group_by_vals,
                            selected = group_by_vals[1]
                          ),
+                         # Menu to choose ascending or descending order
                          selectInput(
                            inputId = ns("sort_prop_order"),
                            label = "Order of Sorting:",
-                           choices = c("Ascending"="ascending", "Descending"="descending"),
+                           choices = 
+                             c("Ascending" = "ascending", 
+                               "Descending" = "descending"),
                            selected = "descending"
                          )
                        )
                      })
                      
-                     # 2.b. Show/hide that interface if user picks "Proportion" in sort_groups
+                     #### 8.4.5.2. Show/hide proportion sorting UI ####
                      observe({
                        if (isTruthy(input$sort_groups) && input$sort_groups == "proportion"){
                          showElement(
@@ -3502,47 +3520,53 @@ plot_module_server <- function(id,
                        }
                      })
                      
-                     # 2.c. Compute new levels for split_by in ascending/descending order of proportion
-                     prop_sort_levels <- reactive({
-                       req(input$sort_groups == "proportion")
-                       req(input$sort_prop_value)      # Which group_by level (e.g. "CD4 T cells")
-                       req(plot_selections$split_by()) # The variable we're re-ordering
-                       req(plot_switch())              # only run if plot is actually on
+                     #### 8.4.5.3. Perform sorting and define new levels ####
+                     prop_sort_levels <- 
+                       reactive({
+                         req(input$sort_groups == "proportion")
+                         req(input$sort_prop_value)      # Which group_by level (e.g. "CD4 T cells")
+                         req(plot_selections$split_by()) # The variable we're re-ordering
+                         req(plot_switch())              # only run if plot is actually on
+                         # We'll fetch the relevant metadata as a data.frame 
+                         # with two columns, group_by and split_by
+                         meta_df <- 
+                           SCUBA::fetch_metadata(
+                            object(),
+                            vars = 
+                              c(plot_selections$group_by(), 
+                                plot_selections$split_by()
+                                )
+                            )
+                         
+                         colnames(meta_df) <- c("group_by", "split_by")
                        
-                       # We'll fetch the relevant metadata as a data.frame with two columns:
-                       # group_by and split_by
-                       meta_df <- SCUBA::fetch_metadata(
-                         object(),
-                         vars = c(plot_selections$group_by(), plot_selections$split_by())
-                       )
-                       colnames(meta_df) <- c("group_by", "split_by")
-                       
-                       # For each split_by level, compute proportion of cells in that group_by level
-                       sum_df <- meta_df %>%
-                         dplyr::group_by(.data$split_by) %>%
-                         dplyr::summarize(
-                           prop_value = sum(.data$group_by == input$sort_prop_value) / dplyr::n(),
+                         # For each group in the split by variable, compute 
+                         # proportion of cells in the chosen group by value
+                         sum_df <- 
+                           meta_df %>%
+                           dplyr::group_by(.data$split_by) %>%
+                           dplyr::summarize(
+                             prop_value = 
+                               sum(.data$group_by == input$sort_prop_value) / 
+                               dplyr::n(),
                            .groups = "drop"
-                         )
+                           )
+                         
+                         # Sort ascending or descending by prop_value
+                         if (input$sort_prop_order == "ascending"){
+                           sum_df <- 
+                             dplyr::arrange(sum_df, .data$prop_value)
+                         } else {
+                           sum_df <- 
+                             dplyr::arrange(sum_df, dplyr::desc(.data$prop_value))
+                         }
                        
-                       # Sort ascending or descending by prop_value
-                       if (input$sort_prop_order == "ascending"){
-                         sum_df <- dplyr::arrange(sum_df, .data$prop_value)
-                       } else {
-                         sum_df <- dplyr::arrange(sum_df, dplyr::desc(.data$prop_value))
-                       }
-                       
-                       # Return a character vector of the new factor levels for "split_by"
-                       sum_df$split_by
-                     })
-                     
-                     # 2.d. RENDER the UI
-                     output$prop_sort_menu <- renderUI({
-                       prop_sort_menu()
-                     })
+                         # Return a character vector of the new factor 
+                         # levels for "split_by"
+                         sum_df$split_by
+                       })
+                     }
                    }
-                   
-                 }
                  
                  ## 8.6. Render Dynamic UI ####
                  output$ncol_slider <-
@@ -3580,34 +3604,21 @@ plot_module_server <- function(id,
                    )
                  }
                  
+                 # Interface to sort by feature expression
                  if (plot_type %in% c("violin", "dot", "ridge")){
                    output$expr_sort_menu <-
                      renderUI({
                        expr_sort_menu()
                      })
-                   
-                   # The UI should still compute when hidden, so it displays 
-                   # smoothly when the user selects "custom"
-                   # outputOptions(
-                   #   output, 
-                   #   "expr_sort_menu", 
-                   #   suspendWhenHidden = FALSE
-                   # )
                  }
                  
-                 #render UI for help icon html anchors to full documentation 
-                 # output$plot_tab_anchor <- renderUI({
-                 #     a(
-                 #       id = ns("plot_info_icon"),
-                 #       icon("info-circle"),
-                 #       href = paste0(
-                 #         "https://amc-heme.github.io/scExploreR/articles/",
-                 #         "full_documentation.html#",
-                 #         plot_to_anchor()),
-                 #         target = "_blank"
-                 #       )
-                 # })
-                 #  
+                 # Interface to sort by proportion
+                 if (plot_type == "proportion"){
+                   output$prop_sort_menu <- renderUI({
+                     prop_sort_menu()
+                   })
+                 }
+                 
                  # 9. Separate Features Entry: Dynamic Update ------------------
                  # Observers for separate features only update for server
                  # instances where features_entered
