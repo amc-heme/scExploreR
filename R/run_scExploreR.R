@@ -1432,10 +1432,11 @@ run_scExploreR <-
             names(reductions) <- labels
 
           } else {
-            # Otherwise, get reductions in object, and use the default
-            # (UMAP is placed first, if it exists)
+            # Otherwise, get reductions in object and use display names
+            # equal to how they are named in the object
             reductions <- scExploreR:::reduction_names(object())
 
+            # If the "umap" reduction exists, place it first
             if ("umap" %in% reductions){
               reductions <-
                 c(
@@ -1503,7 +1504,8 @@ run_scExploreR <-
 
       ## 2.10. Store number of cells in full object ####
       # used to determine if a subset is selected.
-      # TODO: does this apply to non-CITEseq datasets?
+      # It was previously commented here that this may not apply to 
+      # non-CITE-seq datasets, but I don't see how this would be the case
       n_cells_original <-
         reactive({
           req(object())
@@ -1517,8 +1519,6 @@ run_scExploreR <-
       # When object is changed, render a new data dictionary to www/
       observeEvent(
         object(),
-        #ignoreNULL = FALSE,
-        #ignoreInit = TRUE,
         {
           # Gather parameters used by document
           params <-
