@@ -830,9 +830,14 @@ run_scExploreR <-
             inputId = "open_dataset_window",
             label = "Choose Dataset",
             class = "blue_hover"
+            ),
+          actionLink(
+            inputId = "new_metadata_modal",
+            label = "Add Metadata to Object",
+            class = "blue_hover"
+            )
           )
-        )
-      ),
+        ),
 
       # Include list of scripts built from .js files in www/ directory
       js_list
@@ -977,16 +982,17 @@ run_scExploreR <-
       observeEvent(
         eventExpr =
           {
-            # eventExpr: observer executes when this expression evaluates to TRUE
-            # Observer should execute at startup (when input$confirm_selection is
-            # NULL) and when the window to change datasets is closed.
+            # eventExpr: observer executes when this expression evaluates to 
+            # TRUE Observer should execute at startup (when 
+            # input$confirm_selection is NULL) and when the window to change
+            # datasets is closed.
             if (is.null(input$confirm_selection)){
               # Before the dataset window is created for the first time,
               # respond to startup()
               isTruthy(startup())
             } else {
-              # When the button to close the window is defined for the first time,
-              # execute in response to the button
+              # When the button to close the window is defined for the first 
+              # time, execute in response to the button
               isTruthy(close_dataset_modal())
             }
           },
@@ -1211,7 +1217,15 @@ run_scExploreR <-
           dataset_info$last_object_key <- selected_key()
         })
 
-      # 2. Initialize Variables specific to object and config file -----------------
+      # X. Modal to upload new metadata ----
+      # Modal is created from the add_metadata module
+      add_metadata_server(
+        id = "add_metadata", 
+        modal_open_button = reactive({input$new_metadata_modal})
+      )
+      
+      
+      # 2. Initialize Variables specific to object and config file -------------
       # Split config file into metadata and assay lists for use downstream
       ## 2.1. Metadata_config ####
       metadata_config <-
@@ -1222,7 +1236,7 @@ run_scExploreR <-
           {
             config()$metadata
           })
-
+      
       ## 2.2. Assay Information ####
       ### 2.2.1. Assay_config ####
       # Assay-specific options in config file
