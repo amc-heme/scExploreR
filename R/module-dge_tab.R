@@ -840,7 +840,8 @@ dge_tab_server <- function(id,
                     session,
                     cnd_message = cnd$message,
                     # Generic error messages only
-                    error_list = list()
+                    error_list = list(),
+                    source_reactive = "dge_table, dge_tab module"
                   )
                   
                   # Hide the spinners
