@@ -608,7 +608,8 @@ dge_tab_server <- function(id,
                     cnd_message = err_cnd$message,
                     # Uses a list of
                     # subset-specific errors
-                    error_list = error_list$subset_errors
+                    error_list = error_list$subset_errors,
+                    source_reactive = "subset, dge_tab module"
                   )
                   
                   # Hide the spinners

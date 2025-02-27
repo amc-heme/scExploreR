@@ -7,6 +7,7 @@
 #' 
 #' @param session Shiny session object.
 #' @param cnd_message the error message read by tryCatch.
+#' @param source_reactive character vector to display source triggering error
 #' @param error_list a list of list objects generated with the error_data() 
 #' function from this package, connecting error messages to UI for shiny 
 #' notifications.
@@ -21,59 +22,23 @@ error_handler <-
     cnd_message,
     error_list = list(),
     issue_href = "https://github.com/amc-heme/DataExploreShiny/issues", 
-    duration = NULL
+    duration = NULL,
+    source_reactive = "Unknown source" #default value
     ){
-    # Log full error message to console
-    message(glue("Error occured: {cnd_message}"))
-    # Error match: conditional that is set to TRUE when an error is found, 
-    # signaling the function not to run the code for displaying a generic
-    # error message
-    error_match <- FALSE
-    # Loop through all defined error types (error_list)
-    for (error_type in error_list){
-      # If the condition message (the error that is returned) matches the error 
-      # message of a stored error type (error_type$err_message), show the 
-      # notification associated with that error type
-      print(glue("Testing error: {error_type$err_message}"))
-      
-      if (grepl(pattern = error_type$err_message, x = cnd_message)){
-        message(glue("matched."))
-    
-        message(glue("Error message: {cnd_message}"))
-        
-        #log full error to the console for matched errors
-        message(glue("Matched error: {error_type$err_message}"))
-        
-        # Display Notification
-        showNotification(
-          ui = "An error occured.",
-          # Duration = NULL will make the message 
-          # persist until dismissed (default)
-          duration = duration,
-          id = session$ns(error_type$notification_id),
-          session = session
-        )
-        
-        # If error is found, set error_match to TRUE and break the loop 
-        error_match <- TRUE
-        break
-      }
-      
-    }
-    
-    # If all error types are looped through and no match is found, 
-    # display a generic error message
-    if (error_match == FALSE){
-      #log full error to the console for unmatched errors
-      message(glue("Unmatched error: {cnd_message}"))
+      #log full error to the console 
+      rlog::log_error(glue("Error was triggered from the following reactive
+                           expression: {source_reactive}: {cnd_message}"))
       #Define UI for generic error
       other_err_ui <- 
         icon_notification_ui(
           icon_name = "skull-crossbones",
-          "An error occured. Please ",
+          tagList(
+          glue("An error was triggered from the following reactive
+               expression: {source_reactive}. Please"),
           github_link("report this issue"),
           " with a screenshot of the app window."
           )
+        )
       
       # Display Notification
       showNotification(
@@ -84,5 +49,4 @@ error_handler <-
         id = session$ns("other_error"),
         session = session
         )
-    }
 }
