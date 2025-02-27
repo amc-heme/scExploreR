@@ -1203,7 +1203,8 @@ plots_tab_server <- function(id,
                                cnd_message = cnd$message,
                                # Uses a list of
                                # subset-specific errors
-                               error_list = error_list$subset_errors
+                               error_list = error_list$subset_errors,
+                               source_reactive = "plots_s_sub, plots_tab module"
                                )
 
                              # Return NULL for subset when an
