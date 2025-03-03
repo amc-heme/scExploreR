@@ -147,10 +147,11 @@ add_metadata_server <-
                       ),
                     # Loading spinner that shows while a preview 
                     # of the join proceeds
-                    # div(
-                    #   id = ns("preview_spinner"),
-                    #   waiter::spin_loaders(id = 2, color = "#555588"),
-                    #   ),
+                    div(
+                      id = ns("preview_spinner"),
+                      waiter::spin_loaders(id = 2, color = "#555588"),
+                      ),
+                    # Shows status of preview join to test for warnings, errors
                     uiOutput(
                       outputId = ns("preview_results")
                       )
@@ -177,8 +178,8 @@ add_metadata_server <-
             read.csv(
               file = input$file$datapath,
               header = input$has_header
-            )
-          })
+              )
+            })
         
         # 4. Display summary of uploaded table ####
         ## 4.1. Initialize table in DT ####
@@ -746,14 +747,19 @@ add_metadata_server <-
         })
         
         # 6. Preview Join ####
-        output$preview_results <-
-          renderUI({
+        ## 6.1. Join Preview Computation ####
+        # Store warnings, if any, in join warnings
+        # (the preview_error reactiveValues state variable handles errors)
+        join_warnings <-
+          reactive({
             req(input$upload_sample_colname)
             req(input$object_sample_colname)
             
             # Set the error state to FALSE if it was set to TRUE in a previous
             # preview
             add_metadata_state$preview_error <- FALSE
+            # Set state of preview to "in_progress" to show spinner
+            add_metadata_state$preview_status <- "in_progress"
             
             # Uploaded table
             new_metadata <- isolate({metadata_table_upload()})
@@ -764,7 +770,7 @@ add_metadata_server <-
             other_colnames <- 
               colnames(new_metadata)[
                 colnames(new_metadata) != input$upload_sample_colname
-                ]
+              ]
             
             # Run a join using the updated object table and a limited table
             # using the variables in the config file
@@ -774,10 +780,7 @@ add_metadata_server <-
               SCUBA::fetch_metadata(
                 object = isolate({object()}),
                 vars = isolate({object_meta_varnames()})
-                )
-            
-            print("Object table")
-            print(str(object_table))
+              )
             
             # Form instructions for joining (`by` parameter input of left_join)
             # By will map the sample variable in the object metadata  
@@ -791,66 +794,202 @@ add_metadata_server <-
                 # If an error occurs during the join, 
                 # set the error state to TRUE
                 add_metadata_state$preview_error <- TRUE
-                },
+                
+                return(NULL)
+              },
               {
                 left_join(
                   new_metadata, 
                   object_table,
                   by = join_instructions
-                  )
-                })
+                )
+              })
             
-            # Test table produced by the join for irregularities
+            # Assuming the join proceeded without errors, test table 
+            # produced for irregularities
+            
             # Store a log of irregularities in `warnings`
             # If warnings are returned, a warning triangle will appear in the 
             # interface, with the warning text as a tooltip
             warnings <- c()
             
-            # Test if number of cells in the new table matches the number of 
-            # cells in the original object
-            # Number of cells in new table
-            n_cells <- nrow(new_object_metadata)
-            # Number of cells in object
-            n_cells_orig <- nrow(object_metadata)
-            
-            if (n_cells != n_cells_orig){
-              warnings <- 
-                c(warnings, 
-                  paste0(
-                    "The number of cells in the new table does not match ",
-                    "the number of cells in the original table."
+            if (!is.null(new_object_metadata)){
+              # Test if number of cells in the new table matches the number of 
+              # cells in the original object
+              # Number of cells in new table
+              n_cells <- nrow(new_object_metadata)
+              # Number of cells in object
+              n_cells_orig <- nrow(object_metadata)
+              
+              if (n_cells != n_cells_orig){
+                warnings <- 
+                  c(warnings, 
+                    paste0(
+                      "The number of cells in the new table does not match ",
+                      "the number of cells in the original table."
+                      )
                     )
-                  )
-              }
-            
-            # Tests each column added for NAs
-            # NAs may be a sign of an improper join, 
-            # especially if all values are NA.
-            for (added_column in other_colnames){
-              # Compute number of NA values
-              n_na <- sum(is.na(new_object_metadata[,added_column]))
+                }
               
-              # Percentage of NA values
-              pct_na <- (n_na/n_cells_orig)*100
-              
-              # Show different warnings for >0 Na values, and 100% NA values
-              if (pct_na > 0 & pct_na < 100){
-                c(warnings, 
-                  paste0(
-                    pct_na, "% of cells have undefined values for ", 
-                    added_column, "."
+              # Test each column added for NAs
+              # NAs may be a sign of an improper join, 
+              # especially if all values are NA.
+              for (added_column in other_colnames){
+                # Compute number of NA values
+                n_na <- sum(is.na(new_object_metadata[,added_column]))
+                
+                # Percentage of NA values
+                pct_na <- (n_na/n_cells_orig)*100
+                
+                # Show different warnings for >0 Na values, and 100% NA values
+                if (pct_na > 0 & pct_na < 100){
+                  c(warnings, 
+                    paste0(
+                      pct_na, "% of cells have undefined values for ", 
+                      added_column, "."
                     )
                   )
                 } else if (pct_na == 100){
-                  paste0(
-                    "All cells have undefined values for ", added_column, ". ",
-                    "Please verify the variable selected in the sample maps ",
-                    "correctly to the selected variable in the object, and ",
-                    "that data exists for this variable in the uploaded table."
+                  c(warnings, 
+                    paste0(
+                      "All cells have undefined values for ", added_column, ". ",
+                      "Please verify the variable selected in the sample maps ",
+                      "correctly to the selected variable in the object, and ",
+                      "that data exists for this variable in the uploaded table."
+                      )
                     )
-                  }
                 }
-              })
+              }
+            } 
+            
+            # Set state of preview to "complete" to remove spinner
+            add_metadata_state$preview_status <- "complete"
+            
+            # Enable the "Confirm" button if the join proceeded without errors
+            if (add_metadata_state$preview_error == FALSE){
+              shinyjs::enable(
+                id = "confirm"
+              )
+            }
+            
+            # Return the list of warnings
+            warnings
+          })
+        
+        ## 6.2. UI to display results ####
+        output$preview_results <-
+          renderUI({
+            req(add_metadata_state$preview_status == "complete")
+            
+            print("Error")
+            print(add_metadata_state$preview_error)
+            print("Warnings")
+            print(join_warnings())
+            
+            # Three possibilities for icons" success, warning, and error
+            # Success icon: no error, no earnings
+            if (add_metadata_state$preview_error == FALSE & 
+                !isTruthy(join_warnings())){
+                icon_notification_ui(
+                  icon = "circle-check",
+                  paste0(
+                    'No issues detected with the uploaded table and selections. ',
+                    'Press "Confirm" to proceed.'
+                    )
+                )
+            } else if (add_metadata_state$preview_error == FALSE & 
+                       isTruthy(join_warnings())){
+              # Warning icon: when no error is present, but warnings are
+              div(
+                # Display a warning icon and summary text side-by-side 
+                # in a flexbox container
+                div(
+                  style = "display: flex;",
+                  div(
+                    icon(
+                      "exclamation-triangle", 
+                      style = "display: inline-block; font-size: 1.7em;"
+                      )
+                    ),
+                  div(
+                    "Issues were detected with the join. See below for details."
+                    )
+                  ),
+                # Show each warning as a bullet point
+                tags$ul(
+                  tagList(
+                    lapply(
+                      join_warnings(),
+                      function(warning_text){
+                        tags$li(warning_text)
+                        }
+                      )
+                    )
+                  )
+                )
+              } else if (add_metadata_state$preview_error == TRUE){
+                # Error icon
+                icon_notification_ui(
+                  icon = "skull-crossbones",#"circle-xmark",
+                  paste0(
+                    'An error ocurred during the preview computation. Please ',
+                    'verify that an appropriate table has been uploaded, and ',
+                    'that the choice of the patient-level variable in the ',
+                    'uploaded is appropriate, and that it properly maps to the ',
+                    'corresponding sample-level variable in the object.'
+                    )
+                  )
+                }
+          })
+        
+        ## 6.3. Show/hide UI elements based on state of preview_status rv ####
+        # If the preview_status reactiveValues is "in_progress", show the spinner
+        observe({
+          spinner <- "preview_spinner"
+          preview_ui <- "preview_results"
+          
+          if (add_metadata_state$preview_status == "in_progress"){
+            # In progress: show spinner, hide preview UI
+            shinyjs::showElement(
+              id = spinner,
+              # Do this later
+              anim = FALSE
+              )
+            
+            shinyjs::hideElement(
+              id = preview_ui,
+              # Do this later
+              anim = FALSE
+            )
+          } else if (add_metadata_state$preview_status == "complete"){
+            # Complete: hide spinner, show preview UI
+            shinyjs::hideElement(
+              id = spinner,
+              # Do this later
+              anim = FALSE
+            )
+            
+            shinyjs::showElement(
+              id = preview_ui,
+              # Do this later
+              anim = FALSE
+            )
+          } else if (add_metadata_state$preview_status == "not_performed"){
+            # Starting state: "not_performed"
+            # Hide both elements in this case
+            shinyjs::hideElement(
+              id = spinner,
+              # Do this later
+              anim = FALSE
+            )
+            
+            shinyjs::hideElement(
+              id = preview_ui,
+              # Do this later
+              anim = FALSE
+            )
+          }
+        })
         
         # NextToLast. Respond to Cancel button ####
         observe({
