@@ -1221,7 +1221,34 @@ run_scExploreR <-
       # Modal is created from the add_metadata module
       add_metadata_server(
         id = "add_metadata", 
-        modal_open_button = reactive({input$new_metadata_modal})
+        modal_open_button = 
+          reactive(
+            label = "add_metadata_server-modal_open_button",
+            {input$new_metadata_modal}),
+        object = object,
+        object_meta_varnames = 
+          reactive(
+            label = "add_metadata_server-object_meta_varnames",
+            {
+              # Named vector of variables in config file
+              # Values are the columns as named in the object, names are the
+              # labels defined in the config file
+              var_labels <- 
+                sapply(
+                  config()$metadata, 
+                  function(category){category$label}
+                  )
+              
+              var_choices <-
+                sapply(
+                  config()$metadata, 
+                  function(category){category$meta_colname}
+                  )
+              
+              names(var_choices) <- var_labels
+              
+              var_choices
+              })
       )
       
       

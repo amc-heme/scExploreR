@@ -232,6 +232,21 @@ h2, h3 {
 }
 
 /* ------------------------------------------------------------------------- */
+/* Modals */
+.modal-xl{
+    /* Increase width of modal and get madal to adjust size to the 
+       size of the screen */
+    width: 75%;
+    /* Define a min width. On very small screens, the modal will occupy more 
+       than 75% of the screen*/
+    min-width: 300px;
+    /* Center modal with margin-left/right: auto */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+/* ------------------------------------------------------------------------- */
 /* Other Containers */
 
 /* Set height of group name text box for consistency with the group metadata
