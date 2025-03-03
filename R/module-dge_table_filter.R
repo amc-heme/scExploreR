@@ -667,7 +667,8 @@ dge_table_filtering_server <-
             updateSelectizeInput(
               session = session,
               inputId = "feature",
-              choices = all_features
+              choices = all_features,
+              server = TRUE
               )
           }
           
