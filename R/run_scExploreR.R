@@ -1330,11 +1330,35 @@ run_scExploreR <-
       ## 2.1. Metadata_config ####
       metadata_config <-
         eventReactive(
-          config(),
+          # Must respond to object to process added metadata
+          c(config(), object()),
           label = "metadata_config",
           ignoreNULL = FALSE,
           {
-            config()$metadata
+            metadata_config <- config()$metadata
+            
+            # Metadata added by user
+            # If metadata has been added, create config entries for the new
+            # metadata variables
+            if (isTruthy(new_metadata_module$vars_added())){
+              for (meta_var in new_metadata_module$vars_added()){
+                metadata_config[[meta_var]] <-
+                  list(
+                    # Label and colname are the same for now. These are 
+                    # determined by the table
+                    `meta_colname` = meta_var,
+                    `label` = meta_var,
+                    `description` = 
+                      paste0(
+                        'This variable was added using ',
+                        'the "Add Metadata" window.'
+                        ),
+                    `groups` = NULL
+                  )
+                }
+              }
+            
+            metadata_config
           })
       
       ## 2.2. Assay Information ####
@@ -1475,21 +1499,6 @@ run_scExploreR <-
               # Append name-value pair to vector
               meta_choices <- c(meta_choices, var_add)
               }
-
-            # If metadata has been added, append the added metadata to the 
-            # list of choices
-            if (isTruthy(new_metadata_module$vars_added())){
-              for (new_var in new_metadata_module$vars_added()){
-                # Construct key-value pair to append to the existing named list
-                var_add <- new_var
-                # For now, the key (display value) of the variable is the same
-                # is it was when added to the table
-                names(var_add) <- new_var
-                
-                # Append to existing vector of choices
-                meta_choices <- c(meta_choices, var_add)
-              }
-            }
             
             # Return meta_choices vector generated above
             meta_choices
@@ -1524,17 +1533,6 @@ run_scExploreR <-
                 unique_metadata[[meta_var]] <-
                   levels(unique_metadata[[meta_var]])
                 }
-            }
-            
-            # If new metadata has been added, add unique values for each var
-            if (isTruthy(new_metadata_module$vars_added())){
-              for (new_var in new_metadata_module$vars_added()){
-                unique_metadata[[new_var]] <-
-                  SCUBA::unique_values(
-                    object = object(),
-                    var = new_var
-                  )
-              }
             }
             
             unique_metadata
