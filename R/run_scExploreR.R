@@ -1217,40 +1217,113 @@ run_scExploreR <-
           dataset_info$last_object_key <- selected_key()
         })
 
-      # X. Modal to upload new metadata ----
+      # 1.8. Upload new metadata ####
+      ### 1.8.1. UI for uploading metadata from a table ####
       # Modal is created from the add_metadata module
-      add_metadata_server(
-        id = "add_metadata", 
-        modal_open_button = 
-          reactive(
-            label = "add_metadata_server-modal_open_button",
-            {input$new_metadata_modal}),
-        object = object,
-        object_meta_varnames = 
-          reactive(
-            label = "add_metadata_server-object_meta_varnames",
-            {
-              # Named vector of variables in config file
-              # Values are the columns as named in the object, names are the
-              # labels defined in the config file
-              var_labels <- 
-                sapply(
-                  config()$metadata, 
-                  function(category){category$label}
-                  )
-              
-              var_choices <-
-                sapply(
-                  config()$metadata, 
-                  function(category){category$meta_colname}
-                  )
-              
-              names(var_choices) <- var_labels
-              
-              var_choices
-              })
-      )
+      new_metadata_module <- 
+        add_metadata_server(
+          id = "add_metadata", 
+          modal_open_button = 
+            reactive(
+              label = "add_metadata-input-modal_open_button",
+              {input$new_metadata_modal}),
+          object = object,
+          object_meta_varnames = 
+            reactive(
+              label = "add_metadata-input-object_meta_varnames",
+              {
+                # Named vector of variables in config file
+                # Values are the columns as named in the object, names are the
+                # labels defined in the config file
+                var_labels <- 
+                  sapply(
+                    config()$metadata, 
+                    function(category){category$label}
+                    )
+                
+                var_choices <-
+                  sapply(
+                    config()$metadata, 
+                    function(category){category$meta_colname}
+                    )
+                
+                names(var_choices) <- var_labels
+                
+                var_choices
+                })
+        )
       
+      ### 1.8.2. Update object in response to uploaded metadata ####
+      observe(
+        label = "Add uploaded metadata to object",
+        {
+        req(new_metadata_module$uploaded_table())
+        req(new_metadata_module$join_instructions())
+        
+        uploaded_table <- new_metadata_module$uploaded_table()
+        
+        # Pull full metadata table
+        object_metadata <-
+          fetch_metadata(
+            isolate({object()}),
+            full_table = TRUE
+            )
+        
+        # Do the join
+        new_object_metadata <- tryCatch(
+          error = function(cnd){
+            # If an error occurs during the join, log results
+            print(paste0("Join error:", cnd))
+            
+            # Return NULL (which will stop downstream computation)
+            return(NULL)
+            },
+            {
+              new_object_metadata <- 
+                left_join(
+                  # Must preserve cell names (rownames), which are overrided 
+                  # by the join
+                  tibble::rownames_to_column(
+                    object_metadata, 
+                    var = "scExploreR_cell_id"
+                    ), 
+                  uploaded_table,
+                  by = new_metadata_module$join_instructions()
+                  )
+              
+              # Restore cell IDs after join
+              new_object_metadata <- 
+                new_object_metadata |> 
+                tibble::column_to_rownames("scExploreR_cell_id")
+              
+              # Return new table form tryCatch statement 
+              new_object_metadata
+            })
+        
+        
+        if (!is.null(new_object_metadata)){
+          # Replace NAs in the new columns with "undefined"
+          # For each added variable, replace NA values with "Undefined"
+          for (meta_var in new_metadata_module$vars_added()){
+            new_object_metadata[,meta_var] <-
+              case_when(
+                is.na(new_object_metadata[,meta_var]) ~ "Undefined",
+                TRUE ~ new_object_metadata[,meta_var]
+                )
+          }
+          
+          # Apply the new metadata table to the object, and save the resulting
+          # object to the object() reactive variable
+          print("Update object with new metadata")
+          object(
+            scExploreR:::update_object_metadata(
+              object = isolate({object()}), 
+              table = new_object_metadata
+              )
+            )
+          print("Object updated with new metadata.")
+          }
+      })
       
       # 2. Initialize Variables specific to object and config file -------------
       # Split config file into metadata and assay lists for use downstream
@@ -1383,27 +1456,41 @@ run_scExploreR <-
       # Object.
       meta_choices <-
         eventReactive(
-          meta_categories(),
+          # Must respond to object to process added metadata
+          c(meta_categories(), object()),
           label = "meta_choices generation",
           ignoreNULL = FALSE,
           {
             # Base vector: contains the "none" option
             meta_choices <- c("None" = "none")
-            # Iteratively populate vector using entries in the metadata section
-            # of the config file
-            for (category in meta_categories()){
-              # Use setNames from the stats package to add a new name-value
-              # pair to the vector
-              meta_choices <- setNames(
-                # Add `meta_colname` to vector
-                object = c(meta_choices,
-                           metadata_config()[[category]]$meta_colname),
-                # Add `label` to the vector as a name
-                nm = c(names(meta_choices),
-                       metadata_config()[[category]]$label)
-              )
-            }
+            # Iteratively populate vector using entries in the 
+            # metadata section of the config file
+            for (meta_var in meta_categories()){
+              # Form name-value pair for each added metadata variable 
+              # Value: the `colname` entry in the config file
+              var_add <- metadata_config()[[meta_var]]$meta_colname
+              # Name: `label` field in config file 
+              names(var_add) <- metadata_config()[[meta_var]]$label
+              
+              # Append name-value pair to vector
+              meta_choices <- c(meta_choices, var_add)
+              }
 
+            # If metadata has been added, append the added metadata to the 
+            # list of choices
+            if (isTruthy(new_metadata_module$vars_added())){
+              for (new_var in new_metadata_module$vars_added()){
+                # Construct key-value pair to append to the existing named list
+                var_add <- new_var
+                # For now, the key (display value) of the variable is the same
+                # is it was when added to the table
+                names(var_add) <- new_var
+                
+                # Append to existing vector of choices
+                meta_choices <- c(meta_choices, var_add)
+              }
+            }
+            
             # Return meta_choices vector generated above
             meta_choices
           })
@@ -1411,7 +1498,8 @@ run_scExploreR <-
       ## 2.7. Unique values for each metadata variable ####
       unique_metadata <-
         eventReactive(
-          metadata_config(),
+          # Must respond to object to process added metadata
+          c(metadata_config(), object()),
           label = "unique_metadata",
           ignoreNULL = FALSE,
           {
@@ -1435,9 +1523,20 @@ run_scExploreR <-
               if (class(unique_metadata[[meta_var]]) == "factor"){
                 unique_metadata[[meta_var]] <-
                   levels(unique_metadata[[meta_var]])
+                }
+            }
+            
+            # If new metadata has been added, add unique values for each var
+            if (isTruthy(new_metadata_module$vars_added())){
+              for (new_var in new_metadata_module$vars_added()){
+                unique_metadata[[new_var]] <-
+                  SCUBA::unique_values(
+                    object = object(),
+                    var = new_var
+                  )
               }
             }
-
+            
             unique_metadata
           })
 

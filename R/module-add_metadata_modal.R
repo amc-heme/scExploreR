@@ -42,6 +42,15 @@ add_metadata_server <-
         # the preview
         add_metadata_state$preview_status <- "not_performed"
         
+        # State variables for storing output
+        # Variables are updated only when the user selects "confirm"
+        # Table
+        add_metadata_state$uploaded_table <- NULL
+        # Join instructions
+        add_metadata_state$join_instructions <- c()
+        # New variables added by join
+        add_metadata_state$vars_added <- c()
+        
         # 1. Control state of window ####
         # Set state to open when the open link is selected
         observe({
@@ -181,298 +190,8 @@ add_metadata_server <-
               )
             })
         
-        # 4. Display summary of uploaded table ####
-        ## 4.1. Initialize table in DT ####
-        summary_table <-
-          reactive({
-            req(metadata_table_upload())
-            
-            # Generate HTML to display for each column
-            # HTML is a list of <th> tags for each element
-            column_html <-
-              if (isTruthy(input$upload_sample_colname)){
-                lapply(
-                  colnames(metadata_table_upload()),
-                  function(column_name){
-                    # Compute width of each column as a percentage, based on
-                    # the number of columns
-                    width_pct <- 100/length(colnames(metadata_table_upload()))
-                    
-                    # If the column is the currently selected sample column, 
-                    # print the name of the column, then add a badge indicating
-                    # it is the selected sample variable
-                    if (column_name == input$upload_sample_colname){
-                      tags$th(
-                        span(
-                          column_name,
-                          span("sample variable", class = "sample_variable_badge")
-                          ),
-                        # Apply computed column width
-                        style = paste0("width: ", width_pct, "%;")
-                        )
-                    } else {
-                      # Otherwise, just include the column name
-                      tags$th(
-                        column_name,
-                        # Apply computed column width
-                        style = paste0("width: ", width_pct, "%;")
-                        )
-                    }
-                  }
-                )
-              } else {
-                # If nothing has been chosen from the sample column menu,
-                # display all column names as-is in <th> tags
-                tagList(
-                  lapply(
-                    colnames(metadata_table_upload()),
-                    # Applies tags$th to each column name 
-                    tags$th
-                  )
-                )
-              }
-            
-            # Package html for column headers above into a table container, for
-            # passage to DT::datatable
-            container_html <-
-              tags$table(
-                tags$thead(
-                  tags$tr(
-                    column_html
-                    )
-                  )#,
-                # DT classes applied
-                # From https://datatables.net/manual/styling/classes
-                # class = "compact stripe cell-border hover"
-                )
-            
-            datatable(
-              metadata_table_upload(),
-              # DT classes applied
-              # From https://datatables.net/manual/styling/classes
-              class = "compact stripe cell-border hover",
-              # Disallow selection of rows/cells
-              selection = "none",
-              # Add filter interface above columns
-              # filter = "top",
-              # Remove rownames
-              rownames = FALSE,
-              # Custom HTML container from above for rownames
-              container = container_html,
-              # Allows custom HTML in headers to be evaluated
-              escape = FALSE
-              )
-          })
-        
-        ## 4.2. Render to output container ####
-        output$table <-
-          renderDT(
-            summary_table()
-          )
-        
-        ## 4.3. Show/hide table output container ####
-        observe({
-          target_id <- "table_summary"
-          
-          # Show table when a table has been loaded to the fileInput
-          if (isTruthy(metadata_table_upload())){
-            # showElement(
-            #   id = target_id,
-            #   anim = TRUE
-            #   )
-            } else {
-              hideElement(
-                id = target_id,
-                anim = TRUE
-              )
-            }
-        })
-        
-        # 4Alt. Summary UI ####
-        ## 4Alt.1. Render UI ####
-        output$join_summary <-
-          renderUI({
-            req(metadata_table_upload())
-            
-            # UI will summarize variables in the uploaded table and the 
-            # object. Data for each is pulled here. 
-            upload_varnames <- colnames(metadata_table_upload())
-            object_varnames <- length(object_meta_varnames())
-            
-            # If the user has selected a sample variable for either the uploaded 
-            # table or the object, the list will be re-ordered so the selected
-            # variables display first in the summary
-            
-            # Object column summary
-            div(
-              tags$h3("Summary", class = "center"),
-              fluidRow(
-                # This is the same as column(width = 6), but allows 
-                # additional columns to be assigned
-                div(
-                  class = "col-sm-6 summary_ui_column_left",
-                  tags$h4("Uploaded Table", class = "center"),
-                  tagList(
-                    lapply(
-                      # Iterate through index of column names in table
-                      1:length(colnames(metadata_table_upload())),
-                      function(i){
-                        # Name of the ith column
-                        column_i <- colnames(metadata_table_upload())[i]
-                        
-                        # Display name of each column in the uploaded table 
-                        # and summarize the unique values
-                        column_values <- 
-                          metadata_table_upload()[,i] |> 
-                          unique() |> 
-                          # Sort in ascending alphanumeric order
-                          stringr::str_sort(
-                            decreasing = FALSE,
-                            numeric = TRUE
-                          )
-                        
-                        div(
-                          class = "variable_summary",
-                          # Header
-                          div(
-                            # Name of column in uploaded table
-                            tags$b(
-                              paste0(column_i)
-                            ),
-                            # If the current variable is the selected sample 
-                            # column, add a badge indicating its status as the 
-                            # selected column
-                            if (isTruthy(input$upload_sample_colname)){
-                              if (column_i == input$upload_sample_colname){
-                                span(
-                                  "sample variable",
-                                  class = "sample_variable_badge"
-                                )
-                              }
-                            }
-                          ),
-                          
-                          # Content
-                          # Print unique values of table (up to 20)
-                          if (length(column_values) <= 20){
-                            tags$p(
-                              scExploreR:::vector_to_text(column_values)
-                            )
-                          } else {
-                            # UI for summarizing table variables with more than 20 
-                            # unique values: collapse excess variables into a "..."
-                            # with a BS tooltip that displays them on hover
-                            tags$p(
-                              paste(column_values, collapse = ", "),
-                              tags$span(
-                                # The tooltip needs an id to function
-                                id = ns(paste0("upload_column_", i, "_extra")),
-                                "..."
-                              )
-                            )
-                          }
-                        )
-                      }
-                    )
-                  )
-                ),
-                div(
-                  class = "col-sm-6 summary_ui_column_right",
-                  tags$h4("Object Metadata", class = "center"),
-                  tagList(
-                    lapply(
-                      # Iterate through index of metadata 
-                      # variables in config file
-                      1:length(object_meta_varnames()),
-                      function(i){
-                        # Name of the ith metadata variable
-                        var_i <- object_meta_varnames()[i]
-                        # Label of the variable, from config file
-                        var_i_label <- names(object_meta_varnames())[i]
-                        
-                        # Display name of each column in the uploaded table 
-                        # and summarize the unique values
-                        meta_var_values <- 
-                          SCUBA::unique_values(
-                            object(),
-                            var = var_i
-                          ) |> 
-                          # Sort in ascending alphanumeric order
-                          stringr::str_sort(
-                            decreasing = FALSE,
-                            numeric = TRUE
-                          )
-                        
-                        div(
-                          class = "variable_summary",
-                          # Header
-                          div(
-                            # Name of column in uploaded table
-                            tags$b(
-                              paste0(var_i_label), 
-                            ),
-                            # If the current variable is the selected sample 
-                            # column, add a badge indicating its status as the 
-                            # selected column
-                            if (isTruthy(input$object_sample_colname)){
-                              if (var_i == input$object_sample_colname){
-                                span(
-                                  "sample variable",
-                                  class = "sample_variable_badge"
-                                )
-                              }
-                            }
-                          ),
-                          
-                          # Content
-                          # Print unique values of table (up to 20)
-                          if (length(meta_var_values) <= 20){
-                            tags$p(
-                              scExploreR:::vector_to_text(meta_var_values)
-                            )
-                          } else {
-                            # UI for summarizing table variables with more than 
-                            # 20 unique values: collapse excess variables into 
-                            # a "..." with a BS tooltip that displays 
-                            # them on hover
-                            tags$p(
-                              paste(meta_var_values, collapse = ", "),
-                              tags$span(
-                                # The tooltip needs an id to function
-                                id = ns(paste0("upload_column_", i, "_extra")),
-                                "..."
-                                )
-                              )
-                            }
-                          )
-                        }
-                      )
-                    )
-                  )
-                )
-              )
-            })
-        
-        ## 4.2. Show/hide UI ####
-        # observe({
-        #   target_id <- "join_summary"
-        #   
-        #   # Show summary UI after a table has been uploaded
-        #   if (isTruthy(metadata_table_upload())){
-        #     # showElement(
-        #     #   id = target_id,
-        #     #   anim = TRUE
-        #     #   )
-        #   } else {
-        #     hideElement(
-        #       id = target_id,
-        #       anim = TRUE
-        #     )
-        #   }
-        # })
-        
-        # Alt_b. Summary of selected variables ####
-        ## Upload Sample Var Summary ####
+        # 4. Summary of selected variables ####
+        ## 4.1. Upload Sample Var Summary ####
         output$upload_sample_var_summary <-
           renderUI({
             req(input$upload_sample_colname)       
@@ -522,7 +241,7 @@ add_metadata_server <-
               )
             })
         
-        ## Summary of Sample Variable from Object ####
+        ## 4.2. Summary of Sample Variable from Object ####
         output$object_sample_var_summary <-
           renderUI({
             req(input$object_sample_colname)
@@ -586,6 +305,26 @@ add_metadata_server <-
               )
             })
         
+        ## 4.3. Show/hide ####
+        ### 4.3.1. Container for join variable summary ####
+        observe({
+          target_id <- "join_summary"
+          
+          # Show summary UI after a table has been uploaded
+          if (isTruthy(metadata_table_upload())){
+            showElement(
+              id = target_id,
+              anim = TRUE
+            )
+          } else {
+            hideElement(
+              id = target_id,
+              anim = TRUE
+            )
+          }
+        })
+        
+        ### 4.3.2. Upload sample variable summary ####
         observe({
           target_id <- "upload_sample_var_summary"
           
@@ -603,44 +342,7 @@ add_metadata_server <-
           }
         })
         
-        ## Show/Hide ####
-        ### Show/Hide full summary UI ####
-        observe({
-          target_id <- "join_summary"
-          
-          # Show summary UI after a table has been uploaded
-          if (isTruthy(metadata_table_upload())){
-            showElement(
-              id = target_id,
-              anim = TRUE
-              )
-          } else {
-            hideElement(
-              id = target_id,
-              anim = TRUE
-            )
-          }
-        })
-        
-        ### Summary of Sample Variable from Upload ####
-        observe({
-          target_id <- "upload_sample_var_summary"
-          
-          # Show summary UI after a table has been uploaded
-          if (isTruthy(metadata_table_upload())){
-            showElement(
-              id = target_id,
-              anim = TRUE
-              )
-          } else {
-            hideElement(
-              id = target_id,
-              anim = TRUE
-              )
-            }
-          })
-        
-        ### Summary of Sample Variable from Object ####
+        ### 4.3.2. Summary of sample variable from upload ####
         observe({
           target_id <- "object_sample_var_summary"
           
@@ -657,6 +359,113 @@ add_metadata_server <-
             )
           }
         })
+        
+        ## (Unused) Display summary of uploaded table ####
+        ### Initialize table in DT ####
+        # summary_table <-
+        #   reactive({
+        #     req(metadata_table_upload())
+        #     
+        #     # Generate HTML to display for each column
+        #     # HTML is a list of <th> tags for each element
+        #     column_html <-
+        #       if (isTruthy(input$upload_sample_colname)){
+        #         lapply(
+        #           colnames(metadata_table_upload()),
+        #           function(column_name){
+        #             # Compute width of each column as a percentage, based on
+        #             # the number of columns
+        #             width_pct <- 100/length(colnames(metadata_table_upload()))
+        #             
+        #             # If the column is the currently selected sample column, 
+        #             # print the name of the column, then add a badge indicating
+        #             # it is the selected sample variable
+        #             if (column_name == input$upload_sample_colname){
+        #               tags$th(
+        #                 span(
+        #                   column_name,
+        #                   span("sample variable", class = "sample_variable_badge")
+        #                   ),
+        #                 # Apply computed column width
+        #                 style = paste0("width: ", width_pct, "%;")
+        #                 )
+        #             } else {
+        #               # Otherwise, just include the column name
+        #               tags$th(
+        #                 column_name,
+        #                 # Apply computed column width
+        #                 style = paste0("width: ", width_pct, "%;")
+        #                 )
+        #             }
+        #           }
+        #         )
+        #       } else {
+        #         # If nothing has been chosen from the sample column menu,
+        #         # display all column names as-is in <th> tags
+        #         tagList(
+        #           lapply(
+        #             colnames(metadata_table_upload()),
+        #             # Applies tags$th to each column name 
+        #             tags$th
+        #           )
+        #         )
+        #       }
+        #     
+        #     # Package html for column headers above into a table container, for
+        #     # passage to DT::datatable
+        #     container_html <-
+        #       tags$table(
+        #         tags$thead(
+        #           tags$tr(
+        #             column_html
+        #             )
+        #           )#,
+        #         # DT classes applied
+        #         # From https://datatables.net/manual/styling/classes
+        #         # class = "compact stripe cell-border hover"
+        #         )
+        #     
+        #     datatable(
+        #       metadata_table_upload(),
+        #       # DT classes applied
+        #       # From https://datatables.net/manual/styling/classes
+        #       class = "compact stripe cell-border hover",
+        #       # Disallow selection of rows/cells
+        #       selection = "none",
+        #       # Add filter interface above columns
+        #       # filter = "top",
+        #       # Remove rownames
+        #       rownames = FALSE,
+        #       # Custom HTML container from above for rownames
+        #       container = container_html,
+        #       # Allows custom HTML in headers to be evaluated
+        #       escape = FALSE
+        #       )
+        #   })
+        
+        ### Render to output container ####
+        # output$table <-
+        #   renderDT(
+        #     summary_table()
+        #   )
+        
+        ### Show/hide table output container ####
+        # observe({
+        #   target_id <- "table_summary"
+        #   
+        #   # Show table when a table has been loaded to the fileInput
+        #   if (isTruthy(metadata_table_upload())){
+        #     # showElement(
+        #     #   id = target_id,
+        #     #   anim = TRUE
+        #     #   )
+        #     } else {
+        #       hideElement(
+        #         id = target_id,
+        #         anim = TRUE
+        #       )
+        #     }
+        # })
         
         # 5. Populate metadata addition menus ####
         ## 5.1. Variable to map to sample column ####
@@ -750,10 +559,22 @@ add_metadata_server <-
         ## 6.1. Join Preview Computation ####
         # Store warnings, if any, in join warnings
         # (the preview_error reactiveValues state variable handles errors)
+        # observe({
+        #   req(input$upload_sample_colname)
+        #   req(input$object_sample_colname)
+        #   
+        #   input$upload_sample_colname
+        #   input$object_sample_colname
+        #   print("This observer will run now")
+        # })
+        
         join_warnings <-
           reactive({
             req(input$upload_sample_colname)
             req(input$object_sample_colname)
+            
+            input$upload_sample_colname
+            input$object_sample_colname
             
             # Set the error state to FALSE if it was set to TRUE in a previous
             # preview
@@ -881,6 +702,7 @@ add_metadata_server <-
           renderUI({
             req(add_metadata_state$preview_status == "complete")
             
+            print("Render UI")
             print("Error")
             print(add_metadata_state$preview_error)
             print("Warnings")
@@ -991,19 +813,74 @@ add_metadata_server <-
           }
         })
         
-        # NextToLast. Respond to Cancel button ####
+        # TEMP. Just enable confirm button when all inputs are present ####
+        observe({
+          if (isTruthy(input$upload_sample_colname) &
+              isTruthy(input$object_sample_colname) &
+              isTruthy(metadata_table_upload())){
+            shinyjs::enable(
+              id = "confirm"
+              )
+          } else {
+            shinyjs::disable(
+              id = "confirm"
+              )
+            }
+          
+        })
+        
+        # 7. Respond to Cancel button ####
         observe({
           req(input$cancel)
           
           add_metadata_state$window_state <- "closed"
         })
         
-        # Last. Respond to Confirm button ####
+        # 8. Respond to Confirm button ####
         observe({
           req(input$confirm)
           
+          # Store the table and computed join instructions as a state variable
+          # for return from this module
+          # Table
+          add_metadata_state$uploaded_table <- metadata_table_upload()
+          
+          # Join instructions (passed to `by` in left_join)
+          join_instructions <- input$upload_sample_colname
+          names(join_instructions) <- input$object_sample_colname
+          
+          add_metadata_state$join_instructions <- join_instructions
+          
+          # Store names of variables added 
+          # (all variables that are not the indicated sample-level variable)
+          add_metadata_state$vars_added <- 
+            colnames(metadata_table_upload())[
+              colnames(metadata_table_upload()) != input$upload_sample_colname
+              ]
+          
           add_metadata_state$window_state <- "closed"
         })
-      }
-    )
-  }
+        
+        # 9. Return Table and Join Instructions ####
+        return(
+          list(
+            `uploaded_table` = 
+              reactive(
+                label = glue("{id}: Uploaded table"), 
+                {add_metadata_state$uploaded_table}
+                ),
+            `join_instructions` = 
+              reactive(
+                label = glue("{id}: Join instructions"), 
+                {add_metadata_state$join_instructions}
+                ),
+            `vars_added` =
+              reactive(
+                label = glue("{id}: Variables added"), 
+                {add_metadata_state$vars_added}
+                )
+              )
+            )
+          }
+        )
+    }
