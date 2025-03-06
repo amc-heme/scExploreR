@@ -99,9 +99,13 @@ scExploreR can be deployed with Docker to facilitate deployment on a server, or 
 
 This guide provides step-by-step instructions for setting up and running the scExploreR Shiny app using Docker. We'll cover building the Docker image, understanding the file structure, configuring the application, and running the app.
 
-::: {.callout .callout-tip}
-<h4>**scExploreR_docker Repository**</h4>
 
+```{=html}
+<!-- Note containers must use ::: for the <div> and <h4> for the header 
+(not ####). They will not display properly on the pkgdown site otherwise. -->
+```
+::: {.callout .callout-info}
+<h4>**scExploreR_docker Repository**</h4>
 All of this code is available to clone, build and run on the [amc-heme/scExploreR_docker GitHub repository](https://github.com/amc-heme/scExploreR_docker).
 :::
 
