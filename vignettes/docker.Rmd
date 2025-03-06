@@ -94,33 +94,40 @@ output: html_document
 ```
 
 <!-- Opening paragraph -->
+
 scExploreR can be deployed with Docker to facilitate deployment on a server, or to facilitate sharing scExploreR instances with your data with collaborators. Deployment on docker is not required to run scExploreR. For general instructions on setting up an app instance with your data, see the [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html) article.
 
 This guide provides step-by-step instructions for setting up and running the scExploreR Shiny app using Docker. We'll cover building the Docker image, understanding the file structure, configuring the application, and running the app.
 
+::: {.callout .callout-tip}
+<h4>**scExploreR_docker Repository**</h4>
+
+All of this code is available to clone, build and run on the [amc-heme/scExploreR_docker GitHub repository](https://github.com/amc-heme/scExploreR_docker).
+:::
+
 # Table of Contents
 
-1. [Prerequisites](#prerequisites)
-3. [File Structure](#file-structure)
-4. [Step 1: Set Up the Dockerfile](#step-1)
-5. [Step 2: Configure the Shiny Server](#step-2)
-6. [Step 3: Add Object and Genetate Object Config File](#step-3)
-6. [Step 4: Set Up the Shiny Application](#step-4)
-7. [Step 5: Generate App Config File](#step-5)
-8. [Step 6: Build the Docker Image](#step-6)
-9. [Step 7: Run the Docker Container](#step-7)
+1.  [Prerequisites](#prerequisites)
+2.  [File Structure](#file-structure)
+3.  [Step 1: Set Up the Dockerfile](#step-1)
+4.  [Step 2: Configure the Shiny Server](#step-2)
+5.  [Step 3: Add Object and Genetate Object Config File](#step-3)
+6.  [Step 4: Set Up the Shiny Application](#step-4)
+7.  [Step 5: Generate App Config File](#step-5)
+8.  [Step 6: Build the Docker Image](#step-6)
+9.  [Step 7: Run the Docker Container](#step-7)
 10. [Troubleshooting](#troubleshooting)
 11. [References](#references)
 
-# Prerequisites
+# Prerequisites {#prerequisites}
 
-- **Docker**: Ensure Docker is installed and running on your system. You can download it from the [official website](https://www.docker.com/products/docker-desktop).
+-   **Docker**: Ensure Docker is installed and running on your system. You can download it from the [official website](https://www.docker.com/products/docker-desktop).
 
-# File Structure
+# File Structure {#file-structure}
 
 Your project directory should have the following structure:
 
-```
+```         
 .
 │Dockerfile
 │shiny-server.conf    
@@ -133,21 +140,20 @@ Your project directory should have the following structure:
    
 ```
 
-- **Dockerfile**: Instructions to build the Docker image.
-- **shiny-server.conf**: Configuration for the Shiny server.
-- **shiny-server/**: Directory containing the Shiny app files.
-- **project-name/**: Directory for the specific dataset/application.
-- **app.R**: Main R script to run the scExploreR app.
-- **config.yaml**: Configuration file specifying datasets and settings for scExploreR .
-- **object-config.yaml**: Configuration for the specific data object built using the scExploreR Config App.
-- **object.rds**: Serialized R data object containing your single-cell dataset. This may be a Seurat object, a SingleCellExperiment object, or an anndata object.
-
+-   **Dockerfile**: Instructions to build the Docker image.
+-   **shiny-server.conf**: Configuration for the Shiny server.
+-   **shiny-server/**: Directory containing the Shiny app files.
+-   **project-name/**: Directory for the specific dataset/application.
+-   **app.R**: Main R script to run the scExploreR app.
+-   **config.yaml**: Configuration file specifying datasets and settings for scExploreR .
+-   **object-config.yaml**: Configuration for the specific data object built using the scExploreR Config App.
+-   **object.rds**: Serialized R data object containing your single-cell dataset. This may be a Seurat object, a SingleCellExperiment object, or an anndata object.
 
 # Step 1: Set Up the Dockerfile {#step-1}
 
-The ```Dockerfile``` specifies the environment and dependencies required to run scExploreR.
+The `Dockerfile` specifies the environment and dependencies required to run scExploreR.
 
-```Dockerfile
+``` dockerfile
 # Dockerfile
 
 FROM rocker/shiny-verse:latest
@@ -191,12 +197,11 @@ COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
 COPY shiny-server/ /srv/shiny-server/
 ```
 
-    
 # Step 2: Configure the Shiny Server {#step-2}
 
 The `shiny-server.conf` file sets up the Shiny server to host scExploreR.
 
-```shiny-server.conf
+``` shiny-server.conf
 
 # shiny-server.conf
 
@@ -225,7 +230,7 @@ server {
 }
 ```
 
-# Step 3: Add Object and Generate Object Config  {#step-3}
+# Step 3: Add Object and Generate Object Config {#step-3}
 
 You can add any number of objects in your project directory. Objects may be Seurat, SingleCellExperiment, or anndata objects. Each object needs an object config file to define assays/modalities and metadata to expose to end users. The object config file is generated by running `run_config_app` locally on the object(s) you wish to containerize. For more information, see the [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html#launching-the-config-app) Article.
 
@@ -237,12 +242,11 @@ scExploreR::run_config(
 )
 ```
 
-
 # Step 4: Generate App Config File {#step-4}
 
 The `config.yaml` file specifies settings for scExploreR, and the paths of datasets to load in the app. This is the app config file (rather than the object config file). For more information on how to generate this file, see the [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html#create-an-app-config-file) article.
 
-```config.yaml
+``` config.yaml
 # config.yaml
 
 datasets:
@@ -251,12 +255,11 @@ datasets:
     config: "/srv/shiny-server/project-name/object-config.yaml"
 ```
 
-    
 # Step 5: Set up scExploreR Script {#step-5}
 
-The `app.R` script defines how scExploreR will be ran. This file should be an R script with a call to `run_scExploreR`, with the `browser_config` parameter set to the path of the app config file created in step 4. 
+The `app.R` script defines how scExploreR will be ran. This file should be an R script with a call to `run_scExploreR`, with the `browser_config` parameter set to the path of the app config file created in step 4.
 
-```app.R
+``` app.r
 # app.R
 
 setwd("/srv/shiny-server/project-name")
@@ -266,25 +269,29 @@ scExploreR::run_scExploreR(
   )
 ```
 
-- `setwd`: Sets the working directory to where data and configuration files are located.
-- `run_scExploreR`: Launches the scExploreR app with the specified configuration.
-
+-   `setwd`: Sets the working directory to where data and configuration files are located.
+-   `run_scExploreR`: Launches the scExploreR app with the specified configuration.
 
 # Step 6: Build the Docker Image {#step-6}
 
 Navigate to the directory containing the Dockerfile and run:
 
-```bash
+``` bash
 docker build --platform=linux/amd64 -t scexplorer .
 ```
-- `--platform=linux/amd64` : Builds the image for the amd64 architecture. (remove if not using ARM Mac)
-- `-t scexplorer` : Tags the image with the name scexplorer.
-- `.` : Specifies the current directory as the build context.
 
+-   `--platform=linux/amd64` : Builds the image for the amd64 architecture. (remove if not using ARM Mac)
+-   `-t scexplorer` : Tags the image with the name scexplorer.
+-   `.` : Specifies the current directory as the build context.
+
+```{=html}
 <!-- Note containers must use ::: for the <div> and <h4> for the header 
 (not ####). They will not display properly on the pkgdown site otherwise. -->
+```
+
 ::: {.callout .callout-info}
 <h4>**Note**</h4>
+
 **Build Time:** Building the image may take some time as it installs several packages.
 
 **Troubleshooting:** If you encounter errors, ensure that all package names and dependencies are correct.
@@ -294,7 +301,7 @@ docker build --platform=linux/amd64 -t scexplorer .
 
 Run the Docker container with the command below.
 
-```bash
+``` bash
 docker run --rm -p 3838:3838 scexplorer
 ```
 
@@ -302,27 +309,27 @@ docker run --rm -p 3838:3838 scexplorer
 
 Once the container is running, open your web browser and navigate to `http://localhost:3838`. You should see the scExploreR interface.
 
+# Troubleshooting {#troubleshooting}
 
-# Troubleshooting
 ## Common Issues
 
-- Cannot Access App: Ensure the container is running and a port `3838` is not blocked by a firewall. 
-- Data Loading Errors: Verify that the paths in `config.yaml` and `object-config.yaml` are correct and that the files exist in the specified locations.
+-   Cannot Access App: Ensure the container is running and a port `3838` is not blocked by a firewall.
+-   Data Loading Errors: Verify that the paths in `config.yaml` and `object-config.yaml` are correct and that the files exist in the specified locations.
 
 ## Tips
 
-- Check Logs: Use Docker logs to identify issues by running `bash docker logs <container_id> `.
+-   Check Logs: Use Docker logs to identify issues by running `bash docker logs <container_id>`.
 
-- Interactive Shell: If needed, start a shell inside the container for debugging:
+-   Interactive Shell: If needed, start a shell inside the container for debugging:
 
-```bash
+``` bash
 docker run -it --entrypoint /bin/bash -p 3838:3838 scexplorer
 ```
 
-# References
+# References {#references}
 
-- [scExploreR GitHub Repository](https://github.com/amc-heme/scExploreR)
-    
-- [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html)
+-   [scExploreR GitHub Repository](https://github.com/amc-heme/scExploreR)
 
-- [Docker Documentation](https://www.docker.com)
+-   [Dataset Setup Walkthrough](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html)
+
+-   [Docker Documentation](https://www.docker.com)
