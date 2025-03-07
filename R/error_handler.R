@@ -33,8 +33,7 @@ error_handler <-
         icon_notification_ui(
           icon_name = "skull-crossbones",
           tagList(
-          glue("An error was triggered from the following reactive
-               expression: {source_reactive}. Please"),
+          glue("An error occurred. Please"),
           github_link("report this issue"),
           " with a screenshot of the app window."
           )
