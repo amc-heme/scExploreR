@@ -1,26 +1,5 @@
 #' Auto-Generate Config File
 #'
-#' For objects with many metadata variables, setting up a config file in the 
-#' config app GUI may be time-consuming. To facilitate deployment of such 
-#' objects, this function automatically generates a config file with all assays, 
-#' metadata, and reductions enabled, using the names for each as they appear 
-#' in the object. To customize settings for the object, the YAML file produced
-#' by this function can be edited by hand, or loaded into the config app via `run_config_app()`.
-#'
-#' The structure of the config file generated is as follows:
-#' 
-#' - All assays/experiments/modalities in the object are included, and the 
-#' display names for each are set to the names of each as they appear in the 
-#' object. The "suffixes" with the display name of the assay that appear on 
-#' plots to indicate the assay of origin for features will not display. This 
-#' must be set using the config app, or manually via the `suffix_human` key.
-#' - All categorical metadata variables are included. Numeric metadata variables 
-#' can't be customized in config files in the current version of scExploreR. 
-#' Numeric metadata may be exposed in the app for plotting and subsetting by 
-#' setting the `include_numeric_metadata` parameter to `TRUE`. Metadata variables
-#' are displayed in the order they were entered in the object metadata table.
-#' - All reductions are included and are named as they appear in the object.
-#'
 #' @param object path to a single-cell object to be configured. Currently, 
 #' Seurat, SingleCellExperiment, and anndata objects are supported. For 
 #' SingleCellExperiment objects with using HDF5 disk-backed storage via 
@@ -57,11 +36,13 @@
 #' sample-level pie charts in the plots tab. This should be a sample or patient 
 #' ID, for example. If this is not provided (the default), pie charts will not 
 #' appear in scExploreR.
+#'
+#' @returns A config file is generated at the path provided to `file`. Nothing is returned from the function.
 #' 
 #' @export
 #'
 #' @usage 
-#' generate_config_yaml(
+#' auto_config(
 #'  # Replace with path to your object
 #'  object = path_to_your_object,
 #'  file = output_config_path,
