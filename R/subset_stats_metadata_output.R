@@ -4,6 +4,8 @@
 #' the user-defined label for the metadata category and the unique values for 
 #' the category found in the subset
 #' 
+#' This function is not currently used anywhere in the app.
+#' 
 #' @param category the metadata variable (category) to create the output 
 #' container for 
 #' @param metadata_config metadata section of the config file, loaded in the 
