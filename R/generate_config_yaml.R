@@ -1,10 +1,7 @@
 #' Auto-Generate Config File
 #'
-#' @param object path to a single-cell object to be configured. Currently, 
-#' Seurat, SingleCellExperiment, and anndata objects are supported. For 
-#' SingleCellExperiment objects with using HDF5 disk-backed storage via 
-#' [HDF5Array], `object_path` should be a path to the directory containing 
-#' the se.rds and assays.h5 files for the object.
+#' @param object a single-cell object to be configured for use in scExploreR. Currently, 
+#' Seurat, SingleCellExperiment, and anndata objects are supported.
 #' @param file path specifying where the output config file should be saved. 
 #' This should end in ".yaml".
 #' @param object_name a single-length character vector with the display name 

@@ -78,8 +78,6 @@ appear in scExploreR.}
 }
 \value{
 A config file is generated at the path provided to \code{file}. Nothing is returned from the function.
-
-A config file is generated at the path provided to \code{file}. Nothing is returned from the function.
 }
 \description{
 For objects with many metadata variables, setting up a config file in the
@@ -90,7 +88,7 @@ in the object. To customize settings for the object, the YAML file produced
 by this function can be edited by hand, or loaded into the config app via \code{run_config_app()}.
 }
 \details{
-The stucture of the config file is as follows:
+The structure of the config file generated is as follows:
 \itemize{
 \item All assays/experiments/modalities in the object are included, and the
 display names for each are set to the names of each as they appear in the
