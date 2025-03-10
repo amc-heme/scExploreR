@@ -148,9 +148,9 @@ auto_config <-
             # Name of metadata variable as it appears in the object
             `meta_colname` = meta_var,
             # Display name for metadata variable
-            # This function will output "", which will display the variable as it
-            # is named in the object
-            `label` = "",
+            # This function will set the labels for each variable equal to the name
+            # as it appears in the object.
+            `label` = meta_var,
             # Description of metadata variable
             # Used in the object guide in the main app
             # Not supported in this function. This can be modified manually or 
