@@ -304,6 +304,43 @@ run_scExploreR <-
     # Different sub-lists are used in different tryCatch statements
     error_list <-
       list(
+        `dge_test_errors` = 
+          list(
+            error_data(
+              message = "Selected subset has 0 marker groups.",
+              notification_ui =
+                icon_notification_ui(
+                  icon_name = "skull-crossbones",
+                  tagList(
+                    paste0(
+                      "There are 0 groups present for the metadata variable ",
+                      "selected for marker groups in the subset selected."
+                      )
+                    ) #End tagList
+                ), # End icon_notification_ui
+              notification_id = "dge_error_1"
+            ), # End error_data
+            error_data(
+              message = "Selected subset has only 1 marker group.",
+              notification_ui =
+                icon_notification_ui(
+                  icon_name = "skull-crossbones",
+                  tagList(
+                    paste0(
+                      "The metadata variable selected for marker ",
+                      "identification has only one group in the subset ",
+                      "selected. Please verify you have chosen a variable ",
+                      "with more than one group and try the test again. ",
+                      "(To see the number of groups for a metadata variable, ",
+                      "you can use the group by selection menu for a ",
+                      "DimPlot. There should be more than one color ",
+                      "on the plot.)"
+                      )
+                    ) #End tagList
+                ), # End icon_notification_ui
+              notification_id = "dge_error_2"
+            )
+          ),
         `subset_errors` =
           list(
             error_data(

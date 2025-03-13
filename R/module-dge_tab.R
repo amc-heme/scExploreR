@@ -586,13 +586,6 @@ dge_tab_server <- function(id,
                 # is a function in the rlang package, as is "error"
                 error = function(err_cnd){
                   # Log interpreted subset filters in the event of an error
-                  log_error(
-                    paste0(
-                      "Error in dge tab subsetting: \n",
-                      err_cnd$message
-                      )
-                    )
-                  
                   log_info(
                     paste0(
                       "Subset filters entered:",
@@ -605,7 +598,7 @@ dge_tab_server <- function(id,
                   # Use error_handler to display notification to user
                   error_handler(
                     session,
-                    cnd_message = err_cnd$message,
+                    err_cnd = err_cnd,
                     # Uses a list of
                     # subset-specific errors
                     error_list = error_list$subset_errors,
@@ -834,13 +827,12 @@ dge_tab_server <- function(id,
             
             dge_table <- 
               tryCatch(
-                error = function(cnd){
+                error = function(err_cnd){
                   # Use error_handler to display notification to user
                   error_handler(
                     session,
-                    cnd_message = cnd$message,
-                    # Generic error messages only
-                    error_list = list(),
+                    err_cnd = err_cnd,
+                    error_list = error_list$dge_test_errors,
                     source_reactive = "dge_table, dge_tab module"
                   )
                   
@@ -852,6 +844,23 @@ dge_tab_server <- function(id,
                   return(NULL)
                   },
                 {
+                  # Marker identification: check that the metadata used for 
+                  # the test has at least two marker groups in the selected
+                  # subset
+                  if (test_selections()$dge_mode == "mode_marker"){
+                    marker_groups <- SCUBA::n_unique(
+                      subset(), 
+                      meta_var = test_selections()$group_by
+                      )
+                    
+                    # If less than two groups, return an error
+                    if (marker_groups == 0){
+                      stop("Selected subset has 0 marker groups.")
+                    } else if (marker_groups == 1){
+                      stop("Selected subset has only 1 marker group.")
+                    }
+                  }
+                  
                   # Note: designated genes assay is no longer used
                   dge_table <-
                     # Use DGE generic to determine test to run

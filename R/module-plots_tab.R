@@ -1180,7 +1180,7 @@ plots_tab_server <- function(id,
 
                        plots_s_sub <-
                          tryCatch(
-                           error = function(cnd){
+                           error = function(err_cnd){
                              # Return errors to user using notifications
                              # If an error is caught: the function below
                              # determines the type of error by inspecting
@@ -1200,7 +1200,7 @@ plots_tab_server <- function(id,
 
                              error_handler(
                                session,
-                               cnd_message = cnd$message,
+                               err_cnd = err_cnd,
                                # Uses a list of
                                # subset-specific errors
                                error_list = error_list$subset_errors,
