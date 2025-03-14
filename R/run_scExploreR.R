@@ -304,37 +304,74 @@ run_scExploreR <-
     # Different sub-lists are used in different tryCatch statements
     error_list <-
       list(
-        `subset_errors` =
+        `dge_test_errors` = 
           list(
             error_data(
-              message = "cannot allocate vector of size",
+              message = "Selected subset has 0 marker groups.",
               notification_ui =
                 icon_notification_ui(
                   icon_name = "skull-crossbones",
                   tagList(
-                    "Memory Error: RAM is insufficient for analyzing the specified
-                subset. Please narrow down the subset scope using the
-                restriction criteria to the left, and feel free to",
-                github_link(display_text = "let us know"),
-                " ", # Space after link
-                "if you repeatedly recieve this error.") #End tagList
+                    paste0(
+                      "There are 0 groups present for the metadata variable ",
+                      "selected for marker groups in the subset selected."
+                      )
+                    ) #End tagList
                 ), # End icon_notification_ui
-              notification_id = "subset_error_1"
+              notification_id = "dge_error_1"
             ), # End error_data
-
-            # Error 2: Vector memory exhausted
             error_data(
-              message = "vector memory exhausted",
+              message = "Selected subset has only 1 marker group.",
               notification_ui =
                 icon_notification_ui(
                   icon_name = "skull-crossbones",
-                  "Error: vector memory exhausted. If this issue persists, please ",
-                  github_link("contact us"),
-                  " with a screenshot of the response criteria selected. For now,
-              narrowing down the subset criteria may resolve the error."
+                  tagList(
+                    paste0(
+                      "The metadata variable selected for marker ",
+                      "identification has only one group in the subset ",
+                      "selected. Please verify you have chosen a variable ",
+                      "with more than one group and try the test again. ",
+                      "(To see the number of groups for a metadata variable, ",
+                      "you can use the group by selection menu for a ",
+                      "DimPlot. There should be more than one color ",
+                      "on the plot.)"
+                      )
+                    ) #End tagList
                 ), # End icon_notification_ui
-              notification_id = "subset_error_2"
-            ),
+              notification_id = "dge_error_2"
+            )
+          ),
+        `subset_errors` =
+          list(
+            # error_data(
+            #   message = "cannot allocate vector of size",
+            #   notification_ui =
+            #     icon_notification_ui(
+            #       icon_name = "skull-crossbones",
+            #       tagList(
+            #         "Memory Error: RAM is insufficient for analyzing the specified
+            #     subset. Please narrow down the subset scope using the
+            #     restriction criteria to the left, and feel free to",
+            #     github_link(display_text = "let us know"),
+            #     " ", # Space after link
+            #     "if you repeatedly recieve this error.") #End tagList
+            #     ), # End icon_notification_ui
+            #   notification_id = "subset_error_1"
+            # ), # End error_data
+
+            # Error 2: Vector memory exhausted
+            # error_data(
+            #   message = "vector memory exhausted",
+            #   notification_ui =
+            #     icon_notification_ui(
+            #       icon_name = "skull-crossbones",
+            #       "Error: vector memory exhausted. If this issue persists, please ",
+            #       github_link("contact us"),
+            #       " with a screenshot of the response criteria selected. For now,
+            #   narrowing down the subset criteria may resolve the error."
+            #     ), # End icon_notification_ui
+            #   notification_id = "subset_error_2"
+            # ),
 
             # Error 3: No Cells in Subset
             error_data(
@@ -344,9 +381,9 @@ run_scExploreR <-
                   icon_name = "skull-crossbones",
                   "No cells were found matching the defined subset criteria. Please
               check the subset dropdowns for mutually exclusive selections. If
-              you recieve this error for combinations that should be valid,
-              please",
-              github_link("let us know"),
+              you the error persists for combinations that should be valid,
+              please ",
+              github_link("contact us"),
               # Period at end of link
               "."
                 ), # End icon_notification_ui
