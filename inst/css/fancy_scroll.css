@@ -1,19 +1,23 @@
 /* Sidebar Scrolling properties */
 .col-sm-4{
     overflow-y: auto;
-	max-height: 85vh;
+	/* Height set using a CSS variable set by the JavaScript at 
+	   ../js/Responsive_header.js */
+	max-height: var(--body-height);
 	}
 
 /* Main Window */
 .col-sm-8{
 	overflow-y: auto;
 	overflow-x: auto;
-	max-height: 85vh;
+	/* Height set using a CSS variable set by the JavaScript at 
+	   ../js/Responsive_header.js */
+	max-height: var(--body-height);
 	}
 
 /* Loading Spinner Containers for Main Window*/
 .spinner-container-main{
-	height: 85vh;
+	height: var(--body-height);
 }
 
 /* Stack Overflow Style Scrollbar (applies to the main window and the sidebar

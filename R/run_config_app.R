@@ -15,10 +15,11 @@
 #' loading an HDF5-enabled object, set the object_path to the directory of the
 #' HDF5-enabled object, created when saving the object via
 #' HDF5Array:saveHDF5SummarizedExperiment.
+#' @param HDF5_prefix When loading an HDF5-backed SingleCellExperiment HDF5_prefix
+#' is passed to the prefix parameter of HDF5Array::loadHDF5SummarizedExperiment 
+#' to specify the prefixes for the se.rds and assays.h5 files. 
 #' @param dev_mode Used only for development. If TRUE, the server values for each option chosen by the user will be printed at the bottom of the "general" tab.
 #'
-#' @usage
-#' run_config(./path_to_object.rds, ./path_to_config_file.yaml)
 #'
 #' @export
 run_config <-
@@ -26,6 +27,7 @@ run_config <-
     object_path,
     config_path = NULL,
     is_HDF5SummarizedExperiment = FALSE,
+    HDF5_prefix = "",
     dev_mode = FALSE
   ){
     # Initialize libraries ####
@@ -151,7 +153,7 @@ run_config <-
     # SCE objects with DelayedArray assays: path is a directory, not a file
     if (is_HDF5SummarizedExperiment == TRUE){
       # Directory is loaded via loadHDF5SummarizedExperiment
-      object <- HDF5Array::loadHDF5SummarizedExperiment(object_path)
+      object <- HDF5Array::loadHDF5SummarizedExperiment(object_path, prefix = HDF5_prefix)
     } else {
       # All other formats: choose loading function based on extension
       extension <- tools::file_ext(object_path)
@@ -880,7 +882,9 @@ run_config <-
           # Record class of object
           `object_class` = is(object),
           # Record if a SingleCellExperiment object is HDF5 enabled
-          `is_HDF5SummarizedExperiment` = is_HDF5SummarizedExperiment
+          `is_HDF5SummarizedExperiment` = is_HDF5SummarizedExperiment,
+          # Track if a prefix is necessary to load HDF5 SingleCellExperiment
+          `HDF5_prefix` = HDF5_prefix
           )
 
       # module_data: reactiveValues object for storing data specific

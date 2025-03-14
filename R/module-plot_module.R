@@ -23,6 +23,10 @@
 #'
 #' @param id ID to use for module elements. IDs for the options and plot UI
 #' components, and the server component, must match.
+#' @param plot_type An explicit definition of the plot type. In the near future,
+#' the plot type defined here is envisioned to be used to determine the UI 
+#' components present, rather than the large set of group_by, split_by, etc. 
+#' parameters.
 #' @param ui_component Determines which UI component is to be plotted. Use
 #' "options" to create the input menus for plot options, and "plot" to create
 #' the output container for the plot.
@@ -61,6 +65,7 @@
 #'
 #' @noRd
 plot_module_ui <- function(id,
+                           plot_type,
                            # The plot_module UI consists of the options
                            # panels and the plot output, which exist in
                            # different places in the app. This argument will
@@ -423,9 +428,9 @@ plot_module_ui <- function(id,
           )
         } else NULL,
 
-      ## Refactor groups (dot, violin plots) ####
+      ## Group Sorting interface (dot, violin, ridge, proportion plots) ####
       if (sort_groups_menu == TRUE){
-        #html anchors pointing to relevant section in full documentation based on plot type
+        # html anchors pointing to relevant section in full documentation based on plot type
         plot_to_anchor <- 
         list(
           "Violin Plot" = "violin-plots-group-order",
@@ -447,22 +452,36 @@ plot_module_ui <- function(id,
                 target="_blank")
             ),
             # Can select all options except "none"
-            choices =
-              c("Ascending" = "ascending",
-                "Descending" = "descending",
-                "Feature Expression" = "expression",
-                "Custom" = "custom")
+            choices = 
+              if (plot_type == "proportion"){
+                c("Ascending" = "ascending",
+                  "Descending" = "descending",
+                  "Proportion" = "proportion",
+                  "Custom" = "custom")
+              } else {
+                c("Ascending" = "ascending",
+                  "Descending" = "descending",
+                  "Feature Expression" = "expression",
+                  "Custom" = "custom")
+              },
             ),
-          # Custom refactoring sortable input (shows when custom is chosen above)
+          # Menus for sorting groups depending on the options chosen above #
+          # Custom refactoring sortable input (for "custom")
           hidden(
             uiOutput(
               outputId = ns("refactor_sortable")
               )
             ),
-          # sort by feature expression when feature expression is chosen above
+          # Feature expression sorting (for "expression")
           hidden(
             uiOutput(
               outputId = ns("expr_sort_menu")
+              )
+            ),
+          # Proportion sorting (for "proportion")
+          hidden(
+            uiOutput(
+              outputId = ns("prop_sort_menu")
               )
             )
           )
@@ -473,9 +492,22 @@ plot_module_ui <- function(id,
         title = 
           paste0(
             'Use "Ascending" or "Descending" to sort by group name in ',
-            'ascending or descending alphanumeric order, respectively. Use ',
-            '"Feature Expression" to sort by average expression in each group, ',
-            'and "custom" to define a custom order.'
+            'ascending or descending alphanumeric order, respectively. ',
+            # Tooltip text depends on plot type
+            if (plot_type == "proportion"){
+              paste0(
+                'Use "proportion" to sort proportion plots by the proportion ',
+                'in a chosen group, and "custom" to define a custom order.'
+              )
+            } else if (plot_type %in% c("violin", "ridge", "dot")){
+              paste0(
+                # Violin, ridge, dot plots: expression sorting
+                'Use "Feature Expression" to sort by average expression in ',
+                'each group, and "custom" to define a custom order.'
+              )
+            } else {
+              'Use "custom" to define a custom order.'
+            }
             ),
         placement = "top", 
         trigger = "hover",
@@ -2528,6 +2560,10 @@ plot_module_server <- function(id,
                                  # When "expression", use the levels computed
                                  # based on average feature expression
                                  expr_sort_levels()
+                                 } else if (input$sort_groups == "proportion"){
+                                   # When "propportion" use levels from sorting
+                                   # based on cell proportions
+                                   prop_sort_levels()
                                  } else NULL
                              # NULL is returned otherwise,
                              # or when input$sort_groups does not exist
@@ -3301,6 +3337,103 @@ plot_module_server <- function(id,
                    # the requested feature per group.
                    # Result is passed to the `sort_groups` reactive expression
                    if (plot_type %in% c("violin", "dot", "ridge")){
+                     #### 8.4.4.1. Define UI for feature expression sorting menu ####
+                     expr_sort_menu <-
+                       reactive({
+                         # Responds to both the object and the group by
+                         # variable, but only runs when the group by variable is
+                         # defined
+                         req(plot_selections$group_by())
+                         
+                         # For ridge plots, the group_by variable can also be
+                         # "none", which will cause errors. The UI should not
+                         # compute in this case
+                         if (plot_type == "ridge"){
+                           req(plot_selections$group_by() != "none")
+                         }
+                         
+                         # Also only runs when the plot is enabled, and if a 
+                         # feature has been chosen
+                         req(plot_switch())
+                         req(features_entered())
+                         
+                         # Define display names for features
+                         # Remove the assay key from features and add the 
+                         # assay-based "suffix" from the config file, unless
+                         # the user requests the assay key be displayed before
+                         # feature names
+                         if (raw_feature_names() == FALSE){
+                           display_names <-
+                             sapply(
+                               features_entered(),
+                               function(feature_i, assay_config){
+                                 hr_name(
+                                   machine_readable_name = feature_i,
+                                   assay_config = assay_config,
+                                   use_suffix = TRUE
+                                 )
+                               },
+                               assay_config()
+                             )
+                         } else {
+                           # If the user checks "Show modality key before 
+                           # feature", display the machine-readable feature 
+                           # names with the assay key added
+                           display_names <- features_entered()
+                         }
+                         
+                         
+                         # Set up choices vector: values are machine-readable 
+                         # feature names from features_entered(), and names are 
+                         # the display 
+                         feature_choices <- features_entered()
+                         names(feature_choices) <- display_names
+                         
+                         # Menu UI
+                         div(
+                           id = ns("expr_sort_menu"),
+                           class = "compact-options-container",
+                           selectInput(
+                             inputId = ns("sort_expr_feature"),
+                             label = "Choose a feature to sort by:",
+                             choices = feature_choices,
+                             # Explicitly set the selected value to the first 
+                             # feature to avoid the menu being blank
+                             selected = feature_choices[1]
+                           ),
+                           selectInput(
+                             inputId = ns("sort_expr_order"),
+                             label = "Order of sorting:",
+                             choices = 
+                               c("Descending" = "descending",
+                                 "Ascending" = "ascending"
+                               )
+                           )
+                         )
+                       })
+                     
+                     #### 8.4.4.2. Show/hide feature sorting UI ####
+                     observe({
+                       # The output container is shown/hidden
+                       target_id <- "expr_sort_menu"
+                       
+                       # Show when "custom" is chosen from the group order menu
+                       if (isTruthy(input$sort_groups)){
+                         if (input$sort_groups == "expression"){
+                           showElement(
+                             id = target_id,
+                             anim = TRUE
+                           )
+                         } else {
+                           hideElement(
+                             id = target_id,
+                             anim = TRUE
+                           )
+                         }
+                       }
+                     })
+                     
+                     #### 8.4.4.3. Perform sorting, define new levels ####
                      expr_sort_levels <-
                        reactive({
                          # Only run when the user requests to sort by expression
@@ -3335,183 +3468,106 @@ plot_module_server <- function(id,
                          summary_table %>%
                            pull(id)
                        })
-
                    }
-                 }
-                 
-                 ## Menu for refactoring by feature expression 
-                 if (plot_type %in% c("violin", "dot", "ridge")){
-                   # Violin, dot, ridge plots: refactoring affects
-                   # group by variable
-                   expr_sort_menu <-
-                     reactive({
-                       # Responds to both the object and the group by
-                       # variable, but only runs when the group by variable is
-                       # defined
-                       req(plot_selections$group_by())
-
-                       # For ridge plots, the group_by variable can also be
-                       # "none", which will cause errors. The UI should not
-                       # compute in this case
-                       if (plot_type == "ridge"){
-                         req(plot_selections$group_by() != "none")
-                       }
-
-                       # Also only runs when the plot is enabled, and if a 
-                       # feature has been chosen
-                       req(plot_switch())
-                       req(features_entered())
-                     
-                       # Define display names for features
-                       # Remove the assay key from features and add the 
-                       # assay-based "suffix" from the config file, unless
-                       # the user requests the assay key be displayed before
-                       # feature names
-                       if (raw_feature_names() == FALSE){
-                         display_names <-
-                           sapply(
-                             features_entered(),
-                             function(feature_i, assay_config){
-                               hr_name(
-                                 machine_readable_name = feature_i,
-                                 assay_config = assay_config,
-                                 use_suffix = TRUE
-                               )
-                             },
-                             assay_config()
-                           )
-                       } else {
-                         # If the user checks "Show modality key before 
-                         # feature", display the machine-readable feature 
-                         # names with the assay key added
-                         display_names <- features_entered()
-                       }
-                       
-                       
-                       # Set up choices vector: values are machine-readable 
-                       # feature names from features_entered(), and names are 
-                       # the display 
-                       feature_choices <- features_entered()
-                       names(feature_choices) <- display_names
-                       
-                       # Menu UI
-                       div(
-                         id = ns("expr_sort_menu"),
-                         class = "compact-options-container",
-                         selectInput(
-                           inputId = ns("sort_expr_feature"),
-                           label = "Choose a feature to sort by:",
-                           choices = feature_choices,
-                           # Explicitly set the selected value to the first 
-                           # feature to avoid the menu being blank
-                           selected = feature_choices[1]
-                         ),
-                         selectInput(
-                           inputId = ns("sort_expr_order"),
-                           label = "Order of sorting:",
-                           choices = 
-                             c("Descending" = "descending",
-                               "Ascending" = "ascending"
-                               )
-                           )
-                         )
-                       })
                    
-                   # hide/show feature sorting container
-                   observe({
-                     # The output container is shown/hidden
-                     target_id <- "expr_sort_menu"
+                   ### 8.4.5. Sorting by Cell type proportion ####
+                   if (plot_type == "proportion") {
+                     #### 8.4.5.1. UI for sorting by proportion ####
+                     prop_sort_menu <- reactive({
+                       req(plot_selections$group_by())
+                       
+                       # We'll get the unique levels in the group_by variable,
+                       # so the user can choose which one to base the sorting on.
+                       group_by_vals <- SCUBA::unique_values(
+                         object = object(),
+                         var = plot_selections$group_by()
+                       )
+                       
+                       div(
+                         id = ns("prop_sort_menu"),
+                         class = "compact-options-container",
+                         # Menu to choose value of metadata variable for sorting
+                         selectInput(
+                           inputId = ns("sort_prop_value"),
+                           label = "Choose the Group By level:",
+                           choices = group_by_vals,
+                           selected = group_by_vals[1]
+                         ),
+                         # Menu to choose ascending or descending order
+                         selectInput(
+                           inputId = ns("sort_prop_order"),
+                           label = "Order of Sorting:",
+                           choices = 
+                             c("Ascending" = "ascending", 
+                               "Descending" = "descending"),
+                           selected = "descending"
+                         )
+                       )
+                     })
                      
-                     # Show when "custom" is chosen from the group order menu
-                     if (isTruthy(input$sort_groups)){
-                       if (input$sort_groups == "expression"){
+                     #### 8.4.5.2. Show/hide proportion sorting UI ####
+                     observe({
+                       if (isTruthy(input$sort_groups) && input$sort_groups == "proportion"){
                          showElement(
-                           id = target_id,
+                           id = "prop_sort_menu",
                            anim = TRUE
                          )
                        } else {
                          hideElement(
-                           id = target_id,
+                           id = "prop_sort_menu",
                            anim = TRUE
                          )
                        }
+                     })
+                     
+                     #### 8.4.5.3. Perform sorting and define new levels ####
+                     prop_sort_levels <- 
+                       reactive({
+                         req(input$sort_groups == "proportion")
+                         req(input$sort_prop_value)      # Which group_by level (e.g. "CD4 T cells")
+                         req(plot_selections$split_by()) # The variable we're re-ordering
+                         req(plot_switch())              # only run if plot is actually on
+                         # We'll fetch the relevant metadata as a data.frame 
+                         # with two columns, group_by and split_by
+                         meta_df <- 
+                           SCUBA::fetch_metadata(
+                            object(),
+                            vars = 
+                              c(plot_selections$group_by(), 
+                                plot_selections$split_by()
+                                )
+                            )
+                         
+                         colnames(meta_df) <- c("group_by", "split_by")
+                       
+                         # For each group in the split by variable, compute 
+                         # proportion of cells in the chosen group by value
+                         sum_df <- 
+                           meta_df %>%
+                           dplyr::group_by(.data$split_by) %>%
+                           dplyr::summarize(
+                             prop_value = 
+                               sum(.data$group_by == input$sort_prop_value) / 
+                               dplyr::n(),
+                           .groups = "drop"
+                           )
+                         
+                         # Sort ascending or descending by prop_value
+                         if (input$sort_prop_order == "ascending"){
+                           sum_df <- 
+                             dplyr::arrange(sum_df, .data$prop_value)
+                         } else {
+                           sum_df <- 
+                             dplyr::arrange(sum_df, dplyr::desc(.data$prop_value))
+                         }
+                       
+                         # Return a character vector of the new factor 
+                         # levels for "split_by"
+                         sum_df$split_by
+                       })
                      }
-                   })
                    }
-                ## 8.5 HTML Anchor links ####
-                 # observe({
-                 #   print("plot anchor")
-                 #   print(plot_to_anchor())
-                 # })
-                 # plot_to_anchor <- reactive({
-                 #   req(plot_switch())
-                 #   
-                 #   switch(plot_type,
-                 #          "scatterplot" = {
-                 #            if(group_by) {
-                 #              "scatterplots-group-by"
-                 #            } else if(split_by) {
-                 #              "scatterplots-split-by"
-                 #            }
-                 #          },
-                 #          "dimplot" = {
-                 #            if(group_by) {
-                 #              "DimPlots-group-by"
-                 #            } else if(split_by) {
-                 #              "DimPlots-split-by"
-                 #            } else if(title_menu) {
-                 #              "DimPlots-title-options"
-                 #            } else if(legend_options_menu) {
-                 #              "choose-number-of-columns"
-                 #            }
-                 #          },
-                 #          "dot" = {
-                 #            if(group_by) {
-                 #              "dot-plots-group-by"
-                 #            } else if(sort_groups_menu) {
-                 #              "dot-plots-group-order"
-                 #            }
-                 #          },
-                 #          "proportion" = {
-                 #            if(title_menu) {
-                 #              "cell-proportion-plot-title-options"
-                 #            } else if(sort_groups_menu) {
-                 #              "cell-proportion-plot-group-order"
-                 #            }
-                 #          },
-                 #          "feature" = {
-                 #            if(split_by) {
-                 #              "Feature-plots-split-by"
-                 #            } else if(title_menu) {
-                 #              "Feature-plots-title-options"
-                 #            } else if(legend_options_menu) {
-                 #              "feature-choose-ncol"
-                 #            }
-                 #          },
-                 #          "ridge" = {
-                 #            if(group_by){
-                 #              "ridge-plots-group-by"
-                 #            } 
-                 #          },
-                 #          "violin" = {
-                 #            if(sort_groups_menu) {
-                 #              "violin-plots-group-order"
-                 #            } else if(legend_options_menu){
-                 #              "violin-choose-ncol"
-                 #            }
-                 #          },
-                 #          "pie" = {
-                 #            if(title_menu){
-                 #              "metadata-pie-chart-title-options"
-                 #            }
-                 #          }
-                 #      )
-                 # })
-                 # 
-              # observe({
-              #   print("anchor:")
-              #   print(plot_to_anchor())
-              # })
+                 
                  ## 8.6. Render Dynamic UI ####
                  output$ncol_slider <-
                    renderUI({
@@ -3548,34 +3604,21 @@ plot_module_server <- function(id,
                    )
                  }
                  
+                 # Interface to sort by feature expression
                  if (plot_type %in% c("violin", "dot", "ridge")){
                    output$expr_sort_menu <-
                      renderUI({
                        expr_sort_menu()
                      })
-                   
-                   # The UI should still compute when hidden, so it displays 
-                   # smoothly when the user selects "custom"
-                   # outputOptions(
-                   #   output, 
-                   #   "expr_sort_menu", 
-                   #   suspendWhenHidden = FALSE
-                   # )
                  }
                  
-                 #render UI for help icon html anchors to full documentation 
-                 # output$plot_tab_anchor <- renderUI({
-                 #     a(
-                 #       id = ns("plot_info_icon"),
-                 #       icon("info-circle"),
-                 #       href = paste0(
-                 #         "https://amc-heme.github.io/scExploreR/articles/",
-                 #         "full_documentation.html#",
-                 #         plot_to_anchor()),
-                 #         target = "_blank"
-                 #       )
-                 # })
-                 #  
+                 # Interface to sort by proportion
+                 if (plot_type == "proportion"){
+                   output$prop_sort_menu <- renderUI({
+                     prop_sort_menu()
+                   })
+                 }
+                 
                  # 9. Separate Features Entry: Dynamic Update ------------------
                  # Observers for separate features only update for server
                  # instances where features_entered
@@ -4130,7 +4173,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
 
-                         SCUBA:::shiny_stacked_bar(
+                         scExploreR:::shiny_stacked_bar(
                            object = object(),
                            group_by = plot_selections$group_by(),
                            split_by = plot_selections$split_by(),
@@ -4172,7 +4215,7 @@ plot_module_server <- function(id,
                          # Only runs when the plot is enabled
                          req(plot_switch())
 
-                         SCUBA:::shiny_pie(
+                         scExploreR:::shiny_pie(
                            object = object(),
                            patient_colname = patient_colname(),
                            group_by = plot_selections$group_by(),
