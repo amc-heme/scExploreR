@@ -343,35 +343,35 @@ run_scExploreR <-
           ),
         `subset_errors` =
           list(
-            error_data(
-              message = "cannot allocate vector of size",
-              notification_ui =
-                icon_notification_ui(
-                  icon_name = "skull-crossbones",
-                  tagList(
-                    "Memory Error: RAM is insufficient for analyzing the specified
-                subset. Please narrow down the subset scope using the
-                restriction criteria to the left, and feel free to",
-                github_link(display_text = "let us know"),
-                " ", # Space after link
-                "if you repeatedly recieve this error.") #End tagList
-                ), # End icon_notification_ui
-              notification_id = "subset_error_1"
-            ), # End error_data
+            # error_data(
+            #   message = "cannot allocate vector of size",
+            #   notification_ui =
+            #     icon_notification_ui(
+            #       icon_name = "skull-crossbones",
+            #       tagList(
+            #         "Memory Error: RAM is insufficient for analyzing the specified
+            #     subset. Please narrow down the subset scope using the
+            #     restriction criteria to the left, and feel free to",
+            #     github_link(display_text = "let us know"),
+            #     " ", # Space after link
+            #     "if you repeatedly recieve this error.") #End tagList
+            #     ), # End icon_notification_ui
+            #   notification_id = "subset_error_1"
+            # ), # End error_data
 
             # Error 2: Vector memory exhausted
-            error_data(
-              message = "vector memory exhausted",
-              notification_ui =
-                icon_notification_ui(
-                  icon_name = "skull-crossbones",
-                  "Error: vector memory exhausted. If this issue persists, please ",
-                  github_link("contact us"),
-                  " with a screenshot of the response criteria selected. For now,
-              narrowing down the subset criteria may resolve the error."
-                ), # End icon_notification_ui
-              notification_id = "subset_error_2"
-            ),
+            # error_data(
+            #   message = "vector memory exhausted",
+            #   notification_ui =
+            #     icon_notification_ui(
+            #       icon_name = "skull-crossbones",
+            #       "Error: vector memory exhausted. If this issue persists, please ",
+            #       github_link("contact us"),
+            #       " with a screenshot of the response criteria selected. For now,
+            #   narrowing down the subset criteria may resolve the error."
+            #     ), # End icon_notification_ui
+            #   notification_id = "subset_error_2"
+            # ),
 
             # Error 3: No Cells in Subset
             error_data(
@@ -381,9 +381,9 @@ run_scExploreR <-
                   icon_name = "skull-crossbones",
                   "No cells were found matching the defined subset criteria. Please
               check the subset dropdowns for mutually exclusive selections. If
-              you recieve this error for combinations that should be valid,
-              please",
-              github_link("let us know"),
+              you the error persists for combinations that should be valid,
+              please ",
+              github_link("contact us"),
               # Period at end of link
               "."
                 ), # End icon_notification_ui
