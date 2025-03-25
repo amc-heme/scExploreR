@@ -6,7 +6,10 @@
 #' link to the github issues page.  
 #' 
 #' @param session Shiny session object.
-#' @param cnd_message the error message read by tryCatch.
+#' @param err_cnd the error condition encountered in tryCatch. This is equal 
+#' to the argument in the function ran by tryCatch when there is an error 
+#' (the function in the "error" parameter of the tryCatch statement.)
+#' @param source_reactive character vector to display source triggering error
 #' @param error_list a list of list objects generated with the error_data() 
 #' function from this package, connecting error messages to UI for shiny 
 #' notifications.
@@ -18,11 +21,37 @@
 error_handler <- 
   function(
     session,
-    cnd_message,
+    err_cnd,
     error_list = list(),
     issue_href = "https://github.com/amc-heme/DataExploreShiny/issues", 
-    duration = NULL
+    duration = NULL,
+    source_reactive = "Unknown source" #default value
     ){
+    # Log full error to the console 
+    if (!is.null(err_cnd$call)){
+      # Include the function call that resulted in the error if present
+      # (it should always be in scExploreR, but it's possible for it not to be)
+      rlog::log_error(
+        paste0(
+          "Error in ", deparse(err_cnd$call), " : ", 
+          conditionMessage(err_cnd), 
+          # Add reactive expression that triggered the error
+          " (from scExploreR reactive expression ", source_reactive, ")"
+          )
+        )
+    } else {
+      rlog::log_error(
+        paste0(
+          "Error: ", conditionMessage(err_cnd), "\n",
+          "(from reactive expression ", source_reactive, ")"
+          )
+        )
+      }
+    
+    # Define UI for error message notification
+    # Check error message text against a list of errors defined in the main
+    # app module in run_scExploreR.R
+    
     # Error match: conditional that is set to TRUE when an error is found, 
     # signaling the function not to run the code for displaying a generic
     # error message
@@ -32,12 +61,7 @@ error_handler <-
       # If the condition message (the error that is returned) matches the error 
       # message of a stored error type (error_type$err_message), show the 
       # notification associated with that error type
-      print(glue("Testing error {error_type$err_message}"))
-      if (grepl(pattern = error_type$err_message, x = cnd_message)){
-        print("match.")
-        print(error_type$err_message)
-        print(cnd_message)
-        
+      if (grepl(pattern = error_type$err_message, x = err_cnd$message)){
         # Display Notification
         showNotification(
           ui = error_type$notification, 
@@ -46,35 +70,33 @@ error_handler <-
           duration = duration,
           id = session$ns(error_type$notification_id),
           session = session
-        )
+          )
         
         # If error is found, set error_match to TRUE and break the loop 
         error_match <- TRUE
         break
+        }
       }
       
-    }
-    
-    # If all error types are looped through and no match is found, 
-    # display a generic error message
+    # Default notification
+    # Shows when there is still no match after looping through all errors
     if (error_match == FALSE){
-      #Define UI for generic error
-      other_err_ui <- 
-        icon_notification_ui(
-          icon_name = "skull-crossbones",
-          glue("Error: {cnd_message}. Please "),
-          github_link("report this issue"),
-          " with a screenshot of the app window."
-          )
-      
       # Display Notification
       showNotification(
-        ui = other_err_ui,
+        ui = 
+          icon_notification_ui(
+            icon_name = "skull-crossbones",
+            tagList(
+              glue("An error occurred. If this recurrs, please"),
+              github_link("report this issue"),
+              " with a screenshot of the app window."
+            )
+          ),
         # Duration=NULL will make the message 
         # persist until dismissed (default)
         duration = duration,
-        id = session$ns("other_error"),
+        id = session$ns("error"),
         session = session
         )
-    }
+      }
 }

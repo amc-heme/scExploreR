@@ -522,7 +522,7 @@ corr_tab_server <- function(id,
                        
                        subset <- 
                          tryCatch(
-                           error = function(cnd){
+                           error = function(err_cnd){
                              # If the user has entered an advanced subsetting
                              # string, log what was entered
                              log_info(
@@ -536,7 +536,7 @@ corr_tab_server <- function(id,
                              # Use error_handler to display notification to user
                              error_handler(
                                session,
-                               cnd_message = cnd$message,
+                               err_cnd = err_cnd,
                                # Uses a list of
                                # subset-specific errors
                                error_list = error_list$subset_errors
