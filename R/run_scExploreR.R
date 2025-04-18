@@ -14,6 +14,7 @@ run_scExploreR <-
     browser_config = NULL,
     object_path = NULL,
     config_path = NULL,
+    object_description_path = NULL,
     port = NULL,
     full_stack_trace = FALSE,
     host = NULL,
@@ -463,7 +464,9 @@ run_scExploreR <-
               `object` =
                 object_path,
               `config` =
-                config_path
+                config_path,
+              `object_description` = 
+                object_description_path
               )
           )
       } else if (local_mode) {
@@ -731,6 +734,13 @@ run_scExploreR <-
                  position = "fixed-top",
                  id = "navigator",
                  lang = "en",
+                 tabPanel(
+                   "Info",
+                   value = "info",
+                   uiOutput(
+                     outputId = "info_dynamic_ui"
+                     )
+                 ),
                  tabPanel(
                    "Plots",
                    value = "plots",
@@ -1724,7 +1734,47 @@ run_scExploreR <-
       #       ui
       #     })
 
-      ### 3.1.4. Render Dynamic UI components
+      ### 3.1.4. Render Dynamic UI components ####
+      # info_dynamic_ui ####
+      output$info_dynamic_ui <-
+        renderUI({
+          # if input$data_key is defined, use the corresponding
+          if (!is.null(input$data_key)){
+            addResourcePath(
+              "object_description", 
+              datasets[[input$data_key]]$object_description
+              )
+            
+            htmltools::tags$iframe(
+              `src` = 
+                file.path(
+                  "object_description",
+                  datasets[[input$data_key]]$object_description
+                  ),
+              `title` = "Description of Dataset"
+              )
+          } else {
+            # input$data_key is not defined for single-object instances.
+            # If input$data_key is undefined, use the first (and likely only)
+            # dataset in the list of datasets
+            addResourcePath(
+              "object_description", 
+              datasets[[1]]$object_description
+              )
+            
+            browser()
+            
+            htmltools::tags$iframe(
+              `src` = 
+                file.path(
+                  "object_description", 
+                  datasets[[1]]$object_description
+                  ),
+              `title` = "Description of Dataset"
+              )
+            }
+        })
+      
       output$plots_dynamic_ui <-
         renderUI({
           plots_tab_ui_dynamic()
