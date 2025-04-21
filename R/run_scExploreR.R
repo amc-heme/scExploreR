@@ -729,39 +729,118 @@ run_scExploreR <-
             "setTopScroll")
       ),
       # CSS and JS for collapsible panel
-      navbarPage("scExplorer",
-                 windowTitle = "scExplorer",
-                 position = "fixed-top",
-                 id = "navigator",
-                 lang = "en",
-                 tabPanel(
-                   "Info",
-                   value = "info",
-                   uiOutput(
-                     outputId = "info_dynamic_ui"
-                     )
-                 ),
-                 tabPanel(
-                   "Plots",
-                   value = "plots",
-                   uiOutput(
-                     outputId = "plots_dynamic_ui"
-                   )
-                 ),
-                 tabPanel(
-                   "Differential Expression",
-                   value = "dge",
-                   uiOutput(
-                     outputId = "dge_dynamic_ui"
-                   )
-                 )#,
-                 # tabPanel(
-                 #   "Gene Correlations",
-                 #   value = "corr",
-                 #   uiOutput(
-                 #     outputId = "corr_dynamic_ui"
-                 #   )
-                 # )
+      navbarPage(
+        "scExplorer",
+        windowTitle = "scExplorer",
+        position = "fixed-top",
+        id = "navigator",
+        lang = "en",
+        # Information Tab
+        tabPanel(
+          "Info",
+          value = "info",
+          sidebarLayout(
+            sidebarPanel = 
+              sidebarPanel(
+                fluid = FALSE,
+                # radioButtons(
+                #   inputId = "info_tab",
+                #   label = "Choose information page to view",
+                #   choices = 
+                #     c("General Information" = "general",
+                #       "Dataset Metadata" = "dataset_metadata",
+                #       "Dataset Information" = "dataset_info"
+                #       )
+                #   )
+                # Navigation menu for *information pages*
+                tags$label(
+                  `for` = "info-nav",
+                  "Select a page below to view info:",
+                  tags$nav(
+                    # Apply info-nav class to avoid conflicts with the
+                    # main navbar
+                    id = "info-nav",
+                    class = "info-nav",
+                    `aria-label` = "Navigation panel for information pages",
+                    tags$ul(
+                      tags$li(
+                        class = "tab-button active",
+                        id = "tab_app_info",
+                        onClick = "openTab(event, 'tab_content_app_info')",
+                        span("General Information")
+                      ),
+                      tags$li(
+                        class = "tab-button",
+                        id = "tab_object_info",
+                        onClick = "openTab(event, 'tab_content_object_info')",
+                        span("Dataset Information")
+                        ),
+                      tags$li(
+                        class = "tab-button",
+                        id = "tab_object_metadata",
+                        onClick = 
+                          "openTab(event, 'tab_content_object_metadata')",
+                        span("Dataset Metadata")
+                      )
+                    )
+                  )
+                )
+              ),
+            mainPanel = 
+              mainPanel(
+                id = "info_tab_main",
+                div(
+                  class = "tab-window active",
+                  id = "tab_content_app_info",
+                  includeMarkdown(
+                    system.file(
+                      "www",
+                      "intro_page.qmd",
+                      package = "scExploreR"
+                      )
+                    )
+                  ),
+                div(
+                  class = "tab-window",
+                  id = "tab_content_object_info",
+                  uiOutput(
+                    outputId = "object_info_page"
+                    )
+                  ),
+                div(
+                  class = "tab-window",
+                  id = "tab_content_object_metadata",
+                  div(
+                    tags$h1("Object metadata"),
+                    tags$p("Object metadata page")
+                    )
+                  )
+                )
+              )
+          ),
+        # Plots Tab
+        tabPanel(
+          "Plots",
+          value = "plots",
+          uiOutput(
+            outputId = "plots_dynamic_ui"
+            )
+          ),
+        # Differential Expression Tab
+        tabPanel(
+          "Differential Expression",
+           value = "dge",
+           uiOutput(
+             outputId = "dge_dynamic_ui"
+           )
+         )#,
+        # tabPanel(
+        #   "Gene Correlations",
+        #   value = "corr",
+        #   uiOutput(
+        #     outputId = "corr_dynamic_ui"
+        #   )
+        # )
       ), # End navbarPage()
 
       ## Buttons on upper-right hand corner of app ---------------------------------
@@ -941,6 +1020,23 @@ run_scExploreR <-
           #Gives manual control of showing/hiding spinner
           hide_on_render = FALSE
         )
+      
+      object_info_page_spinner <-
+        Waiter$new(
+          # When the ID is null, the waiter is applied to the
+          # <body> element (entire app)
+          id = "tab_content_object_info",
+          html =
+            tagList(
+              spin_loaders(id = 2, color = "#555588"),
+              div(
+                class = "spinner_text",
+                "Loading information page for dataset...")
+            ),
+          color = "#FFFFFF",
+          #Gives manual control of showing/hiding spinner
+          hide_on_render = FALSE
+          )
 
       # Create a reactive trigger to run the feature text box update after
       # the UI is created (originally the UI always ran first, but now it does
@@ -1550,7 +1646,6 @@ run_scExploreR <-
 
       ## 2.10. Store number of cells in full object ####
       # used to determine if a subset is selected.
-      # TODO: does this apply to non-CITEseq datasets?
       n_cells_original <-
         reactive({
           req(object())
@@ -1564,6 +1659,7 @@ run_scExploreR <-
       # When object is changed, render a new data dictionary to www/
       observeEvent(
         object(),
+        label = "Render Auto-Generated Object Dictionary",
         #ignoreNULL = FALSE,
         #ignoreInit = TRUE,
         {
@@ -1648,6 +1744,37 @@ run_scExploreR <-
             FALSE
           }
         })
+      
+      ## 2.15. Object info page ####
+      # If an information page has been created by the user and provided in
+      # the browser config file or via the `object_description_path` parameter, 
+      # load the page and display in the info tab.
+      output$object_info_page <-
+        renderUI({
+          object_info_page_spinner$show()
+          
+          # if input$data_key is defined, use the corresponding
+          if (!is.null(input$data_key)){
+            info_page <-
+              htmltools::includeMarkdown(
+                datasets[[input$data_key]]$object_description
+                )
+          } else {
+            # input$data_key is not defined for single-object instances.
+            # If input$data_key is undefined, use information from the first 
+            # (and likely only) dataset in the list of datasets
+            info_page <- 
+              htmltools::includeMarkdown(
+                datasets[[1]]$object_description
+                )
+          }
+          
+          object_info_page_spinner$hide()
+          
+          info_page
+        })
+      
+      outputOptions(output, "object_info_page", suspendWhenHidden = FALSE)
 
       # 3. Initialize Modules --------------------------------------------------
       ## 3.1. Dynamic UI ####
@@ -1735,46 +1862,6 @@ run_scExploreR <-
       #     })
 
       ### 3.1.4. Render Dynamic UI components ####
-      # info_dynamic_ui ####
-      output$info_dynamic_ui <-
-        renderUI({
-          # if input$data_key is defined, use the corresponding
-          if (!is.null(input$data_key)){
-            addResourcePath(
-              "object_description", 
-              datasets[[input$data_key]]$object_description
-              )
-            
-            htmltools::tags$iframe(
-              `src` = 
-                file.path(
-                  "object_description",
-                  datasets[[input$data_key]]$object_description
-                  ),
-              `title` = "Description of Dataset"
-              )
-          } else {
-            # input$data_key is not defined for single-object instances.
-            # If input$data_key is undefined, use the first (and likely only)
-            # dataset in the list of datasets
-            addResourcePath(
-              "object_description", 
-              datasets[[1]]$object_description
-              )
-            
-            browser()
-            
-            htmltools::tags$iframe(
-              `src` = 
-                file.path(
-                  "object_description", 
-                  datasets[[1]]$object_description
-                  ),
-              `title` = "Description of Dataset"
-              )
-            }
-        })
-      
       output$plots_dynamic_ui <-
         renderUI({
           plots_tab_ui_dynamic()

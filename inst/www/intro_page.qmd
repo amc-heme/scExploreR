@@ -1,0 +1,31 @@
+---
+title: "Introduction Page"
+format: html
+---
+
+# Welcome to scExploreR! 
+
+scExploreR allows for in-depth exploration of single-cell datasets without code. The app contains extensive visualization tools as well as plots 
+
+## Plots Tab
+
+To view visualizations, go to the "plots tab". The following visualizations are available:
+
+- DimPlots
+- Feature Plots
+  - Feature co-expression plots, when two genes are entered
+- Violin Plots
+- Dot Plots
+- Scatterplots
+- Ridge Plots
+- Cell Type Proportion Plots
+
+
+For more information on plot types, go to the "?" button and select "Single-Cell Visualizations"
+
+## Differential Expression Tab
+
+## Datasets
+
+There may be multiple datasets deployed in this instance of the 
+

@@ -984,7 +984,7 @@ plots_tab_ui <- function(id,
 #' Plots Tab Module (Server Instance)
 #'
 #' @param id ID to use for module elements.
-#' @param object The Seurat object or subset. 
+#' @param object A single-cell object.
 #' @param assay_config The assays section of the config file. This is loaded in
 #' the main server function at startup and when the object is changed.
 #' @param metadata_config The metadata section of the config file loaded at 
