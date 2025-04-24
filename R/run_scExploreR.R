@@ -1364,7 +1364,7 @@ run_scExploreR <-
             }
           })
 
-      ## 1.7. Last Key of Last Dataset Loaded ####
+      ## 1.7. Key of Last Dataset Loaded ####
       # Save the key of the last dataset loaded into the app.
       # This is updated only when a change in dataset is observed upon closing the
       # window (as signaled by the loading conditional observer)
@@ -1799,25 +1799,38 @@ run_scExploreR <-
         renderUI({
           object_info_page_spinner$show()
           
-          # if input$data_key is defined, use the corresponding
-          if (!is.null(input$data_key)){
-            info_page <-
+          if (!is.null(datasets[[selected_key()]]$object_description)){
+            # If a path to a md/rmd/qmd file is provied (either in the browser
+            # config or via the object_description_path parameter for single
+            # object instances), render the markdown content.
+            
+            info_page_ui <-
               htmltools::includeMarkdown(
-                datasets[[input$data_key]]$object_description
+                datasets[[selected_key()]]$object_description
                 )
           } else {
-            # input$data_key is not defined for single-object instances.
-            # If input$data_key is undefined, use information from the first 
-            # (and likely only) dataset in the list of datasets
-            info_page <- 
-              htmltools::includeMarkdown(
-                datasets[[1]]$object_description
+            # Otherwise, render a message saying the page has not been 
+            # provided by the app admin
+            info_page_ui <-
+              div(
+                tags$h3(
+                  paste0(
+                    "No information page available"
+                    )
+                  ),
+                div(
+                  paste0(
+                    "The admin of this app instance has not included an ",
+                    "information page for this dataset. Please contact ",
+                    "the admin for more information."
+                    )
+                  )
                 )
           }
           
           object_info_page_spinner$hide()
           
-          info_page
+          info_page_ui
         })
       
       outputOptions(output, "object_info_page", suspendWhenHidden = FALSE)
