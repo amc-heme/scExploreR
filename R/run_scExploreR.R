@@ -810,9 +810,8 @@ run_scExploreR <-
                 div(
                   class = "tab-window",
                   id = "tab_content_object_metadata",
-                  div(
-                    tags$h1("Object metadata"),
-                    tags$p("Object metadata page")
+                  object_metadata_info_ui(
+                    id = "object_metadata_info_tab"
                     )
                   )
                 )
@@ -832,8 +831,8 @@ run_scExploreR <-
            value = "dge",
            uiOutput(
              outputId = "dge_dynamic_ui"
-           )
-         )#,
+             )
+           )#,
         # tabPanel(
         #   "Gene Correlations",
         #   value = "corr",
@@ -876,12 +875,16 @@ run_scExploreR <-
 
           # Interpreting scRNA-seq plots
           tags$a(
-            "Interpereting scRNA-seq Plots",
+            "Single-Cell Visualizations",
             href =
-              file.path(
-                "resources",
+              paste0(
+                "https://amc-heme.github.io/scExploreR/articles/",
                 "scRNA_Plots_Explained.html"
-              ),
+                ),
+              # file.path(
+              #   "resources",
+              #   "scRNA_Plots_Explained.html"
+              # ),
             class = "blue_hover",
             # Opens link in new tab
             target = "_blank",
@@ -894,10 +897,11 @@ run_scExploreR <-
         tags$a(
           "Tutorial Vignette",
           href =
-            file.path(
-              "resources",
-              "scExplorer_Tutorial.html"
-            ),
+            "https://amc-heme.github.io/scExploreR/articles/tutorial.html",
+            # file.path(
+            #   "resources",
+            #   "scExplorer_Tutorial.html"
+            # ),
           class = "blue_hover",
           # Opens link in new tab
           target = "_blank",
@@ -907,7 +911,12 @@ run_scExploreR <-
         # Full Feature Documentation
         tags$a(
           "Full Documentation",
-          href = full_documentation_path,
+          href = 
+            paste0(
+              "https://amc-heme.github.io/scExploreR/articles/",
+              "full_documentation.html"
+              ),
+            #full_documentation_path,
           class = "blue_hover",
           # Opens link in new tab
           target = "_blank",
@@ -917,7 +926,7 @@ run_scExploreR <-
         # File issue on github
         tags$a(
           "Report a Bug",
-          href = "https://github.com/amc-heme/DataExploreShiny/issues",
+          href = "https://github.com/amc-heme/scExploreR/issues",
           class = "blue_hover",
           # Opens link in new tab
           target = "_blank",
@@ -1021,10 +1030,26 @@ run_scExploreR <-
           hide_on_render = FALSE
         )
       
-      object_info_page_spinner <-
+      # Spinner with a generic message that displays over the full screen
+      full_page_spinner <-
         Waiter$new(
           # When the ID is null, the waiter is applied to the
           # <body> element (entire app)
+          id = NULL,
+          html =
+            tagList(
+              spin_loaders(id = 2, color = "#555588"),
+              div(
+                class = "spinner_text",
+                "Loading, please wait...")
+            ),
+          color = "#FFFFFF",
+          #Gives manual control of showing/hiding spinner
+          hide_on_render = FALSE
+        )
+      
+      object_info_page_spinner <-
+        Waiter$new(
           id = "tab_content_object_info",
           html =
             tagList(
@@ -1663,6 +1688,9 @@ run_scExploreR <-
         #ignoreNULL = FALSE,
         #ignoreInit = TRUE,
         {
+          # Show spinner over app while dictionary renders
+          full_page_spinner$show()
+          
           # Gather parameters used by document
           params <-
             list(
@@ -1711,6 +1739,8 @@ run_scExploreR <-
             # Do not print rendering messages to console
             quiet = TRUE
           )
+          
+          full_page_spinner$hide()
         })
 
       ## 2.12. Patient/sample level metadata category ####
@@ -1745,7 +1775,23 @@ run_scExploreR <-
           }
         })
       
-      ## 2.15. Object info page ####
+      ## 2.15. Object is a Seurat object ####
+      is_seurat <-
+        reactive({
+          req(config())
+          
+          if (!is.null(config()$object_class)){
+            if (config()$object_class %in% c("Seurat")){
+              TRUE
+            } else {
+              FALSE
+            }
+          } else {
+            FALSE
+          }
+        })
+      
+      ## 2.16. Object info page ####
       # If an information page has been created by the user and provided in
       # the browser config file or via the `object_description_path` parameter, 
       # load the page and display in the info tab.
@@ -1909,7 +1955,8 @@ run_scExploreR <-
               categorical_palettes = categorical_palettes,
               continuous_palettes = continuous_palettes,
               blend_palettes = blend_palettes,
-              patient_colname = patient_colname
+              patient_colname = patient_colname,
+              current_tab = reactive({input$navigator})
               )
 
             # Add current key to list of modules created so module is not re-created
@@ -1972,6 +2019,16 @@ run_scExploreR <-
       #       c(main_server$corr_modules_created, current_key)
       #   }
       # })
+      
+      ### 3.2.4 Object Metadata Information Server ####
+      object_metadata_info_server(
+        id = "object_metadata_info_tab",
+        object = object,
+        meta_choices = meta_choices,
+        metadata_config = metadata_config,
+        include_numeric_metadata = reactive({config()$include_numeric_metadata}),
+        is_seurat = is_seurat
+        )
 
       # 4. Dataset preview in modal UI -----------------------------------------
       ## 4.1. Description ####

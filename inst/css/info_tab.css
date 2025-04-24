@@ -1,0 +1,23 @@
+/* CSS in information tab */
+/* Reduce font size of h1, h2 tags on info page */
+#info_tab_main h1 {
+  font-size: 30px;
+}
+
+#info_tab_main h2 {
+  font-size: 24px;
+}
+
+#info_tab_main h3 {
+  font-size: 18px;
+}
+
+/* Dataset info page */
+/* Keep images from extending beyond the viewing window */
+#object_info_page img {
+  max-width: 100%;
+}
+
+[id *= object_metadata_info_page]{
+  height: var(--body-height);
+}
