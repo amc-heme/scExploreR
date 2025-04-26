@@ -1,15 +1,54 @@
 /* CSS in information tab */
+/* App info page */
 /* Reduce font size of h1, h2 tags on info page */
 #info_tab_main h1 {
-  font-size: 30px;
+  font-size: 26px;
 }
 
 #info_tab_main h2 {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 #info_tab_main h3 {
-  font-size: 18px;
+  font-size: 16px;
+}
+
+#info_tab_main h4 {
+  font-size: 14px;
+}
+
+#info_tab_main ul {
+  padding-inline-start: 15px;
+}
+
+#info_tab_main ul ul {
+  padding-inline-start: 30px;
+}
+
+#info_tab_main ul ol {
+  padding-inline-start: 30px;
+}
+
+/* Deployment info container */
+/* Cut off name, email text that extends beyond the container */
+.overflow-cutoff {
+  overflow: hidden; 
+  text-overflow: ellipsis;
+}
+
+/* Link to Slack channel */
+.slack-link {
+  text-decoration: none;
+  color: var(--dark-blue, #082E6B);
+}
+
+.slack-link:hover {
+  text-decoration: none;
+  color: var(--dark-blue-hover, #456394)
+}
+
+.slack-link:active {
+  color: var(--dark-blue-active, #7E9DD0);
 }
 
 /* Dataset info page */

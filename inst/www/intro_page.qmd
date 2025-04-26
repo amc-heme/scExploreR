@@ -3,8 +3,6 @@ title: "Introduction Page"
 format: html
 ---
 
-# Welcome to scExploreR! 
-
 scExploreR allows for in-depth exploration of single-cell datasets without code. Functionality for the app is grouped into three tabs, the info tab, the plots tab, and the differential expression tab.
 
 ## Info Tab

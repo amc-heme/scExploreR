@@ -1,8 +1,8 @@
 /* CSS for navbar interface in info tab */
 /* Navar tabs exist as an unordered list (<ul>) within a <nav> element */
 nav.info-nav {
-  background-color: #f2f2f2;
-  overflow: hidden;
+  width: 100%;
+  font-weight: bold;
 }
 
 nav.info-nav ul {
