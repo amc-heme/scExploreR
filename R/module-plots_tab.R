@@ -1281,7 +1281,8 @@ plots_tab_server <- function(id,
                    valid_features = valid_features,
                    # Use categorical palettes for scatterplot
                    palette = selected_categorical_palette,
-                   assay_config = assay_config
+                   assay_config = assay_config,
+                   current_tab = current_tab
                    )
                  
                  ## 3.6. Ridge Plot ####
