@@ -1146,12 +1146,11 @@ plot_module_server <- function(id,
                            # Select none by default
                            selected = character(0),
                            server = TRUE
-                         )
+                           )
+                         }
                        }
-                     }
-                   })
-                   
-                 }
+                     })
+                   }
 
                  # 3. Title Settings Menu --------------------------------------
                  # Title settings and custom titles are enabled for the plot

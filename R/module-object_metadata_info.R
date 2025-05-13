@@ -1,76 +1,130 @@
-#' object_metadata_info UI
+#' object_contents_info UI
 #'
-#' Displays information on object metadata.
+#' Displays information on object contents.
 #'
 #' @noRd
-object_metadata_info_ui <- 
+object_contents_info_ui <- 
   function(
     id
     ){
     ns <- NS(id)
   
     div(
-      id = ns("object_metadata_info_page"),
-      # Search bar for metadata variable
-      # selectizeInput(
-      #   inputId = ns("metadata_var"),
-      #   multiple = FALSE,
-      #   label = "Enter a metadata variable:",
-      #   choices = NULL,
-      #   selected = character(0),
-      #   # Add remove button to inputs
-      #   options = list(
-      #     # Do not allow user to input features not
-      #     # in the list of options
-      #     'create'= FALSE,
-      #     "placeholder" = "Loading, please wait..."
-      #     )
-      #   ),
-      shinyWidgets::pickerInput(
-        inputId =  ns("metadata_var"),
-        label = "Select a metadata variable:",
-        choices = NULL,
-        selected = character(0),
-        multiple = FALSE,
-        options =
-          pickerOptions(
-            placeholder = "Loading, please wait...",
-            dropupAuto = FALSE
+      id = ns("object_contents_info_page"),
+      # Assay information
+      div(
+        class = "contents-info-card",
+        tags$h2("Assays"),
+        shinyWidgets::pickerInput(
+          inputId =  ns("assay"),
+          label = "Select an Assay:",
+          choices = NULL,
+          selected = character(0),
+          multiple = FALSE,
+          options =
+            pickerOptions(
+              placeholder = "Loading, please wait...",
+              dropupAuto = FALSE
+            )
+          ),
+        hidden(
+          div(
+            id = ns("assay_info"),
+            div(
+              tags$b("Description: "),
+              textOutput(
+                outputId = ns("assay_description"),
+                inline = TRUE
+              )
+            ),
+            div(
+              tags$b("Number of features: "),
+              textOutput(
+                outputId = ns("assay_n_features"),
+                inline = TRUE
+              )
+            )
+          )
+        )
+      ),
+      # Metadata information
+      div(
+        class = "contents-info-card",
+        tags$h2("Metadata"),
+        shinyWidgets::pickerInput(
+          inputId =  ns("metadata_var"),
+          label = "Select a metadata variable:",
+          choices = NULL,
+          selected = character(0),
+          multiple = FALSE,
+          options =
+            pickerOptions(
+              placeholder = "Loading, please wait...",
+              dropupAuto = FALSE
+              )
+          ),
+        hidden(
+          div(
+            id = ns("metadata_var_info"),
+            # Type of metadata variable
+            div(
+              tags$b("Type: "),
+              textOutput(
+                outputId = ns("var_type"),
+                inline = TRUE
+              )
+            ),
+            # Description of metadata variable (if provided)
+            div(
+              # This should go in the var_description output
+              uiOutput(
+                outputId = ns("var_description")
+              )
+            ),
+            # Summary of variable 
+            # Either a description of unique values (for categorical variables)
+            # or summary statistics (numeric variables)
+            uiOutput(
+              outputId = ns("var_summary")
+            )
+          )
+        )
+        ),
+      # Reductions
+      div(
+        class = "contents-info-card",
+        tags$h2("Reductions"),
+        shinyWidgets::pickerInput(
+          inputId =  ns("reduction"),
+          label = "Select a reduction:",
+          choices = NULL,
+          selected = character(0),
+          multiple = FALSE,
+          options =
+            pickerOptions(
+              placeholder = "Loading, please wait...",
+              dropupAuto = FALSE
             )
         ),
-      
-      hidden(
-        div(
-          id = ns("metadata_var_info"),
-          # Type of metadata variable
+        hidden(
           div(
-            tags$b("Type: "),
-            textOutput(
-              outputId = ns("var_type"),
-              inline = TRUE
+            id = ns("reduction_info"),
+            div(
+              tags$b("Description: "),
+              textOutput(
+                outputId = ns("reduction_description"),
+                inline = TRUE
+                )
               )
-            ),
-          # Description of metadata variable (if provided)
-          div(
-            # This should go in the var_description output
-            uiOutput(
-              outputId = ns("var_description")
-              )
-            ),
-          # Summary of variable 
-          # Either a description of unique values (for categorical variables)
-          # or summary statistics (numeric variables)
-          uiOutput(
-            outputId = ns("var_summary")
             )
           )
         )
       )
     }
 
-#' object_metadata_info Server
+#' object_contents_info Server
 #' 
-#' Displays information on object metadata.
+#' Displays information on object contents.
 #'
 #' @param id ID to use for module. This must match the id provided to the ui
 #' instance of the module for the module to function properly.
@@ -78,24 +132,32 @@ object_metadata_info_ui <-
 #' @param meta_choices A named vector generated in run_scExploreR with each
 #' metadata variable included in the config file. This vector is used when 
 #' generating the choices displayed in the metadata information. 
-#' @param metadata_config The metadata section of the config file loaded at 
-#' startup. This is loaded in the main server function at startup and when the 
+#' @param metadata_config The metadata section of the config file. This is 
+#' loaded in the main server function at startup and when the 
 #' object is changed.
 #' @param include_numeric_metadata The include_numeric_metadata section of the 
 #' config file. Used to determine if the app admin has enabled numeric metadata.
 #' The description for numeric variables will vary based on this setting. 
+#' @param assay_config The assays section of the config file. 
+#' This is loaded in the main server function at startup and when the 
+#' object is changed.
+#' @param reduction_config The reductions section of the config file. This is 
+#' loaded in the main server function at startup and when the 
+#' object is changed.
 #' @param is_seurat Whether an object is a Seurat object. If so, the 
 #' descriptions for variables not included in the config app will mention 
 #' that advanced code-based subsetting is possible.
 #' 
 #' @noRd
-object_metadata_info_server <- 
+object_contents_info_server <- 
   function(
     id,
     object,
     meta_choices,
     metadata_config,
     include_numeric_metadata,
+    assay_config,
+    reduction_config,
     is_seurat
     ){
     moduleServer(
@@ -103,7 +165,7 @@ object_metadata_info_server <-
       function(input, output, session){
         # Server namespace function 
         ns <- session$ns
-        
+
         # 1. Populate search menu with list of metadata options ####
         observe(
           label = paste0(id, ": Populate metadata list"),
@@ -115,25 +177,39 @@ object_metadata_info_server <-
                 full_table = TRUE
                 )
             
-            # Choices: display "featured" metadata from config file first,
-            # then all metadata variables left in the object
-            remaining_metadata_variables <-
-              colnames(meta_table)[!colnames(meta_table) %in% meta_choices()]
-            
-            # Remaining variables do not have a display name, since they 
-            # are not added in the config file. The names of the remaining 
-            # variables are set as they appear in the object (downstream code
-            # requires )
-            names(remaining_metadata_variables) <-
-              remaining_metadata_variables
-            
-            choices <- 
-              c(meta_choices(),
-                remaining_metadata_variables
-                )
-            
+            # Choices: display "featured" metadata from config file first.
+            choices <- meta_choices()
             # remove first option ("none") from meta_choices
             choices <- choices[2:length(choices)]
+            
+            # Add numeric metadata variables to choices 
+            # if enabled in the config app 
+            if (include_numeric_metadata()){
+              remaining_variables <-
+                colnames(meta_table)[!colnames(meta_table) %in% meta_choices()]
+              
+              is_numeric <-
+                sapply(
+                  remaining_variables,
+                  function(x){
+                    class(meta_table[[x]]) %in% c("numeric", "integer")
+                  }
+                )
+              
+              numeric_variables <- 
+                remaining_variables[is_numeric]
+              
+              # Remaining numeric variables do not have a display name. 
+              # The names of the remaining variables are set as they appear 
+              # in the object (downstream code requires display names for all
+              # choices)
+              names(numeric_variables) <-
+                numeric_variables
+              
+              choices <- 
+                c(choices,
+                  numeric_variables)
+              }
             
             # Additional information for each variable
             # Get the class of the variable, and the number of 
@@ -226,10 +302,21 @@ object_metadata_info_server <-
             #     )
             #   )
             
+            # When numeric metadata is present, display choices grouped by
+            # categorical vs numeric variables 
+            if (include_numeric_metadata()){
+              choices <- 
+                list(
+                  `Categorical Metatata` = 
+                    choices[!choices %in% numeric_variables],
+                  `Numeric Metadata` =
+                    choices[choices %in% numeric_variables]
+                )
+            }
+            
             updatePickerInput(
               inputId = "metadata_var",
               choices = choices,
-              selected = character(0),
               choicesOpt = 
                 list(
                   # Display the computed HTML above for variables 
@@ -245,7 +332,112 @@ object_metadata_info_server <-
               )
             })
         
-        # 2. Show/hide summary stats window ####
+        # 2. Assays ####
+        ## 2.1. Populate menu with available choices ####
+        observe(
+          label = paste0(id, ": Populate assay list"),
+          {
+            req(assay_config())
+            
+            # Form assay choices
+            # The names of assay_config() are the machine readable names for
+            # each assay exposed in the config file
+            assay_choices <- names(assay_config())
+            
+            # Display names
+            assay_names <- 
+              sapply(
+                names(assay_config()),
+                function(assay){
+                  if (!is.null(assay_config()[[assay]]$dropdown_title)){
+                    # Use display name (dropdown_title) from config file 
+                    # if defined
+                    assay_config()[[assay]]$dropdown_title
+                  } else {
+                    # Otherwise, use the name of the assay as 
+                    # it appears in the object
+                    assay
+                  }
+                }
+              )
+            
+            names(assay_choices) <- assay_names
+            
+            updatePickerInput(
+              inputId = "assay",
+              choices = assay_choices,
+              options = pickerOptions(
+                placeholder = "Enter an assay",
+                liveSearch = TRUE,
+                liveSearchPlaceholder = "Search",
+                showContent = FALSE
+                )
+              )
+            })
+        
+        ## 2.2. Show/hide assay information ####
+        observe(
+          label = paste0(id, ": show/hide summary"),
+          {
+            target_id <- "assay_info"
+            
+            if (isTruthy(input$assay)){
+              shinyjs::showElement(
+                id = target_id,
+                anim = TRUE
+              )
+            } else {
+              shinyjs::hideElement(
+                id = target_id,
+                anim = TRUE
+              )
+            }
+          })
+        
+        ## 2.3. Display assay description ####
+        output$assay_description <-
+          renderText({
+            req(input$assay)
+            
+            if (!is.null(assay_config()[[input$assay]]$description)){
+              assay_config()[[input$assay]]$description
+            } else {
+              "No description has been provided for this assay."
+            }
+          })
+        
+        # Compute even when hidden, so user can see results for first 
+        # assay without a lag
+        outputOptions(
+          output,
+          "assay_description",
+          suspendWhenHidden = FALSE
+          )
+        
+        ## 2.4. Display number of features in assay ####
+        output$assay_n_features <-
+          renderText({
+            req(input$assay)
+            
+            # Number of features: number of entries 
+            # returned by SCUBA::features_in_assay
+            SCUBA::features_in_assay(
+              object = object(), 
+              assay = input$assay
+              ) |> 
+              length()
+          })
+        
+        # Compute even when hidden, so user can see results for 
+        # first assay without a lag
+        outputOptions(
+          output,
+          "assay_n_features",
+          suspendWhenHidden = FALSE
+          )
+        
+        # 3. Metadata ####
+        ## 3.1. Show/hide summary stats window ####
         observe(
           label = paste0(id, ": show/hide summary"),
           {
@@ -264,8 +456,8 @@ object_metadata_info_server <-
                 }
             })
         
-        # 3. Display information for selected variable ####
-        ## 3.1. Fetch metadata for variable ####
+        ## 3.2. Metadata variable summary ####
+        ### 3.2.1. Fetch metadata for variable ####
         # (separated into a separate reactive expression so calculation 
         # is only done once when the variable is changed)
         metadata_vector <-
@@ -279,7 +471,7 @@ object_metadata_info_server <-
               )
           })
         
-        ## 3.2. Type (class) of variable ####
+        ### 3.2.2. Type (class) of variable ####
         output$var_type <- 
           renderText({
             toTitleCase(
@@ -287,10 +479,22 @@ object_metadata_info_server <-
               )
           })
         
-        ## 3.3. Variable Description ####
+        # Compute even when hidden, so user can see results for first 
+        # variable without a lag
+        outputOptions(
+          output,
+          "var_type",
+          suspendWhenHidden = FALSE
+        )
+        
+        ### 3.2.3. Variable Description ####
         # Description of metadata variable from config file, if provided
         output$var_description <-
           renderUI({
+            req(input$metadata_var)
+            req(metadata_config())
+            req(metadata_vector())
+            
             if (input$metadata_var %in% names(metadata_config())){
               # Variables added by the browser admin
               # If the metadata variable is in the config file, check if the
@@ -378,7 +582,15 @@ object_metadata_info_server <-
               }
           })
         
-        ## 3.4. Variable Summary ####
+        # Compute even when hidden, so user can see results for first 
+        # variable without a lag
+        outputOptions(
+          output,
+          "var_description",
+          suspendWhenHidden = FALSE
+        )
+        
+        ### 3.2.4. Variable Summary ####
         output$var_summary <-
           renderUI({
             if (class(metadata_vector()) == "character"){
@@ -464,6 +676,95 @@ object_metadata_info_server <-
                 )
               }
             })
+        
+        # Compute even when hidden, so user can see results for first 
+        # variable without a lag
+        outputOptions(
+          output,
+          "var_summary",
+          suspendWhenHidden = FALSE
+          )
+        
+        # 4. Reductions ####
+        ## 4.1. Populate menu with available choices ####
+        observe(
+          label = paste0(id, ": Populate reduction list"),
+          {
+            req(reduction_config())
+            
+            # Form reduction choices
+            # The names of reduction config are the machine readable names for
+            # each reduction in the object
+            reduction_choices <- names(reduction_config())
+            
+            # Display names
+            reduction_names <- 
+              sapply(
+                names(reduction_config()),
+                function(reduction){
+                  if (!is.null(reduction_config()[[reduction]]$label)){
+                    # Use display name (label) from config file if defined
+                    reduction_config()[[reduction]]$label
+                  } else {
+                    # Otherwise, use the name of the reduction as 
+                    # it appears in the object
+                    reduction
+                  }
+                }
+              )
+            
+            names(reduction_choices) <- reduction_names
+            
+            updatePickerInput(
+              inputId = "reduction",
+              choices = reduction_choices,
+              options = pickerOptions(
+                placeholder = "Enter a reduction",
+                liveSearch = TRUE,
+                liveSearchPlaceholder = "Search",
+                showContent = FALSE
+              )
+            )
+          })
+        
+        ## 4.2. Show/hide reduction information ####
+        observe(
+          label = paste0(id, ": show/hide reduction information"),
+          {
+            target_id <- "reduction_info"
+            
+            if (isTruthy(input$reduction)){
+              shinyjs::showElement(
+                id = target_id,
+                anim = TRUE
+              )
+            } else {
+              shinyjs::hideElement(
+                id = target_id,
+                anim = TRUE
+              )
+            }
+          })
+        
+        ## 2.3. Display reduction description ####
+        output$reduction_description <-
+          renderText({
+            req(input$reduction)
+            
+            if (!is.null(reduction_config()[[input$reduction]]$description)){
+              reduction_config()[[input$reduction]]$description
+            } else {
+              "No description has been provided for this reduction."
+            }
+          })
+        
+        # Compute even when hidden, so user can see results for first 
+        # reduction without a lag
+        outputOptions(
+          output,
+          "reduction_description",
+          suspendWhenHidden = FALSE
+        )
       }
     )
   }

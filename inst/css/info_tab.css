@@ -56,7 +56,3 @@
 #object_info_page img {
   max-width: 100%;
 }
-
-[id *= object_metadata_info_page]{
-  height: var(--body-height);
-}

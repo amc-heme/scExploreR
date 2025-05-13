@@ -11,8 +11,8 @@
 #' loaded in the main server function when the object is changed.
 #' @param assay_config The assays section of the config file. This is loaded in
 #' the main server function at startup and when the object is changed.
-#' @param metadata_config The metadata section of the config file loaded at 
-#' startup. This is loaded in the main server function at startup and when the 
+#' @param metadata_config The metadata section of the config file. This is 
+#' loaded in the main server function at startup and when the 
 #' object is changed.
 #' @param patient_colname the name of the metadata column to use for computing
 #' patient- or sample-level metadata for plotting. This is defined in the config
@@ -987,9 +987,8 @@ plots_tab_ui <- function(id,
 #' @param object A single-cell object.
 #' @param assay_config The assays section of the config file. This is loaded in
 #' the main server function at startup and when the object is changed.
-#' @param metadata_config The metadata section of the config file loaded at 
-#' startup. This is loaded in the main server function at startup and when the 
-#' object is changed.
+#' @param metadata_config The metadata section of the config file. This is 
+#' loaded in the main server function at startup and when the object is changed.
 #' @param meta_categories The metadata categories included in `metadata_config` 
 #' (defines selectable metadata). This is generated in the main 
 #' server function upon app startup and when the object is changed. 

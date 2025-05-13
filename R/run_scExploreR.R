@@ -865,7 +865,7 @@ run_scExploreR <-
                       id = "tab_object_metadata",
                       onClick = 
                         "openTab(event, 'tab_content_object_metadata')",
-                      span("Dataset Metadata")
+                      span("Dataset Contents")
                     )
                   )
                 ),
@@ -950,8 +950,8 @@ run_scExploreR <-
                 div(
                   class = "tab-window",
                   id = "tab_content_object_metadata",
-                  object_metadata_info_ui(
-                    id = "object_metadata_info_tab"
+                  object_contents_info_ui(
+                    id = "object_contents_info_tab"
                     )
                   )
                 )
@@ -2173,12 +2173,14 @@ run_scExploreR <-
       # })
       
       ### 3.2.4 Object Metadata Information Server ####
-      object_metadata_info_server(
-        id = "object_metadata_info_tab",
+      object_contents_info_server(
+        id = "object_contents_info_tab",
         object = object,
         meta_choices = meta_choices,
         metadata_config = metadata_config,
         include_numeric_metadata = reactive({config()$include_numeric_metadata}),
+        assay_config = assay_config,
+        reduction_config = reactive({config()$reductions}),
         is_seurat = is_seurat
         )
 
