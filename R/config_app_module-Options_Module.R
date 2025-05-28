@@ -92,6 +92,32 @@ options_ui <- function(id,
             label =
               "Include assay name on plots? (This is usually not required for
               the default assay in your data)"
+            ),
+          
+          textAreaInput(
+            inputId = ns("description"),
+            label = 
+              tagList(
+                "Description: ",
+                icon(
+                  "circle-question",
+                  id = ns("description_help"),
+                  class = "fa-solid"
+                  )
+                ),
+            width = "100%",
+            rows = 3,
+            resize = "vertical"
+            ),
+          shinyBS::bsTooltip(
+            id = ns("description_help"), 
+            title = 
+              paste0(
+                "The description entered here will be displayed to end users of your scExploreR deployment. Information entered here will help users understand this assay and how it should be used in the app for analysis. Useful information may include a brief description of the type of data represented by the assay, what the assay biolocially measures or represents, methods involved in data collection, normalization methods applied, etc."
+              ),
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
             )
         )
       )
@@ -123,6 +149,33 @@ options_ui <- function(id,
                 card_name
               },
             width = "380px"
+            ),
+          
+          # Description of reduction
+          textAreaInput(
+            inputId = ns("description"),
+            label = 
+              tagList(
+                "Description: ",
+                icon(
+                  "circle-question",
+                  id = ns("description_help"),
+                  class = "fa-solid"
+                )
+              ),
+            width = "100%",
+            rows = 3,
+            resize = "vertical"
+            ),
+          shinyBS::bsTooltip(
+            id = ns("description_help"), 
+            title = 
+              paste0(
+                "The description entered here will be displayed to end users of your scExploreR deployment. Information entered here should help users understand why the reudction is used and how it may be used in the app to undersand the biology."
+              ),
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
             )
           )
         )
@@ -192,7 +245,14 @@ options_ui <- function(id,
         textAreaInput(
           inputId = ns("var_description"),
           label = 
-            "Set description for metadata variable",
+            tagList(
+              "Set description for metadata variable ",
+              icon(
+                "circle-question",
+                id = ns("description_help"),
+                class = "fa-solid"
+              )
+            ),
           width = "380px",
           rows = 2,
           resize = "vertical",
@@ -202,6 +262,16 @@ options_ui <- function(id,
             } else {
               ""
             } 
+        ),
+        shinyBS::bsTooltip(
+          id = ns("description_help"), 
+          title = 
+            paste0(
+              "The description entered here will be displayed to end users of your scExploreR deployment. Information entered here will help end users understand how this variable should be used for visualization and analysis. This can include information such as the biological significance of this metadata variable, how it was computed, what individual values mean, etc."
+            ),
+          placement = "bottom", 
+          trigger = "hover",
+          options = NULL
         ),
       
         # Option to classify metadata into list (ex. group patients 
@@ -227,11 +297,13 @@ options_ui <- function(id,
             div(
               id = ns("groups_explanation"),
               #class = "show_if_groups_enabled",
-              tags$p(
-                "(Choices for possible values in the metadata
-              variable will appear in the app)",
-                class = "center small"
-              )
+              # This no longer makes sense and I don't remember what I 
+              # originally intended to say, so I removed this.
+              # tags$p(
+              #   "(Choices for possible values in the metadata
+              # variable will appear in the app)",
+              #   class = "center small"
+              # )
             ),
             shinyjs::hidden(
               div(

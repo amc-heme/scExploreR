@@ -44,6 +44,8 @@ run_config <-
     # library(shinyFeedback)
     # Sortable.JS: Creates a drag-and-drop menu
     library(sortable)
+    # ShinyBS tooltips
+    library(shinyBS, quietly = TRUE, warn.conflicts = FALSE)
 
     # Reactlog (for debugging)
     library(reactlog)
