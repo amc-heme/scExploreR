@@ -98,7 +98,7 @@ manual_dimensions_server <- function(id,
                            inputId = ns("dpi"),
                            label = "Select resolution in DPI (PNG only):",
                            choices = c(72, 150, 300, 400, 600),
-                           selected = 300
+                           selected = 72
                          )
                         ) # End tagList
                      })
