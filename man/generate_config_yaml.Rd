@@ -17,8 +17,9 @@ auto_config(
  )
 }
 \arguments{
-\item{object}{a single-cell object to be configured for use in scExploreR. Currently,
-Seurat, SingleCellExperiment, and anndata objects are supported.}
+\item{object}{a single-cell object to be configured for use in scExploreR
+(not the path to the object). Currently, Seurat, SingleCellExperiment, and
+anndata objects are supported.}
 
 \item{file}{path specifying where the output config file should be saved.
 This should end in ".yaml".}
@@ -65,5 +66,14 @@ appear in scExploreR.}
 A config file is generated at the path provided to \code{file}. Nothing is returned from the function.
 }
 \description{
-Auto-Generate Config File
+This function will automatically generate a basic config file from a
+single-cell object. This can greatly speed up setup for large objects with
+many metadata variables, but we reccomend editing the file in the config app
+or manually afterward for the following reasons:
+\itemize{
+\item All metadata variables will be added, in the order they appear in the
+object metadata table. A separate display order may be desired to highight
+the most important metadata variables to end users.
+\item 
+}
 }

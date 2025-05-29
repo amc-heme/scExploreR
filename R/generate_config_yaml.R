@@ -1,7 +1,26 @@
 #' Auto-Generate Config File
 #'
-#' @param object a single-cell object to be configured for use in scExploreR. Currently, 
-#' Seurat, SingleCellExperiment, and anndata objects are supported.
+#' This function will automatically generate a basic config file from a 
+#' single-cell object. This can greatly speed up setup for large objects with 
+#' many metadata variables, but we recommend editing the file in the config app 
+#' or manually afterward for the following reasons:
+#' - All metadata variables will be added, in the order they appear in the 
+#' object metadata table. A separate display order may be desired to highight 
+#' the most important metadata variables to end users.
+#' - Display names for metadata are un-set
+#' - Display settings for modalities/assays, including how they appear in 
+#' feature dropdown menus and whether to display a suffix after the assay name 
+#' in plots, are unset.
+#' - Descriptions for individual modalities/assays, metadata, and reductions 
+#' are unset.
+#' To load the config file in the config app for further editing, supply the 
+#' file path to `config_path` in `run_config`. After loading the config app, 
+#' go to the "..." menu on the top right, and select "Load Config File". Save 
+#' changes via "Save Config File" when you are finished editing.
+#'
+#' @param object a single-cell object to be configured for use in scExploreR 
+#' (not the path to the object). Currently, Seurat, SingleCellExperiment, and 
+#' anndata objects are supported.
 #' @param file path specifying where the output config file should be saved. 
 #' This should end in ".yaml".
 #' @param object_name a single-length character vector with the display name 
@@ -68,6 +87,52 @@ generate_config_yaml <-
     sample_level_var = NULL
   ){
     # Check inputs
+    # object: must be a supported single-cell object
+    if (!(inherits(object, "Seurat") | 
+           inherits(object, "SingleCellExperiment") | 
+           inherits(object, "AnnDataR6")
+         )){
+      # Construct error message: state that the object class is invalid, and 
+      # provide the valid classes.
+      err_msg <- 
+        paste0(
+          "The object passed to `object` is an invalid class (", 
+          paste0(class(object), collapse = ", "),
+          ")."
+          )
+      
+      supported_classes <- 
+        paste0(
+          'Currently supported classes: Seurat, SingleCellExperiment, ',
+          'and AnnDataR6 (anndata objects loaded via reticulate and the ',
+          '"anndata" R package).'
+          )
+      
+      # If a character input, the input may have been a path. Add additional
+      # information to the error message in this case.
+      if (inherits(object, "character")){
+        err_msg <- 
+          paste(
+            err_msg, 
+            "(did you specify the path to the object instead of the object?)",
+            supported_classes,
+            sep = " "
+            )
+        } else {
+          err_msg <-
+            paste(
+              err_msg,
+              supported_classes,
+              sep = " "
+            )
+          }
+      
+      # Display the error message
+      # Wrap based on the width of user console using strwrap()
+      # https://stackoverflow.com/questions/38000079/wrap-error-messages-for-rstudio-preserving-words
+      stop(paste(strwrap(err_msg), collapse = "\n"))
+    }
+    
     # genes_assay
     if (is.null(genes_assay)){
       # Set default if NULL (first assay)
@@ -170,7 +235,7 @@ generate_config_yaml <-
     # Whether to allow numeric metadata in plotting
     config$include_numeric_metadata <- include_numeric_metadata
     
-    # Produce a metadata entry for each caegorical metadata variable
+    # Produce a metadata entry for each categorical metadata variable
     # (config file is currently only intended for these variable types)
     meta_table <-
       SCUBA::fetch_metadata(
