@@ -243,7 +243,7 @@ options_ui <- function(id,
         
         # Description of metadata variable
         textAreaInput(
-          inputId = ns("var_description"),
+          inputId = ns("description"),
           label = 
             tagList(
               "Set description for metadata variable ",
@@ -254,11 +254,11 @@ options_ui <- function(id,
               )
             ),
           width = "380px",
-          rows = 2,
+          rows = 3,
           resize = "vertical",
           value = 
-            if (!is.null(restore_inputs$var_description)) {
-              restore_inputs$var_description
+            if (!is.null(restore_inputs$description)) {
+              restore_inputs$description
             } else {
               ""
             } 
@@ -674,7 +674,14 @@ options_server <-
                   value =
                     if (isTruthy(config_individual$suffix_human)) TRUE else FALSE
                   )
-              }
+                
+                # Desciption of assay
+                updateTextAreaInput(
+                  session,
+                  inputId = "description",
+                  value = config_individual$description
+                  )
+                }
             })
 
         } else if (options_type == "metadata"){
@@ -688,7 +695,7 @@ options_server <-
                 # Get config info for matching metadata variable
                 config_individual <-
                   session$userData$config()$metadata[[card_name]]
-
+                
                 # Freeze inputs
                 freezeReactiveValue(input, "hr")
                 freezeReactiveValue(input, "group_metadata")
@@ -705,9 +712,9 @@ options_server <-
                 # Metadata variable description
                 updateTextInput(
                   session,
-                  inputId = "var_description",
+                  inputId = "description",
                   # Value `label` section of config for variable
-                  value = config_individual$var_description
+                  value = config_individual$description
                 )
                 
                 # Switch for defining groups (input$group_metadata)
@@ -840,6 +847,13 @@ options_server <-
                   inputId = "hr",
                   # Use `label` value for the current reduction
                   value = config_individual$label
+                  )
+                
+                # Reduction description
+                updateTextAreaInput(
+                  session,
+                  inputId = "description",
+                  value = config_individual$description
                 )
               }
 
@@ -876,14 +890,14 @@ options_server <-
                   scExploreR:::make_key(
                     object,
                     assay = card_name
-                    ),
+                  ),
                 `suffix_human` =
                   if (input$include_label == TRUE) input$hr else "",
-                `dropdown_title` = input$hr#,
-                #`designated_adt` = input$designate_adt
+                `dropdown_title` = input$hr,
+                `description` = input$description   # new: add assay description
               )
             })
-
+            
           return(return_list_assays)
 
         } else if (options_type == "metadata"){
@@ -905,9 +919,9 @@ options_server <-
                 list(
                   `meta_colname` = card_name,
                   `label` = input$hr,
-                  `description` = input$var_description,
-                  # groups: defined if the switch to group metadata is turned on, 
-                  # and set to NULL otherwise.
+                  `description` = input$description,
+                  # groups: defined if the switch to group metadata is 
+                  # turned on, and set to NULL otherwise.
                   `groups` =
                     if (isTruthy(input$group_metadata)){
                       group_data()
@@ -923,7 +937,7 @@ options_server <-
                 list(
                   `meta_colname` = card_name,
                   `label` = input$hr,
-                  `description` = input$var_description,
+                  `description` = input$description,
                   `groups` = NULL
                 )
               })
@@ -943,7 +957,8 @@ options_server <-
             reactive({
               list(
                 `reduction`= card_name,
-                `label` = input$hr
+                `label` = input$hr,
+                `description` = input$description
               )
             })
 
