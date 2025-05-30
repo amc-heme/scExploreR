@@ -1952,16 +1952,16 @@ run_scExploreR <-
             # provided by the app admin
             info_page_ui <-
               div(
-                tags$h3(
+                tags$h1(
                   paste0(
                     "No information page available"
                     )
                   ),
                 div(
+                  style = "font-size: 18px;",
                   paste0(
-                    "The admin of this app instance has not included an ",
-                    "information page for this dataset. Please contact ",
-                    "the admin for more information."
+                    "The admin of this app deployment has not included an ",
+                    "information page for this dataset."
                     )
                   )
                 )
