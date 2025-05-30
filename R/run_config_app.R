@@ -114,16 +114,28 @@ run_config <-
     # www/applet_js/ directory)
     js_files <-
       list.files(
-        path = system.file("js", package = "scExploreR"),
+        path = system.file("js", package = "scExploreR", mustWork = TRUE),
         # Use regex to search for files ending in .js (double
         # backslash used to escape '.' character)
         pattern = ".*\\.js",
         full.names = TRUE,
         ignore.case = TRUE
       )
-
-    # Add www/collapsible_panel.js file to list
-    #js_files <- c(js_files,"./www/collapsible_panel.js")
+    
+    # Remove the "button wizzard" script used in the main app
+    js_files <- js_files[!grepl("js/button_wizzard.js", js_files)]
+    
+    # Add applet_navbar_wizzard JavaScript
+    js_files <- 
+      c(js_files, 
+        system.file(
+          "js", 
+          "applet_js", 
+          "applet_navbar_wizzard.js", 
+          package = "scExploreR", 
+          mustWork = TRUE
+          )
+        )
 
     # Create list of style tags for each CSS file
     js_list <- lapply(js_files, includeScript)
@@ -406,10 +418,16 @@ run_config <-
     ## 1.2. Assays Tab ####
     # (not the assay options module)
     assay_tab <- function(){
-      sidebarLayout(
-        config_app_sidebar_panel(
-          # input-no-margin class: removes margin of input containers within div
-          tagList(
+      bslib::layout_sidebar(
+        sidebar = 
+          bslib::sidebar(
+            width = "50%",
+            bg = "#E1E1E1",
+            open = TRUE,
+            class = "config-bslib-sidebar",
+            # Sidebar content 
+            # (everything passed to the "..." parameter of sidebar() is 
+            # displayed in the sidebar)
             div(
               class = "input-no-margin",
               multiInput(
@@ -424,152 +442,149 @@ run_config <-
                     selected_header = "Selected Assays",
                     "hide_empty_groups" = TRUE
                   )
-              )
-            ) # End multiInput
-          )
-
-        ),
-
-        config_app_main_panel(
+                )
+              ) # End multiInput
+            ),
+        # Main panel 
+        # Content below is passed to the "..." parameter of layout_sidebar,
+        # to create the main panel
+        tagList(
           # A "card" with assay-specific options is displayed for each
           # selected assay
+          # Generic assay options (options that apply to all assays)
+          div(
+            class = "optcard single-space-bottom",
+            tags$strong(
+              glue("General Options"),
+              class="large center"
+            ),
+            # Select metadata column to use for patient/sample
+            # level metadata analysis
+            selectInput(
+              inputId = "genes_assay",
+              label =
+                "Choose genes assay (for DGE and correlation analyses)",
+              # Only "none" available at first (can only select assays that
+              # are included by the user). Updated server-side
+              choices = "none",
+              selected = "none",
+              width = "380px"
+            ),
+            
+            selectInput(
+              inputId = "adt_assay",
+              label =
+                "Choose ADT assay",
+              choices = "none",
+              selected = "none",
+              width = "380px"
+            ),
+          ),
+          
+          # Create an instance of the assay options UI for all possible
+          # assays. Each UI creates a "card"; all are hidden at first and are
+          # shown when their corresponding assay is selected by the user. The
+          # "id" argument in lapply is the name of the assay.
+          lapply(
+            all_assays,
+            function(assay){
+              options_ui(
+                id = assay,
+                object = object,
+                optcard_type = "assays"
+                )
+              }
+            )
+          )
+        )
+    }
+
+    ## 1.3. Metadata Tab ####
+    metadata_tab <-
+      function(){
+        bslib::layout_sidebar(
+          sidebar = 
+            bslib::sidebar(
+              width = "66%",
+              bg = "#E1E1E1",
+              open = TRUE,
+              # Sidebar content 
+              # (everything passed to the "..." parameter of sidebar() is 
+              # displayed in the sidebar)
+              div(
+                class = "input-no-margin",
+                uiOutput(
+                  outputId = "metadata_sortable_bucket"
+                  )
+                ),
+                # Print server values of metadata selected if app is
+                # launched in dev_mode
+                if (dev_mode){
+                  verbatimTextOutput(
+                    outputId = "metadata_sortable_debug"
+                  )
+                }
+              ),
+          # Main panel 
+          # Content below is passed to the "..." parameter of layout_sidebar,
+          # to create the main panel UI
           tagList(
-            # Generic assay options (options that apply to all assays)
+            # Card for generic metadata options
             div(
               class = "optcard single-space-bottom",
               tags$strong(
                 glue("General Options"),
                 class="large center"
               ),
-              # Select metadata column to use for patient/sample
+              # Select metadata variable to use for patient/sample
               # level metadata analysis
               selectInput(
-                inputId = "genes_assay",
+                inputId = "patient_colname",
                 label =
-                  "Choose genes assay (for DGE and correlation analyses)",
-                # Only "none" available at first (can only select assays that
-                # are included by the user). Updated server-side
-                choices = "none",
-                selected = "none",
-                width = "380px"
-              ),
-
-              selectInput(
-                inputId = "adt_assay",
-                label =
-                  "Choose ADT assay",
-                choices = "none",
-                selected = "none",
-                width = "380px"
-              ),
-            ),
-
-            # Create an instance of the assay options UI for all possible
-            # assays. Each UI creates a "card"; all are hidden at first and are
-            # shown when their corresponding assay is selected by the user. The
-            # "id" argument in lapply is the name of the assay.
-            lapply(
-              all_assays,
-              function(assay){
-                options_ui(
-                  id = assay,
-                  object = object,
-                  optcard_type = "assays"
-                )
-              }
-            )
-
-            # Button to activate warning modal (for testing purposes)
-            # actionButton(
-            #   inputId = "warning_modal",
-            #   label = "",
-            #   icon = icon("exclamation-triangle"),
-            #   class = "icon-button x-large"
-            #   )
-            # End TEMP
-          )
-        )
-      )
-    }
-
-    ## 1.3. Metadata Tab ####
-    metadata_tab <-
-      function(){
-        sidebarLayout(
-          config_app_sidebar_panel(
-            div(
-              class = "input-no-margin",
-              uiOutput(
-                outputId = "metadata_sortable_bucket"
-              )
-            ),
-            # Print server values of metadata selected if app is
-            # launched in dev_mode
-            if (dev_mode){
-              verbatimTextOutput(
-                outputId = "metadata_sortable_debug"
-              )
-            }
-          ),
-          config_app_main_panel(
-            tagList(
-              # Card for generic metadata options
-              div(
-                class = "optcard single-space-bottom",
-                tags$strong(
-                  glue("General Options"),
-                  class="large center"
-                ),
-                # Select metadata variable to use for patient/sample
-                # level metadata analysis
-                selectInput(
-                  inputId = "patient_colname",
-                  label =
-                    "Patient/Sample Metadata Variable (optional, used
+                  "Patient/Sample Metadata Variable (optional, used
                     for patient-level metadata analysis)",
                 # Can select "none" or any categorical metadata column
                 choices = c("none", non_numeric_cols),
                 selected = NULL,
                 width = "380px"
-                ),
-                # Include numeric metadata for plotting
-                awesomeCheckbox(
-                  inputId = "include_numeric_metadata",
-                  label = "Include numeric metadata for plotting",
-                  value = TRUE,
-                  # Applies standard Bootstrap classes to style of checkbox
-                  status = "info"
-                )
               ),
-              
-              # Options specific to each metadata variable
-    
-              # Options for Numeric metadata (Numeric metadata is currently not
-              # displayed)
-
-              # Options for Categorical, logical metadata
-              # Create a metadata options "card" for each non-numeric metadata
-              # column in the object. Cards below are hidden and display when
-              # the corresponding metadata category is selected
-              lapply(
-                non_numeric_cols,
-                function(colname){
-                  hidden(
-                    options_ui(
-                      id = colname,
-                      object = object,
-                      optcard_type = "metadata"
-                    )
+              # Include numeric metadata for plotting
+              awesomeCheckbox(
+                inputId = "include_numeric_metadata",
+                label = "Include numeric metadata for plotting",
+                value = TRUE,
+                # Applies standard Bootstrap classes to style of checkbox
+                status = "info"
+              )
+            ),
+            
+            # Options specific to each metadata variable
+            
+            # Options for Numeric metadata (Numeric metadata is currently not
+            # displayed)
+            
+            # Options for Categorical, logical metadata
+            # Create a metadata options "card" for each non-numeric metadata
+            # column in the object. Cards below are hidden and display when
+            # the corresponding metadata category is selected
+            lapply(
+              non_numeric_cols,
+              function(colname){
+                hidden(
+                  options_ui(
+                    id = colname,
+                    object = object,
+                    optcard_type = "metadata"
                   )
-                }
-              )#,
-              # TEMP: add an additional card displaying the outputs
-              # from the metadata tab
-              # div(
-              #   class = "optcard",
-              #   verbatimTextOutput(outputId = "print_metadata")
-              # )
-            )
+                )
+              }
+            )#,
+            # TEMP: add an additional card displaying the outputs
+            # from the metadata tab
+            # div(
+            #   class = "optcard",
+            #   verbatimTextOutput(outputId = "print_metadata")
+            # )
           )
         )
       }
@@ -577,58 +592,67 @@ run_config <-
     ## 1.4. reductions Tab ####
     reductions_tab <-
       function(){
-        sidebarLayout(
-          config_app_sidebar_panel(
-            div(
-              class = "input-no-margin",
-              uiOutput(
-                outputId = "reductions_sortable_bucket"
+        bslib::layout_sidebar(
+          sidebar = 
+            bslib::sidebar(
+              width = "66%",
+              bg = "#E1E1E1",
+              open = TRUE,
+              class = "config-bslib-sidebar",
+              # Sidebar content 
+              # (everything passed to the "..." parameter of sidebar() is 
+              # displayed in the sidebar)
+              div(
+                class = "input-no-margin",
+                uiOutput(
+                  outputId = "reductions_sortable_bucket"
+                )
               )
-            )
-          ),
-          config_app_main_panel(
-            tagList(
-              # Card for generic options (taken from metadata tab; unused)
-              # div(
-              #   class = "optcard single-space-bottom",
-              #   tags$strong(
-              #     glue("General Options"),
-              #     class="large center"
-              #   ),
-              #   # Select metadata column to use for patient/sample level metadata
-              #   # analysis
-              #   selectInput(
-              #     inputId = "patient_colname",
-              #     label =
-              #       "Patient ID column (optional, used for patient-level
-              #       metadata analysis)",
-              #     # Can select "none" or any categorical metadata column
-              #     choices = c("none", non_numeric_cols),
-              #     selected = NULL,
-              #     width = "380px"
-              #   )
-              # ),
-
-              # Create an options "card" for each reduction included (dynamic UI)
-              lapply(
-                reductions,
-                function(reduction_name){
-                  options_ui(
-                    id = reduction_name,
-                    object = object,
-                    optcard_type = "reductions"
-                  )
-                }
-              )#,
-              # TEMP: add an additional card displaying the outputs
-              # from the current tab
-              # div(
-              #   class = "optcard",
-              #   verbatimTextOutput(
-              #     outputId = "print_reductions"
-              #   )
-              # )
-            )
+            ),
+          # Main panel 
+          # Content below is passed to the "..." parameter of layout_sidebar,
+          # to create the main panel
+          tagList(
+            # Card for generic options (taken from metadata tab; unused)
+            # div(
+            #   class = "optcard single-space-bottom",
+            #   tags$strong(
+            #     glue("General Options"),
+            #     class="large center"
+            #   ),
+            #   # Select metadata column to use for patient/sample level metadata
+            #   # analysis
+            #   selectInput(
+            #     inputId = "patient_colname",
+            #     label =
+            #       "Patient ID column (optional, used for patient-level
+            #       metadata analysis)",
+            #     # Can select "none" or any categorical metadata column
+            #     choices = c("none", non_numeric_cols),
+            #     selected = NULL,
+            #     width = "380px"
+            #   )
+            # ),
+            
+            # Create an options "card" for each reduction included (dynamic UI)
+            lapply(
+              reductions,
+              function(reduction_name){
+                options_ui(
+                  id = reduction_name,
+                  object = object,
+                  optcard_type = "reductions"
+                )
+              }
+            )#,
+            # TEMP: add an additional card displaying the outputs
+            # from the current tab
+            # div(
+            #   class = "optcard",
+            #   verbatimTextOutput(
+            #     outputId = "print_reductions"
+            #   )
+            # )
           )
         )
       }
@@ -779,7 +803,8 @@ run_config <-
         tabPanel(
           title = "ADT Threshold",
           threshold_tab()
-        )
+        ),
+        bslib::nav_spacer()
       ),
 
       # Elements below will be moved to the navbar using JavaScript
