@@ -1,5 +1,16 @@
 /* CSS in information tab */
 /* App info page */
+/* Representation of options button in info page */
+.options-button-representation{
+  background-color: var(--orange, #FFB74D);
+  border: 1px solid var(--orange-border, #FF9800);
+  border-radius: 50%;
+  width: 1em;
+  height: 1em;
+  color: #FFFFFF;
+  padding: 0.1em 0.2em;
+}
+
 /* Reduce font size of h1, h2 tags on info page */
 #info_tab_main h1 {
   font-size: 26px;

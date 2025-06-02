@@ -11,7 +11,7 @@ The information tab is grouped into the following pages, which may be switched u
 
 - **General Information:** Information about the app (current page)
 - **Dataset Information:** Information on the currently loaded dataset 
-- **Dataset Metadata:** Information on metadata variables in the current dataset
+- **Dataset Contents:** Information on metadata variables in the current dataset
 
 ## Plots Tab
 
@@ -26,7 +26,7 @@ Use the plots tab to produce and export several plot types commonly used in sing
 - Ridge Plots
 - Cell Type Proportion Plots
 
-For more information on plot types, go to the "?" button and select "Single-Cell Visualizations". For information on all features in the plots tab, please see the [full documentation](https://amc-heme.github.io/scExploreR/articles/full_documentation.html#plots-tab). 
+For more information on plot types, go to the "?" button and select "Single-Cell Visualizations". For information on all features in the plots tab, please see the [full documentation](https://amc-heme.github.io/scExploreR/articles/full_documentation.html#plots-tab).
 
 ## Differential Expression Tab
 
@@ -36,6 +36,8 @@ Use the differential expression tab to identify genes that are upregulated or do
 
 Use the menu on the left hand side of the app to run a differential gene expression test.
 
+!["Diagram on the process of running a DGE test, explained below."](intro_page_dge_figure.svg)
+
 **Step 1: Choose test**
 
 - **Differential expression:** Compare two cell groups to find genes enriched in one group versus the other.  
@@ -43,22 +45,42 @@ Use the menu on the left hand side of the app to run a differential gene express
 
 **Step 2: Define groups**  
 
-- **By metadata:**  
-  - **Differential expression:** Pick a categorical variable, then assign selected values to Group 1 and Group 2.  
-  - **Marker identification:** Use every value as its own group.  
-- **By feature expression (DE only):**  
-  1. Select a feature.  
-  2. Set an expression threshold via the interactive ridge plot.  
-  3. Cells ≥ threshold → Group 1; cells < threshold → Group 2.  
+- **For Marker Identification:** choose a metadata variable. Groups are automatically created for all values of that variable.
+- **For Differential expression:** can define using metadata or feature expression.
+  - **By Metadata**: select a metadata variable, and then choose two values from that variable from which to form groups.
+  - **By feature expression**:
+    1. Select a feature.  
+    2. A ridge plot interface will appear. Select a expression threshold by clicking within the plot.
+    3. Cells ≥ threshold are assigned to Group 1, cells < threshold are assigned to Group 2.  
+    
+**Step 3: Select analysis scope**
 
-**Step 3: Select analysis scope**  
 - **Full object:** Run on all cells.  
-- **Subset:** Apply filters (e.g., metadata or QC metrics), then run on the filtered cells.  
-
+- **Subset:** Apply filters based on metadata or feature expression, then run on the filtered cells.
 
 For more information, see the [full documentation](https://amc-heme.github.io/scExploreR/articles/full_documentation.html#dge-tab).
 
+## Subsetting
+
+Subsetting can be performed in both the plots tab and the differential expression tab using the "Subset Options" interface. Use this interface to define a set of criteria for subsetting. Criteria can be defined around metadata or feature expresson, and the cells that match the criteria are included in the subset. 
+
+To define criteria, open the "Subset Options" dropdown.
+
+#### Adding filter crieria
+
+1. Select "Add filter"
+2. Choose the type of filter, either **"Categorical Metadata"**, **"Feature Expression"** (which includes numeric metadata), or **"Advanced Subsetting"**.
+3. Define the filter criterion based on the type selected in 2):
+  - **"Categorical Metadata":** Select a metadata variable, and select the values to include for that variable.
+  - **"Feature Expression":** Select a feature or numeric metadata variable. A ridge plot interface will appear. Use the ">", "<", and "Range" buttons to filter for cells with values greater than, less than, or within a range of, the selected value(s), respectively. 
+    - For less than or greater than filters, select a single value on the plot that will be used as the threshold. 
+    - For the range filter, select an upper and lower bound on the plot, and all cells with values between the values selected will be included. To edit either bound after selecting them on the plot, select the pencil icon beneath the plot.
+  - **"Advanced Subsetting":** This is only available for Seurat objects. Advanced users may define subsets by code by passing a string that is interperatable to the `subset` argument for the `subset` function in Seurat.
+4. Press "Confirm Filter" to apply the filter. 
+
+#### Editing filters
+
 ## Datasets
 
-There may be multiple datasets deployed in this instance of the 
+To view the datasets available in this deployment, go to the <span class="options-button-representation"><i class="fas fa-ellipsis"></i></span> button, and select "Choose Dataset". Select a dataset from the widow that appears to change datasets.
 
