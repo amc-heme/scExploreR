@@ -36,7 +36,9 @@ Use the differential expression tab to identify genes that are upregulated or do
 
 Use the menu on the left hand side of the app to run a differential gene expression test.
 
+::: {style="width: 600px;"}
 !["Diagram on the process of running a DGE test, explained below."](intro_page_dge_figure.svg)
+:::
 
 **Step 1: Choose test**
 
@@ -64,9 +66,9 @@ For more information, see the [full documentation](https://amc-heme.github.io/sc
 
 Subsetting can be performed in both the plots tab and the differential expression tab using the "Subset Options" interface. Use this interface to define a set of criteria for subsetting. Criteria can be defined around metadata or feature expresson, and the cells that match the criteria are included in the subset. 
 
-To define criteria, open the "Subset Options" dropdown.
+To define criteria, open the "Subset Options" dropdown and follow the instructions below. Any number of filter criteria can be defined, and the criteria are joined via AND logic (cells matching criterion A, and criterion B, and so on are included). When finished, use the **"Apply Subset"** button to create the subset.
 
-#### Adding filter crieria
+### Adding filter crieria
 
 1. Select "Add filter"
 2. Choose the type of filter, either **"Categorical Metadata"**, **"Feature Expression"** (which includes numeric metadata), or **"Advanced Subsetting"**.
@@ -76,9 +78,11 @@ To define criteria, open the "Subset Options" dropdown.
     - For less than or greater than filters, select a single value on the plot that will be used as the threshold. 
     - For the range filter, select an upper and lower bound on the plot, and all cells with values between the values selected will be included. To edit either bound after selecting them on the plot, select the pencil icon beneath the plot.
   - **"Advanced Subsetting":** This is only available for Seurat objects. Advanced users may define subsets by code by passing a string that is interperatable to the `subset` argument for the `subset` function in Seurat.
-4. Press "Confirm Filter" to apply the filter. 
+4. Press "Confirm Filter" to apply the filter (or the "Cancel" button to cancel). 
 
-#### Editing filters
+### Editing or deleting filters
+
+Each filter criterion displayed has a pencil (<i class="fa fa-pencil"></i>) and an "X" (<i class="fa fa-times-circle"></i>) button on the lower right hand side. Click the pencil button to edit a filter, and the "X" button to delete it. 
 
 ## Datasets
 
