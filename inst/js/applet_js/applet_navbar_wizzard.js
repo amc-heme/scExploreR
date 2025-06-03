@@ -9,11 +9,12 @@
 let help_button = document.getElementById("help_state");
 // Identify content (dropdown menu)
 let help_content = document.getElementById("dropdown-menu-help");
-// Identify config file export button
-let config_export = document.getElementById("export_selections");
+/* Identify options button ("options_state" gets the full HTML content for the
+   dropDownButton with inputId "options") */
+let options_button = document.getElementById("options_state");
 
 // Identify navbar header
-let header = $('.navbar > .container-fluid');
+let header = $('nav.navbar ul.nav');
 
 // Create a new div in the header, aligned to the right of the screen
 let right_panel = document.createElement("div");
@@ -34,23 +35,27 @@ help_div.setAttribute("id", "help_button_container");
 help_div.style.width = "37px";
 help_div.style.float = "right";
 help_div.style.display = "inline-block";
+help_div.style["margin-left"] = "8px";
 
-// Create new container for config export button
-let config_div = document.createElement("div");
+// Create new container for options button
+let options_div = document.createElement("div");
 // Set ID
-config_div.setAttribute("id", "config_export_div");
-/* Do not specify float property (results in button appearing to the left of
-   the help button */
-config_div.style.display = "inline-block";
+options_div.setAttribute("id", "options_div");
+// Add btn-container class (properly centers the button inside)
+options_div.setAttribute("class", "btn-container");
+// Do not specify float property (results in button appearing to 
+// the left of the help button
+options_div.style.display = "inline-block";
+options_div.style["margin-right"] = "8px";
 
 // Move elements defined above to the navbar header
 // Append the new panel to the header
 header.append(right_panel);
 // Append new config export div to right_panel
-right_panel.append(config_div);
+right_panel.append(options_div);
 // Append the new help button div to right_panel
 right_panel.append(help_div);
 // Move Help button to the new div
 help_div.append(help_button);
-// Move config export button to its new div
-config_div.append(config_export);
+// Move options export button to its new div
+options_div.append(options_button);

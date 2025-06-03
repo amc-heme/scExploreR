@@ -1,0 +1,69 @@
+/* CSS in information tab */
+/* App info page */
+/* Representation of options button in info page */
+.options-button-representation{
+  background-color: var(--orange, #FFB74D);
+  border: 1px solid var(--orange-border, #FF9800);
+  border-radius: 50%;
+  width: 1em;
+  height: 1em;
+  color: #FFFFFF;
+  padding: 0.1em 0.2em;
+}
+
+/* Reduce font size of h1, h2 tags on info page */
+#info_tab_main h1 {
+  font-size: 26px;
+}
+
+#info_tab_main h2 {
+  font-size: 20px;
+}
+
+#info_tab_main h3 {
+  font-size: 16px;
+}
+
+#info_tab_main h4 {
+  font-size: 14px;
+}
+
+#info_tab_main ul {
+  padding-inline-start: 15px;
+}
+
+#info_tab_main ul ul {
+  padding-inline-start: 30px;
+}
+
+#info_tab_main ul ol {
+  padding-inline-start: 30px;
+}
+
+/* Deployment info container */
+/* Cut off name, email text that extends beyond the container */
+.overflow-cutoff {
+  overflow: hidden; 
+  text-overflow: ellipsis;
+}
+
+/* Link to Slack channel */
+.slack-link {
+  text-decoration: none;
+  color: var(--dark-blue, #082E6B);
+}
+
+.slack-link:hover {
+  text-decoration: none;
+  color: var(--dark-blue-hover, #456394)
+}
+
+.slack-link:active {
+  color: var(--dark-blue-active, #7E9DD0);
+}
+
+/* Dataset info page */
+/* Keep images from extending beyond the viewing window */
+#object_info_page img {
+  max-width: 100%;
+}

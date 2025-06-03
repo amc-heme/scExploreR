@@ -92,6 +92,32 @@ options_ui <- function(id,
             label =
               "Include assay name on plots? (This is usually not required for
               the default assay in your data)"
+            ),
+          
+          textAreaInput(
+            inputId = ns("description"),
+            label = 
+              tagList(
+                "Description: ",
+                icon(
+                  "circle-question",
+                  id = ns("description_help"),
+                  class = "fa-solid"
+                  )
+                ),
+            width = "100%",
+            rows = 3,
+            resize = "vertical"
+            ),
+          shinyBS::bsTooltip(
+            id = ns("description_help"), 
+            title = 
+              paste0(
+                "The description entered here will be displayed to end users of your scExploreR deployment. Information entered here will help users understand this assay and how it should be used in the app for analysis. Useful information may include a brief description of the type of data represented by the assay, what the assay biolocially measures or represents, methods involved in data collection, normalization methods applied, etc."
+              ),
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
             )
         )
       )
@@ -123,6 +149,33 @@ options_ui <- function(id,
                 card_name
               },
             width = "380px"
+            ),
+          
+          # Description of reduction
+          textAreaInput(
+            inputId = ns("description"),
+            label = 
+              tagList(
+                "Description: ",
+                icon(
+                  "circle-question",
+                  id = ns("description_help"),
+                  class = "fa-solid"
+                )
+              ),
+            width = "100%",
+            rows = 3,
+            resize = "vertical"
+            ),
+          shinyBS::bsTooltip(
+            id = ns("description_help"), 
+            title = 
+              paste0(
+                "The description entered here will be displayed to end users of your scExploreR deployment. Information entered here should help users understand why the reudction is used and how it may be used in the app to undersand the biology."
+              ),
+            placement = "bottom", 
+            trigger = "hover",
+            options = NULL
             )
           )
         )
@@ -190,18 +243,35 @@ options_ui <- function(id,
         
         # Description of metadata variable
         textAreaInput(
-          inputId = ns("var_description"),
+          inputId = ns("description"),
           label = 
-            "Set description for metadata variable",
+            tagList(
+              "Set description for metadata variable ",
+              icon(
+                "circle-question",
+                id = ns("description_help"),
+                class = "fa-solid"
+              )
+            ),
           width = "380px",
-          rows = 2,
+          rows = 3,
           resize = "vertical",
           value = 
-            if (!is.null(restore_inputs$var_description)) {
-              restore_inputs$var_description
+            if (!is.null(restore_inputs$description)) {
+              restore_inputs$description
             } else {
               ""
             } 
+        ),
+        shinyBS::bsTooltip(
+          id = ns("description_help"), 
+          title = 
+            paste0(
+              "The description entered here will be displayed to end users of your scExploreR deployment. Information entered here will help end users understand how this variable should be used for visualization and analysis. This can include information such as the biological significance of this metadata variable, how it was computed, what individual values mean, etc."
+            ),
+          placement = "bottom", 
+          trigger = "hover",
+          options = NULL
         ),
       
         # Option to classify metadata into list (ex. group patients 
@@ -227,11 +297,13 @@ options_ui <- function(id,
             div(
               id = ns("groups_explanation"),
               #class = "show_if_groups_enabled",
-              tags$p(
-                "(Choices for possible values in the metadata
-              variable will appear in the app)",
-                class = "center small"
-              )
+              # This no longer makes sense and I don't remember what I 
+              # originally intended to say, so I removed this.
+              # tags$p(
+              #   "(Choices for possible values in the metadata
+              # variable will appear in the app)",
+              #   class = "center small"
+              # )
             ),
             shinyjs::hidden(
               div(
@@ -602,7 +674,14 @@ options_server <-
                   value =
                     if (isTruthy(config_individual$suffix_human)) TRUE else FALSE
                   )
-              }
+                
+                # Desciption of assay
+                updateTextAreaInput(
+                  session,
+                  inputId = "description",
+                  value = config_individual$description
+                  )
+                }
             })
 
         } else if (options_type == "metadata"){
@@ -616,7 +695,7 @@ options_server <-
                 # Get config info for matching metadata variable
                 config_individual <-
                   session$userData$config()$metadata[[card_name]]
-
+                
                 # Freeze inputs
                 freezeReactiveValue(input, "hr")
                 freezeReactiveValue(input, "group_metadata")
@@ -633,9 +712,9 @@ options_server <-
                 # Metadata variable description
                 updateTextInput(
                   session,
-                  inputId = "var_description",
+                  inputId = "description",
                   # Value `label` section of config for variable
-                  value = config_individual$var_description
+                  value = config_individual$description
                 )
                 
                 # Switch for defining groups (input$group_metadata)
@@ -768,6 +847,13 @@ options_server <-
                   inputId = "hr",
                   # Use `label` value for the current reduction
                   value = config_individual$label
+                  )
+                
+                # Reduction description
+                updateTextAreaInput(
+                  session,
+                  inputId = "description",
+                  value = config_individual$description
                 )
               }
 
@@ -804,14 +890,14 @@ options_server <-
                   scExploreR:::make_key(
                     object,
                     assay = card_name
-                    ),
+                  ),
                 `suffix_human` =
                   if (input$include_label == TRUE) input$hr else "",
-                `dropdown_title` = input$hr#,
-                #`designated_adt` = input$designate_adt
+                `dropdown_title` = input$hr,
+                `description` = input$description   # new: add assay description
               )
             })
-
+            
           return(return_list_assays)
 
         } else if (options_type == "metadata"){
@@ -833,9 +919,9 @@ options_server <-
                 list(
                   `meta_colname` = card_name,
                   `label` = input$hr,
-                  `description` = input$var_description,
-                  # groups: defined if the switch to group metadata is turned on, 
-                  # and set to NULL otherwise.
+                  `description` = input$description,
+                  # groups: defined if the switch to group metadata is 
+                  # turned on, and set to NULL otherwise.
                   `groups` =
                     if (isTruthy(input$group_metadata)){
                       group_data()
@@ -851,7 +937,7 @@ options_server <-
                 list(
                   `meta_colname` = card_name,
                   `label` = input$hr,
-                  `description` = input$var_description,
+                  `description` = input$description,
                   `groups` = NULL
                 )
               })
@@ -871,7 +957,8 @@ options_server <-
             reactive({
               list(
                 `reduction`= card_name,
-                `label` = input$hr
+                `label` = input$hr,
+                `description` = input$description
               )
             })
 

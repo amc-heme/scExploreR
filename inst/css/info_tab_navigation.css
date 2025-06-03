@@ -1,0 +1,65 @@
+/* CSS for navbar interface in info tab */
+/* Navar tabs exist as an unordered list (<ul>) within a <nav> element */
+nav.info-nav {
+  width: 100%;
+  font-weight: bold;
+}
+
+nav.info-nav ul {
+  /* Display list items without the default bullet points */
+  list-style-type: none;
+  /* Remove default margin and padding for ul */
+  margin: 0;
+  /* Add padding on top and bottom */
+  padding: 15px 0px;
+}
+
+/* Tab buttons are <li> elements */
+nav.info-nav li {
+  background-color: #FFFFFF;
+  /* Change cursor when hovering over button */
+  cursor: pointer;
+  /* padding: 10px 16px;  */
+  text-align: center;
+  margin: auto;
+  border-radius: 10px;
+  border: 1px #333333 solid;
+  margin-top: 5px;
+}
+
+/* No margin for the first tab in the list */
+nav.info-nav ul > li:first-of-type{
+  margin-top: 0px;
+}
+
+
+/* Highight buttons upon hover */
+nav.info-nav li:hover{
+  /* background-color: #ddd; */
+  /* background-color: #99BBCF; */
+  background-color: var(--mid-blue-hover, #B0E1F0);
+  /* color: #EDEDED; */
+  /* background-color: #217CA188; */
+  /* color: var(--primary, #217CA1); */
+}
+
+/* Styling for currently selected tabs */
+nav.info-nav li.active {
+  background-color: var(--mid-blue, #5bc0de);
+  font-weight: bold;
+  color: #EDEDED;
+  /* Use bold text */
+  /* font-weight: bold; */
+}
+
+/* Content shown/hidden by navbar tabs */
+/* Hidden by default */
+.tab-window {
+  display: none;
+}
+
+
+/* Show tabs when the active class is applied */
+.tab-window.active {
+  display: block;
+}

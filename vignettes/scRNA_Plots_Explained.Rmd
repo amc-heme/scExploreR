@@ -27,6 +27,10 @@ Feature plots are useful for identifying clusters that express a gene or surface
 
 Feature plots show a summary of expression, but they can over- or under-represent the expression of features in the dataset. The order cells are plotted may affect the representation of expression on the plot, to a degree that varies based on the expression profile of the feature. The "order cells" option toggles between plotting in random order (the default), or plotting in order of expression, with the cells with highest expression appearing above cells with lower expression. Because of this, feature plots are best used as a summary, and should be followed up with violin, ridge, and dot plots, or differential expression analysis.
 
+## Feature Co-expression plots {#coexpression}
+
+When two features are entered, you may view a co-expression plot that shows the extent to which each feature is expressed. The co-expression plot will show one panel for individual expression of each feature, as well as a "blended" plot that shows the extent to which both features are expressed in each cell. 
+
 # Violin Plots {#vln}
 
 Violin plots show the distribution of expression values for feature in groups of cells defined by a categorical metadata variable. The distribution is represented as a "violin", where the width of the violin is determined by the number of cells in the group with expression values matching each value on the y-axis. Cells are plotted over the violin as points according to their expression values.
