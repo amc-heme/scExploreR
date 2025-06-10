@@ -21,7 +21,7 @@
 #' @param object a single-cell object to be configured for use in scExploreR 
 #' (not the path to the object). Currently, Seurat, SingleCellExperiment, and 
 #' anndata objects are supported.
-#' @param file path specifying where the output config file should be saved. 
+#' @param output_yaml path specifying where the output config file should be saved. 
 #' This should end in ".yaml".
 #' @param object_name a single-length character vector with the display name 
 #' of the object. This will be displayed to end users in the app as entered.
@@ -53,7 +53,7 @@
 #' ID, for example. If this is not provided (the default), pie charts will not 
 #' appear in scExploreR.
 #'
-#' @returns A config file is generated at the path provided to `file`. Nothing is returned from the function.
+#' @returns A config file is generated at the path provided to `output_yaml`. Nothing is returned from the function.
 #' 
 #' @export
 #'
@@ -61,18 +61,18 @@
 #' auto_config(
 #'  # Replace with path to your object
 #'  object = path_to_your_object,
-#'  file = output_config_path,
+#'  output_yaml = output_config_path,
 #'  object_name = "Test Single-Cell Object",
 #'  object_description = "This is a test object",
 #'  genes_assay = "RNA",
-#'  include_numeric_metadata = TRUE
-#'  # Set the
-#'  is_HDF5SummarizedExperiment = TRUE
+#'  include_numeric_metadata = TRUE,
+#'  is_HDF5SummarizedExperiment = FALSE,
+#'  sample_level_var = NULL
 #'  )
 generate_config_yaml <- 
   function(
     object,
-    file,
+    output_yaml,
     object_name,
     object_description = "",
     is_HDF5SummarizedExperiment = FALSE,
@@ -317,9 +317,9 @@ generate_config_yaml <-
     config <-
       c(config, list(`adt_thresholds` = NULL))
     
-    # Save config file to `file`
+    # Save config file to `output_yaml`
     yaml::write_yaml(
       config,
-      file = file
+      file = output_yaml
     )
   }

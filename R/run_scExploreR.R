@@ -14,22 +14,24 @@
 #' @param enable_metadata_addition when TRUE, users may interactively add metadata to objects in the app. This feature is currently unstable, so it must be opted in to by setting this value to TRUE.
 #' @param port specify a port for launching the browser. This is optional for a single deployment but required to run several instances of the browser at the same IP address. The port can be any number between 3000:8000, except for ports blocked by Google Chrome (for more information on this, see \link[shiny]{runApp}).
 #' @param host This is passed to `shiny::runApp`. See the documentation of `host` in \link[shiny]{runApp} for more info.
-#' @param launch_browser This is passed to `shiny::runApp` as `launch.browser`. See the documentation of `launch.browser` in \link[shiny::runApp]{runApp} for more info.
+#' @param launch_browser This is passed to `shiny::runApp` as `launch.browser`. See the documentation of `launch.browser` in \link[shiny]{runApp} for more info.
 #' @param full_stack_trace when TRUE, the full stack trace of errors is logged to the console (FALSE by default). 
 #' @param dev_mode used for development and debugging. When this is TRUE, additional logging occurrs, and the status of the app is printed in the UI. This is not reccomended to be used outside of development. 
 #' 
 #' @usage
 #' # Option 1: Single-object deployment with 
-#' # an object and a config file
+#' # an object and an object config file
 #' run_scExploreR(
 #'  object = "path_to_object",
 #'  config_file = "path_to_config_file.yaml"
 #'  )
 #' 
-#' # Option 2: Browser config file with paths to object, 
+#' # Option 2: Multi-object deployment with
+#' # Browser config file with paths to object, 
 #' # config files for any number of objects
+#' #  
 #' run_scExploreR(
-#'  browser_config = "path_to_browser_config_file"
+#'  browser_config = "path_to_browser_config_file.yaml"
 #'  )
 #'
 #' @export

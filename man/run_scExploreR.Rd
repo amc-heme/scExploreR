@@ -5,16 +5,18 @@
 \title{scExploreR app}
 \usage{
 # Option 1: Single-object deployment with 
-# an object and a config file
+# an object and an object config file
 run_scExploreR(
  object = "path_to_object",
  config_file = "path_to_config_file.yaml"
  )
 
-# Option 2: Browser config file with paths to object, 
+# Option 2: Multi-object deployment with
+# Browser config file with paths to object, 
 # config files for any number of objects
+#  
 run_scExploreR(
- browser_config = "path_to_browser_config_file"
+ browser_config = "path_to_browser_config_file.yaml"
  )
 }
 \arguments{
@@ -34,7 +36,7 @@ the se.rds and assays.h5 files for the object.}
 
 \item{host}{This is passed to \code{shiny::runApp}. See the documentation of \code{host} in \link[shiny]{runApp} for more info.}
 
-\item{launch_browser}{This is passed to \code{shiny::runApp} as \code{launch.browser}. See the documentation of \code{launch.browser} in \link[shiny::runApp]{runApp} for more info.}
+\item{launch_browser}{This is passed to \code{shiny::runApp} as \code{launch.browser}. See the documentation of \code{launch.browser} in \link[shiny]{runApp} for more info.}
 
 \item{full_stack_trace}{when TRUE, the full stack trace of errors is logged to the console (FALSE by default).}
 

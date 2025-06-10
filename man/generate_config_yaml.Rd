@@ -7,13 +7,13 @@
 auto_config(
  # Replace with path to your object
  object = path_to_your_object,
- file = output_config_path,
+ output_yaml = output_config_path,
  object_name = "Test Single-Cell Object",
  object_description = "This is a test object",
  genes_assay = "RNA",
- include_numeric_metadata = TRUE
- # Set the
- is_HDF5SummarizedExperiment = TRUE
+ include_numeric_metadata = TRUE,
+ is_HDF5SummarizedExperiment = FALSE,
+ sample_level_var = NULL
  )
 }
 \arguments{
@@ -21,7 +21,7 @@ auto_config(
 (not the path to the object). Currently, Seurat, SingleCellExperiment, and
 anndata objects are supported.}
 
-\item{file}{path specifying where the output config file should be saved.
+\item{output_yaml}{path specifying where the output config file should be saved.
 This should end in ".yaml".}
 
 \item{object_name}{a single-length character vector with the display name
@@ -63,17 +63,26 @@ ID, for example. If this is not provided (the default), pie charts will not
 appear in scExploreR.}
 }
 \value{
-A config file is generated at the path provided to \code{file}. Nothing is returned from the function.
+A config file is generated at the path provided to \code{output_yaml}. Nothing is returned from the function.
 }
 \description{
 This function will automatically generate a basic config file from a
 single-cell object. This can greatly speed up setup for large objects with
-many metadata variables, but we reccomend editing the file in the config app
+many metadata variables, but we recommend editing the file in the config app
 or manually afterward for the following reasons:
 \itemize{
 \item All metadata variables will be added, in the order they appear in the
 object metadata table. A separate display order may be desired to highight
 the most important metadata variables to end users.
-\item 
+\item Display names for metadata are un-set
+\item Display settings for modalities/assays, including how they appear in
+feature dropdown menus and whether to display a suffix after the assay name
+in plots, are unset.
+\item Descriptions for individual modalities/assays, metadata, and reductions
+are unset.
+To load the config file in the config app for further editing, supply the
+file path to \code{config_path} in \code{run_config}. After loading the config app,
+go to the "..." menu on the top right, and select "Load Config File". Save
+changes via "Save Config File" when you are finished editing.
 }
 }

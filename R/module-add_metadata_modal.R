@@ -51,6 +51,12 @@ add_metadata_server <-
         # New variables added by join
         add_metadata_state$vars_added <- c()
         
+        example_add_metadata_df <- data.frame(
+          patient_id = c(11292, 14384, 44438, 93940),
+          new_group   = c("group_a",  "group_a",  "group_b",  "group_b"),
+          stringsAsFactors = FALSE
+        )
+        
         # 1. Control state of window ####
         # Set state to open when the open link is selected
         observe({
@@ -91,8 +97,17 @@ add_metadata_server <-
                     paste0(
                       "Upload a table below with the IDs of a patient/sample ",
                       "variable as they appear in the app in one column, and ",
-                      "group IDs in a second column."
+                      "group IDs in a second column. For example:"
                     )
+                  ),
+                  # Insert example table defined in server
+                  DT::datatable(
+                    example_add_metadata_df,
+                    class = "compact stripe cell-border",
+                    # Disallow selection of rows/cells
+                    selection = "none",
+                    # Remove rownames
+                    rownames = FALSE
                   ),
                   # Add interface to download a sample CSV to fill out?
                   # Upload window for CSV
@@ -113,7 +128,8 @@ add_metadata_server <-
                     # column
                     selectInput(
                       inputId = ns("upload_sample_colname"),
-                      label = "Choose column to map to sample variable:",
+                      label = "Choose column from your table to map to 
+                               sample variable (eg. patient_id):",
                       choices = NULL,
                       selected = NULL
                       ),
@@ -121,7 +137,8 @@ add_metadata_server <-
                     selectInput(
                       inputId = ns("object_sample_colname"),
                       label = 
-                        "Choose sample variable from object to map to:",
+                        "Choose sample variable from the object in this 
+                         deployment to map the above variable to:",
                       choices = NULL,
                       selected = NULL
                       ),
