@@ -11,8 +11,8 @@
 #' loaded in the main server function when the object is changed.
 #' @param assay_config The assays section of the config file. This is loaded in
 #' the main server function at startup and when the object is changed.
-#' @param metadata_config The metadata section of the config file loaded at 
-#' startup. This is loaded in the main server function at startup and when the 
+#' @param metadata_config The metadata section of the config file. This is 
+#' loaded in the main server function at startup and when the 
 #' object is changed.
 #' @param patient_colname the name of the metadata column to use for computing
 #' patient- or sample-level metadata for plotting. This is defined in the config
@@ -984,12 +984,11 @@ plots_tab_ui <- function(id,
 #' Plots Tab Module (Server Instance)
 #'
 #' @param id ID to use for module elements.
-#' @param object The Seurat object or subset. 
+#' @param object A single-cell object.
 #' @param assay_config The assays section of the config file. This is loaded in
 #' the main server function at startup and when the object is changed.
-#' @param metadata_config The metadata section of the config file loaded at 
-#' startup. This is loaded in the main server function at startup and when the 
-#' object is changed.
+#' @param metadata_config The metadata section of the config file. This is 
+#' loaded in the main server function at startup and when the object is changed.
 #' @param meta_categories The metadata categories included in `metadata_config` 
 #' (defines selectable metadata). This is generated in the main 
 #' server function upon app startup and when the object is changed. 
@@ -1017,6 +1016,9 @@ plots_tab_ui <- function(id,
 #' patient- or sample-level metadata for plotting. This is defined in the config
 #' file, and is loaded in the main server function at startup and when the 
 #' object is changed.
+#' @param current_tab The id of the navbarPage in the main app. This is used to 
+#' determine if the plots tab is active and get reactive expressions to respond 
+#' to switching to the tab.
 #' 
 #' @noRd
 plots_tab_server <- function(id,
@@ -1033,7 +1035,8 @@ plots_tab_server <- function(id,
                              categorical_palettes,
                              continuous_palettes,
                              blend_palettes,
-                             patient_colname
+                             patient_colname,
+                             current_tab
                              ){
   moduleServer(id,
                function(input,output,session){
@@ -1090,25 +1093,30 @@ plots_tab_server <- function(id,
                  session$userData$plots_tab_spinner <- 
                     reactiveValues(`shown` = FALSE)
                  
-                 # Feature choices for text entry 
-                 observeEvent(
-                   # Reactive - updates in response to change in dataset
-                   # (valid_features computed downstream of object())
-                   valid_features(),
-                   label = "Render choices for feature selection",
-                   {
-                     updateSelectizeInput(
-                       session,
-                       # Do not namespace IDs in update* functions
-                       inputId = "text_features", 
-                       choices = valid_features(), 
-                       server = TRUE
-                       )
-                   })
+                 # 1. Initialize feature choices ####
+                 observe(
+                    label = "Render choices for feature selection",
+                    {
+                       req(current_tab())
+                       req(valid_features())
+                       
+                       # Updates feature selection checkbox when the user 
+                       # switches to the plots tab (update does not 
+                       # work otherwise)
+                       if (current_tab() == "plots"){
+                          updateSelectizeInput(
+                             session,
+                             # Do not namespace IDs in update* functions
+                             inputId = "text_features", 
+                             choices = valid_features(), 
+                             server = TRUE
+                          ) 
+                       }
+                    })
                  
-                 # 1. Palettes -------------------------------------------------
+                 # 2. Palettes -------------------------------------------------
                  # Store selected palettes
-                 ## 1.1. Categorical Palette ####
+                 ## 2.1. Categorical Palette ####
                  selected_categorical_palette <-
                    reactive(
                      label = "Plots: Store selected palette (categorical)",
@@ -1144,7 +1152,7 @@ plots_tab_server <- function(id,
                        
                        })
                  
-                 ## 1.2. Continuous palette ####
+                 ## 2.2. Continuous palette ####
                  selected_continuous_palette <-
                    reactive(
                      label = "Plots: Store selected palette (continuous)",
@@ -1172,9 +1180,9 @@ plots_tab_server <- function(id,
                        
                      })
                  
-                 # 2. Plot Modules ---------------------------------------------
+                 # 3. Plot Modules ---------------------------------------------
                  # A server instance of the plot_module is created for each plot
-                 ## 2.1. Dimplot ####
+                 ## 3.1. Dimplot ####
                  plot_module_server(
                    id = "dimplot",
                    object = subset,
@@ -1193,7 +1201,7 @@ plots_tab_server <- function(id,
                    palette = selected_categorical_palette
                    )
                  
-                 ## 2.2. Feature Plot ####
+                 ## 3.2. Feature Plot ####
                  plot_module_server(
                    id = "feature",
                    object = subset, 
@@ -1220,7 +1228,7 @@ plots_tab_server <- function(id,
                    blend_palettes = blend_palettes
                    )
                  
-                 ## 2.3. Violin Plot ####
+                 ## 3.3. Violin Plot ####
                  plot_module_server(
                    id = "violin",
                    object = subset, 
@@ -1238,7 +1246,7 @@ plots_tab_server <- function(id,
                    palette = selected_categorical_palette
                    )
                  
-                 ## 2.4. Dot plot ####
+                 ## 3.4. Dot plot ####
                  plot_module_server(
                    id = "dot",
                    object = subset, 
@@ -1257,7 +1265,7 @@ plots_tab_server <- function(id,
                    palette = selected_continuous_palette
                    )
                  
-                 ## 2.5. Scatterplot ####
+                 ## 3.5. Scatterplot ####
                  plot_module_server(
                    id = "scatter",
                    object = subset, 
@@ -1272,10 +1280,11 @@ plots_tab_server <- function(id,
                    valid_features = valid_features,
                    # Use categorical palettes for scatterplot
                    palette = selected_categorical_palette,
-                   assay_config = assay_config
+                   assay_config = assay_config,
+                   current_tab = current_tab
                    )
                  
-                 ## 2.6. Ridge Plot ####
+                 ## 3.6. Ridge Plot ####
                  plot_module_server(
                    id = "ridge",
                    object = subset, 
@@ -1294,7 +1303,7 @@ plots_tab_server <- function(id,
                    palette = selected_categorical_palette
                    )
                  
-                 ## 2.7. Cell type proportion bar plot ####
+                 ## 3.7. Cell type proportion bar plot ####
                  plot_module_server(
                    id = "proportion",
                    object = subset,
@@ -1311,7 +1320,7 @@ plots_tab_server <- function(id,
                    assay_config = assay_config
                  )
                  
-                 ## 2.8. Metadata pie chart ####
+                 ## 3.8. Metadata pie chart ####
                  # Server instance is only created when patient_colname() is 
                  # defined
                  if (!is.null(patient_colname())){
@@ -1333,8 +1342,8 @@ plots_tab_server <- function(id,
                      )
                    }
                  
-                 # 3. Feature Summary Statistics -----
-                 ## 3.1. Module server Instance ####
+                 # 4. Feature Summary Statistics -----
+                 ## 4.1. Module server Instance ####
                  # Module server instance
                  feature_stats_server(
                    id = "plots_feature_statistics",
@@ -1343,7 +1352,7 @@ plots_tab_server <- function(id,
                    assay_config = assay_config
                    )
                  
-                 ## 3.2. Show and hide statistics window ####
+                 ## 4.2. Show and hide statistics window ####
                  # The feature statistics panel is shown only when features 
                  # have been entered.
                  observe({
@@ -1362,8 +1371,8 @@ plots_tab_server <- function(id,
                    }
                  })
                  
-                 # 4. Process Subset -------------------------------------------
-                 ## 4.1 Module server to process user selections and report ####
+                 # 5. Process Subset -------------------------------------------
+                 ## 5.1 Module server to process user selections and report ####
                  # to other modules
                  # With reactive objects, a new module must be created for each 
                  # object to avoid collisions between subset menu ID's. 
@@ -1378,7 +1387,7 @@ plots_tab_server <- function(id,
                      valid_features = valid_features
                      )
                  
-                 ## 4.2. Enable/Disable "Apply Subset" button ####
+                 ## 5.2. Enable/Disable "Apply Subset" button ####
                  # When filters are being edited, the apply subset button must
                  # be disabled to prevent the subset from computing while the
                  # user is still choosing a filter.
@@ -1408,7 +1417,7 @@ plots_tab_server <- function(id,
                        }
                     })
                  
-                 ## 4.2. Make Subset ####
+                 ## 5.3. Make Subset ####
                  subset <-
                    eventReactive(
                      # Also reacts to the object. All downstream functions in 
@@ -1487,7 +1496,7 @@ plots_tab_server <- function(id,
                        plots_s_sub
                        })
                  
-                 ## 4.3 Check Subset ####
+                 ## 5.4 Check Subset ####
                  # Return notifications if conditions are not met.
                  observeEvent(
                    subset(),
@@ -1514,7 +1523,7 @@ plots_tab_server <- function(id,
                      }
                    })
                  
-                 ## 4.4 Subset Summary Module ####
+                 ## 5.5 Subset Summary Module ####
                  # Computes and exports the unique metadata values in the 
                  # current subset/object
                  subset_summary_server(
