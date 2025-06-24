@@ -1,19 +1,37 @@
 /* Sidebar Scrolling properties */
 .col-sm-4{
     overflow-y: auto;
-	/* Height set using a CSS variable set by the JavaScript at 
-	   ../js/Responsive_header.js */
-	max-height: var(--body-height);
 	}
+
+/* Height of sidebar */
+/* set the height equal to the app body in desktop screens */
+/* (width > 768px) */
+@media (min-width: 768px){
+  .col-sm-4 {
+			/* Height set using a CSS variable set by the JavaScript at 
+	   ../js/Responsive_header.js */
+    height: var(--body-height);
+  }
+}
+
+/* On mobile, the height is unset */
+/* The sidebar will display on top of the main panel in this case*/
 
 /* Main Window */
 .col-sm-8{
 	overflow-y: auto;
 	overflow-x: auto;
-	/* Height set using a CSS variable set by the JavaScript at 
-	   ../js/Responsive_header.js */
-	max-height: var(--body-height);
 	}
+
+/* set the height equal to the app body in desktop screens */
+/* (width > 768px) */
+@media (min-width: 768px){
+  .col-sm-8 {
+			/* Height set using a CSS variable set by the JavaScript at 
+	   ../js/Responsive_header.js */
+    height: var(--body-height);
+  }
+}
 
 /* Loading Spinner Containers for Main Window*/
 .spinner-container-main{

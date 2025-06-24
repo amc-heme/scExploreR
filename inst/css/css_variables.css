@@ -10,10 +10,15 @@
   --mid-blue-active: #7796D9;
 
   /* Color 3: Light blue */
-  /* Uses same color as btn-info */
+  /* Light blue used for ? button and info tab links */
+  --info-blue: #5bc0de;
+  --info-blue-hover: #B0E1F0;
 
   /* Color 4: Dark blue used for auto-dictionary markdown and feature summary */
   --markdown-blue: #082E6B;
+  --dark-blue: #082E6B;
+  --dark-blue-hover: #456394;
+  --dark-blue-active: #7E9DD0;
 
   /* Color 5: Orange (accent color) */
   --orange: #ED872D;

@@ -51,6 +51,11 @@ h2, h3 {
   font-size: 1.3em;
 }
 
+/* Bolds text */
+.bold{
+  font-weight: bold;
+}
+
 /* underline */
 .underline {
   text-decoration: underline;
@@ -104,6 +109,10 @@ h2, h3 {
   font-weight: bold;
 }
 
+.gray {
+  color: #888888
+}
+
 /* Responsively change the size of long button labels based on window size */
 @media(min-width: 1200px){
   .responsive-button-label{
@@ -143,7 +152,7 @@ h2, h3 {
   opacity: 0.5;
 }
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 /* Two column classes */
 /* For showing elements side-by-side in a two-column format */
 
@@ -204,7 +213,7 @@ h2, h3 {
 }
 
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 /* Input container classes */
 
 /* Shiny input containers within a container with this class will have no margin */
@@ -231,7 +240,7 @@ h2, h3 {
   vertical-align: top;
 }
 
-/* -------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 /* Other Containers */
 
 /* Set height of group name text box for consistency with the group metadata

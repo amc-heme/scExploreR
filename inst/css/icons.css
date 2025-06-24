@@ -13,3 +13,8 @@
 .fa-circle-check {
 	color: #124715 !important;
 }
+
+/* Question mark icon used for more information on plot types*/
+.fa-circle-question{
+	color: #A395FF;
+}
