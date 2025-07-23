@@ -61,6 +61,7 @@ Imports:
     glue,
     gridExtra,
     HDF5Array,
+    lifecycle,
     patchwork,
     presto,
     profvis (>= 0.3.7),
