@@ -174,7 +174,7 @@ run_config <-
       
       if (tolower(extension) == "rds"){
         object <- readRDS(object_path)
-      } else if (tolower(extension) == "h5ad") {
+      } else if (tolower(extension) == "h5ad"){
         # Reticulate should not be loaded unless anndata objects are used
         # (so users that don't have anndata objects won't need to install it
         # and set up a Python environment)
@@ -186,7 +186,7 @@ run_config <-
         
         md <- reticulate::import("mudata", as = "md", convert = TRUE)
         
-        object <- md$read_h5mu(file_path)
+        object <- md$read_h5mu(object_path)
       } else if (extension == ""){
         stop(
           "No file extension detected for object at path",
@@ -1388,8 +1388,6 @@ run_config <-
             update_metadata_sortable$depend()),
           label = "Metadata: define sortable",
           {
-            print("Update metadata menus based on selected metadata")
-
             tagList(
               tags$b("Choose Metadata to Include:"),
               bucket_list(
