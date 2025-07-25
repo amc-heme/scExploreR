@@ -224,7 +224,7 @@ shiny_feature <- function(object,
       ## Multi-feature plots, with split_by variable ####
       # Use FeaturePlot function (SCUBA/scPlots)
       feature_plot <-
-        SCUBA::plot_feature(
+        scExploreR::plot_feature(
           # Object or subset
           object,
           features = features_entered,
@@ -321,7 +321,7 @@ shiny_feature <- function(object,
     
     # Use Seurat::FeaturePlot
     feature_plot <-
-      SCUBA::plot_feature(
+      scExploreR::plot_feature(
         # Object or subset
         object,
         features = features_entered,

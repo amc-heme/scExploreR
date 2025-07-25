@@ -209,7 +209,7 @@ FeaturePlotSingle<-
       subset_cells <- all_cells[subset_indx]
       
       plot <- 
-        SCUBA::plot_feature(
+        scExploreR::plot_feature(
           object, 
           features = feature, 
           cells = subset_cells, 
@@ -302,7 +302,7 @@ FeaturePlotSingle<-
     # for the object provided.
     plot <- 
       suppressMessages(
-        SCUBA::plot_feature(
+        scExploreR::plot_feature(
           object, 
           features = feature, 
           reduction = reduction,
@@ -610,7 +610,7 @@ MultiFeatureSimple <-
       
       # 4.2. Create plot 
       plot <- 
-        SCUBA::plot_feature(
+        scExploreR::plot_feature(
           object, 
           features = group, 
           reduction = reduction,
