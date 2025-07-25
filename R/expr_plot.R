@@ -5,7 +5,7 @@
 #' @param object Seurat object
 #' @param type Plot type, choose from 'ridge', 'violin', or 'splitViolin'
 #' @param features Features to plot (gene expression, metrics, PC scores,
-#'  anything that can be retreived by FetchData)
+#'  anything that can be retreived by fetch_data)
 #' @param idents Which classes to include in the plot (default is all)
 #' @param ncol Number of columns if multiple plots are displayed
 #' @param sort Sort identity classes (on the x-axis) by the average expression

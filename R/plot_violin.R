@@ -23,8 +23,6 @@
 #'
 #' @keywords internal
 #'
-#' @seealso \code{\link{FetchData}}
-#'
 #' @examples
 #' plot_violin(AML_Seurat, features = "PC_1", group_by = "condensed_cell_type")
 #'
