@@ -546,7 +546,7 @@ MultiFeatureSimple <-
           groups,
           function(group, object){
             feature_data <-
-              FetchData(
+              SCUBA::fetch_data(
                 object,
                 # Fetch data for group (feature)
                 vars = group,
@@ -566,7 +566,7 @@ MultiFeatureSimple <-
           groups,
           function(group, object){
             feature_data <-
-              FetchData(
+              SCUBA::fetch_data(
                 object,
                 # Fetch data for group (feature)
                 vars = group,
