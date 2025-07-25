@@ -738,6 +738,37 @@ run_scExploreR <-
                 # Return object from TryCatch statement
                 object
               })
+        } else if (extension == "h5mu"){
+          # MuData objects: import Mudata python package and run read_h5mu
+          datasets[[data_key]]$object <-
+            tryCatch(
+              error =
+                function(cnd){
+                  stop(
+                    "There was an error loading the object at path \n",
+                    datasets[[data_key]]$object,
+                    "\nLoading was attempted via `read_h5mu` from the Python package."
+                  )
+                },
+              {
+                # Define path and load object
+                path <- datasets[[data_key]]$object
+                
+                py_require("mudata>=0.3.1")
+                
+                md <- reticulate::import("mudata", as = "md", convert = TRUE)
+                
+                object <- md$read_h5mu(path)
+                
+                # Check object for valid classes
+                check_dataset(
+                  object,
+                  path = path
+                )
+                
+                # Return object from TryCatch statement
+                object
+              })
         } else {
           # Unrecognized file extensions
           stop(
