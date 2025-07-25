@@ -95,8 +95,5 @@ scores, etc.)
 plot_violin(AML_Seurat, features = "PC_1", group_by = "condensed_cell_type")
 
 }
-\seealso{
-\code{\link{FetchData}}
-}
 \concept{visualization}
 \keyword{internal}
