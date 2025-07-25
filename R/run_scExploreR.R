@@ -1845,7 +1845,8 @@ run_scExploreR <-
       n_cells_original <-
         reactive({
           req(object())
-          ncol(object())
+          SCUBA::get_all_cells(object()) |> 
+            length()
         })
 
       ## 2.11. Auto-Generated Object Dictionary ####
