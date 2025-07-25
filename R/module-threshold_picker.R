@@ -398,7 +398,7 @@ threshold_picker_server <-
               plot_spinner$show()
               
               data <- 
-                FetchData(
+                SCUBA::fetch_data(
                   object = object(),
                   vars = feature()
                 )

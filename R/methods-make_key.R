@@ -62,8 +62,8 @@ make_key.SingleCellExperiment <-
   ){
     # SingleCellExperiment objects don't have a Key() method. Instead, a 
     # Seurat-style key will be generated using the assay name and an underscore.
-    # This will be intelligible by the FetchData.SingleCellExperiment defined in
-    # the SCUBA package.
+    # This will be intelligible by the fetch_data.SingleCellExperiment defined 
+    # in the SCUBA package.
     paste0(assay, "_")
   }
 
