@@ -130,7 +130,7 @@ FeaturePlotSingle<-
   
   # Pull minimum and maximum expression values to make the legend scale the same.
   feature_data <-
-    FetchData(
+    SCUBA::fetch_data(
       object,
       vars = feature,
       # Slot: will use "data" for Seurat objects and "logcounts" 
