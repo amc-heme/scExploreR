@@ -166,6 +166,13 @@ plot_dot <-
     # 3. Add group_by metadata to table
     expr_data$id <- group_by_data
     
+    # Replace any literal NA values with string NA
+    expr_data$id <-
+      case_when(
+        is.na(expr_data$id) ~ "NA",
+        TRUE ~ expr_data$id
+        )
+    
     # Store the group_by factor levels in `id_levels` and convert back
     # to a vector
     id_levels <- levels(x = expr_data$id)
@@ -213,7 +220,7 @@ plot_dot <-
     # expression of each feature for the given group
     plot_data <- lapply(
       X = unique(x = expr_data$id),
-      FUN = function(ident) {
+      FUN = function(ident){
         # Pull data for computing statistics
         # Exclude last column of expr_data ("id" column)
         data_use <-
