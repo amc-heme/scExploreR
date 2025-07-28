@@ -166,13 +166,6 @@ plot_dot <-
     # 3. Add group_by metadata to table
     expr_data$id <- group_by_data
     
-    # Replace any literal NA values with string NA
-    expr_data$id <-
-      case_when(
-        is.na(expr_data$id) ~ "NA",
-        TRUE ~ expr_data$id
-        )
-    
     # Store the group_by factor levels in `id_levels` and convert back
     # to a vector
     id_levels <- levels(x = expr_data$id)
@@ -211,6 +204,15 @@ plot_dot <-
           rep(x = unique(x = splits), times = length(x = id_levels))
         )
     }
+    
+    # Replace any literal NA values with string NA
+    # Downstream code will throw an error if NAs exist in group by or split
+    # by metadata
+    expr_data$id <-
+      case_when(
+        is.na(expr_data$id) ~ "NA",
+        TRUE ~ expr_data$id
+      )
     
     # 5. Form statistics for Avg. expression, pct. expressed
     ## 5.1. Compute statistics for each group
