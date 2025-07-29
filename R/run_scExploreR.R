@@ -41,6 +41,15 @@ run_scExploreR <-
     object_path = NULL,
     config_path = NULL,
     enable_metadata_addition = FALSE,
+    object_description_path = NULL,
+    contact_info = 
+      list(
+        name = NULL,
+        email = NULL,
+        slack_channel = NULL,
+        other = NULL
+        ),
+    deployment_name = NULL,
     port = NULL,
     host = NULL,
     launch_browser = NULL,
@@ -103,6 +112,44 @@ run_scExploreR <-
     library(rlang, quietly = TRUE, warn.conflicts = FALSE)
     library(gtools, quietly = TRUE, warn.conflicts = FALSE)
 
+    # Check inputs to run_scExploreR ####
+    # contact info for admin
+    # Check that the contact info is a list
+    if (!is.list(contact_info)){
+      stop(
+        paste0(
+          "The parameter `contact_info` must be a list. Enter `?run_scExploreR` 
+          in the console for more information."
+          )
+        )
+    }
+    
+    # Check that all elements in contact_info are character vectors, of length 1
+    invalid_elems <- 
+      sapply(
+        contact_info,
+        function(elem){
+          # Elements not matching the required format will be marked as TRUE
+          !(is.null(elem) || (class(elem) == "character" && length(elem) == 1))
+        }
+      )
+    
+    # If any elements are invalid, return error to user with the 
+    # invalid elements
+    if (any(invalid_elems)){
+      stop(
+        paste0(
+          "Invalid input in `contact_info`. The following elements in ",
+          "`contact_info` are not valid: ", 
+          # List all invalid elements, separated by a comma
+          paste(names(invalid_elems[invalid_elems == TRUE]), collapse = ", "), 
+          ". \n",
+          "All elements must be character vectors of length 1."
+        )
+      )
+    }
+    
+    # Add Resource Paths ####
     # Add inst/www to the resource path so static html can be loaded
     addResourcePath("resources", system.file("www", package = "scExploreR"))
 
@@ -474,7 +521,10 @@ run_scExploreR <-
           ) # End subset error sub-list
       )# End list of error definitions
 
-    # Load Datasets ####
+    # Initialize app based on mode ####
+    # (broswer mode, single object mode)
+    
+    ## Define Datasets ####
     log_info("R process initialization: loading datasets")
 
     # Construct list of datasets using config file provided by user
@@ -490,14 +540,61 @@ run_scExploreR <-
               `object` =
                 object_path,
               `config` =
-                config_path
+                config_path,
+              `object_description` = 
+                object_description_path
               )
           )
       } else if (local_mode) {
         list()
       }
 
+    ## Compile info on app admin, deployment name ####
+    admin_info <-
+      if (browser_mode){
+        list(
+          `name` = 
+            if (!is.null(browser_config$admin$name)){
+              browser_config$admin$name
+              } else NULL,
+          `email` =
+            if (!is.null(browser_config$admin$email)){
+              browser_config$admin$email
+            } else NULL,
+          `slack_channel` =
+            if (!is.null(browser_config$admin$slack_channel)){
+              browser_config$admin$slack_channel
+            } else NULL,
+          `other` =
+            if (!is.null(browser_config$admin$other)){
+              browser_config$admin$other
+            } else NULL
+        )
+      } else if (local_single_object_mode){
+        # Single-object apps: get contact info from list
+        list(
+          `name` = contact_info$name,
+          `email` = contact_info$email,
+          `slack_channel` = contact_info$slack_channel,
+          `other` = contact_info$other
+          )
+      } else if (local_mode){
+        NULL
+      }
+    
+    deployment_name <-
+      if (browser_mode){
+        # Multi-object deployment: use deployment_name property of 
+        # browser config file
+        browser_config$deployment_name
+      } else if (local_single_object_mode){
+        # Single-object mode: use deployment name parameter
+        deployment_name
+      } else if (local_mode){
+        NULL
+      }
 
+    ## Load Datasets ####
     # Objects must be loaded at startup. If they are loaded separately for each
     # user, the RAM will quickly be exhausted.
     # Each dataset is loaded below. The "object" variable in the YAML file is a
@@ -727,7 +824,6 @@ run_scExploreR <-
     log_info("Datasets successfully loaded.")
     
     # Table of Contents ------------------------------------------------------------
-    # TODO: Add module tree here
 
     # Main UI ----------------------------------------------------------------------
     # Navigation panel and references to tabs
@@ -753,32 +849,164 @@ run_scExploreR <-
             "setTopScroll")
       ),
       # CSS and JS for collapsible panel
-      navbarPage("scExplorer",
-                 windowTitle = "scExplorer",
-                 position = "fixed-top",
-                 id = "navigator",
-                 lang = "en",
-                 tabPanel(
-                   "Plots",
-                   value = "plots",
-                   uiOutput(
-                     outputId = "plots_dynamic_ui"
-                   )
-                 ),
-                 tabPanel(
-                   "Differential Expression",
-                   value = "dge",
-                   uiOutput(
-                     outputId = "dge_dynamic_ui"
-                   )
-                 )#,
-                 # tabPanel(
-                 #   "Gene Correlations",
-                 #   value = "corr",
-                 #   uiOutput(
-                 #     outputId = "corr_dynamic_ui"
-                 #   )
-                 # )
+      navbarPage(
+        "scExplorer",
+        windowTitle = "scExplorer",
+        position = "fixed-top",
+        id = "navigator",
+        lang = "en",
+        # Information Tab
+        tabPanel(
+          "Info",
+          value = "info",
+          sidebarLayout(
+            sidebarPanel = 
+              sidebarPanel(
+                fluid = FALSE,
+                # Navigation menu for *information pages*
+                tags$label(
+                  `for` = "info-nav",
+                  "Select a page below to view info:"
+                  ),
+                tags$nav(
+                  # Apply info-nav class to avoid conflicts with the
+                  # main navbar
+                  id = "info-nav",
+                  class = "info-nav",
+                  `aria-label` = "Navigation panel for information pages",
+                  tags$ul(
+                    tags$li(
+                      class = "tab-button active",
+                      id = "tab_app_info",
+                      onClick = "openTab(event, 'tab_content_app_info')",
+                      span("General Information")
+                    ),
+                    tags$li(
+                      class = "tab-button",
+                      id = "tab_object_info",
+                      onClick = "openTab(event, 'tab_content_object_info')",
+                      span("Dataset Information")
+                    ),
+                    tags$li(
+                      class = "tab-button",
+                      id = "tab_object_metadata",
+                      onClick = 
+                        "openTab(event, 'tab_content_object_metadata')",
+                      span("Dataset Contents")
+                    )
+                  )
+                ),
+                # Information on the current deployment, if defined in
+                # the browser config file or run_scExploreR.
+                if (any(!sapply(admin_info, is.null)) | 
+                    !is.null(deployment_name)){
+                  collapsible_panel(
+                    inputId = "admin_info",
+                    label = "Deployment Info",
+                    active = TRUE,
+                    if (!is.null(deployment_name)){
+                      div(
+                        tags$b("Deployment Name:"),
+                        deployment_name
+                        )
+                      },
+                    # Deployment admin information 
+                    if (any(!sapply(admin_info, is.null))){
+                      div(
+                        class = "half-space-top",
+                        div(
+                          tags$b(
+                            "Admin Contact Info"
+                            )
+                          ),
+                        if (!is.null(admin_info$name)){
+                          div(
+                            class = "overflow-cutoff",
+                            tags$b("Name:"),
+                            admin_info$name
+                          )
+                        },
+                        if (!is.null(admin_info$email)){
+                          div(
+                            class = "overflow-cutoff",
+                            tags$b("Email:"),
+                            admin_info$email
+                          )
+                        },
+                        if (!is.null(admin_info$slack_channel)){ 
+                          div(
+                            tags$a(
+                              href = admin_info$slack_channel,
+                              target = "_blank",
+                              rel = "noopener noreferrer",
+                              class = "slack-link",
+                              icon(name = "slack"),
+                              "Leave Feedback on Slack"
+                              )
+                            )
+                          }
+                        )
+                      }
+                    )
+                  }
+                ),
+            mainPanel = 
+              mainPanel(
+                id = "info_tab_main",
+                div(
+                  class = "tab-window active",
+                  id = "tab_content_app_info",
+                  # App info page
+                  # Welcome statement
+                  tags$h1("Welcome to scExploreR!"),
+                  includeMarkdown(
+                    system.file(
+                      "www",
+                      "intro_page.qmd",
+                      package = "scExploreR"
+                      )
+                    )
+                  ),
+                div(
+                  class = "tab-window",
+                  id = "tab_content_object_info",
+                  uiOutput(
+                    outputId = "object_info_page"
+                    )
+                  ),
+                div(
+                  class = "tab-window",
+                  id = "tab_content_object_metadata",
+                  object_contents_info_ui(
+                    id = "object_contents_info_tab"
+                    )
+                  )
+                )
+              )
+          ),
+        # Plots Tab
+        tabPanel(
+          "Plots",
+          value = "plots",
+          uiOutput(
+            outputId = "plots_dynamic_ui"
+            )
+          ),
+        # Differential Expression Tab
+        tabPanel(
+          "Differential Expression",
+           value = "dge",
+           uiOutput(
+             outputId = "dge_dynamic_ui"
+             )
+           )#,
+        # tabPanel(
+        #   "Gene Correlations",
+        #   value = "corr",
+        #   uiOutput(
+        #     outputId = "corr_dynamic_ui"
+        #   )
+        # )
       ), # End navbarPage()
 
       ## Buttons on upper-right hand corner of app ---------------------------------
@@ -814,12 +1042,16 @@ run_scExploreR <-
 
           # Interpreting scRNA-seq plots
           tags$a(
-            "Interpereting scRNA-seq Plots",
+            "Single-Cell Visualizations",
             href =
-              file.path(
-                "resources",
+              paste0(
+                "https://amc-heme.github.io/scExploreR/articles/",
                 "scRNA_Plots_Explained.html"
-              ),
+                ),
+              # file.path(
+              #   "resources",
+              #   "scRNA_Plots_Explained.html"
+              # ),
             class = "blue_hover",
             # Opens link in new tab
             target = "_blank",
@@ -832,10 +1064,11 @@ run_scExploreR <-
         tags$a(
           "Tutorial Vignette",
           href =
-            file.path(
-              "resources",
-              "scExplorer_Tutorial.html"
-            ),
+            "https://amc-heme.github.io/scExploreR/articles/tutorial.html",
+            # file.path(
+            #   "resources",
+            #   "scExplorer_Tutorial.html"
+            # ),
           class = "blue_hover",
           # Opens link in new tab
           target = "_blank",
@@ -845,7 +1078,12 @@ run_scExploreR <-
         # Full Feature Documentation
         tags$a(
           "Full Documentation",
-          href = full_documentation_path,
+          href = 
+            paste0(
+              "https://amc-heme.github.io/scExploreR/articles/",
+              "full_documentation.html"
+              ),
+            #full_documentation_path,
           class = "blue_hover",
           # Opens link in new tab
           target = "_blank",
@@ -855,7 +1093,7 @@ run_scExploreR <-
         # File issue on github
         tags$a(
           "Report a Bug",
-          href = "https://github.com/amc-heme/DataExploreShiny/issues",
+          href = "https://github.com/amc-heme/scExploreR/issues",
           class = "blue_hover",
           # Opens link in new tab
           target = "_blank",
@@ -967,6 +1205,39 @@ run_scExploreR <-
           #Gives manual control of showing/hiding spinner
           hide_on_render = FALSE
         )
+      
+      # Spinner with a generic message that displays over the full screen
+      full_page_spinner <-
+        Waiter$new(
+          # When the ID is null, the waiter is applied to the
+          # <body> element (entire app)
+          id = NULL,
+          html =
+            tagList(
+              spin_loaders(id = 2, color = "#555588"),
+              div(
+                class = "spinner_text",
+                "Loading, please wait...")
+            ),
+          color = "#FFFFFF",
+          #Gives manual control of showing/hiding spinner
+          hide_on_render = FALSE
+        )
+      
+      object_info_page_spinner <-
+        Waiter$new(
+          id = "tab_content_object_info",
+          html =
+            tagList(
+              spin_loaders(id = 2, color = "#555588"),
+              div(
+                class = "spinner_text",
+                "Loading information page for dataset...")
+            ),
+          color = "#FFFFFF",
+          #Gives manual control of showing/hiding spinner
+          hide_on_render = FALSE
+          )
 
       # Create a reactive trigger to run the feature text box update after
       # the UI is created (originally the UI always ran first, but now it does
@@ -1270,7 +1541,7 @@ run_scExploreR <-
             }
           })
 
-      ## 1.7. Last Key of Last Dataset Loaded ####
+      ## 1.7. Key of Last Dataset Loaded ####
       # Save the key of the last dataset loaded into the app.
       # This is updated only when a change in dataset is observed upon closing the
       # window (as signaled by the loading conditional observer)
@@ -1712,6 +1983,7 @@ run_scExploreR <-
       # used to determine if a subset is selected.
       # It was previously commented here that this may not apply to 
       # non-CITE-seq datasets, but I don't see how this would be the case
+
       n_cells_original <-
         reactive({
           req(object())
@@ -1725,7 +1997,13 @@ run_scExploreR <-
       # When object is changed, render a new data dictionary to www/
       observeEvent(
         object(),
+        label = "Render Auto-Generated Object Dictionary",
+        #ignoreNULL = FALSE,
+        #ignoreInit = TRUE,
         {
+          # Show spinner over app while dictionary renders
+          full_page_spinner$show()
+          
           # Gather parameters used by document
           params <-
             list(
@@ -1774,6 +2052,8 @@ run_scExploreR <-
             # Do not print rendering messages to console
             quiet = TRUE
           )
+          
+          full_page_spinner$hide()
         })
 
       ## 2.12. Patient/sample level metadata category ####
@@ -1807,6 +2087,65 @@ run_scExploreR <-
             FALSE
           }
         })
+      
+      ## 2.15. Object is a Seurat object ####
+      is_seurat <-
+        reactive({
+          req(config())
+          
+          if (!is.null(config()$object_class)){
+            if (config()$object_class %in% c("Seurat")){
+              TRUE
+            } else {
+              FALSE
+            }
+          } else {
+            FALSE
+          }
+        })
+      
+      ## 2.16. Object info page ####
+      # If an information page has been created by the user and provided in
+      # the browser config file or via the `object_description_path` parameter, 
+      # load the page and display in the info tab.
+      output$object_info_page <-
+        renderUI({
+          object_info_page_spinner$show()
+          
+          if (!is.null(datasets[[selected_key()]]$object_description)){
+            # If a path to a md/rmd/qmd file is provided (either in the browser
+            # config or via the object_description_path parameter for single
+            # object instances), render the markdown content.
+            info_page_ui <-
+              htmltools::includeMarkdown(
+                datasets[[selected_key()]]$object_description
+                )
+          } else {
+            # Otherwise, render a message saying the page has not been 
+            # provided by the app admin
+            info_page_ui <-
+              div(
+                tags$h1(
+                  paste0(
+                    "No information page available"
+                    )
+                  ),
+                div(
+                  style = "font-size: 18px;",
+                  paste0(
+                    "The admin of this app deployment has not included an ",
+                    "information page for this dataset."
+                    )
+                  )
+                )
+          }
+          
+          object_info_page_spinner$hide()
+          
+          info_page_ui
+        })
+      
+      outputOptions(output, "object_info_page", suspendWhenHidden = FALSE)
 
       # 3. Initialize Modules --------------------------------------------------
       ## 3.1. Dynamic UI ####
@@ -1893,7 +2232,7 @@ run_scExploreR <-
       #       ui
       #     })
 
-      ### 3.1.4. Render Dynamic UI components
+      ### 3.1.4. Render Dynamic UI components ####
       output$plots_dynamic_ui <-
         renderUI({
           plots_tab_ui_dynamic()
@@ -1941,7 +2280,8 @@ run_scExploreR <-
               categorical_palettes = categorical_palettes,
               continuous_palettes = continuous_palettes,
               blend_palettes = blend_palettes,
-              patient_colname = patient_colname
+              patient_colname = patient_colname,
+              current_tab = reactive({input$navigator})
               )
 
             # Add current key to list of modules created so module is not re-created
@@ -2004,6 +2344,18 @@ run_scExploreR <-
       #       c(main_server$corr_modules_created, current_key)
       #   }
       # })
+      
+      ### 3.2.4 Object Metadata Information Server ####
+      object_contents_info_server(
+        id = "object_contents_info_tab",
+        object = object,
+        meta_choices = meta_choices,
+        metadata_config = metadata_config,
+        include_numeric_metadata = reactive({config()$include_numeric_metadata}),
+        assay_config = assay_config,
+        reduction_config = reactive({config()$reductions}),
+        is_seurat = is_seurat
+        )
 
       # 4. Dataset preview in modal UI -----------------------------------------
       ## 4.1. Description ####

@@ -1,11 +1,53 @@
 Package: scExploreR
 Type: Package
 Title: scExploreR
-Version: 0.10.0
-Author: William Showers, Krysta Engel, Jai Desai, Austin Gillen
+Version: 0.11.0
+Date: 2025-06-03
+Authors@R: c(
+    person(
+        "William", 
+        "Showers",
+        role = "aut"
+        ),
+    person(
+        "Jairav",
+        "Desai",
+        role = "aut"
+        ),
+    person(
+        "Stephanie",
+        "Gipson",
+        role = "aut"
+        ),
+    person(
+        "Krysta",
+        "Engel",
+        role = "aut"
+        ),
+    person(
+        "Kent",
+        "Riemondy",
+        role = "ctb"
+        ),
+    person(
+        "Clayton", 
+        "Smith", 
+        role = "fnd"
+        ),
+    person(
+        "Craig", 
+        "Jordan", 
+        role = "fnd"
+        ),
+    person(
+        "Austin", 
+        "Gillen", 
+        email = "austin.gillen@cuanschutz.edu",
+        role = c("aut", "cre", "fnd")
+        )
+    )
 URL: https://github.com/amc-heme/scExploreR,
     https://amc-heme.github.io/scExploreR/
-Maintainer: Hematology Informatics Group, University of Colorado Anschutz Medical Campus <heme.informatics@ucdenver.edu>
 Description: Shiny app for scRNA-seq visualization and analysis
 License: MIT + file LICENSE
 LazyData: true

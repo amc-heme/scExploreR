@@ -1032,6 +1032,9 @@ plot_module_ui <- function(id,
 #' enter features that apply just to that plot.
 #' @param blend_palettes special palettes used for blended feature plots (
 #' this is the full list of palettes).
+#' @param current_tab The id of the navbarPage in the main app. This is used to 
+#' determine if the plots tab is active and get reactive expressions to respond 
+#' to switching to the tab. Currently, this is only used in scatterplots.
 #'
 #' @noRd
 plot_module_server <- function(id,
@@ -1051,7 +1054,8 @@ plot_module_server <- function(id,
                                assay_config = NULL,
                                patient_colname = NULL,
                                separate_features_server = FALSE,
-                               blend_palettes = NULL
+                               blend_palettes = NULL,
+                               current_tab = NULL
                                ){
   moduleServer(id,
                function(input,output,session){
@@ -1101,22 +1105,51 @@ plot_module_server <- function(id,
                      warning("For scatterplots, valid_features must be specified as a reactive to plot_module_server.")
                    }
 
+                   # Originally done on initialization of the module, but this
+                   # caused issues when the "info" tab was added.
+                   # The update code is now placed within an observer, but
+                   # fixing the way modules for each tab are initialzed when 
+                   # switching objects would be a better solution
+                   
                    # Upon module initialization, set up feature inputs
                    # for the scatterplot
                    # Use for loop to avoid duplication of code
-                   for (input_id in c("scatter_1", "scatter_2")){
-                     # Update selectize inputs for scatter_1 and scatter_2
-                     updateSelectizeInput(
-                       session,
-                       # Do not namespace IDs in update* functions
-                       inputId = input_id,
-                       # Use list of valid features generated at startup
-                       choices = valid_features(),
-                       # Select none by default
-                       selected = character(0),
-                       server = TRUE
-                       )
+                   # for (input_id in c("scatter_1", "scatter_2")){
+                   #   # Update selectize inputs for scatter_1 and scatter_2
+                   #   updateSelectizeInput(
+                   #     session,
+                   #     # Do not namespace IDs in update* functions
+                   #     inputId = input_id,
+                   #     # Use list of valid features generated at startup
+                   #     choices = valid_features(),
+                   #     # Select none by default
+                   #     selected = character(0),
+                   #     server = TRUE
+                   #     )
+                   #   }
+                   
+                   observe({
+                     req(valid_features())
+                     if (!is.null(current_tab)){
+                       req(current_tab())
                      }
+                     
+                     # Update only when in the plots tab
+                     if (current_tab() == "plots"){
+                       for (input_id in c("scatter_1", "scatter_2")){
+                         # Update selectize inputs for scatter_1 and scatter_2
+                         updateSelectizeInput(
+                           session,
+                           inputId = input_id,
+                           # Use list of valid features generated at startup
+                           choices = valid_features(),
+                           # Select none by default
+                           selected = character(0),
+                           server = TRUE
+                           )
+                         }
+                       }
+                     })
                    }
 
                  # 3. Title Settings Menu --------------------------------------

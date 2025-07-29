@@ -51,6 +51,11 @@ h2, h3 {
   font-size: 1.3em;
 }
 
+/* Bolds text */
+.bold{
+  font-weight: bold;
+}
+
 /* underline */
 .underline {
   text-decoration: underline;
@@ -102,6 +107,10 @@ h2, h3 {
   /* Uses text format from auto_dictionary.Rmd */
   color: var(--markdown-blue, #000088);
   font-weight: bold;
+}
+
+.gray {
+  color: #888888
 }
 
 /* Responsively change the size of long button labels based on window size */
