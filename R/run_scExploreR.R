@@ -1,12 +1,38 @@
 #' scExploreR app
 #'
 #' Initializes the main scExploreR app.
+#' 
+#' For more information on setting up an scExploreR deployment, see the [dataset setup guide](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html) on our website.
 #'
-#' @param browser_config path to a YAML config file giving browser specific settings. See LINK for more info on creating this file.
-#' @param port specify a port for launching the browser. This is required to run several instances of the browser at the same IP address. See "how to run scExploreR" for more information. The port can be any number between 3000:8000, except for ports blocked by Google Chrome (for more information on this, see \link[shiny]{runApp}).
-#'
+#' @param browser_config path to a YAML config file giving browser specific settings. For more info on generating this config file, see [here](https://amc-heme.github.io/scExploreR/articles/dataset_setup_walkthrough.html#create-an-app-config-file).
+#' @param object_path path to a single-cell object to be configured. Currently, 
+#' Seurat, SingleCellExperiment, and anndata objects are supported. For 
+#' SingleCellExperiment objects with using HDF5 disk-backed storage via 
+#' [HDF5Array], `object_path` should be a path to the directory containing 
+#' the se.rds and assays.h5 files for the object.
+#' @param config_path path to the config file for the single-cell object. This is generated either in the config app via `run_config_app`, or by auto-generating a config file via `generate_config_yaml` and editing it by hand. For more information on using the config app, see [here](https://amc-heme.github.io/scExploreR/articles/docker.html#step-4).
+#' @param enable_metadata_addition when TRUE, users may interactively add metadata to objects in the app. This feature is currently unstable, so it must be opted in to by setting this value to TRUE.
+#' @param port specify a port for launching the browser. This is optional for a single deployment but required to run several instances of the browser at the same IP address. The port can be any number between 3000:8000, except for ports blocked by Google Chrome (for more information on this, see \link[shiny]{runApp}).
+#' @param host This is passed to `shiny::runApp`. See the documentation of `host` in \link[shiny]{runApp} for more info.
+#' @param launch_browser This is passed to `shiny::runApp` as `launch.browser`. See the documentation of `launch.browser` in \link[shiny]{runApp} for more info.
+#' @param full_stack_trace when TRUE, the full stack trace of errors is logged to the console (FALSE by default). 
+#' @param dev_mode used for development and debugging. When this is TRUE, additional logging occurrs, and the status of the app is printed in the UI. This is not reccomended to be used outside of development. 
+#' 
 #' @usage
-#' run_scExploreR(port = 5320)
+#' # Option 1: Single-object deployment with 
+#' # an object and an object config file
+#' run_scExploreR(
+#'  object = "path_to_object",
+#'  config_file = "path_to_config_file.yaml"
+#'  )
+#' 
+#' # Option 2: Multi-object deployment with
+#' # Browser config file with paths to object, 
+#' # config files for any number of objects
+#' #  
+#' run_scExploreR(
+#'  browser_config = "path_to_browser_config_file.yaml"
+#'  )
 #'
 #' @export
 run_scExploreR <-
@@ -14,6 +40,7 @@ run_scExploreR <-
     browser_config = NULL,
     object_path = NULL,
     config_path = NULL,
+    enable_metadata_addition = FALSE,
     object_description_path = NULL,
     contact_info = 
       list(
@@ -24,9 +51,9 @@ run_scExploreR <-
         ),
     deployment_name = NULL,
     port = NULL,
-    full_stack_trace = FALSE,
     host = NULL,
     launch_browser = NULL,
+    full_stack_trace = FALSE,
     dev_mode = FALSE
   ){
     # Load Libraries and Data ------------------------------------------------------
@@ -795,7 +822,7 @@ run_scExploreR <-
     }
 
     log_info("Datasets successfully loaded.")
-
+    
     # Table of Contents ------------------------------------------------------------
 
     # Main UI ----------------------------------------------------------------------
@@ -1105,9 +1132,18 @@ run_scExploreR <-
             inputId = "open_dataset_window",
             label = "Choose Dataset",
             class = "blue_hover"
+            ),
+          # Add metadata: only available when explicitly enabled via the 
+          # browser config file or run_scExploreR.
+          if (enable_metadata_addition == TRUE){
+            actionLink(
+              inputId = "new_metadata_modal",
+              label = "Add Metadata to Object",
+              class = "blue_hover"
+              )
+            }
           )
-        )
-      ),
+        ),
 
       # Include list of scripts built from .js files in www/ directory
       js_list
@@ -1285,16 +1321,17 @@ run_scExploreR <-
       observeEvent(
         eventExpr =
           {
-            # eventExpr: observer executes when this expression evaluates to TRUE
-            # Observer should execute at startup (when input$confirm_selection is
-            # NULL) and when the window to change datasets is closed.
+            # eventExpr: observer executes when this expression evaluates to 
+            # TRUE Observer should execute at startup (when 
+            # input$confirm_selection is NULL) and when the window to change
+            # datasets is closed.
             if (is.null(input$confirm_selection)){
               # Before the dataset window is created for the first time,
               # respond to startup()
               isTruthy(startup())
             } else {
-              # When the button to close the window is defined for the first time,
-              # execute in response to the button
+              # When the button to close the window is defined for the first 
+              # time, execute in response to the button
               isTruthy(close_dataset_modal())
             }
           },
@@ -1519,18 +1556,150 @@ run_scExploreR <-
           dataset_info$last_object_key <- selected_key()
         })
 
-      # 2. Initialize Variables specific to object and config file -----------------
+      # 1.8. Upload new metadata ####
+      ### 1.8.1. UI for uploading metadata from a table ####
+      # Modal is created from the add_metadata module
+      new_metadata_module <- 
+        add_metadata_server(
+          id = "add_metadata", 
+          modal_open_button = 
+            reactive(
+              label = "add_metadata-input-modal_open_button",
+              {input$new_metadata_modal}),
+          object = object,
+          object_meta_varnames = 
+            reactive(
+              label = "add_metadata-input-object_meta_varnames",
+              {
+                # Named vector of variables in config file
+                # Values are the columns as named in the object, names are the
+                # labels defined in the config file
+                var_labels <- 
+                  sapply(
+                    config()$metadata, 
+                    function(category){category$label}
+                    )
+                
+                var_choices <-
+                  sapply(
+                    config()$metadata, 
+                    function(category){category$meta_colname}
+                    )
+                
+                names(var_choices) <- var_labels
+                
+                var_choices
+                })
+        )
+      
+      ### 1.8.2. Update object in response to uploaded metadata ####
+      observe(
+        label = "Add uploaded metadata to object",
+        {
+        req(new_metadata_module$uploaded_table())
+        req(new_metadata_module$join_instructions())
+        
+        uploaded_table <- new_metadata_module$uploaded_table()
+        
+        # Pull full metadata table
+        object_metadata <-
+          fetch_metadata(
+            isolate({object()}),
+            full_table = TRUE
+            )
+        
+        # Do the join
+        new_object_metadata <- tryCatch(
+          error = function(cnd){
+            # If an error occurs during the join, log results
+            print(paste0("Join error:", cnd))
+            
+            # Return NULL (which will stop downstream computation)
+            return(NULL)
+            },
+            {
+              new_object_metadata <- 
+                left_join(
+                  # Must preserve cell names (rownames), which are overrided 
+                  # by the join
+                  tibble::rownames_to_column(
+                    object_metadata, 
+                    var = "scExploreR_cell_id"
+                    ), 
+                  uploaded_table,
+                  by = new_metadata_module$join_instructions()
+                  )
+              
+              # Restore cell IDs after join
+              new_object_metadata <- 
+                new_object_metadata |> 
+                tibble::column_to_rownames("scExploreR_cell_id")
+              
+              # Return new table form tryCatch statement 
+              new_object_metadata
+            })
+        
+        
+        if (!is.null(new_object_metadata)){
+          # Replace NAs in the new columns with "undefined"
+          # For each added variable, replace NA values with "Undefined"
+          for (meta_var in new_metadata_module$vars_added()){
+            new_object_metadata[,meta_var] <-
+              case_when(
+                is.na(new_object_metadata[,meta_var]) ~ "Undefined",
+                TRUE ~ new_object_metadata[,meta_var]
+                )
+          }
+          
+          # Apply the new metadata table to the object, and save the resulting
+          # object to the object() reactive variable
+          print("Update object with new metadata")
+          object(
+            scExploreR:::update_object_metadata(
+              object = isolate({object()}), 
+              table = new_object_metadata
+              )
+            )
+          print("Object updated with new metadata.")
+          }
+      })
+      
+      # 2. Initialize Variables specific to object and config file -------------
       # Split config file into metadata and assay lists for use downstream
       ## 2.1. Metadata_config ####
       metadata_config <-
         eventReactive(
-          config(),
+          # Must respond to object to process added metadata
+          c(config(), object()),
           label = "metadata_config",
           ignoreNULL = FALSE,
           {
-            config()$metadata
+            metadata_config <- config()$metadata
+            
+            # Metadata added by user
+            # If metadata has been added, create config entries for the new
+            # metadata variables
+            if (isTruthy(new_metadata_module$vars_added())){
+              for (meta_var in new_metadata_module$vars_added()){
+                metadata_config[[meta_var]] <-
+                  list(
+                    # Label and colname are the same for now. These are 
+                    # determined by the table
+                    `meta_colname` = meta_var,
+                    `label` = meta_var,
+                    `description` = 
+                      paste0(
+                        'This variable was added using ',
+                        'the "Add Metadata" window.'
+                        ),
+                    `groups` = NULL
+                  )
+                }
+              }
+            
+            metadata_config
           })
-
+      
       ## 2.2. Assay Information ####
       ### 2.2.1. Assay_config ####
       # Assay-specific options in config file
@@ -1650,27 +1819,26 @@ run_scExploreR <-
       # Object.
       meta_choices <-
         eventReactive(
-          meta_categories(),
+          # Must respond to object to process added metadata
+          c(meta_categories(), object()),
           label = "meta_choices generation",
           ignoreNULL = FALSE,
           {
             # Base vector: contains the "none" option
             meta_choices <- c("None" = "none")
-            # Iteratively populate vector using entries in the metadata section
-            # of the config file
-            for (category in meta_categories()){
-              # Use setNames from the stats package to add a new name-value
-              # pair to the vector
-              meta_choices <- setNames(
-                # Add `meta_colname` to vector
-                object = c(meta_choices,
-                           metadata_config()[[category]]$meta_colname),
-                # Add `label` to the vector as a name
-                nm = c(names(meta_choices),
-                       metadata_config()[[category]]$label)
-              )
-            }
-
+            # Iteratively populate vector using entries in the 
+            # metadata section of the config file
+            for (meta_var in meta_categories()){
+              # Form name-value pair for each added metadata variable 
+              # Value: the `colname` entry in the config file
+              var_add <- metadata_config()[[meta_var]]$meta_colname
+              # Name: `label` field in config file 
+              names(var_add) <- metadata_config()[[meta_var]]$label
+              
+              # Append name-value pair to vector
+              meta_choices <- c(meta_choices, var_add)
+              }
+            
             # Return meta_choices vector generated above
             meta_choices
           })
@@ -1678,7 +1846,8 @@ run_scExploreR <-
       ## 2.7. Unique values for each metadata variable ####
       unique_metadata <-
         eventReactive(
-          metadata_config(),
+          # Must respond to object to process added metadata
+          c(metadata_config(), object()),
           label = "unique_metadata",
           ignoreNULL = FALSE,
           {
@@ -1702,9 +1871,9 @@ run_scExploreR <-
               if (class(unique_metadata[[meta_var]]) == "factor"){
                 unique_metadata[[meta_var]] <-
                   levels(unique_metadata[[meta_var]])
-              }
+                }
             }
-
+            
             unique_metadata
           })
 
@@ -1740,10 +1909,11 @@ run_scExploreR <-
             names(reductions) <- labels
 
           } else {
-            # Otherwise, get reductions in object, and use the default
-            # (UMAP is placed first, if it exists)
+            # Otherwise, get reductions in object and use display names
+            # equal to how they are named in the object
             reductions <- scExploreR:::reduction_names(object())
 
+            # If the "umap" reduction exists, place it first
             if ("umap" %in% reductions){
               reductions <-
                 c(
@@ -1811,6 +1981,9 @@ run_scExploreR <-
 
       ## 2.10. Store number of cells in full object ####
       # used to determine if a subset is selected.
+      # It was previously commented here that this may not apply to 
+      # non-CITE-seq datasets, but I don't see how this would be the case
+
       n_cells_original <-
         reactive({
           req(object())

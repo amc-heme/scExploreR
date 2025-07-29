@@ -62,31 +62,36 @@ subset_stats_ui <- function(id,
           )
         ),
       # Metadata-specific subset statistics
-      tags$strong(
-        "Subset Used for Test", 
-        class = "x-large inline-block half-space-top"
-        ),
+      # This caused performance issues when numeric metadata variables were 
+      # entered, and cluttered the output with objects with many variables and 
+      # many unique values for each value
+      # The output as-is is of questionable value, so it was removed.
       
-      # Loop through the metadata categories read on app startup
-      # One container is created for each category in the subset using lapply.
-      # Unique values for each category will display inline with labels
-      lapply(
-        X = meta_categories(),
-        # Category is looped through by lapply
-        # metadata_config and ns are "constants" that must be passed as 
-        # additional arguments to lapply 
-        FUN = 
-          function(category, metadata_config, ns){
-            subset_stats_metadata_output(
-              category = category,
-              metadata_config = metadata_config, 
-              ns = ns
-              )
-            },
-        # Constants
-        metadata_config,
-        ns
-        ),
+      # tags$strong(
+      #   "Subset Used for Test", 
+      #   class = "x-large inline-block half-space-top"
+      #   ),
+      # 
+      # # Loop through the metadata categories read on app startup
+      # # One container is created for each category in the subset using lapply.
+      # # Unique values for each category will display inline with labels
+      # lapply(
+      #   X = meta_categories(),
+      #   # Category is looped through by lapply
+      #   # metadata_config and ns are "constants" that must be passed as 
+      #   # additional arguments to lapply 
+      #   FUN = 
+      #     function(category, metadata_config, ns){
+      #       subset_stats_metadata_output(
+      #         category = category,
+      #         metadata_config = metadata_config, 
+      #         ns = ns
+      #         )
+      #       },
+      #   # Constants
+      #   metadata_config,
+      #   ns
+      #   ),
       
       # General subset statistics
       div(
@@ -493,24 +498,24 @@ subset_stats_server <-
         
         ## 4.6. Summary of unique metadata in subset (both tabs)
         # lapply creates an output for each metadata category
-        lapply(
-          X = meta_categories(), 
-          FUN = function(category){
-            output[[glue("selected_{category}")]] <-
-              renderText({
-                # Display unique values appearing in the subset 
-                # for the category
-                SCUBA::unique_values(
-                  subset(),
-                  var = category
-                  ) |> 
-                  # Sort unique values alphanumerically
-                  # May add support for custom order later
-                  str_sort(numeric = TRUE) |> 
-                  vector_to_text()
-              }) # End renderText
-          }
-        )
+        # lapply(
+        #   X = meta_categories(), 
+        #   FUN = function(category){
+        #     output[[glue("selected_{category}")]] <-
+        #       renderText({
+        #         # Display unique values appearing in the subset 
+        #         # for the category
+        #         SCUBA::unique_values(
+        #           subset(),
+        #           var = category
+        #           ) |> 
+        #           # Sort unique values alphanumerically
+        #           # May add support for custom order later
+        #           str_sort(numeric = TRUE) |> 
+        #           vector_to_text()
+        #       }) # End renderText
+        #   }
+        # )
         
         # 5. Return Stats from Server ------------------------------------------
         # For dge tab: return n_cells, groups, and n_groups
