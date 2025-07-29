@@ -69,9 +69,12 @@ the main browser.</p>
 
 
 <dl><dt id="arg-object-path">object_path<a class="anchor" aria-label="anchor" href="#arg-object-path"></a></dt>
-<dd><p>relative or absolute path to the Seurat object to be
-configured. The file provided must be a .rds file created from a single
-Seurat object.</p></dd>
+<dd><p>path to a single-cell object to be configured. Currently,
+Seurat, SingleCellExperiment, and anndata objects are supported. For
+SingleCellExperiment objects with using HDF5 disk-backed storage via
+HDF5Array, <code>object_path</code>
+should be a path to the directory containing the se.rds and assays.h5 files
+for the object.</p></dd>
 
 
 <dt id="arg-config-path">config_path<a class="anchor" aria-label="anchor" href="#arg-config-path"></a></dt>
@@ -83,15 +86,16 @@ also be accepted.</p></dd>
 
 <dt id="arg-is-hdf-summarizedexperiment">is_HDF5SummarizedExperiment<a class="anchor" aria-label="anchor" href="#arg-is-hdf-summarizedexperiment"></a></dt>
 <dd><p>Set this to TRUE to load an HDF5-enabled
-SingleCellExperiment object saved via saveHDF5SummarizedExperiment. When
+SingleCellExperiment object saved via
+<a href="https://rdrr.io/pkg/HDF5Array/man/saveHDF5SummarizedExperiment.html" class="external-link">HDF5Array::saveHDF5SummarizedExperiment</a>. When
 loading an HDF5-enabled object, set the object_path to the directory of the
 HDF5-enabled object, created when saving the object via
-HDF5Array:saveHDF5SummarizedExperiment.</p></dd>
+<code>HDF5Array:saveHDF5SummarizedExperiment</code>.</p></dd>
 
 
 <dt id="arg-hdf-prefix">HDF5_prefix<a class="anchor" aria-label="anchor" href="#arg-hdf-prefix"></a></dt>
 <dd><p>When loading an HDF5-backed SingleCellExperiment HDF5_prefix
-is passed to the prefix parameter of HDF5Array::loadHDF5SummarizedExperiment
+is passed to the prefix parameter of <a href="https://rdrr.io/pkg/HDF5Array/man/saveHDF5SummarizedExperiment.html" class="external-link">HDF5Array::loadHDF5SummarizedExperiment</a>
 to specify the prefixes for the se.rds and assays.h5 files.</p></dd>
 
 
