@@ -2128,9 +2128,9 @@ run_scExploreR <-
       is_anndata <-
         reactive({
           req(config())
-
+          
           if (!is.null(config()$object_class)){
-            if (config()$object_class %in% c("AnnDataR6")){
+            if ("AnnDataR6" %in% config()$object_class){
               TRUE
             } else {
               FALSE
@@ -2146,7 +2146,7 @@ run_scExploreR <-
           req(config())
           
           if (!is.null(config()$object_class)){
-            if (config()$object_class %in% c("md._core.mudata.MuData")){
+            if ("md._core.mudata.MuData" %in% config()$object_class){
               TRUE
             } else {
               FALSE
