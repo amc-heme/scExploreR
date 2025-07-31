@@ -63,8 +63,8 @@ make_key.SingleCellExperiment <-
   ){
     # SingleCellExperiment objects don't have a Key() method. Instead, a 
     # Seurat-style key will be generated using the assay name and an underscore.
-    # This will be intelligible by the FetchData.SingleCellExperiment defined in
-    # the SCUBA package.
+    # This will be intelligible by the fetch_data.SingleCellExperiment defined 
+    # in the SCUBA package.
     paste0(assay, "_")
   }
 
@@ -79,3 +79,31 @@ make_key.AnnDataR6 <-
     # As with SingleCellExperiment, add an underscore to the assay name.
     paste0(assay, "_")
   }
+
+#' @describeIn make_key MuData objects
+#' @export
+#' @noRd
+make_key.md._core.mudata.MuData <-
+  function(
+    object,
+    assay
+  ){
+    # Add an underscore to the assay (modality) name
+    paste0(assay, "_")
+  }
+
+#' @export
+#' @noRd
+check_dataset.mudata._core.mudata.MuData <-
+  function(
+    object,
+    assay
+  ){
+    # mudata._core.mudata.MuData: possible class when loading 
+    # Redirect to md._core.mudata.MuData method
+    check_dataset.md._core.mudata.MuData(
+      object,
+      assay
+    )
+  }
+  

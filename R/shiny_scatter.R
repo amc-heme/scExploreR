@@ -50,7 +50,7 @@ shiny_scatter <- function(object,
   
   # Plot: uses FeatureScatter
   plot <- 
-    SCUBA::plot_scatter(
+    scExploreR::plot_scatter(
       object, 
       feature_1 = feature_1,
       feature_2 = feature_2,

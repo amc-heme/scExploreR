@@ -2,18 +2,9 @@
 % Please edit documentation in R/methods-features_in_assay.R
 \name{features_in_assay}
 \alias{features_in_assay}
-\alias{features_in_assay.Seurat}
-\alias{features_in_assay.SingleCellExperiment}
-\alias{features_in_assay.AnnDataR6}
 \title{Get names of all features in an assay/experiment}
 \usage{
 features_in_assay(object, assay, ...)
-
-\method{features_in_assay}{Seurat}(object, assay)
-
-\method{features_in_assay}{SingleCellExperiment}(object, assay)
-
-\method{features_in_assay}{AnnDataR6}(object, assay)
 }
 \arguments{
 \item{object}{a single-cell object.}
@@ -25,13 +16,4 @@ features_in_assay(object, assay, ...)
 \description{
 Returns the names of all features in an assay/modality
 }
-\section{Methods (by class)}{
-\itemize{
-\item \code{features_in_assay(Seurat)}: Seurat objects
-
-\item \code{features_in_assay(SingleCellExperiment)}: SingleCellExperiment objects
-
-\item \code{features_in_assay(AnnDataR6)}: Anndata objects
-
-}}
 \keyword{internal}

@@ -1,8 +1,7 @@
 #' Object class warning
 #'
 #' Returns a warning if the object loaded is not a supported single-cell-object,
-#' and does nothing if it is. Currently, Seurat and SingleCellExperiment objects 
-#' are supported.
+#' and does nothing if it is. 
 #'
 #' @param object a single-cell object. 
 #' @param path path of object loaded
@@ -88,6 +87,29 @@ check_dataset.SingleCellExperiment <-
 #' @export
 #' @noRd
 check_dataset.AnnDataR6 <-
+  function(
+    object,
+    path = NULL,
+    return_error = FALSE
+  ){
+    # Do nothing (object passes)
+  }
+
+#' @describeIn check_dataset MuData objects
+#' @export
+#' @noRd
+check_dataset.md._core.mudata.MuData <-
+  function(
+    object,
+    path = NULL,
+    return_error = FALSE
+    ){
+      # Do nothing (object passes)
+  }
+
+#' @export
+#' @noRd
+check_dataset.mudata._core.mudata.MuData <-
   function(
     object,
     path = NULL,

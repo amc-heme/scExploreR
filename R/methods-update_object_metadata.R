@@ -7,13 +7,19 @@
 #' @param object a single-cell object. Currently, Seurat and
 #' SingleCellExperiment objects are supported.
 #' @param table a modified metadata table.
+#' @param mod For MuData objects, the modality for which to update metadata
+#' can be specified. If NULL (the default), the obs table of the main object 
+#' will be updated. As of v1.0.0, scExploreR only operates on the main obs 
+#' table. In the future, it may make sense to loop through each modality and 
+#' update the obs table individually there.
 #'
 #' @return the object passed to \code{object} with the modified metadata table.
 #' @noRd
 update_object_metadata <-
   function(
     object,
-    table
+    table,
+    ...
   ){
     UseMethod("update_object_metadata")
   }
@@ -72,6 +78,26 @@ update_object_metadata.AnnDataR6 <-
     table
   ){
     object$obs <- table
+    
+    object
+  }
+
+#' @describeIn update_object_metadata Anndata objects
+#' @export
+#' @noRd
+update_object_metadata.md._core.mudata.MuData <-
+  function(
+    object,
+    table,
+    mod = NULL
+  ){
+    if (is.null(mod)){
+      # Modality is NULL: update the obs table of the main object with the table
+      object$obs <- table
+    } else {
+      # Otherwise, update the obs table of the specified modality
+      object[[mod]]$obs <- table
+    }
     
     object
   }

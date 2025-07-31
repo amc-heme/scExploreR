@@ -80,3 +80,26 @@ assay_names.AnnDataR6 <-
            "present in obsm, uns$scExploreR_assays should be NULL/None.")
     }
   }
+
+#' @describeIn assay_names MuData objects
+#' @export
+assay_names.md._core.mudata.MuData <-
+  function(
+    object
+  ){
+    # Mudata objects: use modality names
+    object$mod_names
+  }
+
+#' @export
+assay_names.mudata._core.mudata.MuData <-
+  function(
+    object
+  ){
+    # mudata._core.mudata.MuData: possible class when loading 
+    # Redirect to md._core.mudata.MuData method
+    assay_names.md._core.mudata.MuData(
+      object
+    )
+  }
+  

@@ -247,7 +247,7 @@ subset_stats_server <-
                 # "counts" (case sensitive. This is the default name for Seurat 
                 # and SingleCellExperiment objects)
                 expr_data <-
-                  FetchData(
+                  SCUBA::fetch_data(
                     subset(),
                     vars = gene_selected(),
                     layer = "counts"

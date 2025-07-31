@@ -31,7 +31,7 @@ reduction_names.default <-
       paste0(
         "reduction_names does not know how to handle object of class ",
         paste(class(object), collapse = ", "),
-        ". Currently supported classes: Seurat and SingleCellExperiment."
+        ". Currently supported classes: Seurat, SingleCellExperiment, AnndataR6, md._core.mudata.MuData, and mudata._core.mudata.MuData."
       )
     )
   }
@@ -79,7 +79,43 @@ reduction_names.AnnDataR6 <-
     }
   }
 
+#' @describeIn reduction_names MuData objects
+#' 
+#' For MuData objects, the keys of reductions are the keys of obsm matrices 
+#' in each modality (mod-obsm keys). obsm matrices in each modality are not
+#' necesarially reductions. It is left to the admin to decide which reductions
+#' to include.
+#' 
+#' @export
+reduction_names.md._core.mudata.MuData <-
+  function(
+    object
+  ){
+    mod_obsm_keys <- c()
+    
+    for (mod in object$mod_names){
+      # Record obsm keys for each modality, and construct mod_obsm keys 
+      # using the name of the modality and an underscore
+      mod_obsm <- object[[mod]]$obsm_keys()
+      
+      if (length(mod_obsm) > 0){
+        mod_obsm_keys <- c(
+          mod_obsm_keys,
+          paste(mod, mod_obsm, sep = "_")
+          )
+        }
+      }
+    
+    mod_obsm_keys
+  }
 
-
-
-
+#' @export
+reduction_names.mudata._core.mudata.MuData <-
+  function(
+    object
+  ){
+    # mudata._core.mudata.MuData: possible class when loading 
+    # Redirect to md._core.mudata.MuData method
+    reduction_names.md._core.mudata.MuData(object)
+  }
+  

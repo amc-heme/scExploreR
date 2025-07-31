@@ -494,7 +494,7 @@ renderUI({
   req(input$feature)
   
   feature_summary <-
-    FetchData(
+    SCUBA::fetch_data(
       object,
       vars = input$feature
       )[,1] |> 

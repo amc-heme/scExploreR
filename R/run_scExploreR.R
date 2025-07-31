@@ -765,6 +765,37 @@ run_scExploreR <-
                 # Return object from TryCatch statement
                 object
               })
+        } else if (extension == "h5mu"){
+          # MuData objects: import Mudata python package and run read_h5mu
+          datasets[[data_key]]$object <-
+            tryCatch(
+              error =
+                function(cnd){
+                  stop(
+                    "There was an error loading the object at path \n",
+                    datasets[[data_key]]$object,
+                    "\nLoading was attempted via `read_h5mu` from the Python package."
+                  )
+                },
+              {
+                # Define path and load object
+                path <- datasets[[data_key]]$object
+                
+                py_require("mudata>=0.3.1")
+                
+                md <- reticulate::import("mudata", as = "md", convert = TRUE)
+                
+                object <- md$read_h5mu(path)
+                
+                # Check object for valid classes
+                check_dataset(
+                  object,
+                  path = path
+                )
+                
+                # Return object from TryCatch statement
+                object
+              })
         } else {
           # Unrecognized file extensions
           stop(
@@ -1987,7 +2018,8 @@ run_scExploreR <-
       n_cells_original <-
         reactive({
           req(object())
-          ncol(object())
+          SCUBA::get_all_cells(object()) |> 
+            length()
         })
 
       ## 2.11. Auto-Generated Object Dictionary ####
@@ -2064,31 +2096,11 @@ run_scExploreR <-
           config()$other_metadata_options$patient_colname
         })
 
-      ## 2.13. Whether object is a SCE object with HDF5 Storage ####
-      is_HDF5SummarizedExperiment <-
-        reactive({
-          req(config())
-
-          isTruthy(config()$is_HDF5SummarizedExperiment)
-        })
-
-      ## 2.14. Object is an anndata/mudata object ####
-      is_anndata <-
-        reactive({
-          req(config())
-
-          if (!is.null(config()$object_class)){
-            if (config()$object_class %in% c("AnnDataR6")){
-              TRUE
-            } else {
-              FALSE
-            }
-          } else {
-            FALSE
-          }
-        })
-      
-      ## 2.15. Object is a Seurat object ####
+      ## 2.13. Object class testing ####
+      # Slight modifications to app behavior are required based on the 
+      # class of the object. The expressions in this section test for specific
+      # classes and report to downstream expressions.
+      ### 2.13.1. Object is a Seurat object ####
       is_seurat <-
         reactive({
           req(config())
@@ -2104,7 +2116,47 @@ run_scExploreR <-
           }
         })
       
-      ## 2.16. Object info page ####
+      ### 2.13.2. Object is a SCE object with HDF5 Storage ####
+      is_HDF5SummarizedExperiment <-
+        reactive({
+          req(config())
+
+          isTruthy(config()$is_HDF5SummarizedExperiment)
+        })
+
+      ### 2.13.3. Object is an anndata/mudata object ####
+      is_anndata <-
+        reactive({
+          req(config())
+
+          if (!is.null(config()$object_class)){
+            if (config()$object_class %in% c("AnnDataR6")){
+              TRUE
+            } else {
+              FALSE
+            }
+          } else {
+            FALSE
+          }
+        })
+      
+      ### 2.13.4. Object is a MuData object ####
+      is_mudata <-
+        reactive({
+          req(config())
+          
+          if (!is.null(config()$object_class)){
+            if (config()$object_class %in% c("md._core.mudata.MuData")){
+              TRUE
+            } else {
+              FALSE
+            }
+          } else {
+            FALSE
+          }
+        })
+      
+      ## 2.14. Object info page ####
       # If an information page has been created by the user and provided in
       # the browser config file or via the `object_description_path` parameter, 
       # load the page and display in the info tab.
@@ -2537,15 +2589,16 @@ run_scExploreR <-
 
       # 6. Enable/Disable Tabs -------------------------------------------------
       ## 6.1. DGE Tab ####
-      # Disable the DGE tab (for now) if the object is an SCE object with
-      # DelayedArray (HDF5-enabled) matrices
       observe(
         label = "Enable/Disable DGE tab, SCE Objects",
         {
           # jQuery selector for the DGE navbar button
           dge_tab_button <- "nav [data-value = 'dge']"
 
-          if (isTruthy(is_HDF5SummarizedExperiment())){
+          # Disable the DGE tab (for now) if the object is an SCE object with
+          # DelayedArray (HDF5-enabled) matrices
+          # DGE is also currently disabled for MuData objects
+          if (isTruthy(is_HDF5SummarizedExperiment()) | isTruthy(is_mudata())){
             shinyjs::addClass(
               selector = dge_tab_button,
               class = "navbar-hide"

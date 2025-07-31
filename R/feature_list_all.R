@@ -28,11 +28,12 @@ feature_list_all <-
     # Features from each assay provided will be categorized by
     # assay type in a list.
     valid_features <- list()
+    
     # Loop through each assay provided
     for (assay_entry in assay_config){
       # Fetch the features included in the object under the current assay
       assay_features <- 
-        scExploreR:::features_in_assay(
+        SCUBA::features_in_assay(
           object,
           assay = assay_entry$assay
           )
@@ -113,7 +114,7 @@ feature_list_all <-
       # Fetch features with threshold information (all features in 
       # "adtThreshold" assay)
       threshold_features <- 
-        scExploreR:::features_in_assay(
+        SCUBA::features_in_assay(
           object,
           assay = "adtThreshold"
           )

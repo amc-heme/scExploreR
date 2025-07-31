@@ -1,7 +1,7 @@
 Package: scExploreR
 Type: Package
 Title: scExploreR
-Version: 0.11.0
+Version: 1.0.0
 Date: 2025-06-03
 Authors@R: c(
     person(
@@ -61,6 +61,7 @@ Imports:
     glue,
     gridExtra,
     HDF5Array,
+    lifecycle,
     patchwork,
     presto,
     profvis (>= 0.3.7),

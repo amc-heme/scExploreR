@@ -165,7 +165,7 @@ make_subset.AnnDataR6 <-
       )
     
     filter_table <-
-      FetchData(
+      SCUBA::fetch_data(
         object,
         vars = all_filter_vars
       )

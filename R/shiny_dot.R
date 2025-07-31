@@ -97,9 +97,9 @@ shiny_dot <-
           table = meta_table
           )
 
-      #Create plot if at least one feature is passed to shiny_dot()
+      # Create plot if at least one feature is passed to shiny_dot()
       plot <-
-        SCUBA::plot_dot(
+        scExploreR::plot_dot(
           # Seurat object or subset
           object,
           features = features_entered,
