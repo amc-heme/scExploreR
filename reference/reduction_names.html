@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scExploreR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.11.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,6 +61,9 @@
 <span><span class="fu">reduction_names</span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'AnnDataR6'</span></span>
+<span><span class="fu">reduction_names</span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'md._core.mudata.MuData'</span></span>
 <span><span class="fu">reduction_names</span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -88,6 +91,11 @@ are stored in obsm, but matrices that are not reductions may exist in this
 slot. To use reduction_names with Anndata objects, a vector of reductions
 (python list) must be stored in <code>object.uns["scExploreR_reductions"]</code>. This method
 will return an error if this data is not present in the object.</p></li>
+<li><p><code>reduction_names(md._core.mudata.MuData)</code>: MuData objects</p>
+<p>For MuData objects, the keys of reductions are the keys of obsm matrices
+in each modality (mod-obsm keys). obsm matrices in each modality are not
+necesarially reductions. It is left to the admin to decide which reductions
+to include.</p></li>
 </ul></div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
