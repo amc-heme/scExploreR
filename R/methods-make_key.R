@@ -1,6 +1,6 @@
 #' Return key for an assay
 #'
-#' Equivalent to \code{Key(object[[assay]])} for Seurat objects. Returns the 
+#' Equivalent to `Key(object[[assay]])` for Seurat objects. Returns the 
 #' key associated with an assay, which is used in [feature_list_all] to define
 #' the machine-readable names for all features, so they can be accessed in the 
 #' app.
@@ -49,7 +49,8 @@ make_key.Seurat <-
     object,
     assay
   ){
-    Key(object[[assay]])
+    # Use key method from Seurat package
+    Seurat::Key(object[[assay]])
   }
 
 #' @describeIn make_key SingleCellExperiment objects

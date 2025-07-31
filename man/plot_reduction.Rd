@@ -119,7 +119,7 @@ SingleCellExperiment objects, cells are colored by the first metadata column in
 colData(). The metadata variable used for coloring cells can be changed with the group_by parameter).
 }
 \details{
-The code for this function was from the [Seurat Package](https://github.com/satijalab/seurat/blob/master/R/visualization.R) and adapted for use with
-[SingleCellExperiment](https://www.bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) objects.
+The code for this function was from the \href{https://github.com/satijalab/seurat/blob/master/R/visualization.R}{Seurat Package} and adapted for use with
+\href{https://www.bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html}{SingleCellExperiment} objects.
 }
 \keyword{internal}
