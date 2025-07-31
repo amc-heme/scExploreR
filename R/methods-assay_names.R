@@ -55,7 +55,9 @@ assay_names.SingleCellExperiment <-
     object
   ){
     # SingleCellExperiment objects: return names of main, alternate experiments
-    c(mainExpName(object), altExpNames(object))
+    c(SingleCellExperiment::mainExpName(object), 
+      SingleCellExperiment::altExpNames(object)
+      )
   }
 
 #' @describeIn assay_names Anndata objects
