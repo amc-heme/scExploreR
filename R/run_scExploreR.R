@@ -1181,18 +1181,8 @@ run_scExploreR <-
       js_list
     )
 
-    # Sercure Server Wrapper
-    ui <- secure_app(ui)
-    
     # Main Server function ---------------------------------------------------------
     server <- function(input, output, session){
-      # Implement rudimentary authentication
-      res_auth <-
-        secure_server(check_credentials = check_credentials(credentials))
-      output$auth_output <- renderPrint({
-        reactiveValuesToList(res_auth)
-      })
-
       # Record whether app is in dev mode (signals modules to display more 
       # information for testing and development)
       session$userData$dev_mode = dev_mode
