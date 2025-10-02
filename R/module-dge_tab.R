@@ -682,13 +682,13 @@ dge_tab_server <- function(id,
                       
                       # Fetch expression data for the selected feature
                       expr_data <- 
-                        FetchData(
+                        SCUBA::fetch_data(
                           object = subset,
                           vars = feature
                           )[,1]
                       
                       # Remove assay tag from feature name
-                      # (Must be done after FetchData, which requires 
+                      # (Must be done after fetch_data, which requires 
                       # the machine-readable feature name)
                       feature <- 
                         hr_name(
@@ -886,7 +886,7 @@ dge_tab_server <- function(id,
                       # Report results using a log2 fold change
                       lfc_format = "log2",
                       # Show only adjusted p-value column
-                      remove_raw_pval = TRUE
+                      remove_raw_pval = FALSE
                       )
                   
                   log_session(session)

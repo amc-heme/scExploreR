@@ -3480,7 +3480,7 @@ plot_module_server <- function(id,
                          # This will be replaced with a SCUBA summary function
                          # in the future
                          summary_table <-
-                           SCUBA::plot_dot(
+                           scExploreR::plot_dot(
                              object(),
                              features = input$sort_expr_feature,
                              group_by = input$group_by,

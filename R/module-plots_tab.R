@@ -1,5 +1,7 @@
 #' Plots Tab Module (UI)
 #'
+#' This is an internal function intended for use by scExploreR developers only.
+#'
 #' @param id ID to use for module elements.
 #' @param meta_choices Metadata available for selection from group_by and 
 #' split_by dropdown menus. This is generated in the main server function upon 
@@ -46,7 +48,7 @@ plots_tab_ui <- function(id,
    # inputs/outputs defined in other modules 
    ns <- NS(id)
    
-   #UI for plots tab
+   # UI for plots tab
    fluidPage(
      # Sidebar layout: consists of a side panel and a main panel
      sidebarLayout(

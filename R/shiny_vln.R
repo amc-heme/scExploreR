@@ -18,7 +18,7 @@
 #' sorted according to how they appear in `custom_factor_levels`.
 #' @param set_title If defined, the titles of each facet on the plot will be
 #' set to the values defined in the character vector passed. If NULL, the 
-#' defaults according to SCUBA::plot_ridge will be used. 
+#' defaults according to scExploreR::plot_ridge will be used. 
 #' @param custom_factor_levels A character vector giving the order of groups 
 #' if `sort_groups` is set to "custom".
 #' @param legend_ncol The number of columns for keys in the legend (uses 
@@ -138,7 +138,7 @@ shiny_vln <-
           )
 
       vln_plot <-
-        SCUBA::plot_violin(
+        scExploreR::plot_violin(
           # Object or subset
           object,
           features = features_entered,

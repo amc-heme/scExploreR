@@ -801,9 +801,9 @@ subset_selections_server <- function(id,
           
           # Obtain summary stats for feature
           feature_summary <-
-            # Uses FetchData methods to pull expression data for the feature
+            # Uses fetch_data to pull expression data for the feature
             # Data layer is pulled by default; this can be changed
-            FetchData(
+            SCUBA::fetch_data(
               object(),
               vars = input$search_feature
             )[,1] |> 

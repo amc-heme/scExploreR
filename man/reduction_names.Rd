@@ -5,6 +5,7 @@
 \alias{reduction_names.Seurat}
 \alias{reduction_names.SingleCellExperiment}
 \alias{reduction_names.AnnDataR6}
+\alias{reduction_names.md._core.mudata.MuData}
 \title{Get names of reductions in object}
 \usage{
 reduction_names(object, ...)
@@ -14,6 +15,8 @@ reduction_names(object, ...)
 \method{reduction_names}{SingleCellExperiment}(object)
 
 \method{reduction_names}{AnnDataR6}(object)
+
+\method{reduction_names}{md._core.mudata.MuData}(object)
 }
 \arguments{
 \item{object}{a single-cell object. Currently, Seurat and
@@ -35,8 +38,15 @@ Returns the names of all reductions in a single-cell object.
 Anndata objects do not have an exclusive structure for reductions. Reductions
 are stored in obsm, but matrices that are not reductions may exist in this
 slot. To use reduction_names with Anndata objects, a vector of reductions
-(python list) must be stored in `object.uns["scExploreR_reductions"]`. This method
+(python list) must be stored in \code{object.uns["scExploreR_reductions"]}. This method
 will return an error if this data is not present in the object.
+
+\item \code{reduction_names(md._core.mudata.MuData)}: MuData objects
+
+For MuData objects, the keys of reductions are the keys of obsm matrices
+in each modality (mod-obsm keys). obsm matrices in each modality are not
+necesarially reductions. It is left to the admin to decide which reductions
+to include.
 
 }}
 \keyword{internal}

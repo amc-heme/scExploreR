@@ -60,7 +60,7 @@ feature_stats_server <-
                 features_entered(),
                 function(feature, object){
                   # Fetch data from Seurat object, then compute summary
-                  Seurat::FetchData(
+                  SCUBA::fetch_data(
                     object,
                     vars = feature
                     )[,1] |> 

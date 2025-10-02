@@ -40,7 +40,7 @@ threshold_stats <-
     
     # Data: get expression distribution for the feature entered
     data <- 
-      FetchData(
+      SCUBA::fetch_data(
         object = object,
         vars = feature
       ) 

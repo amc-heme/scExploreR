@@ -130,7 +130,7 @@ FeaturePlotSingle<-
   
   # Pull minimum and maximum expression values to make the legend scale the same.
   feature_data <-
-    FetchData(
+    SCUBA::fetch_data(
       object,
       vars = feature,
       # Slot: will use "data" for Seurat objects and "logcounts" 
@@ -209,7 +209,7 @@ FeaturePlotSingle<-
       subset_cells <- all_cells[subset_indx]
       
       plot <- 
-        SCUBA::plot_feature(
+        scExploreR::plot_feature(
           object, 
           features = feature, 
           cells = subset_cells, 
@@ -302,7 +302,7 @@ FeaturePlotSingle<-
     # for the object provided.
     plot <- 
       suppressMessages(
-        SCUBA::plot_feature(
+        scExploreR::plot_feature(
           object, 
           features = feature, 
           reduction = reduction,
@@ -546,7 +546,7 @@ MultiFeatureSimple <-
           groups,
           function(group, object){
             feature_data <-
-              FetchData(
+              SCUBA::fetch_data(
                 object,
                 # Fetch data for group (feature)
                 vars = group,
@@ -566,7 +566,7 @@ MultiFeatureSimple <-
           groups,
           function(group, object){
             feature_data <-
-              FetchData(
+              SCUBA::fetch_data(
                 object,
                 # Fetch data for group (feature)
                 vars = group,
@@ -610,7 +610,7 @@ MultiFeatureSimple <-
       
       # 4.2. Create plot 
       plot <- 
-        SCUBA::plot_feature(
+        scExploreR::plot_feature(
           object, 
           features = group, 
           reduction = reduction,

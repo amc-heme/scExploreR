@@ -20,7 +20,7 @@
 #' if `sort_groups` is set to "custom".
 #' @param set_title If defined, the titles of each facet on the plot will be
 #' set to the values defined in the character vector passed. If NULL, the 
-#' defaults according to SCUBA:::plot_ridge will be used. 
+#' defaults according to scExploreR::plot_ridge will be used. 
 #' @param legend_ncol The number of columns for keys in the legend (uses 
 #' ggplot2 defaults if NULL).
 #' @param legend_font_size The font size to use for legend keys (uses ggplot2 
@@ -155,7 +155,7 @@ shiny_ridge <-
     # If there is at least one feature entered, create the ridge plot
     if (length(features_entered) > 0){
       plot <-
-        SCUBA::plot_ridge(
+        scExploreR::plot_ridge(
           object,
           # cols: uses user-defined categorical palette,
           # or default palette if not provided

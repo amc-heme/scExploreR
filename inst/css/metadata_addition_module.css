@@ -1,0 +1,55 @@
+/* CSS used in metadata addition module */
+/* Badge that displays next to selected sample variable in the DT datatable */
+.sample_variable_badge {
+  /* background-color: #291a80; */
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 0.85em;
+  text-align: center;
+  color: #291a80;
+  border: 1px solid #291a80;
+}
+
+.upload_sample_variable {
+  color: #291a80;
+  border: 1px solid #291a80;
+}
+
+.object_sample_variable {
+  color: #6c1313;
+  border: 1px solid #6c1313;
+}
+
+.modal-xl .modal-body {
+  min-height: 500px;
+}
+
+/* Padding scheme for summary interface when in a two-column format  
+  (on large screens) */
+@media (min-width: 769px){
+  .summary_ui_column_left {
+    padding-left: 15px;
+    padding-right: 5px;
+  }
+
+  .summary_ui_column_right {
+    padding-left: 5px;
+    padding-right: 15px;
+  }
+}
+
+.variable_summary {
+  border-radius: 10px;
+  font-size: 0.85em;
+  padding: 6px 8px;
+  border: 1px solid #000000;
+  margin: 5px 0px;
+}
+
+.variable_summary.object_var {
+  border-radius: 10px;
+  font-size: 0.85em;
+  padding: 6px 8px;
+  border: 1px solid #6c1313;
+  margin: 5px 0px;
+}

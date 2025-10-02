@@ -28,7 +28,7 @@ positive_only <- TRUE
 
 # Pull expression data for feature
 expr_data <- 
-  FetchData(
+  SCUBA::fetch_data(
     object = object,
     vars = feature
     )[,1]

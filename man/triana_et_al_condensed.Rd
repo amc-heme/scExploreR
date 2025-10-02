@@ -7,12 +7,12 @@
 \format{
 A Seurat object with 659 features and 250 cells in 2 assays. Included assays:
 \describe{
-  \item{RNA}{mRNA expression data for 462 genes used as markers for hematopoietic stem and progenitor (HSPC) cell types at varying stages of differentiation.}
-  \item{AB}{Surface protein expression data for 197 surface protein markers associated with HSPCs.}
+\item{RNA}{mRNA expression data for 462 genes used as markers for hematopoietic stem and progenitor (HSPC) cell types at varying stages of differentiation.}
+\item{AB}{Surface protein expression data for 197 surface protein markers associated with HSPCs.}
 }
 }
 \source{
-<https://figshare.com/articles/dataset/Expression_of_197_surface_markers_and_462_mRNAs_in_15281_cells_from_blood_and_bone_marrow_from_a_young_healthy_donor/13398065/2>
+\url{https://figshare.com/articles/dataset/Expression_of_197_surface_markers_and_462_mRNAs_in_15281_cells_from_blood_and_bone_marrow_from_a_young_healthy_donor/13398065/2}
 }
 \usage{
 triana_et_al_condensed
