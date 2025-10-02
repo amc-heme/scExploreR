@@ -74,7 +74,6 @@ Imports:
     rlog (>= 0.1.0),
     scales,
     SCUBA,
-    scDE,
     Seurat (>= 3.0.0),
     shiny (>= 1.6.1),
     shinyBS (>= 0.61.1),

@@ -854,6 +854,9 @@ run_scExploreR <-
     }
 
     log_info("Datasets successfully loaded.")
+
+    # Read plaintext credentials from config
+    credentials <- readr::read_tsv(browser_config$credentials) |> dplyr::filter(user %in% browser_config$users)
     
     # Table of Contents ------------------------------------------------------------
 
