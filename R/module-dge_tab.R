@@ -886,7 +886,7 @@ dge_tab_server <- function(id,
                       # Report results using a log2 fold change
                       lfc_format = "log2",
                       # Show only adjusted p-value column
-                      remove_raw_pval = TRUE
+                      remove_raw_pval = FALSE
                       )
                   
                   log_session(session)
