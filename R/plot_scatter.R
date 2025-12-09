@@ -86,9 +86,9 @@ plot_scatter <-
     
     ## 2.2. Feature expression data
     data <-
-      SCUBA::fetch_data(
+      SCUBA::fetch_feature(
         object,
-        vars = c(feature_1, feature_2),
+        features = c(feature_1, feature_2),
         cells = cells,
         layer = slot
       )

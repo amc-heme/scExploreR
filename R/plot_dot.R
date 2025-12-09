@@ -153,9 +153,9 @@ plot_dot <-
     
     ## 2.3. Expression data for each feature
     expr_data <-
-      fetch_data(
+      fetch_feature(
         object = object,
-        vars = features,
+        features = features,
         cells = cells,
         # Seurat::DotPlot always pulls from the "data" layer. plot_dot exhibits
         # similar behavior by pulling the layer equivalent to "data" using
