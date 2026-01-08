@@ -1,0 +1,833 @@
+# scExploreR Documentation
+
+## Plots Tab
+
+The plots tab is used to explore and summarize the data using several
+plot types. All plots may be created from either the full dataset or a
+subset of cells based on metadata. For more, see the [subsetting
+section](#Subsets).
+
+### Plot Switches
+
+At the top of the options panel you will see several switches, one for
+each plot type. To show/hide each plot, click the switch. The available
+plot types are described briefly below, and each is described in more
+detail in their respective sections.
+
+- **DimPlot:** shows each cell on a dimensional reduction plot, e.g. a
+  UMAP, tSNE, or other projection enabled by the browser admin.
+
+- **Feature Plot:** a DimPlot with cells colored by a feature’s value
+  (e.g. gene, surface protein, or other data enabled by the browser
+  admin).
+
+- **Violin Plot:** displays the distribution of a feature’s value across
+  groups of cells as defined in the metadata.
+
+- **Dot Plot:** shows the average scaled value and percentage of cells
+  with non-zero values for multiple features across groups of cells as
+  defined by metadata categories.
+
+- **Scatterplot:** compares values of two features.
+
+- **Ridge Plot:** displays a density plot of a feature’s value across a
+  group of cells defined by metadata.
+
+- **Cell Proportion Plot:** used to visualize the proportion of cells
+  belonging to each value of a categorical metadata variable.
+
+- **Metadata Pie Chart:** displays the number of samples/patients in
+  each selected categorical metadata value.
+
+### Feature Selection
+
+When plot types based on a gene or multiple genes are selected, the
+feature entry menu will display beneath the switches. Any feature
+(e.g. genes, surface proteins, gene signatures, or other data enabled by
+the browser admin) may be entered here. As you type the name of a
+feature, matching suggestions will appear along with the type of the
+suggested feature.
+
+### Palettes
+
+Allows for the selection of color palettes for categorical and
+continuous data. Selections made will apply to all plots in the plots
+tab.
+
+### Forming Subsets
+
+Use the “Subset Options” menu to filter cells in the dataset based on
+specified criteria, selection of which in these menus will include, not
+exclude, cells defined by the criteria. These selections will be
+inherited by all plots.
+
+The dataset can be filtered by categorical metadata, feature expression,
+or advanced subsetting (see [Advanced (String)
+Subsetting](#advanced-subsetting)). Select the “add filter” button to
+access the filter type menu. When choosing categorical filter, any
+metadata variable can be chosen along with a single value or combination
+of values. Select “select all” to include all values in a filter, and
+select “deselect all” to clear all choices. Once a filter has been
+chosen, the “confirm filter” button must be selected before moving back
+to the filter menu. When choosing a feature expression filter, the
+numeric filter menu offers the options to filter cells in the dataset
+that express the chosen feature at levels above or below a defined
+threshold, or within a specified range of expression. Criteria defined
+by each menu are combined using `AND` syntax, meaning that only cells
+with metadata selected in one menu, and metadata selected in a second
+menu will be returned upon subsetting. Menus for the other variables
+will update based on possible combinations made in the current menu, and
+invalid combinations will appear in gray. To select a value that is
+currently invalid, clear or edit selections made in other filter menus,
+and select a different combination. Press “Apply Subset” to create the
+subset from the current selection.
+
+#### Advanced (String) Subsetting
+
+If the “Advanced Subsetting” option is chosen for filtering, a text
+entry box will appear where subset criteria may be defined via R code.
+This interface allows for the entry of additional types of criteria,
+such as:
+
+- Cells matching a threshold of numeric metadata expression
+
+- Cells expressing a feature above or below a threshold
+
+- Cells with feature expression within a defined range
+
+For more information, see the [documentation for string
+subsetting](https://amc-heme.github.io/scExploreR/articles/advanced_subsetting_documentation.md).
+
+### Dimensional Reduction Plots
+
+Dimensional reduction plots are used to summarize relatedness between
+cells across the dataset, e.g. using gene expression (for more, see
+[Interpereting scRNA-seq
+plots](https://amc-heme.github.io/scExploreR/articles/scRNA_Plots_Explained.md)).
+Cells with similar profiles tend to cluster next to each other, but
+quantitative connections can’t necessarily be made between distance on
+the plot and similarity in gene expression (i.e. a cell that is 16 units
+away from another cell is not twice as dissimilar from a cell that is 8
+units away).
+
+#### Metadata to Group By
+
+This menu is used to select a categorical metadata variable (e.g. cell
+type) to be used to label cells by color. The key for colors used will
+display in the legend to the right.
+
+#### Metadata to Split By
+
+This menu sets a categorical metadata variable used to “split” cells
+into separate plots for viewing side-by-side, and defaults to “None”.
+
+This menu is useful for comparing projections between different metadata
+values. For example, broad differences in cell type proportions may be
+visualized when splitting by disease response. These obsservations can
+be analyzed in more detail in the differential gene expression tab.
+
+When a variable is selected, a slider to choose the number of columns
+will appear under the “Title options menu” (see [Choose number of
+columns](#choose-number-of-columns) for more info).
+
+#### Choose Projection
+
+This menu is used to switch between different methods of dimensional
+reduction: cells are plotted according to the coordinates selected in
+the current projection method. Projection methods are generated during
+dataset processing and added by the browser admin. Common projections
+include UMAP and t-SNE. For more information on each projection included
+with the current dataset, contact the user or organization that set up
+the browser.
+
+#### Title Options
+
+The title options menu is used to change or remove the title of the
+dimensional reduction plot. When set to “Default” the title shown is the
+name of the selected group by metadata variable. When set to “None”, no
+title is shown. When set to “Custom”, an interface will appear beneath
+the menu to enter a custom title. Press “Update” to apply changes to the
+title, and “Reset” to revert the title to the default.
+
+![](full_documentation-custom_title_menu.png)
+
+#### Choose Number of Columns
+
+This setting applies to split plots only, and remains hidden until a
+selection is made in the “Choose Metadata to Split by” menu. Drag the
+slider to specify the number of columns to use when displaying the
+panels of a split plot. Possible values may be anywhere from 1 to the
+number of panels created by the current split by variable.
+
+![](full_documentation-number_of_columns.png)
+
+#### Label Groups
+
+Toggles on and off labels displayed above each cluster of cells
+according to the currently selected group by variable.
+
+#### Include Legend
+
+Adds or removes legend displayed on the right side of the plot.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the
+height and width of the plot in pixels using either a slider bar or text
+entry. When entering a value in the text box, press return to update the
+plot with the value. Downloaded plots will have the dimensions defined
+here if "manually adjust plot dimensions" is checked. Otherwise defaults
+are...?
+
+#### Download Button
+
+Plots are downloaded by clicking the download button at the bottom left
+side of the "DimPlot Specific Options" menu. A menu will appear with an
+option to choose whether to download a .png or .svg file. Downloads in
+the .svg format can be edited with Adobe Illustrator or a similar
+program.
+
+### Feature Plots
+
+Feature plots are dimensional reduction plots that are colored according
+to feature values instead of categorical metadata. Among other things,
+feature plots can be used to see which cell types are expressing a
+feature and to what extent, or to visualize differences in expression
+between treatment groups when a split by metadata variable is selected.
+
+#### Metadata to Split By
+
+This menu sets a categorical metadata variable used to “split” cells
+into separate plots for viewing side-by-side. One panel will be created
+for each value in the split by variable. If a single feature is entered
+in the [feature selection](#feature-selection) menu, the number of
+columns used for the panels may be adjusted. If two or more features are
+entered, however, the layout is fixed to place features by row and split
+by groups by column.
+
+#### Choose Projection
+
+This menu is used to switch between visualizing different methods of
+dimensional reduction: cells are plotted according to the coordinates
+selected in the current projection method. Projection methods are
+calculated during dataset processing and added by the browser admin.
+Common projections include UMAP and t-SNE. For more information on each
+projection included with the current dataset, contact the user or
+organization that set up the browser.
+
+#### Title Options
+
+The title options menu is used to change or remove the titles appearing
+above each panel of the feature plot. When set to “default”, the titles
+shown are equal to the feature if one or multiple features are entered
+without a split by variable, or to the values in the split by metadata
+variable when one feature is entered with a split by variable. When set
+to “none”, no titles are shown.
+
+The “Custom” option is available in all settings except for when
+multiple features are entered and a split by variable is chosen. When
+set to “custom”, an interface will appear to customize titles for every
+panel displayed on the screen. Enter values and press “Update” to apply
+changes to the title. The buttons to the right of each title entry will
+revert that individual title to the default. Pressing “Reset” will
+revert the titles for all panels to the default.
+
+#### Display Options for Legend Title
+
+Used to control the title that displays above the legend. When set to
+“Feature Name” (the default), the feature name will display above the
+legend. When set to “Expression”, the legend will be set to
+“Expression”. If “No Title” is selected, the title will be removed. This
+menu is hidden when multiple features are entered and a split by
+variable is chosen. In this case, no title will display above the
+legend.
+
+#### Choose Number of Columns
+
+This setting is available when one feature is selected with a split by
+variable, or when multiple features are chosen without a split by
+variable.
+
+Drag the slider to specify the number of columns to distribute the
+panels across. Possible values may be anywhere from 1 to the number of
+panels. This setting is not available when feature co-expression is
+enabled, or if multiple features are provided with a split by variable.
+
+![](full_documentation-number_of_columns.png)
+
+If multiple features and a split by metadata variable are entered, the
+output plot will be fixed in a layout of n splits by m features. If you
+wish to have a custom layout for these plots, it is recommended to
+create a separate plot for each feature with the desired layout,
+download each plot, and then combine them using graphic design software.
+A caveat of this approach is that the value scales may be different for
+each plot.
+
+#### Share Scale Between Features
+
+This setting is available when multiple features are entered with no
+split by variable. When enabled, all features will be plotted using the
+same scale. When disabled, each feature is plotted using a scale defined
+by the minimum and maximum values for that feature. This setting must be
+enabled to properly compare values between different features using a
+color scale.
+
+#### Display Feature Name Above Panels
+
+This setting is available when one feature is entered and split by
+metadata is provided. When enabled, the feature name will display
+centered above the panels created from the split by variable.
+
+#### Order Cells by Expression
+
+When checked, cells with the highest values will be plotted on top of
+the cells with lower expression values- essentially masking them. When
+unchecked (the default), cells will be plotted in random order giving no
+preference to either high or low value containing cells to be seen.
+Enabling this setting can help with features that are expressed in only
+a few cells in the dataset. Caution should be taken when visualizing
+features with detectable values in many cells but low average values. In
+these scenarios the values in the dataset may be exaggerated. To avoid
+this, we recommend that feature plots be used alongside other means of
+visualization, such as [violin plots](#violin-plots), [dot
+plots](#dot-plots), and [ridge plots](#ridge-plots).
+
+#### Label Groups
+
+Toggles group by variable labels above each set of cells on and off.
+
+#### Include Legend
+
+Toggles appearance of a legend to the right side of the plot on and off.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the
+height and width of the plot in pixels using either a slider bar or text
+entry. When entering a value in the text box, press return to update the
+plot with the value. Downloaded plots will have the dimensions defined
+here if "manually adjust plot dimensions" is checked. Otherwise defaults
+are...?
+
+#### Download Button
+
+Plots are downloaded by clicking the download button at the bottom left
+side of the "Feature Plot Specific Options" menu. A menu will appear
+with an option to choose whether to download a .png or .svg file.
+Downloads in the .svg format can be edited with Adobe Illustrator or a
+similar program.
+
+### Violin Plots
+
+`# TODO: General description`
+
+#### Metadata for Primary Groups
+
+The categorical metadata variable chosen here will determine how cells
+are grouped. One violin plot will be drawn for each unique value in the
+chosen metadata variable.
+
+#### Metadata for Secondary Grouping
+
+A second categorical variable may be supplied for more in-depth
+comparison of groups. When specified, violins for each combination
+between the values of the primary and secondary metadata variable will
+be drawn. Violins will be colored according to the secondary variable,
+and split according to the primary variable (see example below). In
+general, the plot can be used to compare distributions for each value of
+the primary variable between each value of the secondary variable.
+
+\[ADD IMAGE\]
+
+#### Order of Groups on Plot
+
+Sets the order groups specified by the primary metadata selection appear
+on the plot. When set to “ascending”, values in the primary metadata
+variable will display in alphanumeric order, from A to Z. When set to
+“descending”, values will display in reverse alphanumeric order. When
+set to “custom”, an interface will appear that will allow you to arrange
+values in any order. To change the order of a value, drag-and-drop the
+value in the interface.
+
+#### Number of Columns
+
+This setting is available when multiple features have been entered.
+
+Drag the slider to specify the number of columns to distribute the
+panels across. Possible values may be anywhere from 1 to the number of
+panels. This setting is not available when feature co-expression is
+enabled.
+
+![](full_documentation-number_of_columns.png)
+
+#### Include Legend
+
+When checked, the legend will display to the right-hand side of the
+plot. when unchecked, the legend will be removed.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the
+height and width of the plot in pixels using either a slider bar or text
+entry. When entering a value in the text box, press return to update the
+plot with the value. Downloaded plots will have the dimensions defined
+here if "manually adjust plot dimensions" is checked. Otherwise defaults
+are...?
+
+#### Download Button
+
+Plots are downloaded by clicking the download button at the bottom left
+side of the "Violin Plot Specific Options" menu. A menu will appear with
+an option to choose whether to download a .png or .svg file. Downloads
+in the .svg format can be edited with Adobe Illustrator or a similar
+program.
+
+### Dot Plots
+
+    # TODO: General description
+
+#### Metadata to group by
+
+Specifies the categorical metadata variable used to group cells. One dot
+per feature will be created for each value of the selected variable.
+
+#### Order of Groups on Plot
+
+Sets the order groups appear on the plot. When set to “ascending”,
+values in the group by metadata variable will display in ascending
+alphanumeric order, from top to bottom. When set to “descending”, values
+will display in descending alphanumeric order. When set to “custom”, an
+interface will appear that will allow you to arrange values in any
+order. To change the order of a value, drag-and-drop the value in the
+interface.
+
+#### Include Legend
+
+When checked, the legend will display to the right-hand side of the
+plot. when unchecked, the legend will be removed.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the
+height and width of the plot. The height and width are entered in
+pixels, and may be chosen using the slider or the text box. When
+entering a value in the text box, press return to update the plot with
+the value. Downloaded plots will have the dimensions defined here, if
+“manually adjust plot dimensions” is checked.
+
+#### Use Separate Features for Dot Plot
+
+When checked, an interface will appear to enter additional features, or
+to remove features that were entered in the [feature
+selection](#feature-selection) menu. Features added or removed in this
+interface will apply only to the dot plot.
+
+#### Download Button
+
+Plots are downloaded by clicking the download button at the bottom left
+side of the "Dot Plot Specific Options" menu. A menu will appear with an
+option to choose whether to download a .png or .svg file. Downloads in
+the .svg format can be edited with Adobe Illustrator or a similar
+program.
+
+### Scatterplots
+
+Scatterplots are useful for viewing co-expression of two features. All
+cells are plotted according to the expression of each feature, and are
+useful for qualitative assessments of correlation.
+
+#### Feature for x-axis
+
+A feature to plot on the x-axis. All features that can be entered in the
+[feature selection](#feature-selection) menu may be entered here.
+
+#### Feature for y-axis
+
+A feature to plot on the y-axis. All features that can be entered in the
+[feature selection](#feature-selection) menu may be entered here.
+
+#### Metadata to Group By
+
+This menu is used to select a categorical metadata variable to be used
+to coloring cells. Cells will be colored according to their associated
+metadata for the variable chosen, and the key for colors used will
+display in the legend to the right.
+
+#### Include Legend
+
+Adds or removes legend displayed on the right side of the plot.
+
+#### Show Pearson Coefficient
+
+When checked, a pearson correlation coefficient is computed between the
+two features entered and displayed as the plot title. This is checked by
+default.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the
+height and width of the plot in pixels using either a slider bar or text
+entry. When entering a value in the text box, press return to update the
+plot with the value. Downloaded plots will have the dimensions defined
+here if "manually adjust plot dimensions" is checked. Otherwise defaults
+are...?
+
+#### Download Button
+
+Plots are downloaded by clicking the download button at the bottom left
+side of the "Scatterplot Specific Options" menu. A menu will appear with
+an option to choose whether to download a .png or .svg file. Downloads
+in the .svg format can be edited with Adobe Illustrator or a similar
+program.
+
+### Ridge Plots
+
+#### Metadata to Group by
+
+Used to choose a categorical variable for splitting ridge plots into
+groups. One ridge plot will be drawn for each value in the chosen
+metadata variable. If set to “None”, a single ridge plot for all cells
+will be plotted
+
+#### Include Legend
+
+Adds or removes legend displayed on the right side of the plot.
+
+#### Define Custom X-axis Limits
+
+When checked, an interface will appear to change the X-axis limits. To
+specify new limits, enter them in the text boxes for “Lower Bound” and
+“Upper Bound” and press the “ Update” button to apply the new limits. To
+revert to the default limits, press “ Reset”.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the
+height and width of the plot in pixels using either a slider bar or text
+entry. When entering a value in the text box, press return to update the
+plot with the value. Downloaded plots will have the dimensions defined
+here if "manually adjust plot dimensions" is checked. Otherwise defaults
+are...?
+
+#### Download Button
+
+Plots are downloaded by clicking the download button at the bottom left
+side of the "Ridge Plot Specific Options" menu. A menu will appear with
+an option to choose whether to download a .png or .svg file. Downloads
+in the .svg format can be edited with Adobe Illustrator or a similar
+program.
+
+#### Title Options
+
+The title options menu is used to change or remove the title of the
+plot. When set to “Default” the title shown is the name of the selected
+feature. When set to “None”, no title is shown. When set to “Custom”, an
+interface will appear beneath the menu to enter a custom title. Press
+“Update” to apply changes to the title, and “Reset” to revert the title
+to the default.
+
+### Cell Proportion Plot
+
+#### Choose Metadata for Proportions
+
+Used to choose the metadata to use for displaying cell type proportions.
+The proportions illustrated by the stacked bar plots will be relative to
+the number of cells matching each value in the chosen metadata variable.
+
+#### Choose Metadata for Proportion Comparison
+
+Used to choose a categorical metadata variable used for comparing cell
+type proportions. One bar will be plotted for each value of the chosen
+metadata variable.
+
+#### Title Options
+
+The title options menu is used to change or remove the title of the
+plot. When set to “Default” the title shown is the name of the selected
+metadata variable for proportions. When set to “None”, no title is
+shown. When set to “Custom”, an interface will appear beneath the menu
+to enter a custom title. Press “Update” to apply changes to the title,
+and “Reset” to revert the title to the default.
+
+![](full_documentation-custom_title_menu.png)
+
+#### Order of Groups on Plot
+
+Sets the order bars created by the proportion comparison metadata
+variable appear on the plot. When set to “ascending”, values in the
+metadata variable will display in ascending alphanumeric order, from
+left to right. When set to “descending”, values will display in
+descending alphanumeric order. When set to “custom”, an interface will
+appear that will allow you to arrange values in any order. To change the
+order of a value, drag-and-drop the value in the interface.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the
+height and width of the plot in pixels using either a slider bar or text
+entry. When entering a value in the text box, press return to update the
+plot with the value. Downloaded plots will have the dimensions defined
+here if "manually adjust plot dimensions" is checked. Otherwise defaults
+are...?
+
+#### Download Button
+
+Plots are downloaded by clicking the download button at the bottom left
+side of the "Cell Proportion Plot Specific Options" menu. A menu will
+appear with an option to choose whether to download a .png or .svg file.
+Downloads in the .svg format can be edited with Adobe Illustrator or a
+similar program.
+
+### Metadata Pie Chart
+
+Metadata pie charts show metadata on the sample level rather than the
+cell level, and is useful for summarizing the current dataset or subset
+in this regard. Sample-level metadata is compiled based on a metadata
+variable used as the sample (i.e., the metadata corresponding to “sample
+ID”, “specimen”, “patient ID”, etc.), and is chosen by the user setting
+up the browser.
+
+#### View Number of Patients by Menu
+
+Sets a categorical metadata variable to use for displaying the sample
+composition of the dataset. The size of each slice of the pie will be
+determined by the number of samples matching the corresponding value of
+a metadata variable provided to “View Number of Patients By”. If samples
+match multiple values of the chosen metadata variable (for example, if
+cell type is chosen and one sample has multiple cell types), the total
+value of all slices will be greater than the total number of patients.
+
+#### Title Options
+
+The title options menu is used to change or remove the title of the pie
+chart. When set to “Default” the title shown is the name of the metadata
+variable in the “View Number of Patients by” menu. When set to “None”,
+no title is shown. When set to “Custom”, an interface will appear
+beneath the menu to enter a custom title. Press “Update” to apply
+changes to the title, and “Reset” to revert the title to the default.
+
+![](full_documentation-custom_title_menu.png)
+
+#### Include Legend
+
+Adds or removes legend displayed on the right side of the plot.
+
+#### Manually Adjust Plot Dimensions
+
+When enabled, an interface appears allowing the user to change the
+height and width of the plot in pixels using either a slider bar or text
+entry. When entering a value in the text box, press return to update the
+plot with the value. Downloaded plots will have the dimensions defined
+here if "manually adjust plot dimensions" is checked. Otherwise defaults
+are...?
+
+#### Download Button
+
+Plots are downloaded by clicking the download button at the bottom left
+side of the "Metadata Pie Chart Specific Options" menu. A menu will
+appear with an option to choose whether to download a .png or .svg file.
+Downloads in the .svg format can be edited with Adobe Illustrator or a
+similar program.
+
+## Differential Gene Expression Tab
+
+Differential gene expression (DGE) analysis compares groups of cells
+based on their metadata, and returns a table of genes that differ in
+expression between the groups. scExploreR uses
+[presto](https://www.biorxiv.org/content/10.1101/653253v1.full) for DGE
+analysis, which performs a Wilcoxon Rank Sum and an area under the
+receiver operator curve (auROC) analysis on the expression data.
+
+Two DGE testing modes are available: differential expression and marker
+identification. These may be selected using the **“Choose test to
+perform”** menu. When differential expression is selected, two groups of
+cells are compared and the genes upregulated/downregulated in one group
+vs. the other are shown. When marker identification is selected, more
+than two groups will be compared, and genes that serve as markers of
+each group (those that are particularly upregulated or downregulated in
+that group) will be displayed. When running differential gene
+expression, genes marked as upregulated in a group are differentially
+expressed to the extent shown in that group **relative to the other
+group**, whereas for marker identification the genes upregulated in the
+marker class are deferentially expressed to the extent shown in the
+marker class **relative to all other cells**.
+
+At this time, differential gene expression can only be performed for
+genes. Other feature types will be supported in the future.
+
+To run a DGE analysis, follow the process below. This process is
+described in greater detail in subsequent sections, with more
+information on the menus involved in each DGE mode.
+
+- Determine if you would like to perform marker identification or
+  differential expression.
+
+- If performing marker identification, select the metadata to use for
+  marker classes. If performing differential expression, select two
+  groups based on metadata, or feature expression.
+
+- For either marker identification or differential expression, determine
+  if you would like to define groups using the full dataset, or a subset
+  of cells.
+
+### Marker Identification Mode
+
+#### Choose Metadata to Use for Marker Identification
+
+The categorical metadata variable chosen here will be used as the basis
+for determining groups for marker identification. The choices available
+in “choose classes to include in marker computation” will update based
+on the variable selected in this menu.
+
+#### Choose classes to include in marker computation
+
+Specific categories from the metadata variable chosen in “choose
+metadata to use for marker identification” may be included/excluded in
+the analysis using this menu. The analysis will compute markers for each
+of the categories selected in this menu. Groups (marker classes) are
+defined in the context of the full dataset or a subset, depending on
+selections made in the “[subset options](#dge-subset-options)” menu.
+
+### Differential Expression Mode
+
+The two groups defined in differential gene expression may be defined in
+one of two ways: via categorical metadata, or via feature expression. To
+define groups via feature expression, check **“use feature expression to
+define groups”**. The groups are defined within the context of the full
+dataset or a subset, depending on selections made in the “[subset
+options](#dge-subset-options)” menu.
+
+#### Groups Defined by Categorical Metadata
+
+To define groups based on a categorical metadata variable, select a
+variable in the **“choose metadata to use for differential gene
+expression”**, and then choose a category to use for **“group 1”** and
+**“group 2”**.
+
+#### Groups Defined by Feature Expression
+
+![](full_documentation-DGE_expr_threshold_widget.gif)
+
+To define groups based on feature expression, enter a feature from the
+search bar that appears after “use feature expression to define groups”
+is checked.
+
+When a feature is entered, an interface will appear with a plot of the
+expression distribution of that feature in all cells of the dataset (see
+right). Click the plot to choose an expression threshold. The cells with
+expression values above the chosen threshold will be compared to the
+cells below the threshold.
+
+To aid in the selection of a threshold, an interface will display below
+the plot with statistics on the chosen threshold. The interface will
+display with the value of the chosen threshold, and the percentage of
+cells above and below the threshold.
+
+### Subset Options
+
+The subset options menu is used to choose the context in which a
+differential expression test is performed. If filter criteria are
+entered in this interface, the test chosen in the menus above will be
+performed only in cells that meet the chosen criteria.
+
+For example, if a test based on feature expression is chosen, and a
+specific sample is chosen in the subset options menus, then the
+differential expression will compare cells above the expression
+threshold chosen in that sample to cells below the expression threshold
+in the sample.
+
+The interface for entering criteria is the same as in the plots tab. See
+[“forming subsets”](#Subsets) for more info.
+
+### Other DGE Settings
+
+#### Positive Markers Only
+
+When checked, the table returned will only show genes that are
+upregulated in each group/marker class. Disabling this option will also
+show downregulated genes, but this information is redundant since genes
+downregulated in a group will always show as being upregulated in
+another group (i.e. in differential expression mode, a gene that is
+expressed twice as much in group 1 compared to group 2 will be half as
+expressed in group 2 relative to group 1).
+
+### Interpreting DGE Results
+
+After selecting a test and a subset, press update to run DGE on the
+chosen groups. Depending on the size of the dataset and the performance
+of the server, this may take up to two minutes to run, but usually
+completes in under 30 seconds. When the test is complete, a report will
+display in the main window.
+
+The “test summary” section will display summary data on the test
+selected and the subset it was performed on. The “test selected”
+subsection will display either “differential expression” or “marker
+identification” based on the test mode chosen. It will also display the
+groups being compared if differential expression was chosen, or the
+number of marker classes if marker identification was chosen. The
+“subset used for test” subsection shows information on the subset of
+cells chosen. For each categorical metadata variable shown in the app,
+the categories represented by the cells in the test sample will be shown
+(if cells from patients A, B, and C are present, this section will list
+A, B, and C under “patients”). The number of cells in the subset tested
+is also displayed, and the number of cells in each DGE group or marker
+class is also shown.
+
+#### DGE Table
+
+The columns of the DGE table are detailed below. The table may be
+downloaded via the “ download table” button.
+
+- Feature: the gene observed as being differentially expressed.
+
+- Class (or group): the dge group, or marker class in which the gene is
+  differentially expressed.
+
+- Average expression: the average expression of the gene in the group or
+  class listed.
+
+- Log2FC: the log-2 fold change in expression of the gene in the group
+  or class, relative to either the other group (in differential
+  expression mode) or all other cells (in marker identification mode).
+
+- AUC: the area under the receiver operator curve for the gene, which
+  serves as a measure of how well the gene serves as a marker for the
+  indicated group/class.
+
+- Adjusted p-value: the adjusted p-value associated with the log2FC
+  calculation in expression of the gene in the current group vs. the
+  other group, or all other cells.
+
+- Percent expression within class: the percentage of cells in the
+  indicated group or class that express the gene in the group/class.
+
+- Percent expression outside class: the percentage of cells in the
+  indicated group or class that express the gene outside the
+  group/class.
+
+If either of the percent expression values are very low, or if there is
+a large difference in percent expression inside the group vs. outside,
+caution should be taken when interpreting the results. Definitive
+comparisons are difficult to determine when fewer cells are expressing
+the feature, and lower expression may be associated with the [dropout
+effect](https://doi.org/10.1038/nmeth.2967).
+
+- Additional info: a link to the [GeneCards](https://www.genecards.org/)
+  for each gene is displayed here.
+
+#### DGE DimPlot
+
+To visually identify and verify the groups/marker classes being compared
+in the selected test, a dimensional reduction plot will display beneath
+the table. After the plot is displayed, a menu (“DimPlot options”) will
+appear in the options panel on the left. The reduction and the color by
+metadata can be changed here.
+
+## Changing Datasets
+
+To change the dataset, press the button in the upper right hand corner
+of the app window, and select **“Choose Dataset”**. A window will appear
+with the datasets that have been added to the browser, with a
+description of each. Select a dataset and press “confirm selection” to
+load the dataset. The dataset can be changed from any tab, and the
+loaded dataset will affect all three tabs.
