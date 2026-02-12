@@ -12,8 +12,8 @@ test_that("validate_dataset_names accepts valid names", {
   expect_silent(validate_dataset_names(valid_datasets))
 })
 
-test_that("validate_dataset_names rejects names with spaces", {
-  # Invalid dataset names (contain spaces)
+test_that("validate_dataset_names rejects names with whitespace", {
+  # Invalid dataset names (contain whitespace)
   invalid_datasets <- list(
     `Seurat object` = list(object = "path1.rds", config = "config1.yaml"),
     `my dataset` = list(object = "path2.rds", config = "config2.yaml")
@@ -40,13 +40,13 @@ test_that("validate_dataset_names rejects names with spaces", {
 test_that("validate_dataset_names handles single invalid name", {
   # One invalid dataset name
   datasets <- list(
-    `Valid Name` = list(object = "path1.rds", config = "config1.yaml")
+    `Invalid Name` = list(object = "path1.rds", config = "config1.yaml")
   )
   
   # Should throw an error
   expect_error(
     validate_dataset_names(datasets),
-    "Valid Name"
+    "Invalid Name"
   )
 })
 
@@ -88,7 +88,7 @@ test_that("validate_dataset_names provides helpful error message", {
   # Check that error message contains helpful guidance
   expect_error(
     validate_dataset_names(invalid_datasets),
-    "Replace spaces in dataset names with underscores"
+    "Replace whitespace in dataset names with underscores"
   )
   
   expect_error(
