@@ -497,6 +497,8 @@ The columns of the DGE table are detailed below. The table may be downloaded via
 
 -   AUC: the area under the receiver operator curve for the gene, which serves as a measure of how well the gene serves as a marker for the indicated group/class.
 
+-   Raw p-value: the unadjusted p-value from the statistical test comparing expression of the gene in the current group vs. the other group, or all other cells.
+
 -   Adjusted p-value: the adjusted p-value associated with the log2FC calculation in expression of the gene in the current group vs. the other group, or all other cells.
 
 -   Percent expression within class: the percentage of cells in the indicated group or class that express the gene in the group/class.
