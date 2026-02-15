@@ -57,6 +57,9 @@
 #' @param palette A character vector of hex color codes for the continuous 
 #'   color scale. When NULL, viridis is used (schextra default). When 
 #'   provided, overrides the default viridis scale with the specified palette.
+#' @param diverging_palette A 3-color diverging palette (low, mid, high) for 
+#'   use with scale_fill_gradient2() with a fixed midpoint at 0. Takes 
+#'   precedence over palette when provided.
 #'
 #' @return A ggplot2 object (or patchwork object for multiple features) with
 #'   hexbin feature plot(s) created according to user specifications.
@@ -85,7 +88,8 @@ shiny_hexbin_feature <- function(
     ylim_orig = NULL,
     assay = NULL,
     layer = NULL,
-    palette = NULL) {
+    palette = NULL,
+    diverging_palette = NULL) {
   
   # Validate that object is not NULL (will keep plot code from running if
   # the subset is NULL, meaning no cells in subset)
@@ -193,9 +197,20 @@ shiny_hexbin_feature <- function(
         )
       ),
       
-      # Override viridis color scale with global palette if a palette is 
-      # provided
-      if (!is.null(palette)) {
+      # Override viridis color scale with diverging palette if provided
+      # (takes precedence over standard palette)
+      if (!is.null(diverging_palette)) {
+        list(
+          scale_fill_gradient2(
+            low = diverging_palette[1],
+            mid = diverging_palette[2],
+            high = diverging_palette[3],
+            midpoint = 0
+          )
+        )
+      } else if (!is.null(palette)) {
+        # Override viridis color scale with global palette if a palette is 
+        # provided
         list(
           scale_fill_gradientn(colors = palette)
         )
@@ -264,9 +279,20 @@ shiny_hexbin_feature <- function(
           )
         ),
         
-        # Override viridis color scale with global palette if a palette is 
-        # provided
-        if (!is.null(palette)) {
+        # Override viridis color scale with diverging palette if provided
+        # (takes precedence over standard palette)
+        if (!is.null(diverging_palette)) {
+          list(
+            scale_fill_gradient2(
+              low = diverging_palette[1],
+              mid = diverging_palette[2],
+              high = diverging_palette[3],
+              midpoint = 0
+            )
+          )
+        } else if (!is.null(palette)) {
+          # Override viridis color scale with global palette if a palette is 
+          # provided
           list(
             scale_fill_gradientn(colors = palette)
           )

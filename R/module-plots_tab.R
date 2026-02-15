@@ -857,7 +857,7 @@ plots_tab_ui <- function(id,
                 label_checkbox =             FALSE,
                 legend_checkbox =            TRUE,
                 limits_checkbox =            TRUE,
-                custom_colors =              FALSE,
+                custom_colors =              TRUE,
                 manual_dimensions =          TRUE,
                 download_button =            TRUE,
                 separate_features =          FALSE

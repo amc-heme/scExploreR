@@ -4324,7 +4324,19 @@ plot_module_server <- function(id,
                             # Assay and layer will use defaults (NULL) for now
                             assay = NULL,
                             layer = NULL,
-                            palette = palette()
+                            palette = palette(),
+                            # Diverging palette (3 colors with midpoint at 0)
+                            diverging_palette = 
+                              # Use custom diverging colors if defined
+                              if (
+                                isTruthy(plot_selections$low_color()) &
+                                isTruthy(plot_selections$mid_color()) &
+                                isTruthy(plot_selections$high_color())
+                              ){
+                                c(plot_selections$low_color(),
+                                  plot_selections$mid_color(),
+                                  plot_selections$high_color())
+                              } else NULL
                           )
                         })
 
