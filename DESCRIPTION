@@ -73,6 +73,7 @@ Imports:
     rlang,
     rlog (>= 0.1.0),
     scales,
+    schextra,
     SCUBA,
     Seurat (>= 3.0.0),
     shiny (>= 1.6.1),
@@ -93,11 +94,12 @@ Imports:
     yaml
 Remotes: 
     github::immunogenomics/presto,
+    github::amc-heme/schextra,
     github::amc-heme/SCUBA,
     github::amc-heme/scDE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Depends: 
     R (>= 3.5.0)
 Suggests: 
