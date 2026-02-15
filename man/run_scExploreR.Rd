@@ -25,7 +25,7 @@ run_scExploreR(
 \item{object_path}{path to a single-cell object to be configured. Currently,
 Seurat, SingleCellExperiment, and anndata objects are supported. For
 SingleCellExperiment objects with using HDF5 disk-backed storage via
-\link{HDF5Array}, \code{object_path} should be a path to the directory containing
+\link[HDF5Array:HDF5Array-class]{HDF5Array::HDF5Array}, \code{object_path} should be a path to the directory containing
 the se.rds and assays.h5 files for the object.}
 
 \item{config_path}{path to the config file for the single-cell object. This is generated either in the config app via \code{run_config_app}, or by auto-generating a config file via \code{generate_config_yaml} and editing it by hand. For more information on using the config app, see \href{https://amc-heme.github.io/scExploreR/articles/docker.html#step-4}{here}.}
