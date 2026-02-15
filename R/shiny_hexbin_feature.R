@@ -54,6 +54,9 @@
 #' @param layer Name of assay layer to use (e.g., "data", "counts",
 #'   "scale.data"). If NULL, uses the object's default layer for the specified
 #'   assay.
+#' @param palette A character vector of hex color codes for the continuous 
+#'   color scale. When NULL, viridis is used (schextra default). When 
+#'   provided, overrides the default viridis scale with the specified palette.
 #'
 #' @return A ggplot2 object (or patchwork object for multiple features) with
 #'   hexbin feature plot(s) created according to user specifications.
@@ -81,7 +84,8 @@ shiny_hexbin_feature <- function(
     xlim_orig = NULL,
     ylim_orig = NULL,
     assay = NULL,
-    layer = NULL) {
+    layer = NULL,
+    palette = NULL) {
   
   # Validate that object is not NULL (will keep plot code from running if
   # the subset is NULL, meaning no cells in subset)
@@ -189,6 +193,14 @@ shiny_hexbin_feature <- function(
         )
       ),
       
+      # Override viridis color scale with global palette if a palette is 
+      # provided
+      if (!is.null(palette)) {
+        list(
+          scale_fill_gradientn(colors = palette)
+        )
+      },
+      
       # Apply original axis limits if this is a subset and user has selected
       # to use original limits
       if (is_subset & isTruthy(original_limits)) {
@@ -251,6 +263,14 @@ shiny_hexbin_feature <- function(
             legend.position = if (show_legend) "bottom" else "none"
           )
         ),
+        
+        # Override viridis color scale with global palette if a palette is 
+        # provided
+        if (!is.null(palette)) {
+          list(
+            scale_fill_gradientn(colors = palette)
+          )
+        },
         
         if (is_subset & isTruthy(original_limits)) {
           list(

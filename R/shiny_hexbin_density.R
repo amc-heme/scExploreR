@@ -47,6 +47,9 @@
 #' @param ylim_orig The original y-axis limits for the plot, computed from the
 #'   full object at app startup. Only used when is_subset = TRUE and
 #'   original_limits = TRUE.
+#' @param palette A character vector of hex color codes for the continuous 
+#'   color scale. When NULL, viridis is used (schextra default). When 
+#'   provided, overrides the default viridis scale with the specified palette.
 #'
 #' @return A ggplot2 object with a hexbin density plot created according to
 #'   user specifications.
@@ -70,7 +73,8 @@ shiny_hexbin_density <- function(
     is_subset = FALSE,
     original_limits = FALSE,
     xlim_orig = NULL,
-    ylim_orig = NULL) {
+    ylim_orig = NULL,
+    palette = NULL) {
   
   # Validate that object is not NULL (will keep plot code from running if
   # the subset is NULL, meaning no cells in subset)
@@ -152,6 +156,13 @@ shiny_hexbin_density <- function(
         legend.position = if (show_legend) "bottom" else "none"
       )
     ),
+    
+    # Override viridis color scale with global palette if a palette is provided
+    if (!is.null(palette)) {
+      list(
+        scale_fill_gradientn(colors = palette)
+      )
+    },
     
     # Apply original axis limits if this is a subset and user has selected
     # to use original limits

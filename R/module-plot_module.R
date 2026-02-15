@@ -4180,7 +4180,8 @@ plot_module_server <- function(id,
                             xlim_orig = 
                               lim_orig()[[plot_selections$reduction()]]$xlim_orig,
                             ylim_orig = 
-                              lim_orig()[[plot_selections$reduction()]]$ylim_orig
+                              lim_orig()[[plot_selections$reduction()]]$ylim_orig,
+                            palette = palette()
                           )
                         })
                   
@@ -4229,7 +4230,8 @@ plot_module_server <- function(id,
                               lim_orig()[[plot_selections$reduction()]]$ylim_orig,
                             # Assay and layer will use defaults (NULL) for now
                             assay = NULL,
-                            layer = NULL
+                            layer = NULL,
+                            palette = palette()
                           )
                         })
 

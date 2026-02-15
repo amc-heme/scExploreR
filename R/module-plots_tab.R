@@ -1470,7 +1470,7 @@ plots_tab_server <- function(id,
                     lim_orig = lim_orig,
                     metadata_config = metadata_config,
                     # Hexbin density plots use continuous palette (viridis in
-                    # schextra)
+                    # schextra by default, but will use global palette when set)
                     palette = selected_continuous_palette,
                     # Hexbin-specific parameters
                     hexbin_nbins = reactive({input$hexbin_density_nbins}),
