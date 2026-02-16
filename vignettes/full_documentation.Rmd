@@ -104,7 +104,7 @@ library(glue)
 ```
 ```{r text_snippets, include = FALSE}
 # Functions to write repeating units of documentation
-include_legend_description <- 
+include_legend_description <-
   "Adds or removes legend displayed on the right side of the plot."
 
 manual_dimensions_description <- 'When enabled, an interface appears allowing 
@@ -113,32 +113,32 @@ entering a value in the text box, press return to update the plot with the
 value. Downloaded plots will have the dimensions defined here if "manually 
 adjust plot dimensions" is checked. Otherwise defaults are...?'
 
-include_legend <- 
-  function(){
+include_legend <-
+  function() {
     tagList(
       tags$h3("Include Legend"),
       tags$p(include_legend_description)
     )
   }
 
-manual_dimensions <- 
-  function(){
+manual_dimensions <-
+  function() {
     tagList(
       tags$h3("Manually Adjust Plot Dimensions"),
       tags$p(manual_dimensions_description)
     )
   }
 
-download_button <- 
-  function(plot_type){
-    text <- 
+download_button <-
+  function(plot_type) {
+    text <-
       glue(
         'Plots are downloaded by clicking the download button at the bottom left 
          side of the "{plot_type} Specific Options" menu. A menu will appear 
          with an option to choose whether to download a .png or .svg file. Downloads in the 
          .svg format can be edited with Adobe Illustrator or a similar program.'
-        )
-    
+      )
+
     tagList(
       tags$h3("Download Button"),
       tags$p(text)
@@ -497,7 +497,13 @@ Differential gene expression (DGE) analysis compares groups of cells based on th
 
 Two DGE testing modes are available: differential expression and marker identification. These may be selected using the **"Choose test to perform"** menu. When differential expression is selected, two groups of cells are compared and the genes upregulated/downregulated in one group vs. the other are shown. When marker identification is selected, more than two groups will be compared, and genes that serve as markers of each group (those that are particularly upregulated or downregulated in that group) will be displayed. When running differential gene expression, genes marked as upregulated in a group are differentially expressed to the extent shown in that group **relative to the other group**, whereas for marker identification the genes upregulated in the marker class are deferentially expressed to the extent shown in the marker class **relative to all other cells**.
 
+::: {.callout .callout-info}
+<h4> Note </h4>
+
 At this time, differential gene expression can only be performed for genes. Other feature types will be supported in the future.
+
+DGE is not available for SingleCellExperiment objects because there is no known package that can process both the standard sparse matrices and the HDF5-enabled DelayedArray matrices in these objects. See the [object guidelines](object_guidelines.html) article for more details.
+:::
 
 To run a DGE analysis, follow the process below. This process is described in greater detail in subsequent sections, with more information on the menus involved in each DGE mode.
 
@@ -568,7 +574,7 @@ The columns of the DGE table are detailed below. The table may be downloaded via
 ::: {.callout .callout-info}
 <h4> Note </h4>
 
-The Average Expression column is only returned for Seurat and BPCells-backed Seurat objects. It is not present in DGE results for anndata objects. See the [object guidelines](object_guidelines.html) for more details on feature availability by object class.
+The Average Expression column is only returned for Seurat and BPCells-backed Seurat objects. It is not present in DGE results for anndata objects. See the [object guidelines](object_guidelines.html) article for more details on feature availability by object class.
 :::
 
 -   **Log2FC:** the log-2 fold change in expression of the gene in the group or class, relative to either the other group (in differential expression mode) or all other cells (in marker identification mode).
