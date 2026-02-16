@@ -359,7 +359,7 @@ This example will identify relevant metadata following the guiding questions bel
 ::: {.callout .callout-info}
 <h4> Note </h4>
 
-While Numeric metadata can't be used for subsetting or choices on plots, it may be plotted like features, if allowed via the config app. See the config app section for instructions on how to enable/disable this usage.
+Numeric metadata can't be used to group or split plots, but it can be used for subsetting and may be plotted like features if enabled via the "Include numeric metadata" option in the config app. See the config app section for instructions on how to enable/disable this usage.
 :::
 
 In the Chan et al. dataset, there are six metadata variables related to cell type: cell_type_coarse, cell_type, cell_type_fine, cell_type_general, clusters, and cell_type_med.
