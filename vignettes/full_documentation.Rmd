@@ -22,12 +22,84 @@ library(glue)
 ```
 
 ```{=html}
-<style type="text/css"> 
+<style type="text/css">
   .centered-image{
-    display: block; 
-    margin-left: auto; 
+    display: block;
+    margin-left: auto;
     margin-right: auto;
-    } 
+    }
+
+  /* CSS for callouts
+     From https://codepen.io/superjaberwocky/pen/rLKxOa */
+  .callout {
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #eee;
+    border-left-width: 8px;
+    border-radius: 8px;
+  }
+  .callout h4, .callout h5 {
+    margin-top: 0;
+    margin-bottom: 5px;
+  }
+  .callout p:last-child {
+    margin-bottom: 0;
+  }
+  .callout code {
+    border-radius: 3px;
+  }
+  .callout + .bs-callout {
+    margin-top: -5px;
+  }
+  .callout-default {
+    border-left-color: #777;
+    background-color: #77777735;
+  }
+  .callout-default h4, .callout-default h5 {
+    color: #777;
+  }
+  .callout-primary {
+    border-left-color: #428bca;
+    background-color: #428bca35;
+  }
+  .callout-primary h4, .callout-primary h5 {
+    color: #428bca;
+  }
+  .callout-success {
+    border-left-color: #5cb85c;
+    background-color: #5cb85c35;
+  }
+  .callout-success h4, .callout-success h5 {
+    color: #5cb85c;
+  }
+  .callout-danger {
+    border-left-color: #d9534f;
+    background-color: #d9534f35;
+  }
+  .callout-danger h4, .callout-danger h5 {
+    color: #d9534f;
+  }
+  .callout-warning {
+    border-left-color: #f0ad4e;
+    background-color: #f0ad4e35;
+  }
+  .callout-warning h4, .callout-warning h5 {
+    color: #f0ad4e;
+  }
+  .callout-info {
+    border-left-color: #5bc0de;
+    background-color: #5bc0de35;
+  }
+  .callout-info h4, .callout-info h5 {
+    color: #5bc0de;
+  }
+  .callout-bdc {
+    border-left-color: #29527a;
+    background-color: #29527a35;
+  }
+  .callout-bdc h4, .callout-bdc h5 {
+    color: #29527a;
+  }
     </style>
 ```
 ```{r text_snippets, include = FALSE}
@@ -487,27 +559,45 @@ The "test summary" section will display summary data on the test selected and th
 
 The columns of the DGE table are detailed below. The table may be downloaded via the "`r icon("table")` download table" button.
 
--   Feature: the gene observed as being differentially expressed.
+-   **Feature:** the gene observed as being differentially expressed.
 
--   Class (or group): the dge group, or marker class in which the gene is differentially expressed.
+-   **Class (or group):** the dge group, or marker class in which the gene is differentially expressed.
 
--   Average expression: the average expression of the gene in the group or class listed.
+-   **Average expression:** the average expression of the gene in the group or class listed.
 
--   Log2FC: the log-2 fold change in expression of the gene in the group or class, relative to either the other group (in differential expression mode) or all other cells (in marker identification mode).
+::: {.callout .callout-info}
+<h4> Note </h4>
 
--   AUC: the area under the receiver operator curve for the gene, which serves as a measure of how well the gene serves as a marker for the indicated group/class.
+The Average Expression column is only returned for Seurat and BPCells-backed Seurat objects. It is not present in DGE results for anndata objects. See the [object guidelines](object_guidelines.html) for more details on feature availability by object class.
+:::
 
--   Raw p-value: the unadjusted p-value from the statistical test comparing expression of the gene in the current group vs. the other group, or all other cells.
+-   **Log2FC:** the log-2 fold change in expression of the gene in the group or class, relative to either the other group (in differential expression mode) or all other cells (in marker identification mode).
 
--   Adjusted p-value: the adjusted p-value associated with the log2FC calculation in expression of the gene in the current group vs. the other group, or all other cells.
+-   **AUC:** the area under the receiver operator curve for the gene, which serves as a measure of how well the gene serves as a marker for the indicated group/class.
 
--   Percent expression within class: the percentage of cells in the indicated group or class that express the gene in the group/class.
+::: {.callout .callout-info}
+<h4> Note </h4>
 
--   Percent expression outside class: the percentage of cells in the indicated group or class that express the gene outside the group/class.
+The AUC column is only returned for standard Seurat objects. It is not present in DGE results for BPCells-backed Seurat objects, anndata objects, or SingleCellExperiment objects.
+:::
+
+-   **Raw p-value:** the unadjusted p-value from the statistical test comparing expression of the gene in the current group vs. the other group, or all other cells.
+
+-   **Adjusted p-value:** the adjusted p-value associated with the log2FC calculation in expression of the gene in the current group vs. the other group, or all other cells.
+
+-   **Percent expression within class:** the percentage of cells in the indicated group or class that express the gene in the group/class.
+
+-   **Percent expression outside class:** the percentage of cells in the indicated group or class that express the gene outside the group/class.
+
+::: {.callout .callout-info}
+<h4> Note </h4>
+
+The Percent Expression columns are only returned for standard Seurat and anndata objects. They are not present in DGE results for BPCells-backed Seurat objects.
+:::
 
 If either of the percent expression values are very low, or if there is a large difference in percent expression inside the group vs. outside, caution should be taken when interpreting the results. Definitive comparisons are difficult to determine when fewer cells are expressing the feature, and lower expression may be associated with the [dropout effect](https://doi.org/10.1038/nmeth.2967).
 
--   Additional info: a link to the [GeneCards](https://www.genecards.org/) for each gene is displayed here.
+-   **Additional info:** a link to the [GeneCards](https://www.genecards.org/) for each gene is displayed here.
 
 ### DGE DimPlot
 
