@@ -632,4 +632,4 @@ Click any gene on the correlation table to view a scatterplot of expression for 
 
 # Changing Datasets
 
-To change the dataset, press the `r icon("elipsis-h")` button in the upper right hand corner of the app window, and select **"Choose Dataset"**. A window will appear with the datasets that have been added to the browser, with a description of each. Select a dataset and press "confirm selection" to load the dataset. The dataset can be changed from any tab, and the loaded dataset will affect all three tabs.
+To change the dataset, press the `r icon("ellipsis-h")` button in the upper right hand corner of the app window, and select **"Choose Dataset"**. A window will appear with the datasets that have been added to the browser, with a description of each. Select a dataset and press "confirm selection" to load the dataset. The dataset can be changed from any tab, and the loaded dataset will affect all three tabs.
