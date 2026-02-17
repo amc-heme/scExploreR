@@ -249,13 +249,10 @@ download_button(plot_type = "DimPlot")
 
 Feature plots are dimensional reduction plots that are colored according to feature values instead of categorical metadata. Among other things, feature plots can be used to see which cell types are expressing a feature and to what extent, or to visualize differences in expression between treatment groups when a split by metadata variable is selected.
 
-```{=html}
-<!-- ### Metadata to Group By
+### Metadata for Labeling Groups {#feature-plots-labeling-groups}
 
-For feature plots, the group by selection menu controls the metadata to use for labeling cells, if ...?
+This menu appears when [Label Groups](#feature-plots-label-groups) is checked. It selects the categorical metadata variable used to label groups of cells on the feature plot. Labels will be placed above each cluster of cells as defined by the selected variable.
 
-This menu is used to select a categorical metadata variable to be used to coloring cells. Cells will be colored according to their associated metadata for the variable chosen, and the key for colors used will display in the legend to the right. -->
-```
 ### Metadata to Split By {#Feature-plots-split-by}
 
 This menu sets a categorical metadata variable used to "split" cells into separate plots for viewing side-by-side. One panel will be created for each value in the split by variable. If a single feature is entered in the [feature selection](#feature-selection) menu, the number of columns used for the panels may be adjusted. If two or more features are entered, however, the layout is fixed to place features by row and split by groups by column.
@@ -296,9 +293,9 @@ This setting is available when one feature is entered and split by metadata is p
 
 When checked, cells with the highest values will be plotted on top of the cells with lower expression values- essentially masking them. When unchecked (the default), cells will be plotted in random order giving no preference to either high or low value containing cells to be seen. Enabling this setting can help with features that are expressed in only a few cells in the dataset. Caution should be taken when visualizing features with detectable values in many cells but low average values. In these scenarios the values in the dataset may be exaggerated. To avoid this, we recommend that feature plots be used alongside other means of visualization, such as [violin plots](#violin-plots), [dot plots](#dot-plots), and [ridge plots](#ridge-plots).
 
-### Label Groups
+### Label Groups {#feature-plots-label-groups}
 
-Toggles group by variable labels above each set of cells on and off.
+Toggles group by variable labels above each set of cells on and off. When checked, the [Metadata for Labeling Groups](#feature-plots-labeling-groups) menu will appear to select the metadata variable used for labels.
 
 ### Include Legend {#feature-plots-include-legend}
 
@@ -312,7 +309,7 @@ download_button(plot_type = "Feature Plot")
 
 ## Violin Plots {#violin-plots}
 
-`# TODO: General description`
+Violin plots show the distribution of feature expression and can be used to compare expression distributions between groups of cells.
 
 ### Metadata for Primary Groups {#violin-plots-group-by}
 
@@ -321,8 +318,6 @@ The categorical metadata variable chosen here will determine how cells are group
 ### Metadata for Secondary Grouping {#violin-plots-split-by}
 
 A second categorical variable may be supplied for more in-depth comparison of groups. When specified, violins for each combination between the values of the primary and secondary metadata variable will be drawn. Violins will be colored according to the secondary variable, and split according to the primary variable (see example below). In general, the plot can be used to compare distributions for each value of the primary variable between each value of the secondary variable.
-
-[ADD IMAGE]
 
 ### Order of Groups on Plot {#violin-plots-group-order}
 
@@ -348,9 +343,7 @@ download_button(plot_type = "Violin Plot")
 
 ## Dot Plots {#dot-plots}
 
-```         
-# TODO: General description
-```
+For defined groups of cells, dot plots show the average expression per cell group, as well as the percentage of cells with non-zero expression of the feature. Dot plots are especially useful for large numbers of features.
 
 ### Metadata to group by {#dot-plots-group-by}
 
