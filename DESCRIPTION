@@ -87,6 +87,7 @@ Imports:
     stringr,
     svglite,
     tibble,
+    tools,
     viridisLite,
     waiter (>= 0.2.5),
     yaml
