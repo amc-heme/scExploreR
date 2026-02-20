@@ -1,0 +1,19 @@
+{
+  // Workspace VS Code settings
+  "r.rterm.option": [
+    "--no-save",
+    "--no-restore",
+    "--quiet"
+  ],
+  "editor.tabSize": 2,
+  "editor.largeFileOptimizations": false,
+  "editor.formatOnSave": true,
+  // Preserves formatting of multiple lines on paste
+  "r.bracketedPaste": true,
+  // Show Quarto preview in external browser
+  "quarto.render.previewType": "external",
+  // Enable format on save for R files
+  "[r]": {
+    "editor.formatOnSave": true
+  }
+}
