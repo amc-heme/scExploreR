@@ -81,8 +81,6 @@ Imports:
     shinycssloaders (>= 1.0.0),
     shinydashboard (>= 0.7.2),
     shinyjs (>= 2.0.0),
-    shinymanager,
-    scDE,
     shinytest,
     shinyWidgets (>= 0.6.2),
     sortable (>= 0.4.5),
