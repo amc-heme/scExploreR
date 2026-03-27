@@ -39,8 +39,7 @@ test_that(
 )
 
 test_that(
-  "browser_config_has_info returns FALSE when one dataset
-  is incomplete",
+  "browser_config_has_info returns FALSE when incomplete",
   {
     datasets <- list(
       dataset1 = list(
@@ -85,8 +84,7 @@ test_that(
 )
 
 test_that(
-  "dataset_config_has_info returns FALSE when config info
-  is missing",
+  "dataset_config_has_info returns FALSE when info missing",
   {
     datasets <- list(
       dataset1 = list(

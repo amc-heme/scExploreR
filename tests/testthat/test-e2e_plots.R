@@ -253,8 +253,7 @@ test_that("toggling Ridge Plot switch makes it appear", {
 })
 
 test_that(
-  "toggling Scatterplot switch makes it appear with two
-  features",
+  "toggling Scatterplot switch makes it appear",
   {
     skip_if_not_installed("shinytest2")
     skip_on_cran()

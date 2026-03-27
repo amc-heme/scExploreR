@@ -82,8 +82,7 @@ test_that("initial_title errors on invalid plot_type", {
 })
 
 test_that(
-  "initial_title errors when metadata_config is missing
-  for dimplot",
+  "initial_title errors when metadata_config is missing",
   {
     expect_error(
       scExploreR:::initial_title(
@@ -109,8 +108,7 @@ test_that(
 )
 
 test_that(
-  "initial_title errors when assay_config is missing
-  for feature",
+  "initial_title errors when assay_config is missing",
   {
     expect_error(
       scExploreR:::initial_title(

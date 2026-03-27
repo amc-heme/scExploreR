@@ -16,8 +16,7 @@ test_that("ncol_settings errors on invalid rule", {
 })
 
 test_that(
-  "ncol_settings errors when split_by is missing for
-  split_by rule",
+  "ncol_settings errors when split_by is missing",
   {
     expect_error(
       scExploreR:::ncol_settings(
@@ -30,8 +29,7 @@ test_that(
 )
 
 test_that(
-  "ncol_settings errors when features_entered is missing
-  for features rule",
+  "ncol_settings errors when features_entered is missing",
   {
     expect_error(
       scExploreR:::ncol_settings(
