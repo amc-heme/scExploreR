@@ -59,11 +59,14 @@ jobs:
         shell: Rscript {0}
         run: |
           dir.create("test-results", showWarnings = FALSE)
+          results_directory <- normalizePath("test-results", mustWork = TRUE)
           # Do not stop at testthat's default failure limit: report every test.
           testthat::set_max_fails(Inf)
           reporter <- testthat::MultiReporter$new(list(
             testthat::SummaryReporter$new(),
-            testthat::JunitReporter$new(file = "test-results/junit.xml")
+            testthat::JunitReporter$new(
+              file = file.path(results_directory, "junit.xml")
+            )
           ))
           results <- devtools::test(
             reporter = reporter,

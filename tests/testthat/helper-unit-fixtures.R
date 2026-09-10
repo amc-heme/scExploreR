@@ -36,6 +36,16 @@ unit_single_cell_object <- function() {
   )
 }
 
+#' Create the equivalent SingleCellExperiment fixture
+#'
+#' Converts the deterministic Seurat fixture through Seurat's public API,
+#' preserving cell names, assay values, and metadata across object formats.
+#'
+#' @return A SingleCellExperiment with three features and six cells.
+unit_single_cell_experiment <- function() {
+  Seurat::as.SingleCellExperiment(unit_single_cell_object())
+}
+
 #' Round-trip a unit configuration through YAML
 #'
 #' Writes the fixture beside the test files so it does not depend on the

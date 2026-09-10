@@ -5,3 +5,4 @@
 ^pkgdown$
 ^\.github$
 ^test-results$
+^tests/testthat/apps/[^/]+/tests/artifacts$

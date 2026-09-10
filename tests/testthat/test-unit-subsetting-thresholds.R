@@ -85,8 +85,8 @@ test_that("subset calls dispatch to the supported object argument names", {
     "subset(object, subset = quality_score >= 1)"
   )
   expect_identical(
-    cellDIVER:::subset_call.SingleCellExperiment(
-      object = NULL, subset_str = "quality_score >= 1"
+    cellDIVER:::subset_call(
+      unit_single_cell_experiment(), "quality_score >= 1"
     ),
     "subset(object, select = quality_score >= 1)"
   )
@@ -166,6 +166,45 @@ test_that("metadata helpers classify values and count represented groups", {
       object, rule = "split_by", split_by = "cell_type"
     ),
     c(min = 1, max = 3, default = 3)
+  )
+})
+
+test_that("metadata dispatch handles a real SingleCellExperiment and subset", {
+  object <- unit_single_cell_experiment()
+  expect_s4_class(object, "SingleCellExperiment")
+  expect_equal(cellDIVER:::n_cells(object), 6)
+  expect_equal(cellDIVER:::n_unique(object, "cell_type"), 3)
+  expect_identical(
+    cellDIVER:::metadata_type(object, "cell_type"), "Categorical"
+  )
+  expect_identical(
+    cellDIVER:::metadata_type(object, "quality_score"), "Numeric"
+  )
+  expect_identical(cellDIVER:::metadata_type(object, "selected"), "Logical")
+
+  selected_object <- object[, c("cell_one", "cell_two")]
+  expect_identical(
+    SCUBA::get_all_cells(selected_object), c("cell_one", "cell_two")
+  )
+  expect_equal(cellDIVER:::n_cells(selected_object), 2)
+  expect_equal(cellDIVER:::n_unique(selected_object, "cell_type"), 1)
+  expect_equal(
+    cellDIVER:::ncol_settings(
+      selected_object, rule = "split_by", split_by = "cell_type"
+    ),
+    c(min = 1, max = 1, default = 1)
+  )
+})
+
+test_that("threshold statistics also use SingleCellExperiment metadata", {
+  object <- unit_single_cell_experiment()
+
+  expect_identical(
+    cellDIVER:::threshold_stats(object, "quality_score", 1),
+    list(
+      n_total = 6L, n_above = 4L, percent_above = "66.67",
+      n_below = 2L, percent_below = "33.33"
+    )
   )
 })
 

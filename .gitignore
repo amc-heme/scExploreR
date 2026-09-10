@@ -37,5 +37,6 @@ docker/shiny-server/demo/browser/object-config.yaml
 
 # Generated test reports and package-check output.
 test-results/
+tests/testthat/apps/*/tests/artifacts/
 *.Rcheck/
 cellDIVER_*.tar.gz

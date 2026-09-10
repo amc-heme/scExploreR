@@ -28,7 +28,7 @@ test_that("config preview and downloaded YAML survive a save/load roundtrip", {
   expect_false(saved$preview$plot_settings$label)
   expect_setequal(names(saved$assays), c("RNA", "AB"))
   expect_setequal(names(saved$metadata), c("condensed_cell_type", "Batch"))
-  app$stop()
+  browser_stop(app)
 
   restored <- browser_app(
     "config-reload", fixture = "config", config_path = config_path
@@ -44,7 +44,7 @@ test_that("config preview and downloaded YAML survive a save/load roundtrip", {
   browser_plot(restored, "preview_dimplot")
   second_path <- browser_download(restored, "export_selections", ".yaml")
   expect_equal(cellDIVER:::load_config(second_path), saved)
-  restored$stop()
+  browser_stop(restored)
 
   browser <- browser_app("config-main-browser", config_path = config_path)
   browser$click(selector = "a[data-value='plots']")

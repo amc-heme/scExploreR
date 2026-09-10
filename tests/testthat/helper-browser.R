@@ -18,6 +18,10 @@ browser_app <- function(name, fixture = "cellDIVER", config_path = NULL,
       config_path, mustWork = TRUE
     )
   }
+  artifact_directory <- file.path(
+    normalizePath(testthat::test_path("apps", fixture), mustWork = TRUE),
+    "tests", "artifacts", name
+  )
   app <- tryCatch(
     shinytest2::AppDriver$new(
       app_dir = normalizePath(
@@ -33,12 +37,69 @@ browser_app <- function(name, fixture = "cellDIVER", config_path = NULL,
     ),
     error = function(condition) {
       # shinytest2 attaches a partially initialized driver to startup errors.
-      if (!is.null(condition$app)) condition$app$stop()
+      if (!is.null(condition$app)) {
+        tryCatch(
+          browser_artifacts(condition$app, artifact_directory),
+          finally = condition$app$stop()
+        )
+      }
       stop(condition)
     }
   )
-  withr::defer(app$stop(), envir = cleanup_environment)
+  stopped <- FALSE
+  attr(app, "browser_cleanup") <- function() {
+    if (stopped) return(invisible(NULL))
+    on.exit({
+      stopped <<- TRUE
+      app$stop()
+    }, add = TRUE)
+    browser_artifacts(app, artifact_directory)
+  }
+  withr::defer(browser_stop(app), envir = cleanup_environment)
   app
+}
+
+#' Preserve browser diagnostics before shutting down
+#'
+#' Captures every scenario, including assertion failures and startup failures,
+#' without relying on testthat reporter internals. The CI artifact upload
+#' includes these fixture-local diagnostic directories.
+#'
+#' @param app Running or partially initialized browser driver.
+#' @param directory Directory for logs and a final viewport screenshot.
+#' @return No return value; writes diagnostic files.
+browser_artifacts <- function(app, directory) {
+  dir.create(directory, recursive = TRUE, showWarnings = FALSE)
+  for (artifact in c("logs.csv", "screenshot.png")) {
+    path <- file.path(directory, artifact)
+    unlink(path)
+    tryCatch(
+      {
+        if (artifact == "logs.csv") {
+          utils::write.csv(app$get_logs(), path, row.names = FALSE)
+        } else {
+          app$get_screenshot(file = path, delay = 0, selector = "viewport")
+        }
+      },
+      error = function(condition) {
+        # A crashed browser may prevent capture. Report that failure without
+        # replacing the original assertion/error or preventing app cleanup.
+        warning(
+          "Could not capture browser artifact ", path, ": ",
+          conditionMessage(condition), call. = FALSE
+        )
+      }
+    )
+  }
+  invisible(NULL)
+}
+
+#' Save diagnostics and stop a browser exactly once
+#'
+#' @param app Driver returned by `browser_app()`.
+#' @return No return value; releases browser and child R processes.
+browser_stop <- function(app) {
+  attr(app, "browser_cleanup")()
 }
 
 #' Read the shipped single-cell browser fixture
@@ -123,7 +184,7 @@ browser_plot <- function(app, output) {
   value
 }
 
-#' Download a browser result into a test-local file
+#' Download a browser result into the R session's temporary directory
 #'
 #' @param app Running browser driver.
 #' @param output Download output ID.
@@ -133,10 +194,8 @@ browser_plot <- function(app, output) {
 browser_download <- function(app, output, extension,
                              cleanup_environment = parent.frame()) {
   path <- tempfile(
-    pattern = "browser-download-", tmpdir = testthat::test_path(),
-    fileext = extension
+    pattern = "browser-download-", fileext = extension
   )
-  path <- file.path(normalizePath(dirname(path)), basename(path))
   withr::defer(unlink(path), envir = cleanup_environment)
   app$get_download(output, filename = path)
   testthat::expect_gt(file.info(path)$size, 0)

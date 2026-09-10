@@ -13,7 +13,11 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: test-results-${{ github.event.workflow_run.head_branch }}
+  # Forks commonly reuse branch names; they must not cancel each other's report.
+  group: >-
+    ${{ format('test-results-{0}-{1}',
+        github.event.workflow_run.head_repository.id,
+        github.event.workflow_run.head_branch) }}
   cancel-in-progress: false
 
 jobs:
