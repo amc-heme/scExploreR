@@ -1,7 +1,8 @@
 #' Start an isolated browser fixture
 #'
 #' Launches the current package in shinytest2's child R process. Missing
-#' dependencies, browser executables, and fixtures deliberately fail outside CRAN.
+#' dependencies, browser executables, and fixtures deliberately fail outside
+#' CRAN.
 #'
 #' @param name Unique test scenario name.
 #' @param fixture App directory under `tests/testthat/apps`.
@@ -63,6 +64,19 @@ browser_set <- function(app, input, value) {
   invisible(app)
 }
 
+#' Click a bound action input and wait for reactive work
+#'
+#' Some buttons only send custom UI messages, not a new output value.
+#'
+#' @param app Running browser driver.
+#' @param input Fully namespaced action input ID.
+#' @return The driver, invisibly, after reactive updates settle.
+browser_click <- function(app, input) {
+  app$click(input, wait_ = FALSE)
+  app$wait_for_idle()
+  invisible(app)
+}
+
 #' Add a categorical filter through the current filter editor
 #'
 #' @param app Running browser driver.
@@ -71,12 +85,11 @@ browser_set <- function(app, input, value) {
 #' @param values Metadata values to retain.
 #' @return The driver, invisibly, with the filter saved but not submitted.
 browser_filter <- function(app, namespace, variable, values) {
-  app$click(paste0(namespace, "-add_filter"))
+  browser_click(app, paste0(namespace, "-add_filter"))
   browser_set(app, paste0(namespace, "-filter_type"), "categorical")
   browser_set(app, paste0(namespace, "-categorical_var"), variable)
   browser_set(app, paste0(namespace, "-categorical_values"), values)
-  app$click(paste0(namespace, "-filter_confirm"))
-  app$wait_for_idle()
+  browser_click(app, paste0(namespace, "-filter_confirm"))
   for (value in values) {
     testthat::expect_match(
       app$get_text(paste0("#", namespace, "-filters_applied")),
@@ -99,7 +112,7 @@ browser_plot <- function(app, output) {
     paste0(
       "(() => { const image = document.querySelector(%s);",
       " return image && image.complete && image.naturalWidth > 20 &&",
-      " image.naturalHeight > 20; })()"
+      " image.naturalHeight > 20 && image.getClientRects().length > 0; })()"
     ),
     selector
   ))
@@ -177,10 +190,9 @@ browser_correlations <- function(expression, feature) {
 browser_load_config <- function(app) {
   # Ensure the confirmation path is deterministic even if defaults change.
   browser_set(app, "dataset_label", "Unsaved configuration")
-  app$click("load_config")
+  browser_click(app, "load_config")
   app$wait_for_js("document.getElementById('load_confirm') !== null")
-  app$click("load_confirm")
-  app$wait_for_idle()
+  browser_click(app, "load_confirm")
   invisible(app)
 }
 

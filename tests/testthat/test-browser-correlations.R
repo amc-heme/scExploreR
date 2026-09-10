@@ -1,7 +1,7 @@
 test_that("correlation tables, row plots and subsets agree with Pearson data", {
   app <- browser_app("correlation-regression", fixture = "correlations")
   browser_set(app, "object_corr-feature_selection", "rna_MPO")
-  app$click("object_corr-submit")
+  browser_click(app, "object_corr-submit")
   app$wait_for_value(output = "object_corr-corr_header_gene")
   app$wait_for_idle()
   expect_equal(app$get_value(output = "object_corr-corr_header_gene"), "MPO")
@@ -9,7 +9,9 @@ test_that("correlation tables, row plots and subsets agree with Pearson data", {
   object <- browser_object()
   features <- SCUBA::features_in_assay(object, assay = "RNA")
   expression <- SCUBA::fetch_data(object, vars = paste0("rna_", features))
-  global <- read.csv(browser_download(app, "object_corr-download_table", ".csv"))
+  global <- read.csv(browser_download(
+    app, "object_corr-download_table", ".csv"
+  ))
   expect_setequal(global$Feature, setdiff(features, "MPO"))
   expected <- browser_correlations(expression, "rna_MPO")
   expect_equal(
@@ -38,8 +40,7 @@ test_that("correlation tables, row plots and subsets agree with Pearson data", {
     browser_filter(
       app, "object_corr-subset_selections", "condensed_cell_type", selection
     )
-    app$click("object_corr-submit")
-    app$wait_for_idle()
+    browser_click(app, "object_corr-submit")
     subset_table <- read.csv(browser_download(
       app, "object_corr-download_table", ".csv"
     ))
@@ -68,7 +69,6 @@ test_that("correlation tables, row plots and subsets agree with Pearson data", {
     )
     browser_plot(app, "object_corr-full_data_scatterplot")
     browser_plot(app, "object_corr-subset_scatterplot")
-    app$click("object_corr-subset_selections-reset_all_filters")
-    app$wait_for_idle()
+    browser_click(app, "object_corr-subset_selections-reset_all_filters")
   }
 })

@@ -6,7 +6,7 @@ test_that("browser marker identification retains numeric DGE regression", {
     app$get_value(input = "object_dge-test_selections-group_by"),
     "condensed_cell_type"
   )
-  app$click("object_dge-submit")
+  browser_click(app, "object_dge-submit")
   browser_expect_dge(app, browser_object(), "condensed_cell_type")
 })
 
@@ -32,7 +32,7 @@ test_that("browser pairwise DGE compares independently selected metaclusters", {
     metadata[cells, "condensed_cell_type"] == "Primitive",
     "Primitive", "BM Monocytes and PBMC Monocytes"
   )
-  app$click("object_dge-submit")
+  browser_click(app, "object_dge-submit")
   result <- browser_expect_dge(app, object, "metacluster")
   expect_setequal(
     unique(result$group), c("Primitive", "BM Monocytes and PBMC Monocytes")
@@ -47,7 +47,7 @@ test_that("browser pairwise DGE compares the two recorded sample batches", {
   browser_set(app, "object_dge-test_selections-group_by", "Batch")
   browser_set(app, "object_dge-test_selections-group_1", "BM_200AB")
   browser_set(app, "object_dge-test_selections-group_2", "PBMC_200AB")
-  app$click("object_dge-submit")
+  browser_click(app, "object_dge-submit")
   result <- browser_expect_dge(app, browser_object(), "Batch")
   expect_setequal(unique(result$group), c("BM_200AB", "PBMC_200AB"))
 })
@@ -63,14 +63,13 @@ test_that("browser marker filters affect DGE and reset restores all cells", {
   metadata <- SCUBA::fetch_metadata(object, full_table = TRUE)
   cells <- rownames(metadata)[metadata$Batch == "BM_200AB"]
   expect_lt(length(cells), nrow(metadata))
-  app$click("object_dge-submit")
+  browser_click(app, "object_dge-submit")
   subset_result <- browser_expect_dge(
     app, object[, cells], "condensed_cell_type"
   )
 
-  app$click("object_dge-subset_selections-reset_all_filters")
-  app$wait_for_idle()
-  app$click("object_dge-submit")
+  browser_click(app, "object_dge-subset_selections-reset_all_filters")
+  browser_click(app, "object_dge-submit")
   browser_expect_dge(
     app, object, "condensed_cell_type", previous = subset_result
   )
@@ -94,6 +93,20 @@ test_that("a real threshold plot click partitions cells and computes DGE", {
   object <- browser_object()
   expression <- SCUBA::fetch_data(object, vars = "ab_CD34-AB")[[1]]
   expect_true(is.finite(threshold))
+  click <- app$get_value(input = paste0(namespace, "-plot_click"))
+  lower_limit <- as.numeric(app$get_value(
+    input = paste0(namespace, "-lower_xlim")
+  ))
+  upper_limit <- as.numeric(app$get_value(
+    input = paste0(namespace, "-upper_xlim")
+  ))
+  expect_equal(
+    threshold,
+    round(
+      (click$x - 0.06) * (upper_limit - lower_limit) / 0.9 + min(expression),
+      2
+    )
+  )
   expect_gt(sum(expression >= threshold), 1)
   expect_gt(sum(expression < threshold), 1)
   expect_equal(
@@ -111,7 +124,7 @@ test_that("a real threshold plot click partitions cells and computes DGE", {
   object$simple_expr_threshold <- ifelse(
     expression >= threshold, "CD34-AB High", "CD34-AB Low"
   )
-  app$click("object_dge-submit")
+  browser_click(app, "object_dge-submit")
   result <- browser_expect_dge(app, object, "simple_expr_threshold")
   expect_setequal(unique(result$group), c("CD34-AB High", "CD34-AB Low"))
 })

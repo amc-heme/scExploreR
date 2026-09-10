@@ -100,6 +100,12 @@ Missing browser dependencies or fixtures fail CI instead of silently skipping.
 Use `devtools::test(filter = "unit|module")` for a fast non-browser iteration, or
 `devtools::test(filter = "browser")` for browser scenarios.
 
+Coverage includes configuration roundtrips, choices/titles, subset and threshold
+boundaries, reactive plot controls, DGE filters/statistics, rendered plots and
+downloads, marker/pairwise/threshold DGE, and subset/reset behavior. Correlation
+tests exercise the existing module in a dedicated fixture because its tab is
+currently disabled in the main browser; testing does not re-enable it.
+
 ### PR results and merge protection
 
 The **Tests** workflow tests the checked-out PR code on a GitHub-hosted runner
