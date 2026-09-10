@@ -96,8 +96,10 @@ RoxygenNote: 7.3.2
 Depends: 
     R (>= 3.5.0)
 Suggests: 
+    jsonlite,
     profvis (>= 0.3.7),
     reactlog (>= 1.1.0),
-    shinytest,
-    testthat (>= 3.0.0)
+    shinytest2 (>= 0.4.1),
+    testthat (>= 3.0.0),
+    withr
 Config/testthat/edition: 3
