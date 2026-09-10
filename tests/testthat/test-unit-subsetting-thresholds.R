@@ -196,3 +196,16 @@ test_that("subset statistics distinguish marker and two-group analyses", {
     "control: 3\ntreated: 3"
   )
 })
+
+test_that("correlation statistics count cells with nonzero expression", {
+  object <- unit_single_cell_object()
+  statistics <- cellDIVER:::subset_stats_function(
+    object, mode = "corr", metadata_categories = "cell_type",
+    gene_selected = "GeneAlpha", nonzero_threshold = 10
+  )
+
+  expect_equal(statistics$n_cells, 6)
+  expect_equal(statistics$n_nonzero, 5)
+  expect_equal(statistics$prop_nonzero, 5 / 6)
+  expect_identical(statistics$percent_nonzero, "83.33")
+})

@@ -13,7 +13,9 @@ browser_app <- function(name, fixture = "cellDIVER", config_path = NULL,
   testthat::skip_on_cran()
   app_options <- list()
   if (!is.null(config_path)) {
-    app_options$cellDIVER.test_config <- normalizePath(config_path, mustWork = TRUE)
+    app_options$cellDIVER.test_config <- normalizePath(
+      config_path, mustWork = TRUE
+    )
   }
   app <- tryCatch(
     shinytest2::AppDriver$new(
@@ -147,6 +149,39 @@ browser_svg <- function(app, namespace) {
 #' @return Number of circle geometries.
 browser_point_count <- function(svg) {
   length(regmatches(svg, gregexpr("<circle\\b", svg))[[1]])
+}
+
+#' Compute an independent Pearson correlation reference
+#'
+#' Constant features have undefined correlations and are explicitly kept as NA.
+#'
+#' @param expression Cells-by-features numeric data frame from SCUBA.
+#' @param feature Reference feature column name.
+#' @return Named numeric vector of Pearson correlation coefficients.
+browser_correlations <- function(expression, feature) {
+  standard_deviations <- vapply(expression, stats::sd, numeric(1))
+  result <- stats::setNames(rep(NA_real_, ncol(expression)), names(expression))
+  varying <- standard_deviations > 0
+  if (standard_deviations[[feature]] > 0) {
+    result[varying] <- stats::cor(
+      expression[[feature]], as.matrix(expression[, varying, drop = FALSE])
+    )[1, ]
+  }
+  result
+}
+
+#' Load the fixture configuration through the overwrite confirmation
+#'
+#' @param app Running configuration app driver.
+#' @return The driver, invisibly, once the loaded inputs settle.
+browser_load_config <- function(app) {
+  # Ensure the confirmation path is deterministic even if defaults change.
+  browser_set(app, "dataset_label", "Unsaved configuration")
+  app$click("load_config")
+  app$wait_for_js("document.getElementById('load_confirm') !== null")
+  app$click("load_confirm")
+  app$wait_for_idle()
+  invisible(app)
 }
 
 #' Assert browser DGE results against an independent scDE computation

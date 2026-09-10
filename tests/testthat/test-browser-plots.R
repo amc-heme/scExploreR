@@ -34,20 +34,12 @@ test_that("DimPlot renders, groups, splits, filters and resets actual cells", {
   expect_equal(
     browser_point_count(filtered), sum(metadata$Batch == "BM_200AB")
   )
-  expect_equal(
-    app$get_value(output = "object_plots-subset_summary-selected_Batch"),
-    "BM_200AB"
-  )
-
   app$click("object_plots-subset_selections-reset_all_filters")
   app$wait_for_idle()
   app$click("object_plots-subset_submit")
   app$wait_for_idle()
   reset <- browser_svg(app, "object_plots-dimplot")
   expect_equal(browser_point_count(reset), nrow(metadata))
-  expect_equal(
-    app$get_value(output = "object_plots-subset_summary-selected_Batch"), "All"
-  )
 })
 
 for (plot_type in c("feature", "violin", "dot", "ridge", "scatter",

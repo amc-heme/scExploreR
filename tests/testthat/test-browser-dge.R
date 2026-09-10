@@ -39,6 +39,19 @@ test_that("browser pairwise DGE compares independently selected metaclusters", {
   )
 })
 
+test_that("browser pairwise DGE compares the two recorded sample batches", {
+  app <- browser_app("dge-pairwise-batches")
+  app$click(selector = "a[data-value='dge']")
+  app$wait_for_idle()
+  browser_set(app, "object_dge-test_selections-mode", "mode_dge")
+  browser_set(app, "object_dge-test_selections-group_by", "Batch")
+  browser_set(app, "object_dge-test_selections-group_1", "BM_200AB")
+  browser_set(app, "object_dge-test_selections-group_2", "PBMC_200AB")
+  app$click("object_dge-submit")
+  result <- browser_expect_dge(app, browser_object(), "Batch")
+  expect_setequal(unique(result$group), c("BM_200AB", "PBMC_200AB"))
+})
+
 test_that("browser marker filters affect DGE and reset restores all cells", {
   app <- browser_app("dge-subset-reset")
   app$click(selector = "a[data-value='dge']")

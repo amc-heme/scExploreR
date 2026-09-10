@@ -37,7 +37,7 @@ meta_choices <- reactive(
 valid_features <- reactive(
   label = "fixture feature choices",
   list(Gene = paste0(
-    "rna_", cellDIVER:::features_in_assay(object, assay = "RNA")
+    "rna_", SCUBA::features_in_assay(object, assay = "RNA")
   ))
 )
 
