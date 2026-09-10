@@ -34,3 +34,8 @@ cellDIVER_docker_plan.md
 # docker/shiny-server/demo/browser/app.R.
 docker/shiny-server/demo/browser/object.rds
 docker/shiny-server/demo/browser/object-config.yaml
+
+# Generated test reports and package-check output.
+test-results/
+*.Rcheck/
+cellDIVER_*.tar.gz
